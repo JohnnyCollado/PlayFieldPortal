@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blur_title">Rozmycie tła</string>
+    <string name="blur_sublabel">Siła rozmycia ekranu za komunikatami i menu opcji. Ustaw zero, aby wyłączyć.</string>
+    <string name="blur_unavailable">Wymaga Androida 12 lub nowszego.</string>
+</resources>

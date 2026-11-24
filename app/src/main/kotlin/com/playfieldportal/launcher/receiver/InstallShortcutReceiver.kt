@@ -1,5 +1,6 @@
 package com.playfieldportal.launcher.receiver
 
+import com.playfieldportal.launcher.R
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -55,7 +56,7 @@ class InstallShortcutReceiver : BroadcastReceiver() {
         val hostPackage = launch.`package` ?: launch.component?.packageName
         val name = rawName?.takeIf { it.isNotBlank() }
             ?: launch.component?.className?.substringAfterLast('.')
-            ?: "Shortcut"
+            ?: context.getString(R.string.app_shortcut_fallback_name)
         val intentUri = launch.toUri(Intent.URI_INTENT_SCHEME)
         val hostLabel = hostPackage?.let { pkg ->
             runCatching {
@@ -63,7 +64,7 @@ class InstallShortcutReceiver : BroadcastReceiver() {
                     context.packageManager.getApplicationInfo(pkg, 0)
                 ).toString()
             }.getOrNull()
-        } ?: "Another app"
+        } ?: context.getString(R.string.app_shortcut_fallback_host)
 
         Timber.i("INSTALL_SHORTCUT requested: name=$name host=$hostPackage — awaiting user confirmation")
         val request = PendingShortcutRequest(

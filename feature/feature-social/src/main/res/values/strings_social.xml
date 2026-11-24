@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slice H2: feature-social (Discord QR login) -->
+<resources>
+    <!-- QR login screen -->
+    <string name="soc_qr_preparing">Preparing sign-in…</string>
+    <string name="soc_qr_connected">Connected</string>
+    <string name="soc_qr_expired">The code expired.</string>
+    <string name="soc_qr_declined">Sign-in was declined.</string>
+    <!-- %1$s is the error detail text returned by the service -->
+    <string name="soc_qr_error">Couldn’t sign in. %1$s</string>
+    <string name="soc_qr_content_description">Discord sign-in QR code</string>
+    <string name="soc_qr_title">Sign in with Discord</string>
+    <string name="soc_qr_copied">Copied!</string>
+    <string name="soc_qr_tap_to_copy">Select the code to copy</string>
+    <string name="soc_qr_instructions">Scan with your phone’s camera, or go to discord.com/activate and paste the code.</string>
+    <!-- %1$d is the number of seconds left; the trailing "s" is the seconds symbol -->
+    <string name="soc_qr_expires_in">Expires in %1$ds</string>
+    <!-- Short status shown when the countdown reaches zero -->
+    <string name="soc_qr_expired_short">Expired</string>
+    <!-- Button -->
+    <string name="soc_qr_cancel">Cancel</string>
+    <!-- Button -->
+    <string name="soc_qr_try_again">Try again</string>
+</resources>

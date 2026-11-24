@@ -1,15 +1,18 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import android.content.Context
 import com.playfieldportal.core.domain.model.BackgroundTaskInfo
 import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NotificationDetail
 import com.playfieldportal.core.domain.model.PfpErrorCode
-import com.playfieldportal.feature.artwork.api.classifyScrapeFailure
+import com.playfieldportal.feature.artwork.api.classifyScrapeFailureText
 import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
-import com.playfieldportal.feature.artwork.api.ARTWORK_PAUSED_MESSAGE
+import com.playfieldportal.feature.artwork.api.ARTWORK_PAUSED_TEXT
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
+import com.playfieldportal.feature.xmb.R
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import timber.log.Timber
 import javax.inject.Inject
@@ -25,6 +28,7 @@ class GameArtworkFetchRunner @Inject constructor(
     private val artworkRepository: ArtworkRepository,
     private val gameRepository: GameRepository,
     private val backgroundTasks: BackgroundTaskCenter,
+    @ApplicationContext private val context: Context,
 ) {
     /** Returns true when new artwork was written, so the caller can reload the visible list. */
     suspend fun run(gameId: Long): Boolean {
@@ -37,7 +41,7 @@ class GameArtworkFetchRunner @Inject constructor(
         backgroundTasks.start(
             BackgroundTaskInfo(
                 id = taskId,
-                label = "Fetching artwork: ${game.displayTitle}",
+                label = context.getString(R.string.xmbm_fetchart_running, game.displayTitle),
                 kind = TaskKind.ARTWORK,
             )
         )
@@ -51,10 +55,10 @@ class GameArtworkFetchRunner @Inject constructor(
         } catch (e: Exception) {
             Timber.e(e, "Fetch Artwork failed for gameId=$gameId")
             backgroundTasks.fail(
-                taskId, "Artwork fetch failed", action,
+                taskId, context.getString(R.string.xmbm_fetchart_failed), action,
                 NotificationDetail.notes(PfpErrorCode.AR_9001, summary = e.message,
                     diagnostic = e.stackTraceToString().take(4_000)),
-                "Couldn't fetch artwork for ${game.displayTitle}",
+                context.getString(R.string.xmbm_fetchart_failed_title, game.displayTitle),
             )
             return false
         }
@@ -63,17 +67,20 @@ class GameArtworkFetchRunner @Inject constructor(
             // Game Detail is fetching this game already and reports its own result.
             result.alreadyRunning -> backgroundTasks.cancel(taskId)
             result.paused         -> backgroundTasks.fail(
-                taskId, ARTWORK_PAUSED_MESSAGE, NotificationAction.OpenSettingsScreen("settings_artwork_import"),
-                NotificationDetail.notes(PfpErrorCode.AR_1001, summary = ARTWORK_PAUSED_MESSAGE),
-                "Artwork paused for ${game.displayTitle}",
+                taskId, ARTWORK_PAUSED_TEXT.resolve(context), NotificationAction.OpenSettingsScreen("settings_artwork_import"),
+                NotificationDetail.notes(PfpErrorCode.AR_1001, summary = ARTWORK_PAUSED_TEXT.resolve(context)),
+                context.getString(R.string.xmbm_fetchart_paused_title, game.displayTitle),
             )
             result.success       -> backgroundTasks.complete(
-                taskId, null, action, null, "Artwork updated for ${game.displayTitle}",
+                taskId, null, action, null, context.getString(R.string.xmbm_fetchart_done_title, game.displayTitle),
             )
             else                  -> backgroundTasks.fail(
-                taskId, result.errorMessage ?: "Artwork fetch failed", action,
-                NotificationDetail.notes(classifyScrapeFailure(result.errorMessage), summary = result.errorMessage),
-                "Couldn't fetch artwork for ${game.displayTitle}",
+                taskId, result.errorMessage?.resolve(context) ?: context.getString(R.string.xmbm_fetchart_failed), action,
+                NotificationDetail.notes(
+                    classifyScrapeFailureText(result.errorMessage),
+                    summary = result.errorMessage?.resolve(context),
+                ),
+                context.getString(R.string.xmbm_fetchart_failed_title, game.displayTitle),
             )
         }
         return result.success

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Button label that dismisses a dialog without acting -->
+    <string name="core_cancel">취소</string>
+    <!-- Button label that acknowledges a message dialog -->
+    <string name="core_ok">확인</string>
+    <!-- Button label that saves the entered text -->
+    <string name="core_save">저장</string>
+    <!-- Button label that applies the chosen colour -->
+    <string name="core_apply">적용</string>
+    <string name="core_select">선택</string>
+    <string name="core_close">닫기</string>
+    <string name="core_back">뒤로</string>
+    <!-- Default caption above a text field in a name-entry dialog -->
+    <string name="core_modal_name_label">이름</string>
+    <string name="core_modal_counter">%1$d / %2$d</string>
+    <!-- Convert-to-achievement-tracking picker -->
+    <string name="core_steam_convert_title">도전 과제 추적을 설치할까요?</string>
+    <string name="core_steam_convert_selected_count">%2$d개 중 %1$d개</string>
+    <string name="core_steam_convert_found_count">%1$d개 찾음</string>
+    <string name="core_steam_convert_hints">"Up/Down  행  •  Select  전환  •  △  전체/없음  •  Start  설치  •  B  취소"</string>
+    <string name="core_steam_convert_loading">Steam에서 각 게임의 도전 과제 목록을 읽는 중…</string>
+    <string name="core_steam_convert_install">설치 (%1$d)</string>
+    <!-- Button that unticks every game -->
+    <string name="core_steam_convert_none">없음</string>
+    <!-- Button that ticks every game -->
+    <string name="core_steam_convert_all">전체</string>
+    <string name="core_steam_convert_skip_sync">건너뛰고 동기화</string>
+    <!-- Keep the file names exactly as written -->
+    <string name="core_steam_convert_write_notice">PFP는 선택한 각 게임 폴더에 achievements.json, stats.json, configs.user.ini를 쓰고 saves 폴더를 만들며, 번들된 에뮬레이터가 이를 거쳐 로드할 수 있도록 steam_api64.dll의 이름을 steam_api64_o.dll로 바꿉니다.</string>
+    <string name="core_steam_convert_backup_warning">이미 플레이한 게임은 변환하기 전에 세이브 파일을 백업하세요 — 에뮬레이터가 새 세이브 위치에서 읽기 시작합니다.</string>
+    <!-- Shiba player card -->
+    <string name="core_shiba_xp">%1$s XP</string>
+    <string name="core_shiba_progress_next_bone">다음 Bone까지 %1$s / %2$s</string>
+    <string name="core_shiba_progress_next_level">레벨 %3$d까지 %1$s / %2$s</string>
+    <string name="core_shiba_level_abbrev">LV</string>
+    <!-- Caption above the hexadecimal colour code field -->
+    <string name="core_hsv_hex">Hex</string>
+    <string name="core_hsv_hue">색조</string>
+    <string name="core_hsv_saturation">채도</string>
+    <string name="core_hsv_brightness">밝기</string>
+    <!-- Controller hints under the picker -->
+    <string name="core_hsv_hint_move">이동</string>
+    <string name="core_hsv_hint_type_hex">Hex 입력</string>
+    <string name="core_hsv_hint_adjust">조정</string>
+    <string name="core_hsv_sample_text">샘플 텍스트</string>
+    <!-- Preset colour names -->
+    <string name="core_color_default">기본값</string>
+    <string name="core_color_pink">분홍</string>
+    <string name="core_color_gold">금색</string>
+    <string name="core_color_aqua">아쿠아</string>
+    <string name="core_color_sky_blue">하늘색</string>
+    <string name="core_color_green">초록</string>
+    <string name="core_color_coral">코랄</string>
+    <string name="core_color_slate">슬레이트</string>
+    <!-- Swatch that opens the full colour picker -->
+    <string name="core_color_custom">사용자 지정</string>
+    <!-- Notification detail sheets -->
+    <string name="core_sheet_copied">복사됨</string>
+    <string name="core_sheet_copy_details">세부 정보 복사</string>
+    <!-- Controller hint: copy the list of results to the clipboard -->
+    <string name="core_sheet_copy_list">목록 복사</string>
+    <string name="core_sheet_filter">필터</string>
+    <!-- Heading above the plain-language summary of a notification -->
+    <string name="core_sheet_what_happened">발생한 일</string>
+    <string name="core_sheet_diagnostic_open">"▾  진단 세부 정보"</string>
+    <string name="core_sheet_diagnostic_closed">"▸  진단 세부 정보"</string>
+    <!-- Heading of the technical block in the copied plain text -->
+    <string name="core_sheet_diagnostic_heading">진단</string>
+    <string name="core_sheet_summary_chip">%2$s %1$d</string>
+    <!-- Results filter tab that shows every item -->
+    <string name="core_sheet_filter_all">전체</string>
+    <string name="core_sheet_more">+%1$d개 더 있음</string>
+    <!-- Heading above suggested remedies for a failed item -->
+    <string name="core_sheet_what_you_can_do">해결 방법</string>
+    <!-- Controller hint: type the highlighted key -->
+    <string name="core_vk_prompt_type">입력</string>
+    <!-- Controller hint: delete the character before the cursor -->
+    <string name="core_vk_prompt_delete">삭제</string>
+    <!-- Controller hint: move the text cursor left or right -->
+    <string name="core_vk_prompt_cursor">커서</string>
+    <!-- Controller hint: toggle Caps Lock -->
+    <string name="core_vk_prompt_caps">대문자</string>
+    <!-- Key names, also read aloud by screen readers -->
+    <string name="core_vk_key_space">스페이스</string>
+    <string name="core_vk_key_shift">Shift</string>
+    <string name="core_vk_key_backspace">백스페이스</string>
+    <!-- Key that finishes typing -->
+    <string name="core_vk_key_done">완료</string>
+    <!-- Screen-reader state of the Shift key -->
+    <string name="core_vk_shift_off">꺼짐</string>
+    <string name="core_vk_shift_once">다음 글자만 켜짐</string>
+    <string name="core_vk_shift_held">누르는 동안 켜짐</string>
+    <string name="core_vk_shift_locked">Caps Lock 켜짐</string>
+    <!-- Background tasks -->
+    <string name="core_task_failed">작업 실패</string>
+    <string name="core_task_done">완료</string>
+    <!-- Small badge on a favourite game's banner; shown in capitals -->
+    <string name="core_detail_favorite_badge">즐겨찾기</string>
+    <!-- Small badge over a video thumbnail; shown in capitals -->
+    <string name="core_detail_video_badge">동영상</string>
+    <string name="core_detail_confirm_collapse">확인 버튼으로 접기</string>
+    <string name="core_detail_confirm_read_more">확인 버튼으로 더 보기</string>
+    <!-- Rotate-to-landscape prompt -->
+    <string name="core_rotate_title">가로 모드로 회전</string>
+    <string name="core_rotate_message">PlayField Portal은 가로 모드에서 실행됩니다. 계속하려면 기기를 가로로 돌리세요.</string>
+    <string name="core_rotate_switch_launcher">런처 전환</string>
+</resources>

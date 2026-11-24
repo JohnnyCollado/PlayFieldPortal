@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shiba rank titles -->
+    <string name="dom_shiba_rank_pup">幼犬</string>
+    <string name="dom_shiba_rank_ruffian">小痞犬</string>
+    <string name="dom_shiba_rank_lone_ron_inu">孤高浪人犬</string>
+    <string name="dom_shiba_rank_inu_master">犬之大师</string>
+    <string name="dom_shiba_rank_legendary_hachiko">传奇八公</string>
+
+    <!-- App editions -->
+    <string name="dom_edition_full">完整版</string>
+    <string name="dom_edition_lite">精简版</string>
+
+    <!-- Audio channels (volume rows) -->
+    <string name="dom_audio_channel_navigation">导航</string>
+    <string name="dom_audio_channel_back">返回 / 取消</string>
+    <string name="dom_audio_channel_confirm">确认 / 应用</string>
+    <string name="dom_audio_channel_error">错误 / 无效</string>
+    <string name="dom_audio_channel_category">类别</string>
+    <string name="dom_audio_channel_options">选项</string>
+    <string name="dom_audio_channel_notification">通知</string>
+    <string name="dom_audio_channel_boot">启动序列</string>
+    <string name="dom_audio_channel_gameboot">Game Boot</string>
+    <string name="dom_audio_channel_ambience">环境音</string>
+
+    <!-- Customisable media slots -->
+    <string name="dom_media_slot_navigation">导航</string>
+    <string name="dom_media_slot_back">返回 / 取消</string>
+    <string name="dom_media_slot_confirm">确认 / 应用</string>
+    <string name="dom_media_slot_error">错误 / 无效</string>
+    <string name="dom_media_slot_category">类别</string>
+    <string name="dom_media_slot_options">选项</string>
+    <string name="dom_media_slot_notification">通知</string>
+    <string name="dom_media_slot_boot_video">开机动画</string>
+    <string name="dom_media_slot_gameboot_video">Game Boot 动画</string>
+    <string name="dom_media_slot_ambience_audio">环境音轨</string>
+
+    <!-- Game tile display modes -->
+    <string name="dom_icon_display_icon0">自定义图标</string>
+    <string name="dom_icon_display_box_art">封面</string>
+    <string name="dom_icon_display_physical_media">实体介质</string>
+    <string name="dom_icon_display_box_3d">3D 封面</string>
+
+    <!-- Icon legibility styles -->
+    <string name="dom_icon_legibility_none">无</string>
+    <string name="dom_icon_legibility_offset_shadow">偏移阴影（深色）</string>
+    <string name="dom_icon_legibility_offset_shadow_light">偏移阴影（浅色）</string>
+    <string name="dom_icon_legibility_contour_dark">轮廓（深色）</string>
+    <string name="dom_icon_legibility_contour_light">轮廓（浅色）</string>
+    <string name="dom_icon_legibility_contour_auto">轮廓（自动）</string>
+
+    <!-- Animated image playback -->
+    <string name="dom_image_motion_animated">动态</string>
+    <string name="dom_image_motion_reduced">减少</string>
+    <string name="dom_image_motion_static">静态</string>
+
+    <!-- Text legibility styles -->
+    <string name="dom_text_legibility_none">无</string>
+    <string name="dom_text_legibility_shadow">投影</string>
+    <string name="dom_text_legibility_outline">描边</string>
+    <string name="dom_text_legibility_plate">对比底板</string>
+    <string name="dom_text_legibility_auto">自动</string>
+
+    <!-- Touch gestures -->
+    <string name="dom_touch_gesture_tap">点按</string>
+    <string name="dom_touch_gesture_long_press">长按</string>
+    <string name="dom_touch_gesture_swipe_left">向左滑动</string>
+    <string name="dom_touch_gesture_swipe_right">向右滑动</string>
+    <string name="dom_touch_gesture_swipe_down">向下滑动</string>
+
+    <!-- UMD slot display modes -->
+    <string name="dom_umd_slot_off">关</string>
+    <string name="dom_umd_slot_inserted">已插入</string>
+    <string name="dom_umd_slot_inserted_and_recent">已插入和最近</string>
+
+    <!-- Item list motion styles -->
+    <string name="dom_list_motion_rewind">回卷</string>
+    <string name="dom_list_motion_glide">滑行</string>
+
+    <!-- Confirm / Back button layouts -->
+    <string name="dom_confirm_back_standard">标准（A = 确认，B = 返回）</string>
+    <string name="dom_confirm_back_reversed">反转（B = 确认，A = 返回）</string>
+
+    <!-- X / Y button layouts -->
+    <string name="dom_xy_layout_standard">标准（Y = 选项，X = 排序）</string>
+    <string name="dom_xy_layout_swapped">互换（X = 选项，Y = 排序）</string>
+
+    <!-- Controller prompt styles -->
+    <string name="dom_controller_type_xbox">Xbox</string>
+    <string name="dom_controller_type_nintendo">Nintendo</string>
+    <string name="dom_controller_type_playstation">PlayStation</string>
+
+    <!-- Held-navigation scroll speeds -->
+    <string name="dom_scroll_speed_relaxed">舒缓</string>
+    <string name="dom_scroll_speed_standard">标准</string>
+    <string name="dom_scroll_speed_fast">快速</string>
+
+    <!-- Colour schemes -->
+    <string name="dom_color_scheme_original">原版（按月变化）</string>
+    <string name="dom_color_scheme_classic_blue">经典蓝</string>
+    <string name="dom_color_scheme_sunset_orange">日落橙</string>
+    <string name="dom_color_scheme_fresh_green">清新绿</string>
+    <string name="dom_color_scheme_royal_purple">皇家紫</string>
+    <string name="dom_color_scheme_crimson_red">绯红</string>
+    <string name="dom_color_scheme_silver">银色</string>
+    <string name="dom_color_scheme_sakura_pink">樱花粉</string>
+    <string name="dom_color_scheme_golden_amber">琥珀金</string>
+    <string name="dom_color_scheme_aqua_teal">水青色</string>
+    <string name="dom_color_scheme_midnight_navy">午夜藏青</string>
+    <string name="dom_color_scheme_charcoal">炭灰</string>
+
+    <!-- Controller actions -->
+    <string name="dom_action_navigate_up">向上导航</string>
+    <string name="dom_action_navigate_down">向下导航</string>
+    <string name="dom_action_navigate_left">向左导航（上一个类别）</string>
+    <string name="dom_action_navigate_right">向右导航（下一个类别）</string>
+    <string name="dom_action_select">选择 / 启动</string>
+    <string name="dom_action_back">返回 / 关闭</string>
+    <string name="dom_action_open_context_menu">选项 / 快捷菜单</string>
+    <string name="dom_action_change_sort">更改排序方式</string>
+    <string name="dom_action_prev_category">上一个标签页（应用抽屉）</string>
+    <string name="dom_action_next_category">下一个标签页（应用抽屉）</string>
+    <string name="dom_action_home">Start（通知 / 在选择器中确认）</string>
+    <string name="dom_action_shift">Shift（键盘）</string>
+    <string name="dom_action_caps_lock">大写锁定（键盘）</string>
+    <string name="dom_action_category_menu">类别菜单</string>
+
+    <!-- Controller button names -->
+    <string name="dom_key_a">A / 叉</string>
+    <string name="dom_key_b">B / 圆圈</string>
+    <string name="dom_key_x">X / 方块</string>
+    <string name="dom_key_y">Y / 三角</string>
+    <string name="dom_key_dpad_up">方向键上</string>
+    <string name="dom_key_dpad_down">方向键下</string>
+    <string name="dom_key_dpad_left">方向键左</string>
+    <string name="dom_key_dpad_right">方向键右</string>
+    <string name="dom_key_dpad_center">方向键中心</string>
+    <string name="dom_key_l1">L1</string>
+    <string name="dom_key_r1">R1</string>
+    <string name="dom_key_l2">L2</string>
+    <string name="dom_key_r2">R2</string>
+    <string name="dom_key_start">Start</string>
+    <string name="dom_key_select">Select</string>
+    <string name="dom_key_enter">Enter</string>
+    <string name="dom_key_back">返回键</string>
+    <string name="dom_key_unknown">按键 %1$d</string>
+
+    <!-- Colour naming (ColorNaming) -->
+    <string name="dom_hue_orange">橙色</string>
+    <string name="dom_hue_yellow">黄色</string>
+    <string name="dom_hue_green">绿色</string>
+    <string name="dom_hue_teal">青色</string>
+    <string name="dom_hue_blue">蓝色</string>
+    <string name="dom_hue_purple">紫色</string>
+    <string name="dom_hue_pink">粉色</string>
+    <string name="dom_hue_red">红色</string>
+    <string name="dom_hue_orange_cap">橙色</string>
+    <string name="dom_hue_yellow_cap">黄色</string>
+    <string name="dom_hue_green_cap">绿色</string>
+    <string name="dom_hue_teal_cap">青色</string>
+    <string name="dom_hue_blue_cap">蓝色</string>
+    <string name="dom_hue_purple_cap">紫色</string>
+    <string name="dom_hue_pink_cap">粉色</string>
+    <string name="dom_hue_red_cap">红色</string>
+    <string name="dom_hue_lean">%1$s，偏%2$s</string>
+    <string name="dom_hue_lean_cap">%1$s，偏%2$s</string>
+    <string name="dom_color_dark">深%1$s</string>
+    <string name="dom_color_very_dark">极深%1$s</string>
+    <string name="dom_color_muted">灰%1$s</string>
+    <string name="dom_color_dark_muted">深灰%1$s</string>
+    <string name="dom_color_very_dark_muted">极深灰%1$s</string>
+    <string name="dom_color_grey">%1$s灰色</string>
+    <string name="dom_saturation_grey">灰色</string>
+    <string name="dom_saturation_muted">柔和</string>
+    <string name="dom_saturation_vivid">鲜艳</string>
+    <string name="dom_saturation_intense">浓烈</string>
+    <string name="dom_brightness_very_dark">极深</string>
+    <string name="dom_brightness_dark">深</string>
+    <string name="dom_brightness_medium">中等</string>
+    <string name="dom_brightness_bright">亮</string>
+    <string name="dom_tint_standard">标准</string>
+    <string name="dom_tint_orange">偏橙</string>
+    <string name="dom_tint_yellow">偏黄</string>
+    <string name="dom_tint_green">偏绿</string>
+    <string name="dom_tint_teal">偏青</string>
+    <string name="dom_tint_blue">偏蓝</string>
+    <string name="dom_tint_purple">偏紫</string>
+    <string name="dom_tint_pink">偏粉</string>
+    <string name="dom_tint_red">偏红</string>
+    <string name="dom_tint_much_orange">明显偏橙</string>
+    <string name="dom_tint_much_yellow">明显偏黄</string>
+    <string name="dom_tint_much_green">明显偏绿</string>
+    <string name="dom_tint_much_teal">明显偏青</string>
+    <string name="dom_tint_much_blue">明显偏蓝</string>
+    <string name="dom_tint_much_purple">明显偏紫</string>
+    <string name="dom_tint_much_pink">明显偏粉</string>
+    <string name="dom_tint_much_red">明显偏红</string>
+    <string name="dom_tint_cooler">偏冷</string>
+    <string name="dom_tint_warmer">偏暖</string>
+    <string name="dom_tint_much_cooler">明显偏冷</string>
+    <string name="dom_tint_much_warmer">明显偏暖</string>
+    <string name="dom_depth_much_lighter">明显更浅</string>
+    <string name="dom_depth_lighter">更浅</string>
+    <string name="dom_depth_deeper">更深</string>
+    <string name="dom_depth_much_deeper">明显更深</string>
+
+    <!-- File limit messages -->
+    <string name="dom_limit_motion_unsupported_format">不支持的格式。请使用 MP4、WebM、GIF 或 WebP</string>
+    <string name="dom_limit_motion_too_large_resolution">视频分辨率过高。须为 1080p 或更低</string>
+    <string name="dom_limit_motion_too_long">片段过长。须为 60 秒或更短</string>
+    <string name="dom_limit_motion_too_large_bytes">文件过大。须小于 60 MB</string>
+    <string name="dom_limit_motion_undecodable">无法读取该视频，请换一个文件</string>
+    <string name="dom_limit_media_unsupported_audio">不支持的格式。请使用 MP3、WAV、OGG 或 M4A 音频</string>
+    <string name="dom_limit_media_unsupported_video">不支持的格式。请使用 MP4 或 WebM 视频</string>
+    <string name="dom_limit_media_too_large_sound">文件过大</string>
+    <string name="dom_limit_media_too_large_video">文件过大。视频须小于 25 MB</string>
+    <string name="dom_limit_media_undecodable">无法读取该文件，请换一个文件</string>
+    <string name="dom_limit_media_no_duration">无法读取该文件的时长。请换一个文件，或将其转换为 MP3/WAV/OGG/M4A</string>
+    <string name="dom_limit_media_too_long">该片段过长。须为 %1$s 或更短</string>
+
+    <!-- Error codes -->
+    <string name="dom_error_ln_1001_title">此平台未指定模拟器</string>
+    <string name="dom_error_ln_1001_why">PlayFieldPortal 不知道应由哪个应用运行此平台的游戏。</string>
+    <string name="dom_error_ln_1001_action">请在“设置 › 模拟器分配”中为此平台选择模拟器。</string>
+    <string name="dom_error_ln_1002_title">未安装所选的 RetroArch 核心</string>
+    <string name="dom_error_ln_1002_why">RetroArch 被要求加载一个此设备上没有的核心。</string>
+    <string name="dom_error_ln_1002_action">请通过 RetroArch 的在线更新程序安装该核心，或在“模拟器分配”中选择其他核心。</string>
+    <string name="dom_error_ln_2001_title">游戏文件缺失或无法读取</string>
+    <string name="dom_error_ln_2001_why">文件可能已被移动、重命名或删除，或存放它的 SD 卡已被移除。</string>
+    <string name="dom_error_ln_2001_action">请检查文件是否仍在原处，然后重新扫描其记忆卡。</string>
+    <string name="dom_error_ln_4001_title">找不到模拟器</string>
+    <string name="dom_error_ln_4001_why">为此游戏分配的模拟器未安装，或 Android 找不到 PlayFieldPortal 要打开的界面。</string>
+    <string name="dom_error_ln_4001_action">请安装该模拟器，或在“设置 › 模拟器分配”中选择其他模拟器。</string>
+    <string name="dom_error_ln_4002_title">Android 不允许打开该模拟器</string>
+    <string name="dom_error_ln_4002_why">Android 拒绝了 PlayFieldPortal 启动此模拟器的权限。</string>
+    <string name="dom_error_ln_4002_action">请先单独打开一次该模拟器，然后重试。如果问题持续出现，请更新该模拟器。</string>
+    <string name="dom_error_ln_4003_title">模拟器始终未切换到前台</string>
+    <string name="dom_error_ln_4003_why">模拟器很可能在启动时就关闭了，或 Android 在游戏加载前就将其停止。</string>
+    <string name="dom_error_ln_4003_action">请单独打开一次该模拟器，确认它能正常启动；如有新版本，请进行更新。如果问题持续出现，请在“设置 › 模拟器分配”中选择其他模拟器。</string>
+    <string name="dom_error_ln_9001_title">无法打开模拟器</string>
+    <string name="dom_error_ln_9001_why">启动模拟器时发生意外错误。</string>
+    <string name="dom_error_ln_9001_action">请重试。如果问题持续出现，请复制详情并报告。</string>
+    <string name="dom_error_sc_1001_title">此记忆卡未设置文件夹</string>
+    <string name="dom_error_sc_1001_why">此记忆卡还没有可扫描的位置。</string>
+    <string name="dom_error_sc_1001_action">请在记忆卡的选项中选择一个文件夹，然后进行扫描。</string>
+    <string name="dom_error_sc_1002_title">扫描已在进行中</string>
+    <string name="dom_error_sc_1002_why">此记忆卡已在扫描中，因此跳过了第二次扫描。</string>
+    <string name="dom_error_sc_1002_action">请等待当前扫描完成。完成后结果会显示在这里。</string>
+    <string name="dom_error_sc_2001_title">已失去文件夹访问权限</string>
+    <string name="dom_error_sc_2001_why">PlayFieldPortal 已失去读取此文件夹的权限。</string>
+    <string name="dom_error_sc_2001_action">请在记忆卡的选项中重新选择该文件夹以授予访问权限，然后进行扫描。</string>
+    <string name="dom_error_sc_2002_title">文件夹已不存在</string>
+    <string name="dom_error_sc_2002_why">该文件夹已被移动或删除。如果它位于 SD 卡上，SD 卡可能已被移除。</string>
+    <string name="dom_error_sc_2002_action">请插入 SD 卡后重新扫描，或在记忆卡的选项中选择新文件夹。</string>
+    <string name="dom_error_sc_2003_title">未知的系统文件夹</string>
+    <string name="dom_error_sc_2003_why">主 ROM 文件夹中的此文件夹与 PlayFieldPortal 已知的任何系统都不匹配。</string>
+    <string name="dom_error_sc_2003_action">请将该文件夹重命名为受支持的系统名称，或将其中的游戏移入受支持的文件夹。</string>
+    <string name="dom_error_sc_2004_title">无法识别文件</string>
+    <string name="dom_error_sc_2004_why">此平台的游戏不使用这种文件类型。</string>
+    <string name="dom_error_sc_2004_action">请确认该文件是此平台的游戏。压缩包和补丁会被有意跳过。</string>
+    <string name="dom_error_sc_9001_title">扫描意外失败</string>
+    <string name="dom_error_sc_9001_why">扫描过程中发生意外错误。</string>
+    <string name="dom_error_sc_9001_action">请重新扫描。如果问题持续出现，请复制详情并报告。</string>
+    <string name="dom_error_ar_1001_title">图片文件夹不可用</string>
+    <string name="dom_error_ar_1001_why">PFP 无法访问图片文件夹，因此新图片已暂停。</string>
+    <string name="dom_error_ar_1001_action">请在“设置 › 图片”中重新关联该文件夹。</string>
+    <string name="dom_error_ar_2001_title">无法保存图片文件</string>
+    <string name="dom_error_ar_2001_why">存储空间已满，或无法写入图片文件夹。</string>
+    <string name="dom_error_ar_2001_action">请释放一些空间后重试。</string>
+    <string name="dom_error_ar_2002_title">无法复制某个文件</string>
+    <string name="dom_error_ar_2002_why">复制中途失败，或无法写入目标位置。</string>
+    <string name="dom_error_ar_2002_action">请检查目标位置是否有可用空间，然后重新运行。</string>
+    <string name="dom_error_ar_2003_title">导入内容中有未知的系统文件夹</string>
+    <string name="dom_error_ar_2003_why">导入内容中的此文件夹与 PlayFieldPortal 已知的任何系统都不匹配。</string>
+    <string name="dom_error_ar_2003_action">请将该文件夹重命名为受支持的系统名称，然后重新导入。</string>
+    <string name="dom_error_ar_3001_title">无法连接到图片来源</string>
+    <string name="dom_error_ar_3001_why">设备处于离线状态，或来源未响应。</string>
+    <string name="dom_error_ar_3001_action">请检查网络连接，稍后重试。</string>
+    <string name="dom_error_ar_3002_title">来源拒绝了请求</string>
+    <string name="dom_error_ar_3002_why">来源正在限制请求，或其所需的帐号或密钥被拒绝。</string>
+    <string name="dom_error_ar_3002_action">请稍等片刻后重试，或在设置中检查该来源的帐号。</string>
+    <string name="dom_error_ar_3003_title">未找到与此游戏匹配的结果</string>
+    <string name="dom_error_ar_3003_why">来源中没有与此游戏标题匹配的条目。</string>
+    <string name="dom_error_ar_3003_action">请检查游戏标题，或在图片工作室中手动选择图片。</string>
+    <string name="dom_error_ar_9001_title">获取意外失败</string>
+    <string name="dom_error_ar_9001_why">获取时发生意外错误。</string>
+    <string name="dom_error_ar_9001_action">请重试。如果问题持续出现，请复制详情并报告。</string>
+    <string name="dom_error_ac_1001_title">没有与此游戏匹配的成就组</string>
+    <string name="dom_error_ac_1001_why">已连接的服务中都没有此标题游戏的成就。</string>
+    <string name="dom_error_ac_1001_action">请在游戏的成就页面中手动匹配游戏。</string>
+    <string name="dom_error_ac_2001_title">无法读取 Windows 成就文件夹</string>
+    <string name="dom_error_ac_2001_why">无法打开为此游戏本地成就选择的文件夹。</string>
+    <string name="dom_error_ac_2001_action">请在游戏的成就页面中重新选择游戏文件夹。</string>
+    <string name="dom_error_ac_3001_title">设备处于离线状态</string>
+    <string name="dom_error_ac_3001_why">没有互联网连接时无法更新成就。</string>
+    <string name="dom_error_ac_3001_action">请连接互联网。更新会自动重新运行。</string>
+    <string name="dom_error_ac_3002_title">登录已过期</string>
+    <string name="dom_error_ac_3002_why">已连接的服务不再接受 PlayFieldPortal 的登录。</string>
+    <string name="dom_error_ac_3002_action">请在“设置 › 成就”中重新连接该服务。</string>
+    <string name="dom_error_ac_3003_title">Steam 游戏详情为私密</string>
+    <string name="dom_error_ac_3003_why">只有在你的游戏详情设为公开时，Steam 才会共享成就。</string>
+    <string name="dom_error_ac_3003_action">请在 Steam 隐私设置中将游戏详情设为公开，然后重新更新。</string>
+    <string name="dom_error_ac_3004_title">此游戏无法更新</string>
+    <string name="dom_error_ac_3004_why">服务未就此游戏作出响应，或返回了错误。</string>
+    <string name="dom_error_ac_3004_action">请稍后重新更新。</string>
+    <string name="dom_error_md_2001_title">无法读取媒体文件夹</string>
+    <string name="dom_error_md_2001_why">PlayFieldPortal 已失去此文件夹的访问权限，或该文件夹已不存在。</string>
+    <string name="dom_error_md_2001_action">请在媒体设置中重新选择该文件夹，然后进行扫描。</string>
+    <string name="dom_error_md_9001_title">媒体扫描意外失败</string>
+    <string name="dom_error_md_9001_why">扫描过程中发生意外错误。</string>
+    <string name="dom_error_md_9001_action">请重新扫描。如果问题持续出现，请复制详情并报告。</string>
+    <string name="dom_error_bk_1001_title">恢复时跳过了一项</string>
+    <string name="dom_error_bk_1001_why">此项无法安全恢复，因此保持原样。</string>
+    <string name="dom_error_bk_1001_action">其他内容不受影响。如有需要，请手动重新设置此项。</string>
+    <string name="dom_error_bk_2001_title">无法写入备份文件</string>
+    <string name="dom_error_bk_2001_why">存储空间已满，或无法写入备份文件夹。</string>
+    <string name="dom_error_bk_2001_action">请释放一些空间或选择其他备份位置，然后重试。</string>
+    <string name="dom_error_bk_2002_title">备份文件无法读取或已损坏</string>
+    <string name="dom_error_bk_2002_why">该文件不是 PlayFieldPortal 备份，或文件不完整。</string>
+    <string name="dom_error_bk_2002_action">请选择其他备份文件。</string>
+    <string name="dom_error_sy_9001_title">出了点问题</string>
+    <string name="dom_error_sy_9001_why">发生意外错误。</string>
+    <string name="dom_error_sy_9001_action">请重试。如果问题持续出现，请复制详情并报告。</string>
+</resources>

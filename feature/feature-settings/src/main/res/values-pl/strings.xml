@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Ustawienia</string>
+    <string name="sound_title">Dźwięk</string>
+    <string name="sound_group_master">Ogólne</string>
+    <string name="sound_group_levels">Poziomy</string>
+    <string name="sound_group_sounds">Dźwięki</string>
+    <string name="sound_master_volume">Głośność główna</string>
+    <string name="sound_master_volume_help">Skaluje wszystkie dźwięki launchera. Przy 0 launcher jest wyciszony.</string>
+    <string name="sound_ambience_help">Odtwarzane w pętli podczas przeglądania. OGG zapętla się płynnie; MP3 może trzasnąć.</string>
+    <string name="sound_rejected_title">Nie można użyć tego dźwięku</string>
+    <string name="sound_reset_confirm_title">Przywrócić domyślne ustawienia dźwięku?</string>
+    <string name="sound_reset_confirm_message">Każdy dźwięk menu wraca do dołączonej próbki PFP, a każdy poziom, łącznie z głównym, wraca do maksimum. Ścieżka tła oraz multimedia Boot Video i Game Boot pozostają bez zmian.</string>
+    <string name="sound_reset_confirm_action">Przywróć</string>
+    <string name="sound_reset_row">Przywróć domyślne ustawienia dźwięku</string>
+    <string name="sound_reset_row_help">Przywraca każdy dźwięk menu do dołączonej próbki PFP, a każdy poziom do maksimum. Zachowuje ścieżkę tła.</string>
+    <string name="sound_channel_navigation">Nawigacja</string>
+    <string name="sound_channel_back">Wstecz / Anuluj</string>
+    <string name="sound_channel_confirm">Potwierdź / Zastosuj</string>
+    <string name="sound_channel_error">Błąd / Nieprawidłowe</string>
+    <string name="sound_channel_notification">Powiadomienie</string>
+    <string name="sound_channel_boot">Sekwencja startowa</string>
+    <string name="sound_channel_ambience">Tło dźwiękowe</string>
+    <string name="sound_slot_navigation">Nawigacja</string>
+    <string name="sound_slot_back">Wstecz / Anuluj</string>
+    <string name="sound_slot_confirm">Potwierdź / Zastosuj</string>
+    <string name="sound_slot_error">Błąd / Nieprawidłowe</string>
+    <string name="sound_slot_notification">Powiadomienie</string>
+    <string name="sound_slot_ambience">Ścieżka tła</string>
+</resources>

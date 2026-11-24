@@ -1,0 +1,330 @@
+# Theme Studio in zh-TW. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	新增
+Open…	開啟…
+Upgrade folder…	升級資料夾…
+Convert .ptf…	轉換 .ptf…
+Batch convert…	批次轉換…
+Unpack assets…	解開資源…
+Undo	復原
+Redo	重做
+Export .pfptheme…	匯出 .pfptheme…
+Import PSP theme ▾	匯入 PSP 主題 ▾
+Working…	處理中…
+Open ▾	開啟 ▾
+Open: {0} ▾	開啟：{0} ▾
+XMB (back to the crossbar)	XMB（返回橫列）
+Stop {0}	停止{0}
+Play {0}	播放{0}
+Video only — sound plays on the device	僅影片 — 聲音在裝置上播放
+This theme uses an older format. Saving upgrades it to the current one.	此主題使用舊格式。儲存時會升級為目前格式。
+See changes	查看變更
+Something went wrong	發生問題
+OK	確定
+Cancel	取消
+Open theme	開啟主題
+PSP theme to convert	要轉換的 PSP 主題
+Export theme	匯出主題
+Info	資訊
+Color	顏色
+Background	背景
+Legibility	可讀性
+Layout	版面配置
+Icons	圖示
+Sounds	聲音
+Boot & Game Boot	Boot 與 Game Boot
+Export check	匯出檢查
+Untitled	未命名
+Video	影片
+Image	圖片
+Wave	波浪
+Not set	未設定
+Set	已設定
+Preview only	僅預覽
+None custom	無自訂
+{0} custom	{0} 個自訂
+None set	未設定
+{0} set	已設定 {0} 個
+{0} of 2	{0} / 2
+Ready	就緒
+Untitled Theme	未命名主題
+App Drawer	應用程式抽屜
+Settings	設定
+App Picker	應用程式選擇器
+Game Picker	遊戲選擇器
+Artwork Studio	封面工作室
+Game Detail Screen	遊戲詳細資料畫面
+Achievement Screen	成就畫面
+Per-Game Achievement Screen	單一遊戲成就畫面
+Lock Screen	鎖定畫面
+Boot	Boot
+Game Boot	Game Boot
+In this file	此檔案包含
+Nothing embedded yet	尚未嵌入任何內容
+Theme name	主題名稱
+Author	作者
+Short description	簡短說明
+New theme — not saved yet	新主題 — 尚未儲存
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	已儲存：名稱、作者和說明會儲存在 .pfptheme 中。更新日期於匯出時設定。
+Accent color	強調色
+Auto (from the wallpaper)	自動（來自桌布）
+Custom	自訂
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	每次更換桌布或影片都會設定強調色。選擇一種顏色即可保留你自己的。
+Your accent stays when the wallpaper or video changes.	更換桌布或影片時，你的強調色維持不變。
+Custom accent	自訂強調色
+Icon color	圖示顏色
+Auto (follows the theme)	自動（跟隨主題）
+White	白色
+Main text color	主要文字顏色
+Titles and labels: the crossbar, list rows and status strip, and every screen.	標題和標籤：橫列、清單列、狀態列以及所有畫面。
+Auto (built-in colors)	自動（內建顏色）
+Use my exact color	使用我指定的顏色
+Subtext color	次要文字顏色
+Subtitles, sublabels and values.	副標題、副標籤和數值。
+Same as main text	與主要文字相同
+Source	來源
+Wave motion	波浪動態
+Video playback	影片播放
+Moving	動態
+Moving, dim	動態，較暗
+Still	靜止
+Still, dim	靜止，較暗
+None — live wave background	無 — 即時波浪背景
+Replace…	取代…
+Re-crop…	重新裁切…
+Clear	清除
+Clear video	清除影片
+Pick frame…	選取影格…
+The preview always shows a frozen wave; the style plays on the device.	預覽一律顯示靜止的波浪；樣式會在裝置上播放。
+Lock screen	鎖定畫面
+None — the theme leaves the device lock screen alone	無 — 主題不更動裝置的鎖定畫面
+Choose Image…	選擇圖片…
+Use Poster	使用海報
+Use Wallpaper	使用桌布
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	僅限靜態圖片。裝置會依自身螢幕裁切，且只在使用者套用時同意後才設定。
+Crop	裁切
+Zoom	縮放
+Center	置中
+Apply	套用
+Reset	重設
+Text	文字
+Automatic	自動
+None	無
+Drop shadow	陰影
+Outline	外框
+Contrast plate	對比底板
+Offset shadow (dark)	偏移陰影（深色）
+Offset shadow (light)	偏移陰影（淺色）
+Contour dark	深色輪廓
+Contour light	淺色輪廓
+Contour auto	自動輪廓
+Solid unfocused icons	未聚焦圖示實心顯示
+Older launchers ignore these and show plain text and icons.	較舊的啟動器會忽略這些設定，顯示一般文字和圖示。
+Preview with my layout	用我的版面預覽
+Preview only — never saved in the theme. Remembered on this computer.	僅供預覽 — 不會儲存到主題中。會記在這台電腦上。
+Use my layout in the preview	在預覽中使用我的版面
+Scale — {0}	縮放 — {0}
+Horizontal — {0}	水平 — {0}
+Vertical — {0}	垂直 — {0}
+Biblically Accurate preview	忠於原版的預覽
+Adjust on preview	在預覽上調整
+All {0}	全部 {0}
+Crossbar {0}	橫列 {0}
+Items {0}	項目 {0}
+Consoles {0}	主機 {0}
+Physical Media {0}	實體媒體 {0}
+On screen	畫面上
+Customized {0}	已自訂 {0}
+Showing {0} of {1}	顯示 {0} / {1}
+Select a slot to see it at real size, replace it, or export its template.	選取一個欄位即可以實際大小檢視、取代或匯出其範本。
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	將圖片檔（png、gif、jpg、bmp、webp）拖曳到任一欄位即可取代其圖示。
+Import icon pack… ▾	匯入圖示包… ▾
+Export templates…	匯出範本…
+Reset all	全部重設
+Local file…	本機檔案…
+From theme…	來自主題…
+Export template	匯出範本
+Menu sounds	選單音效
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	留空的項目會保留內建音效。音訊片段必須符合每列的上限。
+Navigation	導覽
+Category change	切換類別
+Options panel	選項面板
+Back / cancel	返回 / 取消
+Confirm / apply	確認 / 套用
+Error / invalid	錯誤 / 無效
+Notification	通知
+Ambience (loops)	環境音（循環）
+Built-in	內建
+Up to {0}	最長 {0}
+Choose…	選擇…
+▶ Play	▶ 播放
+■ Stop	■ 停止
+Boot sequences	開機序列
+Choose the built-in sequence or your own MP4 for each.	為每一項選擇內建序列或你自己的 MP4。
+The launcher's own {0} sequence.	啟動器內建的 {0} 序列。
+Your own MP4 (H.264).	你自己的 MP4（H.264）。
+Choose MP4…	選擇 MP4…
+Play in preview	在預覽中播放
+Use built-in	使用內建
+All media is within limits	所有媒體皆在限制範圍內
+Opens on older launchers	可在較舊的啟動器上開啟
+Fix the items marked ✕ before exporting.	匯出前請修正標有 ✕ 的項目。
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	匯出時會產生成品主題的預覽圖，並在啟動器的主題庫中顯示為縮圖。
+Opened {0}	已開啟 {0}
+Exported {0}	已匯出 {0}
+Folder of .pfptheme files to upgrade	要升級的 .pfptheme 檔案所在資料夾
+Folder with .ptf files	包含 .ptf 檔案的資料夾
+Output folder for .pfptheme files	.pfptheme 檔案的輸出資料夾
+PSP theme to unpack	要解包的 PSP 主題
+Folder for unpacked assets	解包素材的存放資料夾
+Converting {0}  ({1}/{2})	正在轉換 {0}  ({1}/{2})
+This theme was made by a newer version (format v{0}). Parts this version doesn't know are kept when you save.	此主題由較新的版本製作（格式 v{0}）。此版本不認得的部分會在儲存時保留。
+CXMB theme	CXMB 主題
+This file is a CXMB custom firmware theme (.ctf). Those replace PSP system files rather than describing wallpaper and colors, so they can't be converted. Official PSP themes (.ptf) open fine.	此檔案是自製韌體用的 CXMB 主題（.ctf）。這類主題會取代 PSP 系統檔案，而不是描述桌布和顏色，因此無法轉換。官方 PSP 主題（.ptf）可以正常開啟。
+Batch conversion finished	批次轉換完成
+Converted: {0}	已轉換：{0}
+Converted with caveats: {0}	已轉換但有提醒：{0}
+Skipped (CXMB): {0} — {1}	已略過（CXMB）：{0} — {1}
+Failed: {0}	失敗：{0}
+Theme upgrade finished	主題升級完成
+Upgraded: {0} (originals kept as .bak)	已升級：{0}（原始檔保留為 .bak）
+Already current: {0}	已是最新：{0}
+Made by a newer version, left alone: {0}	由較新版本製作，未變更：{0}
+Report: {0}	報告：{0}
+Background motion	背景動態
+Still: frame at {0}	靜止畫面：{0} 處的影格
+Still: baked into the theme	靜止畫面：已內嵌於主題
+Import wallpaper	匯入桌布
+Import video	匯入影片
+Lock screen image	鎖定畫面圖片
+(embedded image)	（內嵌圖片）
+Fit	符合方式
+Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.	桌布較雜亂 — 標籤可能不易閱讀。柔和、低對比的圖片效果最好。
+The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, a Still style, or Motion set to Static on the device).	靜止畫面是影片的海報 — 每當播放停止時顯示（省電模式、遊戲中、靜止樣式，或裝置上動態設為靜態）。
+The theme offers this image for the device lock screen	此主題為裝置鎖定畫面提供這張圖片
+Output {0}×{1}	輸出 {0}×{1}
+{0}–{1} recommended, {2} max, {3} MB max	建議 {0}–{1}，最長 {2}，最大 {3} MB
+Whether the boot video and Game Boot play at all is a device setting: {0}	開機影片和 Game Boot 是否播放取決於裝置設定：{0}
+This clip is longer than the cap — the launcher will refuse it.	此片段超過上限 — 啟動器會拒絕它。
+Choose a {0} video	選擇 {0} 影片
+Dark icon color — icons may be hard to see over the wallpaper scrim.	圖示顏色較深 — 在桌布遮罩上圖示可能不易看清。
+Saved in the theme for a later update. The launcher currently shows the color exactly as picked.	已儲存在主題中，供日後更新使用。啟動器目前依所選顏色原樣顯示。
+Original	原始
+Classic Blue	經典藍
+Sunset Orange	夕陽橘
+Fresh Green	清新綠
+Royal Purple	皇家紫
+Crimson Red	深紅
+Silver	銀色
+Sakura Pink	櫻花粉
+Golden Amber	金琥珀
+Aqua Teal	水藍綠
+Midnight Navy	午夜藍
+Charcoal	炭灰
+Format: schema {0} → {1}	格式：結構 {0} → {1}
+Format: new theme → {0}	格式：新主題 → {0}
+Kept	保留
+Added	新增
+Repaired	已修復
+Can't recover	無法復原
+What saving does	儲存會做什麼
+Motion has a still poster	動態有靜止海報
+Motion needs a still wallpaper as its poster - add one or remove the video	動態需要一張靜止桌布作為海報 - 請新增一張或移除影片
+Media outside limits: {0}	超出限制的媒體：{0}
+This wallpaper is busy behind the labels - pick a text legibility style so they stay readable	此桌布在標籤後方較雜亂 - 請選擇文字易讀樣式，讓標籤保持清楚
+Text should read clearly on this wallpaper	文字在此桌布上應清楚可讀
+{0} - launchers from before this format refuse files over 64 MB	{0} - 早於此格式的啟動器會拒絕超過 64 MB 的檔案
+Opens on older launchers, which ignore sounds, boot clips, legibility and crop	可在舊版啟動器中開啟，但會忽略音效、開機片段、易讀性和裁切
+{0} is over the {1} MB limit for a theme file	{0} 超過主題檔案 {1} MB 的上限
+Saving upgrades this theme from {0}; {1} part(s) can't be recovered	儲存會將此主題從{0}升級；無法復原的部分：{1}
+Saving upgrades this theme from {0}	儲存會將此主題從{0}升級
+an older format	舊格式
+Imported from {0}	匯入自 {0}
+Imported from {0} — firmware {1}	匯入自 {0} — 韌體 {1}
+a PSP theme	PSP 主題
+Created {0}	建立於 {0}
+On the device these live in {0}.	在裝置上，它們位於 {0}。
+Scale	縮放
+Horizontal	水平
+Vertical	垂直
+This wallpaper is busy behind the labels — a text style helps them stay readable.	此桌布在標籤後方較雜亂 — 文字樣式有助於保持可讀。
+Settings › Interface › Display › Adjust XMB Layout	設定 › 介面 › 顯示 › 調整 XMB 版面
+Settings › Interface › Sound	設定 › 介面 › 聲音
+Settings › Interface › Display › Show Boot Sequence / Game Boot	設定 › 介面 › 顯示 › 顯示開機序列 / Game Boot
+Battery Saver and Thermal Throttle (Settings › Interface › Display) freeze the animated wave on the device.	省電模式和溫控限制（設定 › 介面 › 顯示）會在裝置上凍結動態波浪。
+Pick…	選擇…
+Plays on the device	在裝置上播放
+Length unknown	長度不明
+Volumes stay on the device: {0}	音量在裝置上調整：{0}
+Couldn't play {0} here — it will play on the device.	無法在此播放 {0} — 在裝置上可以播放。
+Choose a sound for {0}	為 {0} 選擇音效
+Icon image for {0}	{0} 的圖示圖片
+Template for {0}	{0} 的範本
+Template written to {0}	範本已寫入 {0}
+Template export failed: {0}	範本匯出失敗：{0}
+Search {0} slots: battery, PS3, voice…	搜尋 {0} 個欄位：電池、PS3、語音…
+No slot matches. Clear the search or a filter.	沒有符合的欄位。請清除搜尋或篩選。
+Pack folder…	圖示包資料夾…
+Icon pack folder	圖示包資料夾
+Pack .zip…	圖示包 .zip…
+Icon pack zip	圖示包 .zip
+Folder for icon templates	圖示範本資料夾
+Packs are folders or zips of <slot key>.png / .gif, the names the templates use. Multi-frame GIFs animate on the launcher when focused; they must stay within 512px, 120 frames and 10 seconds.	圖示包是包含 <欄位鍵>.png / .gif（與範本同名）的資料夾或 zip。多影格 GIF 在啟動器中取得焦點時會播放動畫；必須在 512 像素、120 影格和 10 秒以內。
+Icon pack imported	已匯入圖示包
+Icon pack refused	圖示包遭拒絕
+{0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	{0}：新增 {1}，取代 {2}，未符合 {3}，拒絕 {4}
+Icon pack {0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	圖示包 {0}：新增 {1}，取代 {2}，未符合 {3}，拒絕 {4}
+{0} - did you mean {1}?	{0} - 您是指 {1} 嗎？
+{0} - no matching slot	{0} - 沒有符合的欄位
+{0} error	{0} 個錯誤
+{0} errors	{0} 個錯誤
+{0} warning	{0} 個警告
+{0} warnings	{0} 個警告
+{0} of {1} MB	{0} / {1} MB
+{0} of {1} MB - older launchers refuse over 64 MB	{0} / {1} MB - 舊版啟動器會拒絕超過 64 MB
+Wallpaper	桌布
+Preview	預覽
+Motion	動態
+Ambience	環境音
+Other files	其他檔案
+{0} is too large to be a theme file	{0} 太大，無法作為主題檔案
+Imported {0}	已匯入 {0}
+Imported with a caveat	已匯入，但有提醒
+{0} is not a valid .pfptheme bundle	{0} 不是有效的 .pfptheme 套件
+{0} — {1} icon(s) for parts themes don't customize were left out	{0} — 已略過 {1} 個主題不自訂部分的圖示
+Motion wallpaper: {0}	動態桌布：{0}
+Could not keep: {0}	無法保留：{0}
+Parts of the theme not kept	主題的部分內容未保留
+Motion wallpaper not kept	動態桌布未保留
+{0} is not a readable image	{0} 不是可讀取的圖片
+{0} converted to H.264 for Android ({1})	已將 {0} 轉換為適用於 Android 的 H.264（{1}）
+Couldn't read that frame of the video	無法讀取影片的該影格
+The crop does not match this image	裁切與此圖片不符
+Wallpaper: {0} ({1}×{2})	桌布：{0}（{1}×{2}）
+Added {0} — converted to H.264 for Android ({1})	已新增 {0} — 已轉換為適用於 Android 的 H.264（{1}）
+Added {0}	已新增 {0}
+Export failed: {0}	匯出失敗：{0}
+{0} is not a PSP theme file	{0} 不是 PSP 主題檔案
+Unpack failed: {0}	解包失敗：{0}
+Theme unpacked	主題已解包
+{0} images written to {1} (see report.txt).	已將 {0} 張圖片寫入 {1}（見 report.txt）。
+{0} images and {1} data files written to {2} (see report.txt).	已將 {0} 張圖片和 {1} 個資料檔寫入 {2}（見 report.txt）。
+Unpacked {0}: {1} images	已解包 {0}：{1} 張圖片
+Templates exported to {0} ({1} icons)	範本已匯出到 {0}（{1} 個圖示）
+WebM clips can't be checked in the Studio (it reads MP4/H.264 only) — convert the clip to MP4	Studio 無法檢查 WebM 片段（只讀取 MP4/H.264）— 請將片段轉換為 MP4
+That isn't a media slot this import can fill	這不是此匯入可以填入的媒體欄位
+That file is too large for a theme — {0} MB or less	該檔案對主題來說太大 — 不能超過 {0} MB
+Unsupported video — use an MP4 (H.264)	不支援的影片 — 請使用 MP4（H.264）
+{0} video isn't guaranteed to play on Android	{0} 影片不保證能在 Android 上播放
+H.264 {0} doesn't play on Android	H.264 {0} 無法在 Android 上播放
+{0} video doesn't play on Android	{0} 影片無法在 Android 上播放
+Couldn't convert this video for Android ({0}). Re-encode it as MP4 H.264 and try again.	無法將此影片轉換為適用於 Android 的格式（{0}）。請重新編碼為 MP4 H.264 後再試。
+{0} is not a folder or .zip	{0} 不是資料夾或 .zip
+Pack refused: {0}	圖示包遭拒絕：{0}
+Pack could not be read	無法讀取圖示包
+Pack could not be read: {0}	無法讀取圖示包：{0}
+Pack has more than {0} files	圖示包中的檔案超過 {0} 個
+Not a PSP theme file	不是 PSP 主題檔案
+Corrupt or truncated PTF	PTF 已損毀或不完整
+This theme contains no wallpaper image.	此主題不包含桌布圖片。
+The wallpaper could not be extracted: this theme uses a compression method this importer doesn't recognize. The theme was imported without its wallpaper.	無法擷取桌布：此主題使用了本匯入工具無法辨識的壓縮方式。主題已在沒有桌布的情況下匯入。
+The wallpaper data in this theme is damaged and could not be decoded. The theme was imported without its wallpaper.	此主題中的桌布資料已損毀，無法解碼。主題已在沒有桌布的情況下匯入。

@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Initial Setup wizard (first-run setup), its summary lines, and the scans it starts. -->
+
+    <!-- Wizard chrome -->
+    <string name="setup_title">Initial Setup</string>
+    <!-- Controller prompt labels beside a button glyph (and the touch pills that replace them). -->
+    <string name="setup_prompt_enter">Enter</string>
+    <string name="setup_prompt_change">Change</string>
+    <string name="setup_prompt_back">Back</string>
+    <string name="setup_prompt_skip">Skip</string>
+    <!-- Row actions: short labels of the pencil and bin buttons on a folder row. -->
+    <string name="setup_row_edit">Edit</string>
+    <string name="setup_row_remove">Remove</string>
+    <string name="setup_message_dismiss_hint">Select to dismiss — or confirm on this row</string>
+
+    <!-- Page names, used as "Next: ..." on the previous page -->
+    <string name="setup_step_welcome">Welcome</string>
+    <string name="setup_step_controller">Controller</string>
+    <string name="setup_step_rom_roots">ROM folders</string>
+    <string name="setup_step_music">Music</string>
+    <string name="setup_step_video">Video</string>
+    <string name="setup_step_photo">Photo</string>
+    <string name="setup_step_artwork">Artwork</string>
+    <string name="setup_step_services">Online Services</string>
+    <string name="setup_step_achievements">Achievement Services</string>
+    <string name="setup_step_local_achievements">Local Achievements</string>
+    <string name="setup_step_retroarch">RetroArch</string>
+    <string name="setup_step_emulators">Emulators</string>
+    <string name="setup_step_windows">Windows Games</string>
+    <string name="setup_step_hints">Hints &amp; Touch</string>
+    <string name="setup_step_home_app">Home App</string>
+    <string name="setup_step_finish">Finish</string>
+
+    <!-- Page headings -->
+    <string name="setup_heading_welcome">Welcome to Play Field Portal.</string>
+    <string name="setup_heading_controller">Choose your controller.</string>
+    <string name="setup_heading_rom_roots">Choose your ROM folders.</string>
+    <string name="setup_heading_music">Choose your music folders.</string>
+    <string name="setup_heading_video">Choose your video folders.</string>
+    <string name="setup_heading_photo">Choose your photo folders.</string>
+    <string name="setup_heading_artwork">Choose your artwork folder.</string>
+    <string name="setup_heading_services">Connect your artwork sources.</string>
+    <string name="setup_heading_achievements">Connect your achievement services.</string>
+    <string name="setup_heading_local_achievements">Link your emulator data folders.</string>
+    <string name="setup_heading_retroarch">Link RetroArch\'s cores folder.</string>
+    <string name="setup_heading_emulators">Check your emulators.</string>
+    <string name="setup_heading_windows">Set up Windows games.</string>
+    <string name="setup_heading_hints">Choose how the launcher helps you.</string>
+    <string name="setup_heading_home_app">Make Play Field Portal your Home screen.</string>
+    <string name="setup_heading_finish">You\'re all set!</string>
+
+    <!-- Page hints (the line under a heading) -->
+    <string name="setup_hint_welcome">Most steps are optional. You\'ll need to pick an artwork folder.</string>
+    <string name="setup_hint_controller">Sets the button icons and which button confirms, so every prompt from here on matches your pad.</string>
+    <string name="setup_hint_rom_roots">Add one or more ROM folders — each console\'s games live in a subfolder inside them.</string>
+    <string name="setup_hint_media_roots">Add several roots to span internal storage and an SD card.</string>
+    <string name="setup_hint_artwork">Required. Your art lives here, outside the app, so it survives a reinstall.</string>
+    <string name="setup_hint_services">All optional and free. SteamGridDB, TheGamesDB, IGDB, and ScreenScraper fetch game artwork and metadata.</string>
+    <string name="setup_hint_achievements">RetroAchievements and Steam track achievements as Shiba Coins.</string>
+    <string name="setup_hint_local_achievements">Trophies and achievements your emulators save on this device. One grant per emulator links every title.</string>
+    <string name="setup_hint_retroarch">Lets the launcher know exactly which cores you have, so only those are offered.</string>
+    <string name="setup_hint_emulators">Each console\'s default, picked from what\'s installed. Change any that look wrong.</string>
+    <string name="setup_hint_windows">A Windows emulator is installed — choose where your PC games live.</string>
+    <string name="setup_hint_hints">Button hints fade in when you pause, and vanish the moment you press anything.</string>
+    <string name="setup_hint_home_app">The Home button then brings you back here instead of the stock launcher.</string>
+    <string name="setup_hint_finish">Everything below can be adjusted anytime in Settings.</string>
+
+    <!-- Continue row (bottom of every page) -->
+    <string name="setup_continue">Continue</string>
+    <!-- %1$s is the name of the next page, e.g. "Music". -->
+    <string name="setup_continue_next">Next: %1$s</string>
+    <string name="setup_continue_blocked">Choose a folder first</string>
+
+    <!-- Welcome page -->
+    <string name="setup_welcome_intro">This quick setup points the launcher at your media folders and connects the online services used for artwork and achievements.</string>
+    <string name="setup_welcome_start">Get started</string>
+    <string name="setup_welcome_start_sub">Choose your controller first</string>
+    <string name="setup_welcome_skip">Skip setup</string>
+    <string name="setup_welcome_skip_sub">Go straight to the launcher — run the Setup Wizard from Settings ▸ System anytime</string>
+
+    <!-- Folder rows shared by the ROM, Music, Video and Photo pages -->
+    <string name="setup_root_access_lost">Access lost — use ✎ to re-grant access</string>
+
+    <!-- ROM folders page -->
+    <string name="setup_rom_empty">No ROM folders yet. Add the folder where your consoles\' games live — one subfolder per console, scanned automatically.</string>
+    <string name="setup_rom_add">Add ROM folder</string>
+    <string name="setup_rom_add_sub">Grant a ROM folder with one subfolder per console</string>
+    <string name="setup_rom_rescan">Rescan ROM folders</string>
+    <string name="setup_rom_rescan_sub">Auto-detect consoles and scan their games</string>
+    <string name="setup_rom_root_linked">Linked — console folders are read from here</string>
+    <string name="setup_rom_create_folders">Create standard folders</string>
+    <string name="setup_rom_create_folders_sub">One subfolder per console, named for your games</string>
+
+    <!-- Music roots page -->
+    <string name="setup_music_empty">No music roots yet. Add the folder where your music lives — several roots can span internal storage and an SD card.</string>
+    <string name="setup_music_add">Add music root</string>
+    <string name="setup_music_add_sub">Grant a root folder (e.g. /Music) — add several to span locations</string>
+    <string name="setup_music_root_linked">Music library lives here</string>
+    <string name="setup_music_rescan">Rescan Music Library</string>
+
+    <!-- Video roots page -->
+    <string name="setup_video_empty">No video roots yet. Add the folder where your videos live — several roots can span internal storage and an SD card.</string>
+    <string name="setup_video_add">Add video root</string>
+    <string name="setup_video_add_sub">Grant a root folder (e.g. /Videos) — add several to span locations</string>
+    <string name="setup_video_root_linked">Video library lives here</string>
+    <string name="setup_video_rescan">Rescan Video Library</string>
+
+    <!-- Photo roots page -->
+    <string name="setup_photo_empty">No photo roots yet. Add the folder where your photos live — several roots can span internal storage and an SD card.</string>
+    <string name="setup_photo_add">Add photo root</string>
+    <string name="setup_photo_add_sub">Grant a root folder (e.g. /Photos) — add several to span locations</string>
+    <string name="setup_photo_root_linked">Photo library lives here</string>
+    <string name="setup_photo_rescan">Rescan Photo Library</string>
+
+    <string name="setup_media_rescan_sub">Update the libraries from every root folder</string>
+
+    <!-- Artwork page -->
+    <string name="setup_artwork_empty">Pick a writable folder. The launcher sets up an artwork library inside it automatically — games get art as they\'re added.</string>
+    <string name="setup_artwork_unavailable">Unavailable. Relink to resume new artwork</string>
+    <string name="setup_artwork_folder_sub">Artwork library — use ✎ to pick a different folder</string>
+    <string name="setup_artwork_choose">Choose artwork folder</string>
+    <string name="setup_artwork_choose_sub">One folder hosts the artwork library</string>
+    <string name="setup_artwork_import_title">Import artwork now?</string>
+    <!-- %1$s is the name of the one detected source (a launcher or emulator name). -->
+    <string name="setup_artwork_import_sub_one">Copy %1$s from the folder\'s import/ into the library</string>
+    <plurals name="setup_artwork_import_sub_many">
+        <item quantity="one">Copy %1$d source folder from the folder\'s import/ into the library</item>
+        <item quantity="other">Copy %1$d source folders from the folder\'s import/ into the library</item>
+    </plurals>
+    <string name="setup_artwork_import_row">Artwork import</string>
+    <string name="setup_artwork_import_none_sub">Nothing to import yet — add a launcher\'s media folder under import/</string>
+
+    <!-- Online services page -->
+    <string name="setup_services_intro">All accounts are optional and free. SteamGridDB, TheGamesDB, IGDB, and ScreenScraper fetch game artwork and metadata for your library.</string>
+    <string name="setup_field_api_key">API Key</string>
+    <string name="setup_field_api_key_saved">API Key (saved)</string>
+    <string name="setup_field_web_api_key">Web API Key</string>
+    <string name="setup_field_web_api_key_saved">Web API Key (saved)</string>
+    <string name="setup_field_client_id">Client ID</string>
+    <string name="setup_field_client_id_saved">Client ID (saved)</string>
+    <string name="setup_field_client_secret">Client Secret</string>
+    <string name="setup_field_client_secret_saved">Client Secret (saved)</string>
+    <string name="setup_field_username">Username</string>
+    <string name="setup_field_username_saved">Username (saved)</string>
+    <string name="setup_field_password">Password</string>
+    <string name="setup_field_password_saved">Password (saved)</string>
+    <string name="setup_field_steam_id">SteamID64 or vanity name</string>
+    <string name="setup_field_steam_id_saved">SteamID64 or vanity name (saved)</string>
+    <string name="setup_placeholder_tap_to_replace">Select to replace</string>
+    <!-- The bullets stand in for a saved secret that is hidden. -->
+    <string name="setup_placeholder_secret_saved">••••••••  (select to replace)</string>
+    <string name="setup_placeholder_sgdb_key">Paste your SteamGridDB key</string>
+    <string name="setup_placeholder_tgdb_key">Paste your TheGamesDB key</string>
+    <string name="setup_placeholder_twitch_client_id">Twitch Client ID</string>
+    <string name="setup_placeholder_twitch_client_secret">Twitch Client Secret</string>
+    <string name="setup_placeholder_ss_username">ScreenScraper username</string>
+    <string name="setup_placeholder_ss_password">ScreenScraper password</string>
+    <string name="setup_placeholder_ra_username">Your RA username</string>
+    <string name="setup_placeholder_ra_key">Paste your RA Web API key</string>
+    <string name="setup_placeholder_steam_id">7656119… or your custom URL name</string>
+    <string name="setup_placeholder_steam_key">Paste your Steam Web API key</string>
+    <!-- Buttons that save the credentials typed above. -->
+    <string name="setup_connect_sgdb">Connect SteamGridDB</string>
+    <string name="setup_connect_tgdb">Connect TheGamesDB</string>
+    <string name="setup_connect_igdb">Connect IGDB</string>
+    <string name="setup_connect_ss">Connect ScreenScraper</string>
+    <string name="setup_connect_ra">Connect RetroAchievements</string>
+    <string name="setup_connect_steam">Connect Steam</string>
+    <string name="setup_test_credentials">Test credentials</string>
+    <string name="setup_test_account">Test account</string>
+    <string name="setup_connected_as">Connected as</string>
+
+    <!-- Achievement services page -->
+    <string name="setup_achievements_intro">Optional and free. RetroAchievements and Steam track achievements as Shiba Coins.</string>
+
+    <!-- Controller page -->
+    <string name="setup_controller_type">Controller type</string>
+    <string name="setup_controller_type_sub">Changes the button icons in every prompt</string>
+    <!-- A / B swap: exchanges which of the two face buttons confirms and which goes back. -->
+    <string name="setup_controller_ab_swap">Swap confirm and back</string>
+    <string name="setup_controller_xy_swap">Swap options and sort</string>
+    <string name="setup_controller_xy_swap_sub">Launcher menus only — emulator controls are untouched</string>
+    <string name="setup_on">On</string>
+    <string name="setup_off">Off</string>
+    <!-- %1$s is the pad style (Xbox, PlayStation, Nintendo); %2$s is the button that confirms. -->
+    <string name="setup_controller_summary">%1$s · %2$s confirms</string>
+    <!-- Name of a PlayStation face button. -->
+    <string name="setup_button_circle">Circle</string>
+    <!-- Name of a PlayStation face button. -->
+    <string name="setup_button_cross">Cross</string>
+    <!-- %1$s is the button that confirms, %2$s the one that goes back (button names such as A or B). -->
+    <string name="setup_confirm_swap_off">Off — %1$s confirms, %2$s goes back</string>
+    <string name="setup_confirm_swap_on">On — %1$s confirms, %2$s goes back</string>
+
+    <!-- Local achievements page -->
+    <string name="setup_local_vita_header">PS Vita · Vita3K</string>
+    <string name="setup_local_vita_set">Set Vita3K data folder</string>
+    <string name="setup_local_vita_set_sub">Grant the ux0 folder (or the folder that contains it)</string>
+    <string name="setup_local_vita_folder_sub">Vita3K data folder — use ✎ to pick a different one</string>
+    <string name="setup_local_ps3_header">PS3 · ARMSX3</string>
+    <string name="setup_local_ps3_set">Set ARMSX3 data folder</string>
+    <string name="setup_local_ps3_set_sub">Grant PS3/config/dev_hdd0 — or any folder above or below it</string>
+    <string name="setup_local_ps3_folder_sub">ARMSX3 data folder — use ✎ to pick a different one</string>
+    <string name="setup_local_x360_header">Xbox 360 · X360 Mobile</string>
+    <string name="setup_local_x360_set">Set X360 Mobile data folder</string>
+    <string name="setup_local_x360_set_sub">Pick X360 Mobile in the folder picker\'s side menu, then allow access</string>
+    <string name="setup_local_x360_folder_sub">X360 Mobile data folder — use ✎ to pick a different one</string>
+    <string name="setup_local_xendroid_header">Xbox 360 · XenDroid</string>
+    <string name="setup_local_xendroid_set">Set XenDroid data folder</string>
+    <string name="setup_local_xendroid_set_sub">Grant Android/data/xendroid.compose — or any folder above or below it</string>
+    <string name="setup_local_xendroid_folder_sub">XenDroid data folder — use ✎ to pick a different one</string>
+
+    <!-- RetroArch page -->
+    <string name="setup_retroarch_cores_folder">Cores folder</string>
+    <plurals name="setup_retroarch_cores_detected">
+        <item quantity="one">%1$d core detected</item>
+        <item quantity="other">%1$d cores detected</item>
+    </plurals>
+    <string name="setup_retroarch_linked">Linked</string>
+    <string name="setup_retroarch_relink">Re-link folder</string>
+    <string name="setup_retroarch_relink_sub">Pick RetroArch\'s folder again</string>
+    <string name="setup_retroarch_recheck">Re-check cores</string>
+    <string name="setup_retroarch_recheck_sub">After installing new cores</string>
+    <string name="setup_retroarch_unlink">Unlink RetroArch</string>
+    <string name="setup_retroarch_unlink_sub">Fall back to offering every curated core</string>
+    <string name="setup_retroarch_intro">RetroArch is installed. Link its folder so only the cores you actually have are offered when launching games — otherwise every curated core is shown (unverified).</string>
+    <string name="setup_retroarch_link">Link RetroArch folder</string>
+    <string name="setup_retroarch_link_sub">Pick the com.retroarch document tree</string>
+
+    <!-- Emulators page -->
+    <string name="setup_emulators_empty">No consoles with games yet. Once your ROM folders are scanned, each console appears here with the emulator it will launch — change it anytime in Settings ▸ Emulators.</string>
+    <!-- Shown as the emulator for a console that has none installed. -->
+    <string name="setup_emulators_none">None</string>
+
+    <!-- Windows games page -->
+    <string name="setup_windows_intro">Pick the folder that holds one subfolder per game. PFP scans it for your Windows games; nothing in it is changed.</string>
+    <string name="setup_windows_detected">Detected</string>
+    <string name="setup_windows_set">Set Windows Games Folder</string>
+    <string name="setup_windows_change">Change Windows Games Folder</string>
+    <string name="setup_windows_set_sub">Grant the folder your games are installed in</string>
+
+    <!-- Hints and touch page -->
+    <string name="setup_hints_enabled">Button hints</string>
+    <string name="setup_hints_enabled_sub">The idle hint chip on the XMB, in Settings and on media screens</string>
+    <string name="setup_hints_delay">Hint delay</string>
+    <string name="setup_hints_delay_sub">How long to pause before hints appear (1–5 seconds)</string>
+    <plurals name="setup_hints_delay_seconds">
+        <item quantity="one">%1$d second</item>
+        <item quantity="other">%1$d seconds</item>
+    </plurals>
+    <!-- %1$s is a fractional number of seconds, such as 2.5. -->
+    <string name="setup_hints_delay_fraction">%1$s seconds</string>
+    <string name="setup_hints_touch">Touch button</string>
+    <string name="setup_hints_touch_sub">The on-screen App Drawer button — Auto shows it after you touch the screen</string>
+    <string name="setup_touch_auto">Auto</string>
+    <string name="setup_touch_always_show">Always Show</string>
+    <string name="setup_touch_always_hide">Always Hide</string>
+    <!-- %1$s is how long the delay is, such as "2 seconds". -->
+    <string name="setup_hints_summary_on">On · %1$s</string>
+
+    <!-- Home app page -->
+    <string name="setup_home_intro">Android asks you to pick a Home app and confirm it. You can switch back anytime in Android\'s Default apps settings.</string>
+    <string name="setup_home_current">Current home app</string>
+    <string name="setup_home_set">Set as home app</string>
+    <string name="setup_home_set_sub">Opens Android\'s Home app chooser</string>
+    <string name="setup_home_is_pfp">Play Field Portal</string>
+    <string name="setup_home_not_pfp">Not Play Field Portal</string>
+
+    <!-- Finish page -->
+    <string name="setup_finish_nothing">Nothing was configured yet — every folder and service can be added anytime from Settings.</string>
+    <string name="setup_finish_summary">Summary</string>
+    <string name="setup_summary_controller">Controller</string>
+    <string name="setup_summary_rom">ROM library</string>
+    <string name="setup_summary_music">Music</string>
+    <string name="setup_summary_video">Video</string>
+    <string name="setup_summary_photo">Photo</string>
+    <string name="setup_summary_artwork">Artwork library</string>
+    <string name="setup_summary_vita">Vita data folder</string>
+    <string name="setup_summary_ps3">PS3 data folder</string>
+    <string name="setup_summary_x360">X360 Mobile data folder</string>
+    <string name="setup_summary_xendroid">XenDroid data folder</string>
+    <string name="setup_summary_windows">Windows games</string>
+    <string name="setup_summary_hints">Button hints</string>
+    <string name="setup_summary_home">Home app</string>
+    <!-- Value shown for a service or folder that has not been set up. -->
+    <string name="setup_not_set">Not set</string>
+    <string name="setup_connected">Connected</string>
+    <string name="setup_retroarch_not_linked">Not linked</string>
+    <plurals name="setup_retroarch_cores_count">
+        <item quantity="one">%1$d core</item>
+        <item quantity="other">%1$d cores</item>
+    </plurals>
+    <!-- %1$s is the name of the first folder; %2$d is how many more folders there are. -->
+    <string name="setup_roots_more">%1$s +%2$d more</string>
+    <string name="setup_finish_xmb_header">XMB Layout</string>
+    <string name="setup_finish_autofit">Auto-fit the XMB layout (PSP proportions) — changeable anytime in Settings</string>
+    <string name="setup_finish_open_lm">Open Library Manager</string>
+    <string name="setup_finish_open_lm_sub">Add consoles and scan the ROM folders you just set</string>
+    <string name="setup_finish_go_library">Go to your library</string>
+    <string name="setup_finish_go_library_sub">Jump straight to All Games</string>
+    <!-- Button that closes the wizard. -->
+    <string name="setup_finish_done">Finish</string>
+    <string name="setup_finish_done_sub">Head to the launcher</string>
+
+    <!-- Messages the wizard shows or sends to the notification tray -->
+    <string name="setup_status_testing">Testing…</string>
+    <plurals name="setup_msg_rom_folders_created">
+        <item quantity="one">Created %1$d console folder. Copy your games into the matching folders.</item>
+        <item quantity="other">Created %1$d console folders. Copy your games into the matching folders.</item>
+    </plurals>
+    <!-- %1$d is the number of folders that already existed. -->
+    <plurals name="setup_msg_rom_folders_created_existing">
+        <item quantity="one">Created %1$d console folder (%2$d already there). Copy your games into the matching folders.</item>
+        <item quantity="other">Created %1$d console folders (%2$d already there). Copy your games into the matching folders.</item>
+    </plurals>
+    <string name="setup_msg_artwork_failed">Could not set up an artwork library in that folder. Pick a writable folder.</string>
+    <string name="setup_msg_artwork_reconnected">Existing artwork library reconnected.</string>
+    <string name="setup_msg_artwork_created">Artwork library created.</string>
+    <plurals name="setup_msg_artwork_games_linked">
+        <item quantity="one">%1$d game linked from files already in the folder.</item>
+        <item quantity="other">%1$d games linked from files already in the folder.</item>
+    </plurals>
+    <string name="setup_msg_artwork_import_hint">Place other launchers\' media under its import/ folder to gather it here.</string>
+    <string name="setup_msg_import_none_yet">Nothing to import yet — place files under the artwork folder\'s import/ directory.</string>
+    <string name="setup_msg_import_unreadable">Could not read that import source.</string>
+    <string name="setup_msg_import_empty">Nothing to import — everything is already present.</string>
+    <!-- %1$s is the name of the artwork source being imported. -->
+    <string name="setup_msg_import_started">Importing \"%1$s\" — progress shows in notifications; details land in Settings ▸ Artwork Import.</string>
+    <string name="setup_msg_retroarch_linked">RetroArch linked — installed cores are now offered in Emulators.</string>
+    <string name="setup_msg_retroarch_rechecked">RetroArch cores re-checked.</string>
+    <string name="setup_msg_retroarch_unlinked">RetroArch link removed — no RetroArch cores will be offered until you link again.</string>
+    <string name="setup_msg_vita_set">Vita3K data folder set. Installed titles can be scanned from the PS Vita Memory Card in Library Manager.</string>
+    <string name="setup_msg_vita_released">Vita3K data folder released — files on disk were not touched.</string>
+    <string name="setup_msg_ps3_set">PS3 data folder set. Run Auto-Match in Settings ▸ Achievements ▸ Update Achievements to link PS3 trophies.</string>
+    <string name="setup_msg_ps3_released">PS3 data folder released — files on disk were not touched.</string>
+    <!-- %1$s is the emulator name (X360 Mobile or XenDroid). -->
+    <string name="setup_msg_x360_set">%1$s data folder set. Run Auto-Match in Settings ▸ Achievements ▸ Update Achievements to link Xbox 360 achievements.</string>
+    <string name="setup_msg_x360_released">%1$s data folder released — files on disk were not touched.</string>
+    <string name="setup_msg_sgdb_connected">SteamGridDB connected</string>
+    <string name="setup_msg_tgdb_connected">TheGamesDB connected</string>
+    <string name="setup_msg_igdb_connected">IGDB connected</string>
+    <string name="setup_msg_ss_connected">ScreenScraper connected</string>
+    <string name="setup_msg_ra_connected">RetroAchievements connected</string>
+
+    <!-- ROM folder scan report (also shown by Library Manager) -->
+    <string name="setup_rom_scan_no_root">Add a ROM folder first in Settings ▸ Library ▸ Library Manager.</string>
+    <!-- %1$s is a folder count ("3 folders"); %2$s a ROM folder count ("2 ROM folders"). -->
+    <string name="setup_rom_scan_none">Scanned %1$s across %2$s; no new ROMs found. Copy games into the matching system folders and try again.</string>
+    <!-- %1$s is a system count with optional new-console count; %2$s a ROM count; %3$s a ROM folder count. -->
+    <string name="setup_rom_scan_loaded">Loaded %1$s, %2$s from %3$s.</string>
+    <!-- %1$s is a system count ("3 systems"); %2$s a count of new consoles ("2 new consoles"). -->
+    <string name="setup_rom_scan_systems_new">%1$s (%2$s)</string>
+    <plurals name="setup_rom_scan_folders">
+        <item quantity="one">%1$d folder</item>
+        <item quantity="other">%1$d folders</item>
+    </plurals>
+    <plurals name="setup_rom_scan_systems">
+        <item quantity="one">%1$d system</item>
+        <item quantity="other">%1$d systems</item>
+    </plurals>
+    <plurals name="setup_rom_scan_new_consoles">
+        <item quantity="one">%1$d new console</item>
+        <item quantity="other">%1$d new consoles</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roms">
+        <item quantity="one">%1$d ROM</item>
+        <item quantity="other">%1$d ROMs</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roots">
+        <item quantity="one">%1$d ROM folder</item>
+        <item quantity="other">%1$d ROM folders</item>
+    </plurals>
+    <plurals name="setup_rom_scan_skipped">
+        <item quantity="one">%1$d folder skipped (library unreadable).</item>
+        <item quantity="other">%1$d folders skipped (library unreadable).</item>
+    </plurals>
+
+    <!-- Media library scans started by the wizard and Settings -->
+    <string name="setup_media_add_root_first">Add a root folder first.</string>
+    <string name="setup_media_not_ready">This folder\'s storage isn\'t ready yet. Try again in a moment.</string>
+    <!-- %1$s is the name of the library folder. -->
+    <string name="setup_media_scan_failed_title">%1$s scan failed</string>
+    <string name="setup_media_scan_finished_title">%1$s scan finished</string>
+    <string name="setup_media_scan_stopped_title">%1$s scan stopped</string>
+    <string name="setup_media_scanning_title">Scanning %1$s</string>
+    <string name="setup_media_stop_note">The folder is scanned again next time.</string>
+    <string name="setup_media_stopped">Stopped before it finished</string>
+    <plurals name="setup_media_tracks">
+        <item quantity="one">%1$d track</item>
+        <item quantity="other">%1$d tracks</item>
+    </plurals>
+    <plurals name="setup_media_photos">
+        <item quantity="one">%1$d photo</item>
+        <item quantity="other">%1$d photos</item>
+    </plurals>
+    <plurals name="setup_media_videos">
+        <item quantity="one">%1$d video</item>
+        <item quantity="other">%1$d videos</item>
+    </plurals>
+    <plurals name="setup_media_roots">
+        <item quantity="one">%1$d root</item>
+        <item quantity="other">%1$d roots</item>
+    </plurals>
+    <!-- %1$s is an item count ("12 tracks"); %2$s a ROM folder count ("2 ROM folders"). -->
+    <string name="setup_media_found">Found %1$s across %2$s.</string>
+</resources>

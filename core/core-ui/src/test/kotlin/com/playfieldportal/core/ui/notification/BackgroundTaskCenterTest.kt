@@ -35,7 +35,13 @@ class BackgroundTaskCenterTest {
     }
     private val menuSound = mockk<MenuSoundPlayer>(relaxed = true)
 
-    private fun center() = BackgroundTaskCenter(notifications, settings, menuSound)
+    // A fixed id-to-text stub keeps these tests off Robolectric; the fallback titles are the only text read.
+    private val context = mockk<android.content.Context>(relaxed = true) {
+        io.mockk.every { getString(com.playfieldportal.core.ui.R.string.core_task_failed) } returns "Task failed"
+        io.mockk.every { getString(com.playfieldportal.core.ui.R.string.core_task_done) } returns "Done"
+    }
+
+    private fun center() = BackgroundTaskCenter(notifications, settings, menuSound, context)
 
     // ── The cue ───────────────────────────────────────────────────────────────
 

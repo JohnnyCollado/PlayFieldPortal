@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Scan error messages -->
+    <string name="scan_error_card_not_found">메모리 카드를 찾을 수 없습니다.</string>
+    <string name="scan_error_scan_failed">스캔 실패 — 로그를 확인하세요.</string>
+    <string name="scan_error_library_unreadable">라이브러리를 읽을 수 없습니다.</string>
+    <string name="scan_error_save_failed">스캔한 게임을 저장할 수 없습니다.</string>
+    <string name="scan_error_rom_dir_not_found">ROM 폴더를 찾을 수 없습니다: %1$s</string>
+    <string name="scan_error_folder_link_invalid">이 라이브러리의 폴더 연결이 잘못되었습니다. 폴더를 다시 추가하세요.</string>
+    <string name="scan_error_root_unreadable">ROM 폴더를 읽을 수 없습니다. SD 카드에 있다면 카드가 삽입되어 있는지 확인하세요.</string>
+    <string name="scan_error_permission_lost">권한이 사라졌습니다. 폴더를 다시 선택하세요.</string>
+    <string name="scan_error_partial_read">폴더 일부를 읽을 수 없어 아무것도 변경하지 않았습니다. 잠시 후 다시 시도하세요.</string>
+    <string name="scan_outcome_line">%1$s: %2$s</string>
+    <string name="scan_outcome_no_source">ROM 폴더가 설정되지 않았습니다.</string>
+    <string name="scan_outcome_busy">이미 스캔 중입니다.</string>
+    <string name="scan_outcome_failed">스캔에 실패했습니다.</string>
+    <string name="scan_outcome_no_new">새 ROM 없음</string>
+    <string name="scan_outcome_no_new_none_missing">새 ROM 없음, 누락 없음</string>
+    <string name="scan_outcome_no_new_marked_missing">새 ROM 없음, %1$d개 누락으로 표시</string>
+    <plurals name="scan_outcome_added">
+        <item quantity="other">새 ROM %1$d개 추가됨</item>
+    </plurals>
+    <plurals name="scan_outcome_added_none_missing">
+        <item quantity="other">새 ROM %1$d개 추가됨, 누락 없음</item>
+    </plurals>
+    <plurals name="scan_outcome_added_marked_missing">
+        <item quantity="other">새 ROM %1$d개 추가됨, %2$d개 누락으로 표시</item>
+    </plurals>
+    <string name="scan_with_error_note">%1$s (%2$s)</string>
+    <!-- Short badge on a card that scanned but found no new games -->
+    <string name="scan_badge_no_new">새 항목 없음</string>
+    <string name="scan_reason_no_new">새 게임 없음</string>
+    <string name="scan_reason_no_new_marked_missing">새 게임 없음, %1$d개 누락으로 표시</string>
+    <plurals name="scan_reason_added">
+        <item quantity="other">새 게임 %1$d개 추가됨</item>
+    </plurals>
+    <plurals name="scan_reason_added_marked_missing">
+        <item quantity="other">새 게임 %1$d개 추가됨, %2$d개 누락으로 표시</item>
+    </plurals>
+</resources>

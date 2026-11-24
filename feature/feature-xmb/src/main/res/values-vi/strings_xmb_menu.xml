@@ -1,0 +1,726 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- App picker -->
+    <!-- Touch hint under the app picker grid: tapping an app toggles its checkmark. -->
+    <string name="xmbm_picker_touch_toggle">Bật/tắt</string>
+    <plurals name="xmbm_picker_remove_from_card">
+        <item quantity="other">Xóa %d ứng dụng khỏi thẻ này?</item>
+    </plurals>
+    <plurals name="xmbm_picker_remove_from_library">
+        <item quantity="other">Xóa %d ứng dụng khỏi thư viện này?</item>
+    </plurals>
+
+    <!-- Category menu (long-press on a category icon) -->
+    <string name="xmbm_catmenu_rename">Đổi tên danh mục</string>
+    <string name="xmbm_catmenu_change_icon">Đổi biểu tượng</string>
+    <string name="xmbm_catmenu_show_on_bar">Hiện trên thanh</string>
+    <string name="xmbm_catmenu_new_card">Thẻ tùy chỉnh mới</string>
+    <string name="xmbm_catmenu_manage">Quản lý danh mục</string>
+
+    <!-- Shared menu rows -->
+    <string name="xmbm_common_on">Bật</string>
+    <string name="xmbm_common_off">Tắt</string>
+    <string name="xmbm_sort">Sắp xếp</string>
+    <string name="xmbm_move">Di chuyển</string>
+    <string name="xmbm_resume">Tiếp tục</string>
+    <string name="xmbm_open">Mở</string>
+    <string name="xmbm_pin_to_top">Ghim lên đầu</string>
+    <string name="xmbm_icon_display">Hiển thị biểu tượng</string>
+    <string name="xmbm_manage_custom_cards">Quản lý thẻ tùy chỉnh</string>
+    <string name="xmbm_play_in_background">Phát trong nền</string>
+    <string name="xmbm_add_to_playlist">Thêm vào danh sách phát</string>
+    <string name="xmbm_remove_from_library">Xóa khỏi thư viện</string>
+    <string name="xmbm_remove_from_this_playlist">Xóa khỏi danh sách phát này</string>
+    <string name="xmbm_rename_playlist">Đổi tên danh sách phát</string>
+    <string name="xmbm_delete_playlist">Xóa danh sách phát</string>
+    <string name="xmbm_manage_in_settings">Quản lý trong Cài đặt</string>
+    <string name="xmbm_favorite">Yêu thích</string>
+    <string name="xmbm_visualizer">Hiệu ứng hình ảnh</string>
+    <string name="xmbm_stop_and_close">Dừng và đóng</string>
+    <string name="xmbm_pause">Tạm dừng</string>
+    <string name="xmbm_add_games">Thêm trò chơi</string>
+    <string name="xmbm_add_apps">Thêm ứng dụng</string>
+    <string name="xmbm_pinned">Đã ghim</string>
+    <string name="xmbm_update_metadata">Cập nhật siêu dữ liệu</string>
+    <string name="xmbm_fetch_missing_artwork">Tải ảnh minh họa còn thiếu</string>
+    <string name="xmbm_library_manager">Trình quản lý thư viện</string>
+    <string name="xmbm_default">Mặc định</string>
+    <string name="xmbm_favorites">Yêu thích</string>
+    <string name="xmbm_all_games">Tất cả trò chơi</string>
+    <string name="xmbm_playlists">Danh sách phát</string>
+    <string name="xmbm_create_new_playlist">Tạo danh sách phát mới</string>
+
+    <!-- Custom icon source chooser -->
+    <string name="xmbm_srcchooser_title">Chọn biểu tượng cho %1$s</string>
+    <string name="xmbm_srcchooser_message">Dùng biểu tượng từ chủ đề đang áp dụng, hoặc hình ảnh trên thiết bị của bạn.</string>
+    <plurals name="xmbm_srcchooser_theme_detail">
+        <item quantity="other">%2$s · %1$d biểu tượng</item>
+    </plurals>
+
+    <!-- Theme icon grid -->
+    <string name="xmbm_themegrid_title">%1$s · biểu tượng cho %2$s</string>
+
+    <!-- Notification panel and music browser list menus -->
+    <string name="xmbm_notifmenu_mark_all_read">Đánh dấu tất cả đã đọc</string>
+    <string name="xmbm_notifmenu_clear_read">Xóa mục đã đọc</string>
+    <string name="xmbm_notifmenu_clear_all">Xóa tất cả</string>
+    <string name="xmbm_social_account">Tài khoản</string>
+
+    <!-- Playlist list rows -->
+    <!-- List row that starts a new playlist. -->
+    <string name="xmbm_playlist_create_title">Tạo danh sách phát</string>
+    <string name="xmbm_playlist_create_music_sub">Bắt đầu danh sách phát mới</string>
+    <string name="xmbm_playlist_create_video_sub">Bắt đầu danh sách phát video mới</string>
+    <string name="xmbm_playlist_import_title">Nhập danh sách phát</string>
+    <string name="xmbm_playlist_import_sub">Từ tệp .m3u, .m3u8, .pls hoặc .xspf</string>
+
+    <!-- Menu group headers -->
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_play">Chơi</string>
+    <string name="xmbm_group_library">Thư viện</string>
+    <string name="xmbm_group_arrange">Sắp xếp</string>
+    <string name="xmbm_group_customize">Tùy chỉnh</string>
+    <string name="xmbm_group_pc">PC</string>
+    <string name="xmbm_group_manage">Quản lý</string>
+    <string name="xmbm_group_games">Trò chơi</string>
+    <string name="xmbm_group_update">Cập nhật</string>
+    <string name="xmbm_group_display">Hiển thị</string>
+
+    <!-- Sort and arrange rows -->
+    <string name="xmbm_sort_default">Mặc định</string>
+    <string name="xmbm_sort_default_order">Thứ tự mặc định</string>
+    <string name="xmbm_sort_global_value">Chung: %1$s</string>
+    <string name="xmbm_sort_use_global">Dùng cài đặt chung (%1$s)</string>
+    <string name="xmbm_sort_az">A–Z</string>
+    <string name="xmbm_sort_recently_used">Dùng gần đây</string>
+    <string name="xmbm_umd_insert">Lắp làm UMD</string>
+    <string name="xmbm_umd_eject">Đẩy UMD ra</string>
+    <string name="xmbm_card_rename">Đổi tên thẻ</string>
+    <string name="xmbm_card_move_to_category">Chuyển sang danh mục</string>
+    <string name="xmbm_card_delete">Xóa thẻ tùy chỉnh</string>
+    <string name="xmbm_card_in_category">Trong %1$s</string>
+    <string name="xmbm_card_other_categories">Danh mục khác</string>
+    <string name="xmbm_card_new_here">Thẻ tùy chỉnh mới tại đây…</string>
+    <string name="xmbm_sort_all_lists">Mọi danh sách</string>
+    <plurals name="xmbm_memcard_sub_games">
+        <item quantity="other">Memory Card · %d trò chơi</item>
+    </plurals>
+    <plurals name="xmbm_memcard_sub_games_pinned">
+        <item quantity="other">Memory Card · Đã ghim · %d trò chơi</item>
+    </plurals>
+
+    <!-- Memory Card menus -->
+    <string name="xmbm_card_find_games">Tìm trò chơi</string>
+    <string name="xmbm_card_scan_roms">Quét trò chơi</string>
+    <string name="xmbm_card_import_pc">Nhập trò chơi PC</string>
+    <string name="xmbm_card_match_achievements">Khớp thành tựu</string>
+    <string name="xmbm_card_hide">Ẩn thẻ</string>
+    <string name="xmbm_card_remove">Xóa thẻ</string>
+    <string name="xmbm_card_scan_all">Quét mọi thẻ</string>
+    <string name="xmbm_card_relink_artwork">Liên kết lại ảnh minh họa</string>
+    <string name="xmbm_card_global_sort">Sắp xếp chung</string>
+    <string name="xmbm_scan_none_new">Không tìm thấy trò chơi mới</string>
+    <plurals name="xmbm_scan_new_games">
+        <item quantity="other">%d trò chơi mới</item>
+    </plurals>
+    <plurals name="xmbm_scan_cards_scanned">
+        <item quantity="other">Đã quét %d Memory Card</item>
+    </plurals>
+    <plurals name="xmbm_scan_cards_failed">
+        <item quantity="other">Không thể quét %d thẻ</item>
+    </plurals>
+
+    <!-- Game row menu -->
+    <string name="xmbm_game_view_details">Xem chi tiết trò chơi</string>
+    <string name="xmbm_game_choose_disc">Chọn đĩa</string>
+    <string name="xmbm_game_view_shiba_coins">Xem Shiba Coins</string>
+    <string name="xmbm_game_change_emulator">Đổi trình giả lập</string>
+    <string name="xmbm_game_add_to_card">Thêm vào thẻ</string>
+    <string name="xmbm_game_remove_from_card">Xóa khỏi thẻ</string>
+    <string name="xmbm_game_select_multiple">Chọn nhiều</string>
+    <string name="xmbm_game_add_to_category">Thêm vào danh mục</string>
+    <string name="xmbm_game_move_to_category">Chuyển sang danh mục</string>
+    <string name="xmbm_game_remove_from_category">Xóa khỏi danh mục</string>
+    <string name="xmbm_game_fetch_artwork">Tải ảnh minh họa</string>
+    <string name="xmbm_game_launch_with">Khởi động bằng</string>
+    <string name="xmbm_game_install_goldberg">Cài thành tựu Goldberg</string>
+    <string name="xmbm_game_export">Xuất trò chơi</string>
+    <string name="xmbm_game_file_location">Hiện vị trí tệp</string>
+    <string name="xmbm_game_hide_from">Ẩn khỏi %1$s</string>
+    <string name="xmbm_game_remove_permanently">Xóa vĩnh viễn</string>
+    <string name="xmbm_game_mark_as_game">Đánh dấu là trò chơi</string>
+    <string name="xmbm_game_unmark_as_game">Bỏ đánh dấu trò chơi</string>
+
+    <!-- Media row menus -->
+    <string name="xmbm_play">Phát</string>
+    <string name="xmbm_media_view_information">Xem thông tin</string>
+    <string name="xmbm_media_add_tracks">Thêm bài hát</string>
+    <string name="xmbm_media_view_details">Xem chi tiết</string>
+    <string name="xmbm_media_scan_library">Quét thư viện</string>
+    <string name="xmbm_media_scan_album">Quét album</string>
+    <string name="xmbm_media_set_wallpaper">Đặt làm hình nền launcher</string>
+    <string name="xmbm_media_set_lockscreen">Đặt làm màn hình khóa</string>
+    <string name="xmbm_media_scan_section">Quét %1$s</string>
+    <string name="xmbm_info_artist">Nghệ sĩ: %1$s</string>
+    <string name="xmbm_info_album">Album: %1$s</string>
+    <string name="xmbm_info_duration">Thời lượng: %1$s</string>
+    <string name="xmbm_info_type">Loại: %1$s</string>
+    <string name="xmbm_info_size">Kích thước: %1$s</string>
+    <string name="xmbm_info_location">Vị trí: %1$s</string>
+    <string name="xmbm_info_file">Tệp: %1$s</string>
+
+    <!-- Confirmation dialogs -->
+    <string name="xmbm_confirm_remove_library_title">Xóa \"%1$s\" khỏi thư viện?</string>
+    <string name="xmbm_confirm_remove_game_msg">Tệp không bị xóa. Lần quét sau sẽ thêm lại nếu tệp vẫn nằm trong thư mục được quét.</string>
+    <string name="xmbm_confirm_remove">Xóa</string>
+    <string name="xmbm_confirm_remove_missing_title">Xóa vĩnh viễn \"%1$s\"?</string>
+    <string name="xmbm_confirm_remove_missing_msg">Tệp của nó đã không còn, nên không thể khôi phục mục này.</string>
+    <string name="xmbm_confirm_remove_permanently">Xóa vĩnh viễn</string>
+    <string name="xmbm_confirm_delete_card_title">Xóa \"%1$s\"?</string>
+    <string name="xmbm_confirm_delete_card_msg">Các trò chơi của nó vẫn ở trong thư viện.</string>
+    <string name="xmbm_confirm_delete_card_button">Xóa thẻ tùy chỉnh</string>
+    <string name="xmbm_confirm_remove_category_title">Xóa khỏi %1$s?</string>
+    <string name="xmbm_confirm_remove_category_msg">\"%1$s\" cũng sẽ rời khỏi: %2$s.</string>
+    <string name="xmbm_confirm_remove_android_msg">Ứng dụng vẫn được cài. Tìm trò chơi có thể thêm lại nó.</string>
+    <string name="xmbm_confirm_remove_card_title">Xóa thẻ \"%1$s\"?</string>
+    <string name="xmbm_confirm_remove_card_android_msg">Các trò chơi của nó cũng rời khỏi thư viện. Ứng dụng vẫn được cài, và Tìm trò chơi có thể thêm lại chúng.</string>
+    <string name="xmbm_confirm_remove_card_msg">Các trò chơi của nó cũng rời khỏi thư viện. Tệp ROM vẫn còn trên bộ nhớ, và một lượt quét có thể đưa chúng trở lại.</string>
+    <string name="xmbm_confirm_remove_card_button">Xóa thẻ</string>
+    <string name="xmbm_confirm_remove_app_row_msg">Ứng dụng vẫn được cài và vẫn nằm trong các danh mục ứng dụng của nó.</string>
+    <string name="xmbm_confirm_remove_track_msg">Tệp không bị xóa. Lần quét sau sẽ thêm lại nếu tệp vẫn nằm trong thư mục nhạc.</string>
+    <string name="xmbm_confirm_remove_video_msg">Tệp không bị xóa. Lần quét sau sẽ thêm lại nếu tệp vẫn nằm trong thư viện video.</string>
+    <string name="xmbm_confirm_remove_photo_msg">Tệp không bị xóa. Lần quét sau sẽ thêm lại nếu tệp vẫn nằm trong album.</string>
+    <string name="xmbm_confirm_delete_music_playlist_msg">Các bài hát của nó vẫn ở trong thư viện.</string>
+    <string name="xmbm_confirm_delete_video_playlist_msg">Các video của nó vẫn ở trong thư viện.</string>
+    <string name="xmbm_confirm_delete_playlist_button">Xóa danh sách phát</string>
+    <string name="xmbm_confirm_uninstall_title">Gỡ cài đặt \"%1$s\"?</string>
+    <string name="xmbm_confirm_uninstall_msg">Ứng dụng và dữ liệu của nó sẽ bị xóa khỏi thiết bị này.</string>
+    <string name="xmbm_confirm_uninstall_button">Gỡ cài đặt</string>
+    <string name="xmbm_confirm_clear_notifs_title">Xóa mọi thông báo?</string>
+    <string name="xmbm_confirm_clear_notifs_msg">Các tác vụ đang chạy không bị ảnh hưởng.</string>
+    <string name="xmbm_confirm_clear_all_button">Xóa tất cả</string>
+
+    <!-- Notification panel -->
+    <string name="xmbm_stop_confirm_title">Dừng \"%1$s\"?</string>
+    <string name="xmbm_stop_confirm_kept_default">Phần việc đã xong sẽ được giữ lại.</string>
+    <string name="xmbm_stop_confirm_progress">Đã xong %1$d / %2$d.</string>
+    <string name="xmbm_panel_prompt_open">Mở</string>
+    <string name="xmbm_panel_prompt_stop">Dừng</string>
+    <string name="xmbm_panel_prompt_options">Tùy chọn</string>
+    <string name="xmbm_panel_prompt_close">Đóng</string>
+
+    <!-- Fetch Artwork notifications -->
+    <string name="xmbm_fetchart_running">Đang tải ảnh minh họa: %1$s</string>
+    <string name="xmbm_fetchart_failed">Tải ảnh minh họa thất bại</string>
+    <string name="xmbm_fetchart_failed_title">Không thể tải ảnh minh họa cho %1$s</string>
+    <string name="xmbm_fetchart_paused_title">Đã tạm dừng ảnh minh họa cho %1$s</string>
+    <string name="xmbm_fetchart_done_title">Đã cập nhật ảnh minh họa cho %1$s</string>
+
+    <!-- Playlist import -->
+    <string name="xmbm_plimport_cant_open">Không thể mở tệp</string>
+    <string name="xmbm_plimport_too_large">Tệp lớn hơn %1$d MiB</string>
+    <string name="xmbm_plimport_cant_read">Không thể đọc tệp</string>
+    <string name="xmbm_plimport_default_name">danh sách phát</string>
+    <string name="xmbm_plimport_not_playlist">Không phải tệp danh sách phát</string>
+    <string name="xmbm_plimport_unexpected">Lỗi không mong muốn</string>
+    <string name="xmbm_plimport_title_error">Không thể nhập \"%1$s\"</string>
+    <string name="xmbm_plimport_title_ok">Đã nhập \"%1$s\"</string>
+    <string name="xmbm_plimport_title_none">Không nhập được gì từ \"%1$s\"</string>
+    <string name="xmbm_plimport_reason_web">không phải tệp cục bộ</string>
+    <string name="xmbm_plimport_reason_type">sai loại media</string>
+    <string name="xmbm_plimport_reason_dup">đã có trong danh sách phát</string>
+    <string name="xmbm_plimport_reason_ambiguous">có nhiều hơn một kết quả khớp</string>
+    <string name="xmbm_plimport_reason_missing">không có trong thư viện</string>
+    <string name="xmbm_plimport_sum_found">tìm thấy %1$d</string>
+    <string name="xmbm_plimport_sum_missing">%1$d không có trong thư viện</string>
+    <string name="xmbm_plimport_sum_skipped">bỏ qua %1$d</string>
+    <string name="xmbm_plimport_sum_dropped">bỏ qua %1$d mục vượt giới hạn %2$d mục</string>
+    <string name="xmbm_plimport_label_found">Đã tìm thấy</string>
+    <string name="xmbm_plimport_label_missing">Không có trong thư viện</string>
+    <string name="xmbm_plimport_label_skipped">Đã bỏ qua</string>
+
+    <!-- Settings menu (mirrors Settings screen titles) -->
+    <!-- Settings section name; must match the same title in the Settings screens. -->
+    <string name="xmbm_setsec_library_title">Thư viện</string>
+    <string name="xmbm_setsec_library_sub">Nguồn, thẻ, ảnh minh họa &amp; mục ẩn</string>
+    <string name="xmbm_setsec_emulators_title">Trình giả lập</string>
+    <string name="xmbm_setsec_emulators_sub">Hồ sơ khởi động &amp; core RetroArch</string>
+    <string name="xmbm_setsec_interface_title">Giao diện</string>
+    <string name="xmbm_setsec_interface_sub">Danh mục, chủ đề, hiển thị &amp; tay cầm</string>
+    <string name="xmbm_setsec_achievements_title">Thành tựu</string>
+    <string name="xmbm_setsec_achievements_sub">RetroAchievements &amp; Steam</string>
+    <string name="xmbm_setsec_media_title">Media</string>
+    <string name="xmbm_setsec_media_sub">Cài đặt nhạc, video &amp; ảnh</string>
+    <string name="xmbm_setsec_system_title">Hệ thống</string>
+    <string name="xmbm_setsec_system_sub">Giới thiệu, cập nhật, nhật ký, sao lưu, thiết lập &amp; ghi công</string>
+    <string name="xmbm_setsec_system_sub_nobackup">Giới thiệu, cập nhật, nhật ký, thiết lập &amp; ghi công</string>
+    <string name="xmbm_set_library_title">Trình quản lý thư viện</string>
+    <string name="xmbm_set_library_sub">Nguồn ROM &amp; quét</string>
+    <string name="xmbm_set_windows_games_title">Trò chơi Windows</string>
+    <string name="xmbm_set_windows_games_sub">Trò chơi PC, launcher &amp; nhập</string>
+    <string name="xmbm_set_collections_title">Memory Card tùy chỉnh</string>
+    <string name="xmbm_set_collections_sub">Tạo &amp; quản lý Memory Card tùy chỉnh</string>
+    <string name="xmbm_set_artwork_title">Ảnh minh họa</string>
+    <string name="xmbm_set_artwork_sub">Nguồn tải dữ liệu &amp; bộ nhớ đệm</string>
+    <string name="xmbm_set_app_visibility_title">Mục ẩn</string>
+    <string name="xmbm_set_app_visibility_sub">Xem lại ứng dụng &amp; trò chơi bạn đã ẩn</string>
+    <string name="xmbm_set_emulators_installed_title">Đã cài</string>
+    <string name="xmbm_set_emulators_installed_sub">Hồ sơ trình giả lập đã phát hiện</string>
+    <string name="xmbm_set_emulators_custom_title">Trình giả lập tùy chỉnh</string>
+    <string name="xmbm_set_emulators_custom_sub">Hồ sơ tùy chỉnh &amp; Thêm trình giả lập tùy chỉnh</string>
+    <string name="xmbm_set_emulators_retroarch_title">RetroArch</string>
+    <string name="xmbm_set_emulators_retroarch_sub">Phát hiện &amp; liên kết core</string>
+    <string name="xmbm_set_emulators_assign_title">Mặc định theo hệ máy</string>
+    <string name="xmbm_set_emulators_assign_sub">Trình giả lập &amp; core mặc định cho từng hệ máy, và ghi đè theo trò chơi</string>
+    <string name="xmbm_set_emulators_knowledge_title">Kiến thức trình giả lập</string>
+    <string name="xmbm_set_emulators_knowledge_sub">Cập nhật, tệp của riêng bạn &amp; đặt lại về bản có sẵn</string>
+    <string name="xmbm_set_display_title">Hiển thị</string>
+    <string name="xmbm_set_display_sub">Sóng, hình nền, khởi động &amp; biểu tượng</string>
+    <string name="xmbm_set_audio_title">Âm thanh</string>
+    <string name="xmbm_set_audio_sub">Âm thanh menu, mức âm lượng &amp; nhạc nền</string>
+    <string name="xmbm_set_notifications_title">Thông báo</string>
+    <string name="xmbm_set_notifications_sub">Lịch sử bảng &amp; thời gian lưu giữ</string>
+    <string name="xmbm_set_categories_title">Danh mục</string>
+    <string name="xmbm_set_categories_sub">Quản lý danh mục XMB</string>
+    <string name="xmbm_set_themes_title">Chủ đề</string>
+    <string name="xmbm_set_themes_sub">Giao diện, màu sắc &amp; biểu tượng XMB</string>
+    <string name="xmbm_set_controller_title">Tay cầm</string>
+    <string name="xmbm_set_controller_sub">Gán nút</string>
+    <string name="xmbm_set_achievements_player_card_title">Thẻ người chơi</string>
+    <string name="xmbm_set_achievements_player_card_sub">Cấp, hạng &amp; trạng thái đồng bộ</string>
+    <string name="xmbm_set_achievements_credentials_title">Thông tin xác thực nhà cung cấp</string>
+    <string name="xmbm_set_achievements_credentials_sub">Tài khoản RetroAchievements &amp; Steam</string>
+    <string name="xmbm_set_achievements_local_windows_title">Windows cục bộ</string>
+    <string name="xmbm_set_achievements_local_windows_sub">Theo dõi trò chơi Windows cục bộ (Steam-emu)</string>
+    <string name="xmbm_set_achievements_update_title">Cập nhật thành tựu</string>
+    <string name="xmbm_set_achievements_update_sub">Đồng bộ &amp; tự động khớp trò chơi được theo dõi</string>
+    <string name="xmbm_set_music_title">Nhạc</string>
+    <string name="xmbm_set_music_sub">Thư mục nhạc &amp; trình phát mặc định</string>
+    <string name="xmbm_set_video_title">Video</string>
+    <string name="xmbm_set_video_sub">Thư viện video, quét &amp; phát</string>
+    <string name="xmbm_set_photo_title">Ảnh</string>
+    <string name="xmbm_set_photo_sub">Thư viện ảnh &amp; quét</string>
+    <string name="xmbm_set_about_title">Giới thiệu</string>
+    <string name="xmbm_set_about_sub">Play Field Portal</string>
+    <string name="xmbm_set_system_update_title">Cập nhật hệ thống</string>
+    <string name="xmbm_set_system_update_sub">Phiên bản mới &amp; nhật ký thay đổi</string>
+    <string name="xmbm_set_logs_title">Nhật ký</string>
+    <string name="xmbm_set_logs_sub">Mở hoặc chia sẻ nhật ký phiên</string>
+    <string name="xmbm_set_backup_title">Sao lưu &amp; khôi phục</string>
+    <string name="xmbm_set_backup_sub">Xuất &amp; nhập</string>
+    <string name="xmbm_set_setup_title">Trình hướng dẫn thiết lập</string>
+    <string name="xmbm_set_setup_sub">Hướng dẫn thiết lập thư mục &amp; tài khoản</string>
+    <string name="xmbm_set_credits_title">Ghi công</string>
+    <string name="xmbm_set_credits_sub">Ảnh minh họa &amp; ghi nhận</string>
+
+    <!-- Media sections -->
+    <!-- Name of the Music section / its memory card. -->
+    <string name="xmbm_media_music">Nhạc</string>
+    <string name="xmbm_media_videos">Video</string>
+    <string name="xmbm_media_photos">Ảnh</string>
+    <string name="xmbm_sort_pill">Sắp xếp: %1$s</string>
+    <string name="xmbm_filter">Lọc</string>
+
+    <!-- Sort modes -->
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_title">Tiêu đề</string>
+    <string name="xmbm_sortmode_artist">Nghệ sĩ</string>
+    <string name="xmbm_sortmode_album">Album</string>
+    <string name="xmbm_sortmode_recent_played">Chơi gần đây</string>
+    <string name="xmbm_sortmode_date_added">Ngày thêm</string>
+    <string name="xmbm_sortmode_custom">Tùy chỉnh</string>
+    <string name="xmbm_filter_search">Tìm kiếm</string>
+    <string name="xmbm_filter_none">Không</string>
+    <string name="xmbm_filter_term">\"%1$s\"</string>
+    <string name="xmbm_filter_clear">Xóa tìm kiếm</string>
+
+    <!-- Local Windows games notifications -->
+    <string name="xmbm_lwm_running">Đang khớp trò chơi Windows cục bộ…</string>
+    <string name="xmbm_lwm_stop_note">Các trò chơi đã khớp vẫn được liên kết.</string>
+    <string name="xmbm_task_stopped">Đã dừng trước khi hoàn tất</string>
+    <string name="xmbm_lwm_stopped_title">Đã dừng khớp thành tựu Windows</string>
+    <string name="xmbm_lwm_failed">Khớp hàng loạt thất bại</string>
+    <string name="xmbm_lwm_failed_title">Khớp thành tựu Windows thất bại</string>
+    <string name="xmbm_lwm_done_title">Đã khớp xong thành tựu Windows</string>
+    <string name="xmbm_schema_label">Lược đồ thành tựu</string>
+    <string name="xmbm_convert_no_ach" formatted="false">%d không có thành tựu</string>
+    <string name="xmbm_convert_no_key" formatted="false">%d cần Steam Web API key</string>
+    <string name="xmbm_convert_failed" formatted="false">%d thất bại</string>
+    <string name="xmbm_convert_tail">Hãy chơi từng trò chơi để bắt đầu nhận xu.</string>
+    <string name="xmbm_convert_linked" formatted="false">%d đã liên kết với trò chơi trong thư viện.</string>
+    <string name="xmbm_diag_copied">Đã sao chép chẩn đoán vào bộ nhớ tạm</string>
+    <string name="xmbm_artwork_folder_label">Thư mục ảnh minh họa</string>
+    <string name="xmbm_artwork_folder_failed">Không thể thiết lập thư mục đó. Hãy chọn thư mục mà PFP có thể ghi vào.</string>
+    <plurals name="xmbm_convert_converted">
+        <item quantity="other">Đã chuyển đổi %d trò chơi</item>
+    </plurals>
+
+    <!-- Games and apps list rows -->
+    <string name="xmbm_additem_apps_sub">Chọn ứng dụng đã cài để thêm vào mục này</string>
+    <string name="xmbm_additem_games_sub">Chọn trò chơi và Memory Card tùy chỉnh để thêm vào danh mục này</string>
+    <string name="xmbm_catcard_title">Memory Card %1$s</string>
+    <string name="xmbm_total_games">Tổng số trò chơi %1$d</string>
+    <string name="xmbm_catcard_loose">Lẻ</string>
+    <string name="xmbm_empty_category_title">Danh mục này chưa có trò chơi nào</string>
+    <string name="xmbm_empty_category_sub">Quay lại và chọn Thêm trò chơi.</string>
+    <plurals name="xmbm_customcard_games">
+        <item quantity="other">Tùy chỉnh · %d trò chơi</item>
+    </plurals>
+    <plurals name="xmbm_customcard_games_pinned">
+        <item quantity="other">Tùy chỉnh · Đã ghim · %d trò chơi</item>
+    </plurals>
+    <plurals name="xmbm_customcard_apps">
+        <item quantity="other">Tùy chỉnh · %d ứng dụng</item>
+    </plurals>
+    <plurals name="xmbm_customcard_apps_pinned">
+        <item quantity="other">Tùy chỉnh · Đã ghim · %d ứng dụng</item>
+    </plurals>
+
+    <!-- Music list rows -->
+    <!-- Subtitle label of the row for the song that is currently loaded; also the title of the player's menu fallback. -->
+    <string name="xmbm_music_now_playing">Đang phát</string>
+    <string name="xmbm_music_playlist_title">Danh sách phát</string>
+    <string name="xmbm_music_playlist_sub">Tạo và phát danh sách bài hát của riêng bạn</string>
+    <string name="xmbm_music_apps_title">Ứng dụng nhạc</string>
+    <string name="xmbm_music_apps_sub">Mở các ứng dụng nhạc đã cài</string>
+    <string name="xmbm_music_add_folder_title">Thêm thư mục nhạc</string>
+    <string name="xmbm_music_add_folder_sub">Đặt thư mục gốc Nhạc trong Cài đặt để bắt đầu</string>
+    <string name="xmbm_music_add_apps_title">Thêm ứng dụng nhạc</string>
+    <string name="xmbm_picker_show_here_sub">Chọn ứng dụng đã cài để hiển thị ở đây</string>
+    <string name="xmbm_music_add_tracks_title">Thêm bài hát</string>
+    <string name="xmbm_music_add_tracks_sub">Chọn bài hát để thêm vào danh sách phát này</string>
+    <string name="xmbm_music_empty_title">Không tìm thấy nhạc</string>
+    <string name="xmbm_music_empty_sub">Thêm thư mục nhạc trong Cài đặt → Nhạc</string>
+    <string name="xmbm_playlist_empty_title">Danh sách phát này trống</string>
+    <string name="xmbm_playlist_empty_sub">Thêm bài hát bên dưới hoặc từ menu Tùy chọn của bài hát.</string>
+
+    <!-- Hide locations -->
+    <!-- Fallback name of a custom memory card in a hide location. -->
+    <string name="xmbm_hide_custom_card">Thẻ tùy chỉnh</string>
+    <string name="xmbm_hide_android">Android</string>
+    <string name="xmbm_music_apps_name">Ứng dụng nhạc</string>
+    <string name="xmbm_video_apps_name">Ứng dụng video</string>
+
+    <!-- Video list rows -->
+    <string name="xmbm_video_collections_title">Bộ sưu tập</string>
+    <string name="xmbm_video_collections_sub">Xem gần đây, Yêu thích &amp; Danh sách phát</string>
+    <string name="xmbm_video_libraries_title">Thư viện video</string>
+    <string name="xmbm_video_apps_sub">Mở các ứng dụng video đã cài</string>
+    <string name="xmbm_video_add_title">Thêm video</string>
+    <string name="xmbm_video_add_sub">Đặt thư mục gốc Video trong Cài đặt để bắt đầu</string>
+    <string name="xmbm_video_recent_title">Xem gần đây</string>
+    <string name="xmbm_video_recent_sub">Xem tiếp từ chỗ bạn dừng</string>
+    <string name="xmbm_video_favorites_sub">Video bạn đã gắn sao</string>
+    <string name="xmbm_video_playlists_sub">Tạo và phát danh sách của riêng bạn</string>
+    <string name="xmbm_video_nolibs_title">Chưa có thư viện video</string>
+    <string name="xmbm_video_nolibs_sub">Đặt thư mục gốc trong Cài đặt → Video</string>
+    <string name="xmbm_video_add_apps_title">Thêm ứng dụng video</string>
+    <string name="xmbm_video_none_title">Không tìm thấy video</string>
+    <string name="xmbm_video_none_sub">Thêm thư viện video trong Cài đặt → Video</string>
+    <string name="xmbm_video_nowatched_title">Chưa xem gì</string>
+    <string name="xmbm_video_nowatched_sub">Video bạn phát sẽ hiện ở đây</string>
+    <string name="xmbm_video_nofav_title">Chưa có mục yêu thích</string>
+    <string name="xmbm_video_nofav_sub">Gắn sao video từ menu ⚙ Tùy chọn của nó</string>
+    <string name="xmbm_video_playlist_empty_sub">Thêm video từ menu ⚙ Tùy chọn của video</string>
+    <string name="xmbm_video_new_playlist">Danh sách phát video mới</string>
+    <string name="xmbm_music_new_playlist">Danh sách phát mới</string>
+    <plurals name="xmbm_video_libraries_count">
+        <item quantity="other">%d thư viện</item>
+    </plurals>
+
+    <!-- Photo list rows -->
+    <!-- Row that opens the device's camera app. -->
+    <string name="xmbm_photo_camera_title">Máy ảnh</string>
+    <string name="xmbm_photo_camera_sub">Mở máy ảnh</string>
+    <string name="xmbm_photo_albums_title">Album</string>
+    <string name="xmbm_photo_apps_title">Ứng dụng ảnh</string>
+    <string name="xmbm_photo_apps_sub">Mở các ứng dụng ảnh đã cài</string>
+    <string name="xmbm_photo_add_title">Thêm thư viện ảnh</string>
+    <string name="xmbm_photo_add_sub">Đặt thư mục gốc Ảnh trong Cài đặt để bắt đầu</string>
+    <string name="xmbm_photo_add_apps_title">Thêm ứng dụng ảnh</string>
+    <string name="xmbm_photo_noalbums_title">Chưa có album</string>
+    <string name="xmbm_photo_noalbums_sub">Đặt thư mục gốc trong Cài đặt → Ảnh</string>
+    <string name="xmbm_photo_none_title">Không tìm thấy ảnh</string>
+    <string name="xmbm_photo_none_sub">Thêm thư viện ảnh và quét</string>
+    <string name="xmbm_photo_noalbumphotos_title">Album này không có ảnh</string>
+    <string name="xmbm_photo_noalbumphotos_sub">Quét từ menu ⚙ Tùy chọn của nó hoặc trong Cài đặt → Ảnh</string>
+    <plurals name="xmbm_photo_albums_count">
+        <item quantity="other">%d album</item>
+    </plurals>
+
+    <!-- Music browser -->
+    <string name="xmbm_no_matches_title">Không có kết quả</string>
+    <string name="xmbm_no_matches_sub">Hãy thử tìm kiếm khác.</string>
+    <string name="xmbm_queue_all_music">Tất cả nhạc</string>
+
+    <!-- Flyout titles and Social rows -->
+    <string name="xmbm_video_all">Tất cả video</string>
+    <string name="xmbm_photo_all">Tất cả ảnh</string>
+    <string name="xmbm_missing">Bị thiếu</string>
+    <string name="xmbm_social_friends">Bạn bè</string>
+    <string name="xmbm_social_voice">Thoại</string>
+    <string name="xmbm_social_voice_settings">Cài đặt thoại</string>
+    <string name="xmbm_social_invites">Lời mời</string>
+    <string name="xmbm_social_invite_friends">Mời bạn bè</string>
+    <string name="xmbm_social_activity_settings">Cài đặt hoạt động</string>
+    <string name="xmbm_social_discord_settings">Cài đặt Discord</string>
+    <string name="xmbm_android_settings_title">Cài đặt Android</string>
+    <string name="xmbm_android_settings_sub">Mở cài đặt thiết bị</string>
+    <string name="xmbm_filter_chip">Lọc: %1$s</string>
+    <string name="xmbm_filter_chip_term">Lọc: \"%1$s\" · %2$s</string>
+
+    <!-- Empty rows -->
+    <string name="xmbm_empty_games_assigned_title">Chưa gán trò chơi nào.</string>
+    <string name="xmbm_empty_games_assigned_sub">Hãy thêm trò chơi vào danh mục này.</string>
+    <string name="xmbm_empty_videos_apps">Không tìm thấy ứng dụng video.</string>
+    <string name="xmbm_empty_network_apps">Không tìm thấy trình duyệt.</string>
+    <string name="xmbm_empty_store_apps">Không tìm thấy cửa hàng ứng dụng.</string>
+    <string name="xmbm_empty_music_apps">Không tìm thấy ứng dụng nhạc.</string>
+    <string name="xmbm_empty_photo_apps">Không tìm thấy ứng dụng ảnh.</string>
+    <string name="xmbm_empty_apps_assigned">Chưa gán ứng dụng nào.</string>
+    <string name="xmbm_empty_install_apps">Hãy cài vài ứng dụng để bắt đầu.</string>
+    <string name="xmbm_noconsoles_title">Chưa cấu hình hệ máy nào</string>
+    <string name="xmbm_noconsoles_sub">Mở Trình quản lý thư viện để thêm Memory Card</string>
+    <string name="xmbm_gap_press_confirm">Nhấn xác nhận để mở Cài đặt và khắc phục.</string>
+    <string name="xmbm_nogames_imported_title">Chưa nhập trò chơi nào</string>
+    <string name="xmbm_nogames_imported_sub">Mở một Memory Card để quét thư viện.</string>
+    <string name="xmbm_emptycard_title">Memory Card tùy chỉnh này trống</string>
+    <string name="xmbm_emptycard_sub">Thêm trò chơi từ bất kỳ hệ máy nào bằng menu tùy chọn (△).</string>
+    <string name="xmbm_emptyfav_title">Chưa có mục yêu thích</string>
+    <string name="xmbm_emptyfav_sub">Đánh dấu trò chơi là yêu thích từ menu tùy chọn (△) của nó.</string>
+    <string name="xmbm_emptymissing_title">Không thiếu gì</string>
+    <string name="xmbm_emptymissing_sub">Tệp của mọi trò chơi đều được tìm thấy trong lần quét gần nhất.</string>
+    <string name="xmbm_findgames_sub">Chọn ứng dụng đã cài để thêm vào thư viện này</string>
+    <string name="xmbm_empty_romdir">Chưa cấu hình thư mục ROM</string>
+    <string name="xmbm_empty_scan_console">Nhấn ▲ để quét hệ máy này</string>
+    <string name="xmbm_empty_folder_title">Không tìm thấy trò chơi nào trong thư mục này</string>
+    <plurals name="xmbm_games_count">
+        <item quantity="other">%d trò chơi</item>
+    </plurals>
+
+    <!-- Games search and Shiba Coins hub -->
+    <string name="xmbm_nomatch_title">Không có trò chơi nào khớp với \"%1$s\"</string>
+    <string name="xmbm_nomatch_sub">Mở menu Lọc để thay đổi hoặc xóa.</string>
+    <string name="xmbm_ach_untracked">Chưa theo dõi</string>
+    <string name="xmbm_ach_connect_title">Kết nối tài khoản</string>
+    <string name="xmbm_ach_connect_sub">Thiết lập Shiba Coins và tự động khớp thư viện</string>
+    <string name="xmbm_ach_all_tracked">Mọi trò chơi được theo dõi</string>
+    <string name="xmbm_ach_matching_progress">Đang tự động khớp…  %1$d / %2$d</string>
+    <string name="xmbm_ach_syncing_progress">Đang đồng bộ xu…  %1$d / %2$d</string>
+    <string name="xmbm_ach_summary">%1$s / %2$s xu  •  %3$d theo dõi  •  %4$d hoàn thành</string>
+    <string name="xmbm_ach_level_badge">Cấp %1$d</string>
+    <plurals name="xmbm_ach_games_count">
+        <item quantity="other">%d trò chơi</item>
+    </plurals>
+
+    <!-- Games menus -->
+    <string name="xmbm_icon_global_value">Chung: %1$s</string>
+    <string name="xmbm_icon_use_global">Dùng cài đặt chung (%1$s)</string>
+    <string name="xmbm_ach_player_card">Thẻ người chơi</string>
+    <string name="xmbm_ach_auto_matching_busy">Đang tự động khớp…</string>
+    <string name="xmbm_ach_auto_matching">Tự động khớp</string>
+    <string name="xmbm_ach_updating_busy">Đang cập nhật…</string>
+    <string name="xmbm_ach_update_installed">Cập nhật thành tựu đã cài</string>
+
+    <!-- Game and app menus -->
+    <!-- Title of the list of categories a custom card can be moved into. -->
+    <string name="xmbm_move_card_to">Chuyển thẻ tùy chỉnh tới</string>
+    <string name="xmbm_move_to">Chuyển tới…</string>
+    <string name="xmbm_add_to">Thêm vào…</string>
+    <string name="xmbm_move_game_to">Chuyển trò chơi tới</string>
+    <string name="xmbm_add_game_to">Thêm trò chơi vào</string>
+    <string name="xmbm_picker_add_apps_named">Thêm ứng dụng · %1$s</string>
+    <string name="xmbm_picker_add_android_apps">Thêm ứng dụng Android</string>
+    <string name="xmbm_icon_use_default">Dùng mặc định (%1$s)</string>
+    <string name="xmbm_emu_use_platform_default">Dùng mặc định của nền tảng</string>
+    <string name="xmbm_emu_choose">Chọn trình giả lập</string>
+    <string name="xmbm_launchwith_imported_from">Được nhập từ</string>
+    <string name="xmbm_disc_n">Đĩa %1$d</string>
+    <string name="xmbm_disc_unnumbered">Danh sách phát</string>
+    <string name="xmbm_card_new_title">Memory Card tùy chỉnh mới</string>
+    <string name="xmbm_card_rename_title">Đổi tên Memory Card tùy chỉnh</string>
+    <plurals name="xmbm_marked_add_to_card">
+        <item quantity="other">Thêm %d trò chơi vào thẻ</item>
+    </plurals>
+
+    <!-- Game info dialogs -->
+    <string name="xmbm_info_package">Gói: %1$s</string>
+    <string name="xmbm_info_no_location">Không có vị trí tệp được ghi nhận</string>
+    <string name="xmbm_info_export_failed">Xuất thất bại — xem nhật ký.</string>
+    <string name="xmbm_goldberg_off">Tính năng cài thành tựu Goldberg đang tắt. Hãy bật \"Cài Goldberg &amp; chuyển đổi trò chơi\" trong Cài đặt ▸ Thành tựu ▸ Windows cục bộ, rồi thử lại.</string>
+    <string name="xmbm_goldberg_no_setup">Không tìm thấy thiết lập Steam-emu (steam_settings) cho trò chơi này.</string>
+    <string name="xmbm_goldberg_has_schema">%1$s đã có dữ liệu thành tựu.</string>
+    <string name="xmbm_goldberg_installed">Đã cài thành tựu Goldberg. Hãy chơi qua trình giả lập để bắt đầu nhận xu.</string>
+    <string name="xmbm_goldberg_none">Trò chơi này không có thành tựu nào để cài.</string>
+    <string name="xmbm_goldberg_no_key">Hãy thêm Steam Web API key trong cài đặt Thành tựu trước.</string>
+    <string name="xmbm_goldberg_failed">Không thể cài thành tựu cho trò chơi này.</string>
+
+    <!-- Scan and artwork notifications -->
+    <string name="xmbm_scan_running">Đang quét %1$s…</string>
+    <string name="xmbm_scan_stop_note">Các trò chơi đã tìm thấy được giữ lại.</string>
+    <string name="xmbm_scan_stopped_title">Đã dừng quét %1$s</string>
+    <string name="xmbm_scan_failed_title">Quét %1$s thất bại</string>
+    <string name="xmbm_scan_finished_title">Đã quét xong %1$s</string>
+    <string name="xmbm_scan_skipped_title">Đã bỏ qua quét %1$s</string>
+    <string name="xmbm_pcscan_failed">Quét PC thất bại</string>
+    <string name="xmbm_pcscan_no_new">Không tìm thấy trò chơi PC mới</string>
+    <string name="xmbm_scanall_running">Đang quét mọi Memory Card…</string>
+    <string name="xmbm_scanall_stop_note">Các thẻ đã quét giữ lại trò chơi mới của chúng.</string>
+    <string name="xmbm_scanall_nothing">Không Memory Card nào có thư mục để quét</string>
+    <string name="xmbm_scanall_nothing_title">Không có gì để quét</string>
+    <string name="xmbm_scanall_stopped_title">Đã dừng quét mọi Memory Card</string>
+    <string name="xmbm_scanall_failed_title">Quét mọi Memory Card thất bại</string>
+    <string name="xmbm_scanall_finished_title">Đã quét xong mọi Memory Card</string>
+    <string name="xmbm_scrape_running">Đang tải ảnh minh họa còn thiếu: %1$s</string>
+    <string name="xmbm_scrape_stop_note">Ảnh minh họa đã tải sẽ được giữ lại.</string>
+    <string name="xmbm_scrape_paused_title">Đã tạm dừng tải ảnh minh họa: %1$s</string>
+    <string name="xmbm_scrape_none_missing">Không trò chơi nào thiếu ảnh minh họa</string>
+    <string name="xmbm_scrape_finished_title">Đã tải xong ảnh minh họa: %1$s</string>
+    <string name="xmbm_scrape_stopped_title">Đã dừng tải ảnh minh họa: %1$s</string>
+    <string name="xmbm_scrape_failed_title">Tải ảnh minh họa thất bại: %1$s</string>
+    <string name="xmbm_meta_running">Đang cập nhật siêu dữ liệu: %1$s</string>
+    <string name="xmbm_meta_stop_note">Các trò chơi đã cập nhật giữ lại thông tin của chúng.</string>
+    <string name="xmbm_meta_no_games_library">Thư viện không có trò chơi nào</string>
+    <string name="xmbm_meta_no_games_card">Thẻ này không có trò chơi nào</string>
+    <string name="xmbm_meta_finished_title">Đã cập nhật xong siêu dữ liệu: %1$s</string>
+    <string name="xmbm_meta_stopped_title">Đã dừng cập nhật siêu dữ liệu: %1$s</string>
+    <string name="xmbm_meta_failed">Cập nhật siêu dữ liệu thất bại</string>
+    <string name="xmbm_meta_failed_title">Cập nhật siêu dữ liệu thất bại: %1$s</string>
+    <plurals name="xmbm_scanall_stopped_after">
+        <item quantity="other">Đã dừng sau %1$d / %2$d thẻ</item>
+    </plurals>
+    <plurals name="xmbm_scrape_updated">
+        <item quantity="other">Đã cập nhật %1$d / %2$d trò chơi</item>
+    </plurals>
+    <plurals name="xmbm_stopped_after_games">
+        <item quantity="other">Đã dừng sau %d trò chơi</item>
+    </plurals>
+
+    <!-- Notifications panel and shortcut requests -->
+    <!-- Title of a dialog about a home-screen shortcut request. -->
+    <string name="xmbm_shortcut_request_title">Yêu cầu lối tắt</string>
+    <string name="xmbm_shortcut_request_handled">Yêu cầu này đã được xử lý.</string>
+    <string name="xmbm_notifications_title">Thông báo</string>
+
+    <!-- Discord Social rows -->
+    <string name="xmbm_social_signin_title">Đăng nhập bằng Discord</string>
+    <string name="xmbm_social_signin_sub">Quét mã QR bằng điện thoại</string>
+    <string name="xmbm_social_connected">Đã kết nối với Discord</string>
+    <string name="xmbm_social_online">Trực tuyến</string>
+    <string name="xmbm_social_offline">Ngoại tuyến</string>
+    <string name="xmbm_social_connecting">Đang kết nối…</string>
+    <string name="xmbm_social_idle">Chờ</string>
+    <string name="xmbm_social_dnd">Không làm phiền</string>
+    <string name="xmbm_social_streaming">Đang phát trực tiếp</string>
+    <string name="xmbm_social_friends_unknown">Xem ai đang trực tuyến</string>
+    <string name="xmbm_social_friends_none_online">Không có bạn bè nào trực tuyến</string>
+    <string name="xmbm_social_voice_sub">Trò chuyện trong phòng chung</string>
+    <string name="xmbm_social_activity_sub">Chia sẻ trò chơi bạn đang chơi</string>
+    <string name="xmbm_social_discord_sub">Tài khoản &amp; đăng xuất</string>
+    <string name="xmbm_social_share_title">Chia sẻ hoạt động</string>
+    <string name="xmbm_social_share_on">Bật · bạn bè thấy bạn đang dùng Playfield Portal</string>
+    <string name="xmbm_social_share_off">Tắt · không chia sẻ gì với bạn bè</string>
+    <string name="xmbm_social_generic_title">Chế độ chung chung</string>
+    <string name="xmbm_social_generic_on">Bật · hiện \"một trò chơi\" thay cho tên ứng dụng</string>
+    <string name="xmbm_social_generic_off">Tắt · hiện tên ứng dụng</string>
+    <string name="xmbm_social_signout_title">Đăng xuất</string>
+    <string name="xmbm_social_signout_named">Ngắt kết nối %1$s</string>
+    <string name="xmbm_social_signout_sub">Ngắt kết nối tài khoản Discord này</string>
+    <string name="xmbm_social_you_offline">Bạn đang ngoại tuyến</string>
+    <string name="xmbm_social_friends_reconnect">Kết nối lại để xem bạn bè</string>
+    <string name="xmbm_social_no_friends">Không có bạn bè để hiển thị</string>
+    <string name="xmbm_social_in_lobby">Đang ở phòng thoại · Xin tham gia</string>
+    <string name="xmbm_social_playing">Đang chơi %1$s</string>
+    <string name="xmbm_social_voice_reconnect">Kết nối lại để dùng thoại</string>
+    <string name="xmbm_social_invites_none">Không có lời mời đang chờ</string>
+    <string name="xmbm_social_create_lobby">Tạo phòng</string>
+    <string name="xmbm_social_create_lobby_sub">Tạo phòng riêng và mời bạn bè</string>
+    <string name="xmbm_social_someone">Ai đó</string>
+    <string name="xmbm_social_participant_you">%1$s (Bạn)</string>
+    <string name="xmbm_social_muted">Đã tắt tiếng</string>
+    <string name="xmbm_social_speaking">Đang nói</string>
+    <string name="xmbm_social_waiting_others">Đang chờ người khác tham gia</string>
+    <string name="xmbm_social_invite_friends_sub">Mời bạn bè vào phòng này</string>
+    <string name="xmbm_social_unmute">Bật tiếng</string>
+    <string name="xmbm_social_mute">Tắt tiếng</string>
+    <string name="xmbm_social_mic_off">Mic của bạn đang tắt</string>
+    <string name="xmbm_social_mic_on">Mic của bạn đang bật</string>
+    <string name="xmbm_social_leave_voice">Rời thoại</string>
+    <string name="xmbm_social_leave_voice_sub">Ngắt kết nối khỏi phòng</string>
+    <string name="xmbm_social_no_invites">Không có lời mời</string>
+    <string name="xmbm_social_no_invites_sub">Lời mời và yêu cầu tham gia sẽ hiện ở đây</string>
+    <string name="xmbm_social_wants_to_join">%1$s muốn tham gia</string>
+    <string name="xmbm_social_join_lobby">Tham gia phòng của %1$s</string>
+    <string name="xmbm_social_select_approve">Chọn để chấp nhận</string>
+    <string name="xmbm_social_select_join">Chọn để tham gia</string>
+    <string name="xmbm_social_invite_offline">Kết nối lại để mời bạn bè</string>
+    <string name="xmbm_social_invited">Đã mời ✓</string>
+    <string name="xmbm_social_already_lobby">Đã ở trong phòng</string>
+    <string name="xmbm_social_select_invite">Chọn để mời</string>
+    <string name="xmbm_social_voice_settings_sub">Độ nhạy mic, lọc tiếng ồn, âm lượng</string>
+    <string name="xmbm_social_vs_toggle_on">Bật · %1$s</string>
+    <string name="xmbm_social_vs_sens_title">Độ nhạy mic</string>
+    <string name="xmbm_social_vs_sens_value">%1$s · thấp hơn sẽ lọc tiếng bấm</string>
+    <string name="xmbm_social_vs_noise_title">Khử tiếng ồn</string>
+    <string name="xmbm_social_vs_noise_on">Krisp loại bỏ tiếng nền + tiếng bấm nút</string>
+    <string name="xmbm_social_vs_echo_title">Khử tiếng vọng</string>
+    <string name="xmbm_social_vs_echo_on">ngăn tiếng hú từ loa</string>
+    <string name="xmbm_social_vs_agc_title">Tự động điều chỉnh âm lượng</string>
+    <string name="xmbm_social_vs_agc_on">cân bằng âm lượng mic</string>
+    <string name="xmbm_social_vs_input_title">Âm lượng mic</string>
+    <string name="xmbm_social_vs_balance_title">Cân bằng âm thanh</string>
+    <string name="xmbm_social_vs_balance_bar">Trò chơi ◀%1$s▶ Thoại</string>
+    <string name="xmbm_social_vs_ptt_title">Nhấn để nói</string>
+    <string name="xmbm_social_vs_ptt_on">giữ để nói — mic đóng khi không giữ</string>
+    <string name="xmbm_social_vs_overlay_title">Nút nói nổi</string>
+    <string name="xmbm_social_vs_overlay_needs">Tắt · cần quyền \"Hiển thị trên các ứng dụng khác\"</string>
+    <string name="xmbm_social_vs_overlay_on">Bật · nút giữ để nói nổi</string>
+    <string name="xmbm_social_vs_overlay_hidden">Tắt · ẩn (dùng nút tay cầm)</string>
+    <string name="xmbm_social_vs_pttbtn_title">Nút PTT</string>
+    <string name="xmbm_social_vs_pttbtn_press">Nhấn một nút trên tay cầm…</string>
+    <string name="xmbm_social_vs_pttbtn_set">%1$s  ·  giữ để nói khi ở trong Playfield Portal</string>
+    <string name="xmbm_social_vs_pttbtn_unset">Chưa đặt · chọn để gán nút tay cầm</string>
+    <string name="xmbm_social_hint_cancel">hủy</string>
+    <string name="xmbm_ptt_not_set">Chưa đặt</string>
+    <string name="xmbm_ptt_l3">L3 (nhấn cần trái)</string>
+    <string name="xmbm_ptt_r3">R3 (nhấn cần phải)</string>
+    <string name="xmbm_ptt_select">Select</string>
+    <string name="xmbm_ptt_start">Start</string>
+    <plurals name="xmbm_social_friends_online">
+        <item quantity="other">%d trực tuyến</item>
+    </plurals>
+    <plurals name="xmbm_social_invites_waiting">
+        <item quantity="other">%d đang chờ</item>
+    </plurals>
+
+    <!-- Launch, shortcut and theme messages -->
+    <!-- Subtitle of a game in the Missing list: why it is there. -->
+    <string name="xmbm_missing_reason">Không tìm thấy tệp trong lần quét gần nhất</string>
+    <string name="xmbm_social_reconnect">Kết nối lại</string>
+    <string name="xmbm_launch_failed">Không thể khởi động: %1$s</string>
+    <string name="xmbm_launch_could_not">Không thể khởi động %1$s</string>
+    <string name="xmbm_launch_no_emulator">Chưa thiết lập trình giả lập cho %1$s. Hãy gán trong Cài đặt ▸ Trình giả lập ▸ Mặc định theo hệ máy.</string>
+    <string name="xmbm_shortcut_fav_added">Đã thêm vào Yêu thích</string>
+    <string name="xmbm_shortcut_fav_removed">Đã xóa khỏi Yêu thích</string>
+    <string name="xmbm_shortcut_fav_failed">Không thể cập nhật Yêu thích: %1$s</string>
+    <string name="xmbm_shortcut_create_failed">Không thể tạo lối tắt: %1$s</string>
+    <string name="xmbm_scheme_original_sub">Thay đổi theo tháng</string>
+    <string name="xmbm_scheme_fixed_sub">Màu cố định</string>
+    <string name="xmbm_scheme_custom">Tùy chỉnh</string>
+    <string name="xmbm_scheme_custom_sub">Tinh chỉnh mọi màu bằng thanh trượt</string>
+    <string name="xmbm_theme_current">Chủ đề hiện tại</string>
+    <string name="xmbm_theme_save_title">Lưu giao diện hiện tại thành chủ đề</string>
+    <string name="xmbm_theme_save_failed">Không thể lưu chủ đề</string>
+    <string name="xmbm_theme_saved">Đã lưu chủ đề — %1$s</string>
+    <string name="xmbm_gameboot_preview_title">Xem trước</string>
+    <string name="xmbm_drawer_all_title">Tất cả ứng dụng</string>
+    <string name="xmbm_drawer_all_sub">Duyệt mọi ứng dụng đã cài</string>
+    <string name="xmbm_drawer_games_title">Trò chơi</string>
+    <string name="xmbm_drawer_games_sub">Ứng dụng được phân loại là trò chơi</string>
+    <string name="xmbm_drawer_emulators_title">Trình giả lập</string>
+    <string name="xmbm_drawer_emulators_sub">RetroArch, PPSSPP, Dolphin và nhiều hơn</string>
+    <string name="xmbm_drawer_recent_title">Dùng gần đây</string>
+    <string name="xmbm_drawer_recent_sub">Ứng dụng bạn đã dùng gần đây</string>
+    <string name="xmbm_shortcut_unsafe">Lối tắt đã nhận không an toàn để khởi động</string>
+</resources>

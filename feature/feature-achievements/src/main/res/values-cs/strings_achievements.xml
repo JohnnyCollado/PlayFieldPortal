@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Achievement update notifications -->
+    <string name="ach_upd_running">Aktualizace achievementů nainstalovaných her</string>
+    <string name="ach_upd_running_stop_note">Již aktualizované achievementy zůstanou zachovány.</string>
+    <string name="ach_upd_progress">Kontrola her: %1$d z %2$d</string>
+    <string name="ach_upd_stopped">Aktualizace achievementů zastavena</string>
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="one">Zkontrolována %d hra; uložený průběh zachován</item>
+        <item quantity="few">Zkontrolovány %d hry; uložený průběh zachován</item>
+        <item quantity="many">Zkontrolováno %d hry; uložený průběh zachován</item>
+        <item quantity="other">Zkontrolováno %d her; uložený průběh zachován</item>
+    </plurals>
+    <string name="ach_upd_some_failed">Některé achievementy nebylo možné aktualizovat</string>
+    <plurals name="ach_upd_failed_message">
+        <item quantity="one">%1$d z %2$d her potřebuje další pokus</item>
+        <item quantity="few">%1$d z %2$d her potřebují další pokus</item>
+        <item quantity="many">%1$d z %2$d her potřebuje další pokus</item>
+        <item quantity="other">%1$d z %2$d her potřebuje další pokus</item>
+    </plurals>
+    <string name="ach_upd_results_done">Aktualizováno</string>
+    <string name="ach_upd_updated">Achievementy aktualizovány</string>
+    <plurals name="ach_upd_updated_message">
+        <item quantity="one">Aktualizována %1$d hra · %2$d beze změny</item>
+        <item quantity="few">Aktualizovány %1$d hry · %2$d beze změny</item>
+        <item quantity="many">Aktualizováno %1$d hry · %2$d beze změny</item>
+        <item quantity="other">Aktualizováno %1$d her · %2$d beze změny</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">Achievementy jsou aktuální</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="one">Zkontrolována %d nainstalovaná hra</item>
+        <item quantity="few">Zkontrolovány %d nainstalované hry</item>
+        <item quantity="many">Zkontrolováno %d nainstalované hry</item>
+        <item quantity="other">Zkontrolováno %d nainstalovaných her</item>
+    </plurals>
+    <string name="ach_upd_paused">Aktualizace achievementů pozastavena</string>
+    <string name="ach_upd_fact_service">Služba</string>
+    <string name="ach_upd_pause_offline">Připojte se k internetu</string>
+    <string name="ach_upd_pause_reconnect">Znovu připojte %1$s</string>
+    <string name="ach_upd_pause_steam_private">Podrobnosti o hrách na Steamu nejsou dostupné</string>
+
+    <!-- Auto-match notifications -->
+    <string name="ach_match_running">Automatické přiřazování her</string>
+    <string name="ach_match_running_stop_note">Již přiřazené hry zůstanou propojené.</string>
+    <string name="ach_match_stopped_note">Již přiřazené hry zůstanou propojené</string>
+    <string name="ach_match_stopped">Automatické přiřazení zastaveno</string>
+    <string name="ach_match_recognized">Hry rozpoznány</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="one">Přiřazena %d nainstalovaná hra. Aktualizace jejích achievementů.</item>
+        <item quantity="few">Přiřazeny %d nainstalované hry. Aktualizace jejich achievementů.</item>
+        <item quantity="many">Přiřazeno %d nainstalované hry. Aktualizace jejich achievementů.</item>
+        <item quantity="other">Přiřazeno %d nainstalovaných her. Aktualizace jejich achievementů.</item>
+    </plurals>
+
+    <!-- Clearing achievement records -->
+    <string name="ach_clear_done">Záznamy achievementů vymazány</string>
+    <string name="ach_clear_done_message">Aby se achievementy znovu zobrazily, je třeba nainstalované hry znovu synchronizovat</string>
+    <string name="ach_clear_failed">Achievementy nelze vymazat</string>
+    <string name="ach_clear_failed_message">Nic nebylo odebráno. Zkuste to znovu v Nastavení ▸ Achievementy</string>
+
+    <!-- Local Steam: reasons -->
+    <string name="ach_ls_unavail_store">obchod nebylo možné kontaktovat</string>
+    <string name="ach_ls_unavail_steam">Steam teď není dostupný</string>
+    <string name="ach_ls_steam_unreachable">Nelze se spojit se Steamem</string>
+    <string name="ach_ls_steam_rate_limited">Steam omezuje počet požadavků</string>
+    <string name="ach_ls_steam_error">Steam vrátil chybu</string>
+    <string name="ach_ls_steam_needs_key">Steam vyžaduje váš klíč Web API</string>
+
+    <!-- Local Steam: linking a picked game folder -->
+    <string name="ach_link_no_match">Steam nemá žádnou hru odpovídající „%1$s“. Přejmenujte složku na název hry na Steamu nebo ji nejprve propojte v Podrobnostech hry ▸ Přiřadit hru.</string>
+    <string name="ach_link_unavailable">%1$s, proto nelze zjistit app id této složky. Nic nebylo změněno — zkuste to znovu, až budete online.</string>
+    <string name="ach_link_marker_failed">V této složce nelze vytvořit steam_appid.txt — PFP k ní může mít jen přístup pro čtení.</string>
+    <string name="ach_link_not_recorded">Vybrané přiřazení nelze zaznamenat.</string>
+    <string name="ach_link_installer_off">Než PFP zapíše do složky hry, zapněte v nastavení achievementů Instalovat Goldberg a převést hry.</string>
+    <string name="ach_link_no_app_id">Tato složka již neuvádí app id — vyberte ji znovu.</string>
+    <string name="ach_link_need_key">Přidejte svůj klíč Steam Web API v Nastavení ▸ Achievementy ▸ Přihlašovací údaje poskytovatelů — seznam achievementů pochází z něj.</string>
+    <string name="ach_link_no_achievements">Steam pro app id %1$s neuvádí žádné achievementy, takže není co sledovat.</string>
+    <string name="ach_link_kit_failed">Sadu achievementů nelze zapsat: %1$s</string>
+    <string name="ach_link_read_back_failed">Tuto složku nelze zpětně přečíst. Pokud je na vyměnitelném úložišti, znovu jej připojte a vyberte složku znovu.</string>
+    <string name="ach_link_not_steam_build">V této složce není žádný soubor knihovny Steam (steam_api64.dll), nejde tedy o verzi ze Steamu a emulátor nemá co sledovat. Vyberte složku, ve které je soubor .exe hry.</string>
+
+    <!-- Local Steam: convert picker rows -->
+    <string name="ach_pick_checking">Kontrola Steamu…</string>
+    <plurals name="ach_pick_coins">
+        <item quantity="one">%1$d mince  ·  appid %2$s</item>
+        <item quantity="few">%1$d mince  ·  appid %2$s</item>
+        <item quantity="many">%1$d mince  ·  appid %2$s</item>
+        <item quantity="other">%1$d mincí  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">Na Steamu není seznam  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">Vyžaduje klíč Steam Web API  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">Steam neodpověděl  ·  appid %1$s</string>
+
+    <!-- Local Steam: batch match summary -->
+    <string name="ach_batch_already_running">Hromadné přiřazování již probíhá.</string>
+    <string name="ach_batch_no_folders">Nejsou zde žádné složky her. Vyberte složku, která OBSAHUJE složky vašich her, ne složku jedné hry.</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="one">Nalezena %d složka, ale nejde o verzi ze Steamu — chybí knihovna steam_api, takže emulátor nemá co sledovat.</item>
+        <item quantity="few">Nalezeny %d složky, ale žádná není verze ze Steamu — chybí knihovna steam_api, takže emulátor nemá co sledovat.</item>
+        <item quantity="many">Nalezeno %d složky, ale žádná není verze ze Steamu — chybí knihovna steam_api, takže emulátor nemá co sledovat.</item>
+        <item quantity="other">Nalezeno %d složek, ale žádná není verze ze Steamu — chybí knihovna steam_api, takže emulátor nemá co sledovat.</item>
+    </plurals>
+    <string name="ach_batch_linked">%1$d propojeno s hrami v knihovně</string>
+    <string name="ach_batch_tracked">%1$d sledováno samostatně</string>
+    <string name="ach_batch_converting">%1$d čeká na převod</string>
+    <plurals name="ach_batch_matched">
+        <item quantity="one">Přiřazeno %1$d z %2$d složek.</item>
+        <item quantity="few">Přiřazeny %1$d z %2$d složek.</item>
+        <item quantity="many">Přiřazeno %1$d z %2$d složek.</item>
+        <item quantity="other">Přiřazeno %1$d z %2$d složek.</item>
+    </plurals>
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="one">Přiřazeno %1$d z %2$d složek: %3$s.</item>
+        <item quantity="few">Přiřazeny %1$d z %2$d složek: %3$s.</item>
+        <item quantity="many">Přiřazeno %1$d z %2$d složek: %3$s.</item>
+        <item quantity="other">Přiřazeno %1$d z %2$d složek: %3$s.</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="one">%1$d nelze rozpoznat podle názvu — otevřete stránku Shiba Coins hry a vyberte její složku pomocí Automatického přiřazení.</item>
+        <item quantity="few">%1$d nelze rozpoznat podle názvu — otevřete stránku Shiba Coins každé hry a vyberte její složku pomocí Automatického přiřazení.</item>
+        <item quantity="many">%1$d nelze rozpoznat podle názvu — otevřete stránku Shiba Coins každé hry a vyberte její složku pomocí Automatického přiřazení.</item>
+        <item quantity="other">%1$d nelze rozpoznat podle názvu — otevřete stránku Shiba Coins každé hry a vyberte její složku pomocí Automatického přiřazení.</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="one">%1$d není ve vaší knihovně — nejprve ji přidejte na kartu Windows a pak přiřaďte znovu.</item>
+        <item quantity="few">%1$d nejsou ve vaší knihovně — nejprve je přidejte na kartu Windows a pak přiřaďte znovu.</item>
+        <item quantity="many">%1$d není ve vaší knihovně — nejprve je přidejte na kartu Windows a pak přiřaďte znovu.</item>
+        <item quantity="other">%1$d není ve vaší knihovně — nejprve je přidejte na kartu Windows a pak přiřaďte znovu.</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="one">%1$d není verze ze Steamu.</item>
+        <item quantity="few">%1$d nejsou verze ze Steamu.</item>
+        <item quantity="many">%1$d není verze ze Steamu.</item>
+        <item quantity="other">%1$d není verze ze Steamu.</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="one">%1$d selhala — viz protokol.</item>
+        <item quantity="few">%1$d selhaly — viz protokol.</item>
+        <item quantity="many">%1$d selhalo — viz protokol.</item>
+        <item quantity="other">%1$d selhalo — viz protokol.</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">Tuto složku nelze otevřít.</string>
+    <string name="ach_batch_fail_read_back">%1$s: po rozpoznání ji nelze zpětně přečíst.</string>
+    <string name="ach_batch_fail_reason">%1$s: %2$s.</string>
+    <string name="ach_batch_fail_marker">%1$s: nelze vytvořit steam_appid.txt.</string>
+
+    <!-- Vita3K library scan results -->
+    <string name="ach_vita_set_folder">Nejprve nastavte datovou složku Vita3K (ux0).</string>
+    <string name="ach_vita_link_invalid">Odkaz na složku Vita3K je neplatný — udělte přístup znovu.</string>
+    <string name="ach_vita_no_ux0">V udělené složce nebyla nalezena složka ux0/app — vyberte složku ux0 emulátoru Vita3K (nebo složku, která ji obsahuje).</string>
+    <string name="ach_vita_no_app">Ve složce ux0 není složka app/ — zkontrolujte udělenou složku.</string>
+    <string name="ach_vita_none_installed">Ve složce ux0/app nebyly nalezeny žádné nainstalované hry pro Vitu. Nejprve nainstalujte hru ve Vita3K.</string>
+    <plurals name="ach_vita_no_new">
+        <item quantity="one">Žádné nové hry pro Vitu — %d již je ve vaší knihovně.</item>
+        <item quantity="few">Žádné nové hry pro Vitu — %d již jsou ve vaší knihovně.</item>
+        <item quantity="many">Žádné nové hry pro Vitu — %d již je ve vaší knihovně.</item>
+        <item quantity="other">Žádné nové hry pro Vitu — %d již je ve vaší knihovně.</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="one">Importována %d hra pro Vitu.</item>
+        <item quantity="few">Importovány %d hry pro Vitu.</item>
+        <item quantity="many">Importováno %d hry pro Vitu.</item>
+        <item quantity="other">Importováno %d her pro Vitu.</item>
+    </plurals>
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="one">Importována %1$d hra pro Vitu, aktualizováno %2$d.</item>
+        <item quantity="few">Importovány %1$d hry pro Vitu, aktualizováno %2$d.</item>
+        <item quantity="many">Importováno %1$d hry pro Vitu, aktualizováno %2$d.</item>
+        <item quantity="other">Importováno %1$d her pro Vitu, aktualizováno %2$d.</item>
+    </plurals>
+</resources>

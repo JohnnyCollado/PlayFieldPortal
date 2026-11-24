@@ -11,6 +11,7 @@ import com.playfieldportal.core.data.repository.ThemePrefKeys
 import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
+import com.playfieldportal.feature.settings.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -63,13 +64,13 @@ class LockScreenViewModel @Inject constructor(
     fun onImagePicked(uri: Uri) = run {
         val bytes = withContext(Dispatchers.IO) {
             runCatching { context.contentResolver.openInputStream(uri)?.use { it.readCapped(MAX_PICK_BYTES) } }.getOrNull()
-        } ?: return@run LockScreenImage.Result.Failed("That image could not be read")
+        } ?: return@run LockScreenImage.Result.Failed(context.getString(R.string.setd_lock_unreadable))
         lockScreen.set(bytes, LockScreenImage.Source.USER)
     }
 
     fun useLauncherWallpaper() = run {
         val path = context.pfpDataStore.data.first()[ThemePrefKeys.CUSTOM_WALLPAPER]
-            ?: return@run LockScreenImage.Result.Failed("The launcher has no wallpaper image to use")
+            ?: return@run LockScreenImage.Result.Failed(context.getString(R.string.setd_lock_no_wallpaper))
         lockScreen.setFromFile(path, LockScreenImage.Source.USER)
     }
 
@@ -81,9 +82,9 @@ class LockScreenViewModel @Inject constructor(
             val reset = lockScreen.clear()
             busy.value = false
             if (reset) {
-                report("Lock screen reset to the device default", NotificationSeverity.SUCCESS)
+                report(context.getString(R.string.setd_lock_reset_done), NotificationSeverity.SUCCESS)
             } else {
-                report("The device didn't reset the lock screen. It still shows the current image.", NotificationSeverity.ERROR)
+                report(context.getString(R.string.setd_lock_reset_failed), NotificationSeverity.ERROR)
             }
         }
     }
@@ -95,7 +96,7 @@ class LockScreenViewModel @Inject constructor(
             val result = block()
             busy.value = false
             when (result) {
-                LockScreenImage.Result.Set -> report("Lock screen image set", NotificationSeverity.SUCCESS)
+                LockScreenImage.Result.Set -> report(context.getString(R.string.setd_lock_set_done), NotificationSeverity.SUCCESS)
                 is LockScreenImage.Result.Failed -> report(result.reason, NotificationSeverity.ERROR)
             }
         }
@@ -104,7 +105,7 @@ class LockScreenViewModel @Inject constructor(
     private fun report(message: String, severity: NotificationSeverity) {
         tasks.report(
             id = TRAY_ID,
-            label = "Lock Screen",
+            label = context.getString(R.string.setd_lock_tray_label),
             message = message,
             severity = severity,
             action = NotificationAction.OpenSettingsScreen("settings_display"),

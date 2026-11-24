@@ -8,6 +8,8 @@ import com.playfieldportal.core.data.saf.SafChild
 import com.playfieldportal.core.data.saf.querySafChildren
 import com.playfieldportal.core.data.saf.querySafChildrenOrNull
 import com.playfieldportal.core.domain.model.Game
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.library.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
@@ -42,7 +44,7 @@ sealed class ScanResult {
         // "everything is gone".
         val presentRomPaths: Set<String>? = null,
     ) : ScanResult()
-    data class Error(val message: String) : ScanResult()
+    data class Error(val message: UiText) : ScanResult()
 }
 
 data class UnmatchedRom(
@@ -119,7 +121,7 @@ class RomScanner @Inject constructor(
 
         val root = File(directory)
         if (!root.exists() || !root.isDirectory) {
-            emit(ScanResult.Error("ROM directory not found: $directory"))
+            emit(ScanResult.Error(UiText.res(R.string.scan_error_rom_dir_not_found, directory)))
             return@flow
         }
 
@@ -245,7 +247,7 @@ class RomScanner @Inject constructor(
 
         val tree = runCatching { Uri.parse(treeUri) }.getOrNull()
         if (tree == null) {
-            emit(ScanResult.Error("This library's folder link is invalid. Re-add the folder."))
+            emit(ScanResult.Error(UiText.res(R.string.scan_error_folder_link_invalid)))
             return@flow
         }
         val allowed = extensions.map { it.removePrefix(".").lowercase() }.toSet()

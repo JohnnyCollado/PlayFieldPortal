@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Voice microphone sensitivity (Discord) -->
+    <!-- How strictly the microphone filters out background sound during a voice call. Shown on a settings row. -->
+    <string name="data_mic_sensitivity_auto">تلقائي</string>
+    <string name="data_mic_sensitivity_high">عالية</string>
+    <string name="data_mic_sensitivity_low">منخفضة · تتجاهل النقرات</string>
+    <string name="data_mic_sensitivity_minimal">أدنى حد · الكلام العالي فقط</string>
+
+    <!-- Discord sign-in errors -->
+    <!-- Shown on the Discord QR sign-in screen when the device has no internet. -->
+    <string name="data_discord_offline">أنت غير متصل بالإنترنت. أعِد الاتصال وحاول مرة أخرى.</string>
+    <string name="data_discord_unreachable">تعذّر الوصول إلى Discord</string>
+    <string name="data_discord_signin_network_error">حدث خطأ في الشبكة أثناء تسجيل الدخول</string>
+
+    <!-- Music and video players -->
+    <!-- Shown when no app can play a music file. "Settings → Music" is a path in this app's settings. -->
+    <string name="data_music_no_player">لا يوجد مشغّل موسيقى يمكنه فتح هذا المقطع. ثبّت مشغّلاً أو اختر واحدًا من الإعدادات ← الموسيقى.</string>
+    <string name="data_video_no_player_open">لا يوجد مشغّل فيديو يمكنه فتح هذا الملف. ثبّت مشغّلاً أو اختر واحدًا من الإعدادات ← الفيديو.</string>
+    <string name="data_video_chooser_title">تشغيل الفيديو باستخدام…</string>
+    <string name="data_video_none_installed">لم يتم تثبيت أي مشغّل فيديو.</string>
+    <string name="data_video_bad_location">موقع هذا الفيديو غير صالح.</string>
+    <string name="data_video_unreachable">تعذّر العثور على ملف الفيديو هذا أو فُقد الوصول إليه. حاول إعادة فحص المكتبة.</string>
+    <string name="data_video_player_cannot_open">‏%1$s لا يمكنه فتح هذا الفيديو، أو غير مثبّت.</string>
+    <string name="data_video_that_player">ذلك المشغّل</string>
+    <string name="data_video_none_installed_for_file">لا يوجد مشغّل فيديو مثبّت لفتح هذا الملف.</string>
+
+    <!-- Lock screen image -->
+    <string name="data_lockscreen_unreadable">تعذّرت قراءة هذه الصورة</string>
+    <string name="data_lockscreen_rejected">لم يقبل هذا الجهاز صورة لشاشة القفل</string>
+
+    <!-- PSP theme import (.ptf) -->
+    <!-- Errors shown when importing a theme file made for the PlayStation Portable (.ptf). -->
+    <string name="data_ptf_unreadable">تعذّرت قراءة الملف (أو أنه كبير جدًا)</string>
+    <string name="data_ptf_not_ptf">ليس ملف سمة PSP (.ptf)</string>
+    <string name="data_ptf_unparseable">تعذّر تحليل ملف السمة</string>
+    <string name="data_ptf_wallpaper_missing">لا تحتوي السمة على صورة خلفية</string>
+    <string name="data_ptf_wallpaper_unsupported">تضغط هذه السمة خلفيتها بطريقة غير مدعومة</string>
+    <string name="data_ptf_wallpaper_damaged">خلفية السمة تالفة وتعذّر فك ترميزها</string>
+    <string name="data_ptf_save_failed">تعذّر حفظ السمة</string>
+
+    <!-- Custom media names -->
+    <!-- Name shown for a video the user picked when its file name cannot be read. -->
+    <string name="data_custom_video">فيديو مخصص</string>
+    <string name="data_custom_sound">صوت مخصص</string>
+
+    <!-- Controllers -->
+    <!-- Name shown for a connected game controller that reports no name. -->
+    <string name="data_controller_fallback_name">وحدة التحكم</string>
+</resources>

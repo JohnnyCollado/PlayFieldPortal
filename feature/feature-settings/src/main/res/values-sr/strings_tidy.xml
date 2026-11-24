@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings ▸ Controller: row names for the two swap switches. -->
+    <string name="tidy_controller_swap_confirm_back">Замени потврду и назад</string>
+    <string name="tidy_controller_swap_options_sort">Замени опције и сортирање</string>
+
+    <!-- Settings ▸ Display: group header above the icon, text and font rows. -->
+    <string name="tidy_group_text_icons">Текст и иконице</string>
+
+    <!-- Wizard header under the page title. %1$d is this page's number, %2$d how many pages this run shows. -->
+    <string name="tidy_wizard_step_of">Корак %1$d од %2$d</string>
+</resources>

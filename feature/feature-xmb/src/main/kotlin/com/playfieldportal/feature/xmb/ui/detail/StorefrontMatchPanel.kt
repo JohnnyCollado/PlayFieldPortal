@@ -23,7 +23,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
+import com.playfieldportal.core.ui.components.PfpBusyRing
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,16 +32,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.components.XmbHeaderPill
+import com.playfieldportal.core.ui.text.asString
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.artwork.match.MatchConfidence
 import com.playfieldportal.feature.artwork.match.MatchSignal
+import com.playfieldportal.feature.xmb.R
 
 // ── Storefront match picker (C23 T6, Phase 10) ───────────────────────────────
 // GameDetailViewModel owns the state and routes controller input (Up/Down rows, Select chooses,
@@ -91,7 +95,7 @@ fun StorefrontMatchPanel(
         ) {
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
-                    "Match Game",
+                    stringResource(R.string.det_store_match_title),
                     color = themedText(TextPrimary),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -118,8 +122,8 @@ fun StorefrontMatchPanel(
 
             if (!showTouchControls) {
                 Text(
-                    if (ui.hasOtherStores) "Up/Down  Rows  •  L1/R1  Store  •  Select  Choose  •  △  More Information  •  B  Cancel"
-                    else "Up/Down  Rows  •  Select  Choose  •  △  More Information  •  B  Cancel",
+                    if (ui.hasOtherStores) stringResource(R.string.det_store_hint_multi)
+                    else stringResource(R.string.det_store_hint_single),
                     color = themedSubText(TextMuted.copy(alpha = 0.55f)),
                     fontSize = 10.sp,
                 )
@@ -127,7 +131,7 @@ fun StorefrontMatchPanel(
 
             if (ui.loading) {
                 Box(Modifier.fillMaxWidth().padding(vertical = 28.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = focusEdge)
+                    PfpBusyRing(color = focusEdge)
                 }
                 return@Column
             }
@@ -154,20 +158,18 @@ fun StorefrontMatchPanel(
             ) {
                 LocalGameStrip(ui)
 
-                storefrontOtherStoresNote(ui)?.let { Notice(it, AttentionAmber) }
+                storefrontOtherStoresNote(ui)?.let { Notice(it.asString(), AttentionAmber) }
 
                 when {
                     ui.confidence == MatchConfidence.AMBIGUOUS && ui.tiedOnExactTitle -> Notice(
-                        "Two store entries carry this exact title. A tie on an identical name can't be " +
-                            "broken by evidence, so nothing is linked until you choose.",
+                        stringResource(R.string.det_store_notice_tied),
                         AttentionAmber,
                     )
                     // Below the bar PFP would ever link on. Said plainly, because these rows would
                     // otherwise read as recommendations: `Bravely Default` finds `BRAVELY DEFAULT II`,
                     // which is a different game, and only the user knows whether one of these is theirs.
                     ui.confidence == MatchConfidence.LOW -> Notice(
-                        "None of these is a confident match — the names only partly agree. Check the " +
-                            "year and the developer before choosing, or leave it unlinked.",
+                        stringResource(R.string.det_store_notice_low),
                         AttentionAmber,
                     )
                     else -> Unit
@@ -221,24 +223,24 @@ fun StorefrontMatchPanel(
  * precedence: a store that could not be reached outranks everything, because "didn't answer" and
  * "doesn't have it" lead to opposite actions.
  */
-internal fun storefrontEmptyMessage(ui: StorefrontMatchUi): Pair<String, String> = when {
+internal fun storefrontEmptyMessage(ui: StorefrontMatchUi): Pair<UiText, UiText> = when {
     ui.unavailableStores.isNotEmpty() ->
-        "${ui.unavailableStores.joinToString(", ")} didn't answer." to
-            "Nothing was changed. This is a connection problem, not a missing game — try again later."
+        UiText.res(R.string.det_store_empty_unavailable_title, ui.unavailableStores.joinToString(", ")) to
+            UiText.res(R.string.det_store_empty_unavailable_detail)
     ui.notApplicable ->
-        "This isn't a Windows game." to
-            "Storefront identities only exist for PC games. Console ROMs are matched by their file."
+        UiText.res(R.string.det_store_empty_not_windows_title) to
+            UiText.res(R.string.det_store_empty_not_windows_detail)
     ui.settledLabel != null ->
-        "Already matched." to
-            "${ui.settledLabel} — there was nothing to choose between. Use Store Match to change it."
+        UiText.res(R.string.det_store_empty_settled_title) to
+            UiText.res(R.string.det_store_empty_settled_detail, ui.settledLabel)
     // A name the user typed found nothing. Named, so they can see what was asked for, and pointed
     // back at the search bar rather than at the title: the bar exists so the title can stay.
     ui.typedQuery != null ->
-        "No store has “${ui.typedQuery}”." to
-            "Nothing was changed, and nothing is linked. Go back to try another name."
+        UiText.res(R.string.det_store_empty_typed_title, ui.typedQuery) to
+            UiText.res(R.string.det_store_empty_typed_detail)
     else ->
-        "No store has this game." to
-            "Nothing was changed, and nothing is linked. Use the search bar in Store Match to try another name."
+        UiText.res(R.string.det_store_empty_none_title) to
+            UiText.res(R.string.det_store_empty_none_detail)
 }
 
 /**
@@ -248,27 +250,28 @@ internal fun storefrontEmptyMessage(ui: StorefrontMatchUi): Pair<String, String>
  * first, because its absence reads as "that store doesn't have the game" and means the opposite;
  * a store already linked is named so it is not taken for one that was skipped.
  */
-internal fun storefrontOtherStoresNote(ui: StorefrontMatchUi): String? {
+internal fun storefrontOtherStoresNote(ui: StorefrontMatchUi): UiText? {
     val unreachable = ui.unavailableStores.takeIf { it.isNotEmpty() && ui.rows.isNotEmpty() }
         ?.joinToString(", ")
-        ?.let { names -> "$names didn't answer, so this list is ${ui.storeLabel.orEmpty()}'s alone. Try again later for $names." }
+        ?.let { names -> UiText.res(R.string.det_store_note_unreachable, names, ui.storeLabel.orEmpty()) }
     val linked = ui.settledStores.takeIf { it.isNotEmpty() }
         ?.joinToString(", ")
-        ?.let { names -> "Already linked on $names. That link is not changed here." }
-    return listOfNotNull(unreachable, linked).joinToString(" ").takeIf { it.isNotBlank() }
+        ?.let { names -> UiText.res(R.string.det_store_note_linked, names) }
+    val parts = listOfNotNull(unreachable, linked)
+    return if (parts.size > 1) UiText.Joined(parts, " ") else parts.firstOrNull()
 }
 
 @Composable
 private fun EmptyState(ui: StorefrontMatchUi) {
     val (headline, detail) = storefrontEmptyMessage(ui)
     Text(
-        headline,
+        headline.asString(),
         color = themedText(TextPrimary),
         fontSize = 14.sp,
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier.padding(top = 8.dp),
     )
-    Text(detail, color = themedSubText(TextMuted), fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp, bottom = 4.dp))
+    Text(detail.asString(), color = themedSubText(TextMuted), fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp, bottom = 4.dp))
 }
 
 /** One store in the header. The shown one is outlined; the others are taps away, or L1/R1. */
@@ -299,7 +302,7 @@ private fun LocalGameStrip(ui: StorefrontMatchUi) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text("Your game", color = themedSubText(TextMuted), fontSize = 11.sp)
+            Text(stringResource(R.string.det_store_your_game), color = themedSubText(TextMuted), fontSize = 11.sp)
             Text(
                 ui.gameTitle,
                 color = themedText(TextPrimary),
@@ -310,9 +313,9 @@ private fun LocalGameStrip(ui: StorefrontMatchUi) {
             )
         }
         Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text("Searched as", color = themedSubText(TextMuted), fontSize = 11.sp)
+            Text(stringResource(R.string.det_store_searched_as), color = themedSubText(TextMuted), fontSize = 11.sp)
             Text(
-                "“${ui.query}”",
+                stringResource(R.string.det_store_quoted, ui.query),
                 color = themedText(TextPrimary),
                 fontSize = 12.sp,
                 maxLines = 1,
@@ -387,14 +390,14 @@ private fun CandidateRow(
             }
             if (row.strongSignals.isNotEmpty()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    row.strongSignals.forEach { SignalChip(it) }
+                    row.strongSignals.forEach { SignalChip(it.asString()) }
                 }
             }
         }
 
         Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(row.idLabel, color = themedSubText(TextMuted), fontSize = 11.sp)
-            Text("score ${row.score}", color = themedSubText(TextMuted.copy(alpha = 0.6f)), fontSize = 10.sp)
+            Text(row.idLabel.asString(), color = themedSubText(TextMuted), fontSize = 11.sp)
+            Text(stringResource(R.string.det_store_score, row.score), color = themedSubText(TextMuted.copy(alpha = 0.6f)), fontSize = 10.sp)
         }
     }
 }
@@ -434,9 +437,9 @@ private fun NoMatchRow(
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Text("No correct match", color = themedText(TextPrimary), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        Text(stringResource(R.string.det_store_no_match), color = themedText(TextPrimary), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         Text(
-            "Leave $title unlinked. Nothing is written, and you can try again later.",
+            stringResource(R.string.det_store_no_match_detail, title),
             color = themedSubText(TextMuted),
             fontSize = 11.sp,
         )
@@ -464,11 +467,11 @@ private fun TouchActions(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (choosable) {
-            XmbHeaderPill(label = "Choose", onClick = onChoose)
-            XmbHeaderPill(label = "More Information", onClick = onMoreInfo)
+            XmbHeaderPill(label = stringResource(R.string.det_store_choose), onClick = onChoose)
+            XmbHeaderPill(label = stringResource(R.string.det_store_more_info), onClick = onMoreInfo)
         }
         Spacer(Modifier.weight(1f))
-        XmbHeaderPill(label = "Cancel", onClick = onClose)
+        XmbHeaderPill(label = stringResource(R.string.det_cancel), onClick = onClose)
     }
 }
 
@@ -509,18 +512,18 @@ private fun StorefrontMoreInfoPanel(
         ) {
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
-                    "More Information",
+                    stringResource(R.string.det_store_more_info),
                     color = themedText(TextPrimary),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
-                Text("${row.storeLabel}  •  ${row.idLabel}", color = themedSubText(TextMuted), fontSize = 11.sp)
+                Text("${row.storeLabel}  •  ${row.idLabel.asString()}", color = themedSubText(TextMuted), fontSize = 11.sp)
             }
 
             if (!showTouchControls) {
                 Text(
-                    "Select  Choose this game  •  B  Back",
+                    stringResource(R.string.det_store_hint_more_info),
                     color = themedSubText(TextMuted.copy(alpha = 0.55f)),
                     fontSize = 10.sp,
                 )
@@ -534,7 +537,7 @@ private fun StorefrontMoreInfoPanel(
 
             Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0x14FFFFFF)))
 
-            Text("Why it ranked here", color = themedText(TextPrimary), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.det_store_why_ranked), color = themedText(TextPrimary), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
 
             row.signalLines.forEach { line ->
                 Row(
@@ -546,7 +549,7 @@ private fun StorefrontMoreInfoPanel(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        line.label,
+                        line.label.asString(),
                         color = themedText(if (line.counted) TextPrimary else TextMuted),
                         fontSize = 12.sp,
                         modifier = Modifier.weight(1f),
@@ -561,22 +564,21 @@ private fun StorefrontMoreInfoPanel(
             }
 
             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp)) {
-                Text("Total", color = themedSubText(TextMuted), fontSize = 12.sp, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.det_store_total), color = themedSubText(TextMuted), fontSize = 12.sp, modifier = Modifier.weight(1f))
                 Text("${row.score}", color = themedText(TextPrimary), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
             }
 
             if (tiedOnExactTitle && rivalStoreId != null) {
                 Notice(
-                    "Still not linked automatically: another store entry ($rivalStoreId) carries the " +
-                        "same exact title, and an identical name is not something points are allowed to settle.",
+                    stringResource(R.string.det_store_notice_rival, rivalStoreId),
                     AttentionAmber,
                 )
             }
 
             Row(Modifier.fillMaxWidth().padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (showTouchControls) {
-                    XmbHeaderPill(label = "Choose this game", onClick = onChoose)
-                    XmbHeaderPill(label = "Back", onClick = onBack)
+                    XmbHeaderPill(label = stringResource(R.string.det_store_choose_this), onClick = onChoose)
+                    XmbHeaderPill(label = stringResource(R.string.det_back), onClick = onBack)
                 } else {
                     Box(
                         modifier = Modifier
@@ -588,7 +590,7 @@ private fun StorefrontMoreInfoPanel(
                             .padding(vertical = 10.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text("Choose this game", color = themedText(TextPrimary), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.det_store_choose_this), color = themedText(TextPrimary), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     }
                     Box(
                         modifier = Modifier
@@ -599,7 +601,7 @@ private fun StorefrontMoreInfoPanel(
                             .padding(vertical = 10.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text("Back to matches", color = themedText(TextPrimary), fontSize = 13.sp)
+                        Text(stringResource(R.string.det_store_back_to_matches), color = themedText(TextPrimary), fontSize = 13.sp)
                     }
                 }
             }
@@ -608,16 +610,18 @@ private fun StorefrontMoreInfoPanel(
 }
 
 /** One line of the More Information ledger. */
-data class SignalLine(val label: String, val points: String, val counted: Boolean)
+data class SignalLine(val label: UiText, val points: String, val counted: Boolean)
 
 /** Human wording for a scoring signal, so the enum never reaches the screen. */
-fun MatchSignal.describe(): String = when (this) {
-    MatchSignal.AUTHORITATIVE_ID -> "Store id — the launcher reported this id itself"
-    MatchSignal.EXACT_TITLE -> "Exact title — the normalized names are identical"
-    MatchSignal.DEVELOPER -> "Developer — matches the one on your copy"
-    MatchSignal.PUBLISHER -> "Publisher — matches the one on your copy"
-    MatchSignal.RELEASE_YEAR -> "Release year — matches the one on your copy"
-    MatchSignal.EDITION_STRIPPED_TITLE -> "Same game, different edition"
-    MatchSignal.PARTIAL_TITLE -> "Partial title — one name contains the other"
-    MatchSignal.RELEASE_YEAR_CONFLICT -> "Release year — disagrees with your copy"
-}
+fun MatchSignal.describe(): UiText = UiText.res(
+    when (this) {
+        MatchSignal.AUTHORITATIVE_ID -> R.string.det_signal_desc_store_id
+        MatchSignal.EXACT_TITLE -> R.string.det_signal_desc_exact_title
+        MatchSignal.DEVELOPER -> R.string.det_signal_desc_developer
+        MatchSignal.PUBLISHER -> R.string.det_signal_desc_publisher
+        MatchSignal.RELEASE_YEAR -> R.string.det_signal_desc_year
+        MatchSignal.EDITION_STRIPPED_TITLE -> R.string.det_signal_desc_other_edition
+        MatchSignal.PARTIAL_TITLE -> R.string.det_signal_desc_partial_title
+        MatchSignal.RELEASE_YEAR_CONFLICT -> R.string.det_signal_desc_year_conflict
+    },
+)

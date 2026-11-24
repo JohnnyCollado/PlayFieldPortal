@@ -1,0 +1,330 @@
+# Theme Studio in pl. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	Nowy
+Open…	Otwórz…
+Upgrade folder…	Uaktualnij folder…
+Convert .ptf…	Konwertuj .ptf…
+Batch convert…	Konwersja wsadowa…
+Unpack assets…	Rozpakuj zasoby…
+Undo	Cofnij
+Redo	Ponów
+Export .pfptheme…	Eksportuj .pfptheme…
+Import PSP theme ▾	Importuj motyw PSP ▾
+Working…	Trwa praca…
+Open ▾	Otwórz ▾
+Open: {0} ▾	Otwórz: {0} ▾
+XMB (back to the crossbar)	XMB (powrót do paska)
+Stop {0}	Zatrzymaj {0}
+Play {0}	Odtwórz {0}
+Video only — sound plays on the device	Tylko wideo — dźwięk jest odtwarzany na urządzeniu
+This theme uses an older format. Saving upgrades it to the current one.	Ten motyw używa starszego formatu. Zapisanie uaktualnia go do bieżącego.
+See changes	Zobacz zmiany
+Something went wrong	Coś poszło nie tak
+OK	OK
+Cancel	Anuluj
+Open theme	Otwórz motyw
+PSP theme to convert	Motyw PSP do konwersji
+Export theme	Eksportuj motyw
+Info	Informacje
+Color	Kolor
+Background	Tło
+Legibility	Czytelność
+Layout	Układ
+Icons	Ikony
+Sounds	Dźwięki
+Boot & Game Boot	Boot i Game Boot
+Export check	Sprawdzenie eksportu
+Untitled	Bez nazwy
+Video	Wideo
+Image	Obraz
+Wave	Fala
+Not set	Nie ustawiono
+Set	Ustawiono
+Preview only	Tylko podgląd
+None custom	Brak własnych
+{0} custom	Własne: {0}
+None set	Nic nie ustawiono
+{0} set	Ustawione: {0}
+{0} of 2	{0} z 2
+Ready	Gotowe
+Untitled Theme	Motyw bez nazwy
+App Drawer	Szuflada aplikacji
+Settings	Ustawienia
+App Picker	Wybór aplikacji
+Game Picker	Wybór gier
+Artwork Studio	Studio grafik
+Game Detail Screen	Szczegóły gry
+Achievement Screen	Osiągnięcia
+Per-Game Achievement Screen	Osiągnięcia gry
+Lock Screen	Ekran blokady
+Boot	Boot
+Game Boot	Game Boot
+In this file	W tym pliku
+Nothing embedded yet	Nic jeszcze nie osadzono
+Theme name	Nazwa motywu
+Author	Autor
+Short description	Krótki opis
+New theme — not saved yet	Nowy motyw — jeszcze niezapisany
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	Zapisano: nazwa, autor i opis są częścią pliku .pfptheme. Data aktualizacji jest ustawiana przy eksporcie.
+Accent color	Kolor akcentu
+Auto (from the wallpaper)	Automatyczny (z tapety)
+Custom	Własny
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	Każda nowa tapeta lub wideo ustawia akcent. Wybierz kolor, aby zachować własny.
+Your accent stays when the wallpaper or video changes.	Twój akcent zostaje, gdy zmienia się tapeta lub wideo.
+Custom accent	Własny akcent
+Icon color	Kolor ikon
+Auto (follows the theme)	Automatyczny (zgodny z motywem)
+White	Biały
+Main text color	Kolor tekstu głównego
+Titles and labels: the crossbar, list rows and status strip, and every screen.	Tytuły i etykiety: pasek, wiersze list, pasek stanu i każdy ekran.
+Auto (built-in colors)	Automatyczny (wbudowane kolory)
+Use my exact color	Użyj mojego dokładnego koloru
+Subtext color	Kolor tekstu pomocniczego
+Subtitles, sublabels and values.	Podtytuły, etykiety pomocnicze i wartości.
+Same as main text	Taki sam jak tekst główny
+Source	Źródło
+Wave motion	Ruch fali
+Video playback	Odtwarzanie wideo
+Moving	Ruchome
+Moving, dim	Ruchome, przyciemnione
+Still	Nieruchome
+Still, dim	Nieruchome, przyciemnione
+None — live wave background	Brak — ruchome tło z falą
+Replace…	Zastąp…
+Re-crop…	Przytnij ponownie…
+Clear	Wyczyść
+Clear video	Wyczyść wideo
+Pick frame…	Wybierz klatkę…
+The preview always shows a frozen wave; the style plays on the device.	Podgląd zawsze pokazuje zatrzymaną falę; styl jest odtwarzany na urządzeniu.
+Lock screen	Ekran blokady
+None — the theme leaves the device lock screen alone	Brak — motyw nie zmienia ekranu blokady urządzenia
+Choose Image…	Wybierz obraz…
+Use Poster	Użyj plakatu
+Use Wallpaper	Użyj tapety
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	Tylko obraz nieruchomy. Urządzenie przycina go do własnego ekranu i ustawia tylko wtedy, gdy użytkownik zgodzi się przy stosowaniu.
+Crop	Przytnij
+Zoom	Powiększenie
+Center	Wyśrodkuj
+Apply	Zastosuj
+Reset	Resetuj
+Text	Tekst
+Automatic	Automatycznie
+None	Brak
+Drop shadow	Cień
+Outline	Kontur
+Contrast plate	Płytka kontrastowa
+Offset shadow (dark)	Przesunięty cień (ciemny)
+Offset shadow (light)	Przesunięty cień (jasny)
+Contour dark	Kontur ciemny
+Contour light	Kontur jasny
+Contour auto	Kontur automatyczny
+Solid unfocused icons	Pełne ikony bez fokusu
+Older launchers ignore these and show plain text and icons.	Starsze launchery to ignorują i pokazują zwykły tekst oraz ikony.
+Preview with my layout	Podgląd z moim układem
+Preview only — never saved in the theme. Remembered on this computer.	Tylko podgląd — nigdy nie jest zapisywane w motywie. Zapamiętane na tym komputerze.
+Use my layout in the preview	Użyj mojego układu w podglądzie
+Scale — {0}	Skala — {0}
+Horizontal — {0}	Poziomo — {0}
+Vertical — {0}	Pionowo — {0}
+Biblically Accurate preview	Podgląd wierny oryginałowi
+Adjust on preview	Dostosuj w podglądzie
+All {0}	Wszystkie {0}
+Crossbar {0}	Pasek {0}
+Items {0}	Elementy {0}
+Consoles {0}	Konsole {0}
+Physical Media {0}	Nośniki fizyczne {0}
+On screen	Na ekranie
+Customized {0}	Dostosowane {0}
+Showing {0} of {1}	Pokazano {0} z {1}
+Select a slot to see it at real size, replace it, or export its template.	Wybierz miejsce, aby zobaczyć je w rzeczywistym rozmiarze, zastąpić lub wyeksportować jego szablon.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	Upuść plik obrazu (png, gif, jpg, bmp, webp) na dowolne miejsce, aby zastąpić jego ikonę.
+Import icon pack… ▾	Importuj pakiet ikon… ▾
+Export templates…	Eksportuj szablony…
+Reset all	Resetuj wszystko
+Local file…	Plik lokalny…
+From theme…	Z motywu…
+Export template	Eksportuj szablon
+Menu sounds	Dźwięki menu
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	To, co zostawisz puste, zachowa wbudowany dźwięk. Klipy muszą mieścić się w limicie danego wiersza.
+Navigation	Nawigacja
+Category change	Zmiana kategorii
+Options panel	Panel opcji
+Back / cancel	Wstecz / anuluj
+Confirm / apply	Potwierdź / zastosuj
+Error / invalid	Błąd / nieprawidłowe
+Notification	Powiadomienie
+Ambience (loops)	Tło dźwiękowe (pętla)
+Built-in	Wbudowany
+Up to {0}	Do {0}
+Choose…	Wybierz…
+▶ Play	▶ Odtwórz
+■ Stop	■ Zatrzymaj
+Boot sequences	Sekwencje startowe
+Choose the built-in sequence or your own MP4 for each.	Dla każdej wybierz wbudowaną sekwencję lub własny plik MP4.
+The launcher's own {0} sequence.	Własna sekwencja {0} launchera.
+Your own MP4 (H.264).	Twój własny plik MP4 (H.264).
+Choose MP4…	Wybierz MP4…
+Play in preview	Odtwórz w podglądzie
+Use built-in	Użyj wbudowanej
+All media is within limits	Wszystkie multimedia mieszczą się w limitach
+Opens on older launchers	Otwiera się w starszych launcherach
+Fix the items marked ✕ before exporting.	Popraw elementy oznaczone ✕ przed eksportem.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	Podczas eksportu tworzony jest obraz podglądu gotowego motywu, który widać jako miniaturę w galerii motywów launchera.
+Opened {0}	Otwarto {0}
+Exported {0}	Wyeksportowano {0}
+Folder of .pfptheme files to upgrade	Folder z plikami .pfptheme do aktualizacji
+Folder with .ptf files	Folder z plikami .ptf
+Output folder for .pfptheme files	Folder docelowy na pliki .pfptheme
+PSP theme to unpack	Motyw PSP do rozpakowania
+Folder for unpacked assets	Folder na rozpakowane zasoby
+Converting {0}  ({1}/{2})	Konwertowanie {0}  ({1}/{2})
+This theme was made by a newer version (format v{0}). Parts this version doesn't know are kept when you save.	Ten motyw utworzono w nowszej wersji (format v{0}). Części, których ta wersja nie zna, zostaną zachowane przy zapisie.
+CXMB theme	Motyw CXMB
+This file is a CXMB custom firmware theme (.ctf). Those replace PSP system files rather than describing wallpaper and colors, so they can't be converted. Official PSP themes (.ptf) open fine.	Ten plik to motyw CXMB dla niestandardowego firmware (.ctf). Takie motywy zastępują pliki systemowe PSP zamiast opisywać tapetę i kolory, więc nie da się ich przekonwertować. Oficjalne motywy PSP (.ptf) otwierają się bez problemu.
+Batch conversion finished	Konwersja wsadowa zakończona
+Converted: {0}	Przekonwertowano: {0}
+Converted with caveats: {0}	Przekonwertowano z zastrzeżeniami: {0}
+Skipped (CXMB): {0} — {1}	Pominięto (CXMB): {0} — {1}
+Failed: {0}	Niepowodzenia: {0}
+Theme upgrade finished	Aktualizacja motywów zakończona
+Upgraded: {0} (originals kept as .bak)	Zaktualizowano: {0} (oryginały zachowane jako .bak)
+Already current: {0}	Już aktualne: {0}
+Made by a newer version, left alone: {0}	Z nowszej wersji, pozostawione bez zmian: {0}
+Report: {0}	Raport: {0}
+Background motion	Ruch tła
+Still: frame at {0}	Obraz statyczny: klatka w {0}
+Still: baked into the theme	Obraz statyczny: zapisany w motywie
+Import wallpaper	Importuj tapetę
+Import video	Importuj wideo
+Lock screen image	Obraz ekranu blokady
+(embedded image)	(osadzony obraz)
+Fit	Dopasowanie
+Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.	Zbyt wyrazista tapeta — etykiety mogą być trudne do odczytania. Najlepiej sprawdzają się łagodne obrazy o niskim kontraście.
+The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, a Still style, or Motion set to Static on the device).	Obraz statyczny to plakat wideo — wyświetla się, gdy odtwarzanie jest wstrzymane (oszczędzanie baterii, gra, styl Nieruchomy lub Ruch ustawiony na Statyczny na urządzeniu).
+The theme offers this image for the device lock screen	Motyw oferuje ten obraz dla ekranu blokady urządzenia
+Output {0}×{1}	Wynik {0}×{1}
+{0}–{1} recommended, {2} max, {3} MB max	{0}–{1} zalecane, maks. {2}, maks. {3} MB
+Whether the boot video and Game Boot play at all is a device setting: {0}	To, czy wideo startowe i Game Boot w ogóle się odtwarzają, zależy od ustawienia urządzenia: {0}
+This clip is longer than the cap — the launcher will refuse it.	Ten klip jest dłuższy niż limit — launcher go odrzuci.
+Choose a {0} video	Wybierz wideo {0}
+Dark icon color — icons may be hard to see over the wallpaper scrim.	Ciemny kolor ikon — ikony mogą być słabo widoczne na przyciemnionej tapecie.
+Saved in the theme for a later update. The launcher currently shows the color exactly as picked.	Zapisane w motywie na potrzeby przyszłej aktualizacji. Na razie launcher pokazuje kolor dokładnie tak, jak go wybrano.
+Original	Oryginalny
+Classic Blue	Klasyczny niebieski
+Sunset Orange	Pomarańczowy zachód
+Fresh Green	Świeża zieleń
+Royal Purple	Królewski fiolet
+Crimson Red	Karmazynowa czerwień
+Silver	Srebrny
+Sakura Pink	Różowa sakura
+Golden Amber	Złoty bursztyn
+Aqua Teal	Morski turkus
+Midnight Navy	Granat nocy
+Charcoal	Grafitowy
+Format: schema {0} → {1}	Format: schemat {0} → {1}
+Format: new theme → {0}	Format: nowy motyw → {0}
+Kept	Zachowane
+Added	Dodane
+Repaired	Naprawione
+Can't recover	Nie do odzyskania
+What saving does	Co robi zapis
+Motion has a still poster	Ruch ma statyczny plakat
+Motion needs a still wallpaper as its poster - add one or remove the video	Ruch potrzebuje statycznej tapety jako plakatu - dodaj ją lub usuń wideo
+Media outside limits: {0}	Multimedia poza limitami: {0}
+This wallpaper is busy behind the labels - pick a text legibility style so they stay readable	Ta tapeta jest zbyt wyrazista za etykietami - wybierz styl czytelności tekstu, aby pozostały czytelne
+Text should read clearly on this wallpaper	Tekst powinien być dobrze czytelny na tej tapecie
+{0} - launchers from before this format refuse files over 64 MB	{0} - launchery sprzed tego formatu odrzucają pliki powyżej 64 MB
+Opens on older launchers, which ignore sounds, boot clips, legibility and crop	Otwiera się w starszych launcherach, które ignorują dźwięki, klipy startowe, czytelność i kadrowanie
+{0} is over the {1} MB limit for a theme file	{0} przekracza limit {1} MB dla pliku motywu
+Saving upgrades this theme from {0}; {1} part(s) can't be recovered	Zapis zaktualizuje ten motyw z {0}; {1} części nie da się odzyskać
+Saving upgrades this theme from {0}	Zapis zaktualizuje ten motyw z {0}
+an older format	starszego formatu
+Imported from {0}	Zaimportowano z {0}
+Imported from {0} — firmware {1}	Zaimportowano z {0} — firmware {1}
+a PSP theme	motywu PSP
+Created {0}	Utworzono {0}
+On the device these live in {0}.	Na urządzeniu znajdziesz je w {0}.
+Scale	Skala
+Horizontal	Poziomo
+Vertical	Pionowo
+This wallpaper is busy behind the labels — a text style helps them stay readable.	Ta tapeta jest zbyt wyrazista za etykietami — styl tekstu pomaga zachować ich czytelność.
+Settings › Interface › Display › Adjust XMB Layout	Ustawienia › Interfejs › Ekran › Dostosuj układ XMB
+Settings › Interface › Sound	Ustawienia › Interfejs › Dźwięk
+Settings › Interface › Display › Show Boot Sequence / Game Boot	Ustawienia › Interfejs › Ekran › Pokaż sekwencję startową / Game Boot
+Battery Saver and Thermal Throttle (Settings › Interface › Display) freeze the animated wave on the device.	Oszczędzanie baterii i Ograniczanie termiczne (Ustawienia › Interfejs › Ekran) zatrzymują animowaną falę na urządzeniu.
+Pick…	Wybierz…
+Plays on the device	Odtwarzane na urządzeniu
+Length unknown	Długość nieznana
+Volumes stay on the device: {0}	Głośność ustawia się na urządzeniu: {0}
+Couldn't play {0} here — it will play on the device.	Nie można odtworzyć {0} tutaj — zadziała na urządzeniu.
+Choose a sound for {0}	Wybierz dźwięk dla: {0}
+Icon image for {0}	Obraz ikony dla: {0}
+Template for {0}	Szablon dla: {0}
+Template written to {0}	Szablon zapisano jako {0}
+Template export failed: {0}	Eksport szablonu nie powiódł się: {0}
+Search {0} slots: battery, PS3, voice…	Szukaj wśród {0} miejsc: bateria, PS3, głos…
+No slot matches. Clear the search or a filter.	Żadne miejsce nie pasuje. Wyczyść wyszukiwanie lub filtr.
+Pack folder…	Folder pakietu…
+Icon pack folder	Folder pakietu ikon
+Pack .zip…	Pakiet .zip…
+Icon pack zip	Pakiet ikon .zip
+Folder for icon templates	Folder na szablony ikon
+Packs are folders or zips of <slot key>.png / .gif, the names the templates use. Multi-frame GIFs animate on the launcher when focused; they must stay within 512px, 120 frames and 10 seconds.	Pakiety to foldery lub pliki zip z plikami <klucz miejsca>.png / .gif, czyli nazwami używanymi przez szablony. Wieloklatkowe GIF-y animują się w launcherze po zaznaczeniu; muszą mieścić się w 512 px, 120 klatkach i 10 sekundach.
+Icon pack imported	Zaimportowano pakiet ikon
+Icon pack refused	Odrzucono pakiet ikon
+{0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	{0}: dodane {1}, zastąpione {2}, bez dopasowania {3}, odrzucone {4}
+Icon pack {0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	Pakiet ikon {0}: dodane {1}, zastąpione {2}, bez dopasowania {3}, odrzucone {4}
+{0} - did you mean {1}?	{0} - czy chodziło o {1}?
+{0} - no matching slot	{0} - brak pasującego miejsca
+{0} error	Błędy: {0}
+{0} errors	Błędy: {0}
+{0} warning	Ostrzeżenia: {0}
+{0} warnings	Ostrzeżenia: {0}
+{0} of {1} MB	{0} z {1} MB
+{0} of {1} MB - older launchers refuse over 64 MB	{0} z {1} MB - starsze launchery odrzucają powyżej 64 MB
+Wallpaper	Tapeta
+Preview	Podgląd
+Motion	Ruch
+Ambience	Dźwięk otoczenia
+Other files	Inne pliki
+{0} is too large to be a theme file	{0} jest za duży, aby był plikiem motywu
+Imported {0}	Zaimportowano {0}
+Imported with a caveat	Zaimportowano z zastrzeżeniem
+{0} is not a valid .pfptheme bundle	{0} nie jest prawidłowym pakietem .pfptheme
+{0} — {1} icon(s) for parts themes don't customize were left out	{0} — pominięto ikony części, których motywy nie zmieniają: {1}
+Motion wallpaper: {0}	Tapeta ruchoma: {0}
+Could not keep: {0}	Nie udało się zachować: {0}
+Parts of the theme not kept	Nie zachowano części motywu
+Motion wallpaper not kept	Nie zachowano tapety ruchomej
+{0} is not a readable image	{0} nie jest czytelnym obrazem
+{0} converted to H.264 for Android ({1})	{0} przekonwertowano do H.264 dla Androida ({1})
+Couldn't read that frame of the video	Nie udało się odczytać tej klatki wideo
+The crop does not match this image	Kadrowanie nie pasuje do tego obrazu
+Wallpaper: {0} ({1}×{2})	Tapeta: {0} ({1}×{2})
+Added {0} — converted to H.264 for Android ({1})	Dodano {0} — przekonwertowano do H.264 dla Androida ({1})
+Added {0}	Dodano {0}
+Export failed: {0}	Eksport nie powiódł się: {0}
+{0} is not a PSP theme file	{0} nie jest plikiem motywu PSP
+Unpack failed: {0}	Rozpakowanie nie powiodło się: {0}
+Theme unpacked	Motyw rozpakowany
+{0} images written to {1} (see report.txt).	Zapisano obrazy ({0}) w {1} (zobacz report.txt).
+{0} images and {1} data files written to {2} (see report.txt).	Zapisano obrazy ({0}) i pliki danych ({1}) w {2} (zobacz report.txt).
+Unpacked {0}: {1} images	Rozpakowano {0}: obrazy: {1}
+Templates exported to {0} ({1} icons)	Wyeksportowano szablony do {0} (ikony: {1})
+WebM clips can't be checked in the Studio (it reads MP4/H.264 only) — convert the clip to MP4	Klipów WebM nie da się sprawdzić w Studio (czyta tylko MP4/H.264) — przekonwertuj klip do MP4
+That isn't a media slot this import can fill	To nie jest miejsce na multimedia, które ten import może wypełnić
+That file is too large for a theme — {0} MB or less	Ten plik jest za duży na motyw — maksymalnie {0} MB
+Unsupported video — use an MP4 (H.264)	Nieobsługiwane wideo — użyj MP4 (H.264)
+{0} video isn't guaranteed to play on Android	Wideo {0} nie musi działać na Androidzie
+H.264 {0} doesn't play on Android	H.264 {0} nie działa na Androidzie
+{0} video doesn't play on Android	Wideo {0} nie działa na Androidzie
+Couldn't convert this video for Android ({0}). Re-encode it as MP4 H.264 and try again.	Nie udało się przekonwertować tego wideo dla Androida ({0}). Zakoduj je ponownie jako MP4 H.264 i spróbuj jeszcze raz.
+{0} is not a folder or .zip	{0} nie jest folderem ani plikiem .zip
+Pack refused: {0}	Odrzucono pakiet: {0}
+Pack could not be read	Nie można odczytać pakietu
+Pack could not be read: {0}	Nie można odczytać pakietu: {0}
+Pack has more than {0} files	Pakiet ma więcej niż {0} plików
+Not a PSP theme file	To nie jest plik motywu PSP
+Corrupt or truncated PTF	Uszkodzony lub niekompletny plik PTF
+This theme contains no wallpaper image.	Ten motyw nie zawiera obrazu tapety.
+The wallpaper could not be extracted: this theme uses a compression method this importer doesn't recognize. The theme was imported without its wallpaper.	Nie udało się wyodrębnić tapety: ten motyw używa metody kompresji, której ten importer nie rozpoznaje. Motyw zaimportowano bez tapety.
+The wallpaper data in this theme is damaged and could not be decoded. The theme was imported without its wallpaper.	Dane tapety w tym motywie są uszkodzone i nie dało się ich zdekodować. Motyw zaimportowano bez tapety.

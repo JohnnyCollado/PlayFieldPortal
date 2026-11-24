@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launch refusals shown before an emulator starts -->
+    <string name="launch_err_custom_command">Los perfiles de comando personalizado ya no son compatibles. Cambia este emulador al método de inicio \"Abrir la ROM con la app\" o \"Abrir una pantalla de la app\".</string>
+    <string name="launch_err_shortcut_unsupported">No se pueden abrir accesos directos desde esta pantalla</string>
+    <string name="launch_err_no_package">No hay ningún paquete de Android registrado para %1$s</string>
+    <string name="launch_err_app_not_launchable">La app de Android no está instalada o no se puede abrir: %1$s</string>
+    <string name="launch_err_emulator_not_installed">Emulador no instalado: %1$s (%2$s)</string>
+    <string name="launch_err_wrong_build">%1$s (%2$s) no es la versión esperada: su certificado de firma no coincide. Reinstala el emulador desde su fuente oficial.</string>
+    <string name="launch_err_no_activity_for_path">%1$s no tiene ninguna actividad de inicio registrada, así que no se le puede pasar una ruta de archivo. Vuelve a importar su entrada de conocimiento o vuelve a detectar el emulador.</string>
+    <string name="launch_err_activity_required">Este método de inicio requiere el nombre de una pantalla de la app - perfil: %1$s</string>
+    <string name="launch_err_activity_gone">%1$s ya no ofrece su actividad de inicio (%2$s). Actualiza el emulador o elige otro emulador para esta plataforma.</string>
+    <string name="launch_err_no_launch_id">No hay ningún ID de inicio registrado para %1$s. Vuelve a escanear su biblioteca.</string>
+    <string name="launch_err_rom_link_invalid">El vínculo a la ROM de este juego no es válido. Vuelve a escanear su biblioteca.</string>
+    <string name="launch_err_lost_access">Play Field Portal perdió el acceso al archivo de este juego. Vuelve a conectar el almacenamiento y escanea de nuevo su biblioteca.</string>
+    <string name="launch_err_rom_path_required">Se necesita la ruta de la ROM para iniciar %1$s</string>
+    <string name="launch_err_rom_not_found">No se encontró el archivo de la ROM: %1$s</string>
+    <string name="launch_err_no_core">No hay ningún núcleo de RetroArch configurado para la plataforma \'%1$s\' en el perfil \'%2$s\'. Abre RetroArch → Descargador de núcleos para instalar un núcleo para este sistema.</string>
+    <string name="launch_err_cannot_open_rom_type">%1$s no puede abrir este tipo de ROM. Prueba a reinstalar el emulador o revisa los permisos de la app en los ajustes de Android.</string>
+    <string name="launch_err_no_file_path">%1$s no tiene ruta de archivo en este dispositivo, así que no se le puede indicar a %2$s qué juego iniciar.</string>
+    <string name="launch_err_not_in_rom_folder">%1$s no está dentro de una carpeta de ROM configurada, así que no se puede pasar a %2$s. Revisa la carpeta asignada a esta Memory Card en Ajustes.</string>
+
+    <!-- Emulator choice problems -->
+    <string name="launch_err_configured_missing">El emulador (%1$s) no está instalado ni disponible: %2$s</string>
+    <string name="launch_err_core_not_installed">%1$s está configurado como %2$s, pero ese núcleo no está instalado en RetroArch. Instálalo o elige otro emulador.</string>
+    <string name="launch_err_no_longer_available">%1$s está configurado como %2$s, pero ya no está disponible. Elige otro emulador.</string>
+    <string name="launch_err_not_configured_for_platform">%1$s no está configurado para %2$s</string>
+    <string name="launch_err_no_emulator_for_platform">No hay ningún emulador configurado para %1$s. Elige un emulador para este juego o establece uno predeterminado para la plataforma.</string>
+
+    <!-- Where an emulator choice came from -->
+    <string name="launch_source_per_game">Ajuste por juego</string>
+    <string name="launch_source_per_game_lower">ajuste por juego</string>
+    <string name="launch_source_memory_card">Predeterminado de la Memory Card</string>
+    <string name="launch_source_memory_card_lower">predeterminado de la Memory Card</string>
+    <string name="launch_source_platform">Predeterminado de la plataforma</string>
+    <string name="launch_source_platform_lower">predeterminado de la plataforma</string>
+    <string name="launch_source_recommended">Recomendado</string>
+    <string name="launch_source_recommended_lower">recomendado</string>
+    <string name="launch_phrase_per_game">ajuste por juego</string>
+    <string name="launch_phrase_memory_card">emulador de la Memory Card</string>
+    <string name="launch_phrase_platform">predeterminado de la plataforma</string>
+
+    <!-- Launch hand-off failures -->
+    <string name="launch_err_emulator_not_found">No se encontró el emulador. ¿Está instalado?</string>
+    <string name="launch_err_permission_denied">Permiso denegado al iniciar el emulador</string>
+    <string name="launch_err_open_emulator">No se pudo abrir el emulador: %1$s</string>
+    <string name="launch_never_foreground">El emulador nunca pasó a primer plano tras iniciarse.</string>
+    <string name="launch_never_appeared">El emulador nunca apareció. Comprueba que esté instalado y actualizado y vuelve a intentar iniciarlo.</string>
+    <plurals name="launch_history_failed">
+        <item quantity="one">Falló %1$d del último %2$d inicio de este juego.</item>
+        <item quantity="many">Fallaron %1$d de los últimos %2$d inicios de este juego.</item>
+        <item quantity="other">Fallaron %1$d de los últimos %2$d inicios de este juego.</item>
+    </plurals>
+
+    <!-- Launch failure notification -->
+    <string name="launch_rec_title">No se pudo iniciar %1$s</string>
+    <string name="launch_rec_could_not_start">No se pudo iniciar el emulador</string>
+    <string name="launch_rec_never_foreground">El emulador nunca pasó a primer plano</string>
+    <string name="launch_fact_emulator">Emulador</string>
+    <string name="launch_fact_core">Núcleo</string>
+    <string name="launch_fact_platform">Plataforma</string>
+    <string name="launch_fact_recent">Inicios recientes</string>
+    <string name="launch_fact_recent_value">%1$d de los últimos %2$d fallaron</string>
+
+    <!-- Shortcut requests -->
+    <string name="launch_shortcut_request_title">Solicitud de acceso directo: %1$s (abre %2$s)</string>
+    <string name="launch_shortcut_request_message">Añádelo solo si acabas de crear este acceso directo tú mismo.</string>
+    <string name="launch_shortcut_added_title">Acceso directo añadido: %1$s</string>
+    <string name="launch_shortcut_ignored_title">Acceso directo ignorado: %1$s</string>
+    <string name="launch_shortcut_from">De %1$s</string>
+    <string name="launch_windows_added_title">\"%1$s\" se añadió a Juegos de Windows</string>
+    <string name="launch_windows_added_message">Termina de configurar tu biblioteca de Windows para escanear su carpeta</string>
+
+    <!-- First-run setup prompts -->
+    <string name="launch_setup_add_rom_folder">Añade una carpeta de ROM para empezar tu biblioteca</string>
+    <string name="launch_setup_add_console_card">Añade una Memory Card de consola en la que escanear</string>
+    <string name="launch_setup_install_emulator">Instala un emulador para jugar a tus juegos</string>
+
+    <!-- Emulator detection notes for an app being added -->
+    <string name="launch_inspect_known">Rellenado automáticamente con el perfil integrado de %1$s. Confirma la plataforma o plataformas y guarda.</string>
+    <string name="launch_inspect_best_guess">Estimación basada en cómo esta app abre los archivos de ROM. Establece la plataforma o plataformas y prueba una ROM antes de guardar.</string>
+    <string name="launch_inspect_minimal">No se pudo detectar cómo acepta ROM esta app. Rellena a mano los ajustes de actividad / intent y prueba una ROM.</string>
+
+    <!-- Emulator knowledge file updates -->
+    <string name="launch_kb_too_many_files">Se pueden importar como máximo %1$d archivos de conocimiento; elimina uno primero</string>
+    <string name="launch_kb_installed">Actualizado</string>
+    <string name="launch_kb_not_configured">Las actualizaciones no están configuradas en esta versión</string>
+    <string name="launch_kb_offline">No se pudo conectar con el servidor de actualizaciones</string>
+    <string name="launch_kb_too_large">El archivo de actualización es demasiado grande</string>
+    <string name="launch_kb_signature_invalid">La firma de la actualización no es válida</string>
+    <string name="launch_kb_needs_app_update">Esta actualización necesita una versión más reciente de la app</string>
+    <string name="launch_kb_older">La actualización es más antigua que la ya instalada</string>
+    <string name="launch_kb_invalid_content">El archivo de actualización tiene contenido no válido</string>
+    <string name="launch_kb_storage_failed">No se pudo guardar la actualización</string>
+    <string name="launch_kb_skipped">No hizo falta comprobar nada</string>
+
+    <!-- Windows game launchers -->
+    <string name="launch_unknown_gamehub_or_bannerhub">podría ser GameHub o BannerHub</string>
+    <string name="launch_unknown_gamehublite_or_bannerhub">podría ser GameHub Lite o BannerHub</string>
+    <string name="launch_unknown_not_in_list">no está en la lista de PFP</string>
+    <string name="launch_choice_not_a_launcher">No es un launcher</string>
+    <string name="launch_id_prompt_gamehub">ID del juego: en la página del juego, toca Copiar junto a Local Game ID, o ⋮ → Banner Tools → Show Game ID</string>
+    <string name="launch_id_prompt_gamenative">Steam App ID (o app id de la tienda) del juego instalado</string>
+</resources>

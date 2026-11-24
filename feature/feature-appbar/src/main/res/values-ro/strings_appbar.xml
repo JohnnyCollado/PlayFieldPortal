@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App context menu: group headings -->
+    <string name="apps_menu_group_library">Bibliotecă</string>
+    <string name="apps_menu_group_arrange">Aranjare</string>
+    <string name="apps_menu_group_manage">Gestionare</string>
+
+    <!-- App context menu: rows -->
+    <string name="apps_menu_launch">Pornește</string>
+    <string name="apps_menu_edit_details">Editează detaliile aplicației</string>
+    <string name="apps_menu_mark_game">Marchează ca joc</string>
+    <string name="apps_menu_unmark_game">Nu mai marca drept joc</string>
+    <string name="apps_menu_favorite">Preferat</string>
+    <string name="apps_menu_add_to_card">Adaugă pe card</string>
+    <string name="apps_menu_pin_to_top">Fixează sus</string>
+    <string name="apps_menu_move">Mută</string>
+    <string name="apps_menu_move_to_category">Mută în categorie</string>
+    <string name="apps_menu_add_to_category">Adaugă în categorie</string>
+    <string name="apps_menu_remove_from_category">Elimină din categorie</string>
+    <string name="apps_menu_rename_shortcut">Redenumește scurtătura</string>
+    <string name="apps_menu_hide_from">Ascunde din %1$s</string>
+    <string name="apps_menu_hide_everywhere">Ascunde peste tot</string>
+    <string name="apps_menu_app_info">Informații aplicație</string>
+    <string name="apps_menu_uninstall">Dezinstalează</string>
+    <string name="apps_value_on">Activat</string>
+    <string name="apps_value_off">Dezactivat</string>
+
+    <!-- Uninstall confirmation -->
+    <string name="apps_uninstall_title">Dezinstalezi %1$s?</string>
+    <string name="apps_uninstall_message">Aceasta elimină %1$s de pe dispozitiv. Android îți va cere confirmarea.</string>
+
+    <!-- Category tabs and header title -->
+    <string name="apps_filter_all">Toate aplicațiile</string>
+    <string name="apps_filter_games">Jocuri</string>
+    <string name="apps_filter_emulators">Emulatoare</string>
+    <string name="apps_filter_recent">Folosite recent</string>
+
+    <!-- Header search -->
+    <string name="apps_search_placeholder">Caută…</string>
+    <string name="apps_search_button">Caută</string>
+
+    <!-- Empty states -->
+    <string name="apps_empty_no_match">Nicio aplicație nu corespunde căutării</string>
+    <string name="apps_empty_no_games">Nu s-au găsit jocuri</string>
+    <string name="apps_empty_no_emulators">Niciun emulator instalat</string>
+    <string name="apps_empty_usage_access">Este necesar accesul la utilizare</string>
+    <string name="apps_empty_no_recent">Încă nu există aplicații folosite recent</string>
+    <string name="apps_empty_no_apps">Nicio aplicație instalată</string>
+    <string name="apps_hint_try_search">Încearcă alt termen de căutare</string>
+    <string name="apps_hint_games">Aplicațiile marcate ca jocuri în Play Store apar aici</string>
+    <string name="apps_hint_emulators">Instalează RetroArch, PPSSPP sau alt emulator</string>
+    <string name="apps_hint_usage_access">Acordă acces pentru ca PFP să poată sorta aplicațiile după ultima utilizare</string>
+    <string name="apps_open_usage_access">Deschide Acces la utilizare</string>
+
+    <!-- Controller hint bar -->
+    <string name="apps_hint_prev">Înapoi</string>
+    <string name="apps_hint_next">Înainte</string>
+    <string name="apps_hint_back">Înapoi</string>
+    <string name="apps_hint_launch">Pornește</string>
+    <string name="apps_hint_options">Opțiuni</string>
+    <string name="apps_hint_search">Caută</string>
+    <string name="apps_drawer_title">Sertar de aplicații</string>
+    <string name="apps_drawer_subtitle">Aplicații de pe acest dispozitiv</string>
+</resources>

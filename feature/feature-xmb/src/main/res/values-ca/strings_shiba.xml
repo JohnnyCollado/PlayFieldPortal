@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ===== Text compartit de les pàgines Shiba ===== -->
+    <string name="shiba_prompt_select">Selecciona</string>
+    <string name="shiba_prompt_close">Tanca</string>
+    <string name="shiba_prompt_done">Fet</string>
+    <string name="shiba_prompt_back">Enrere</string>
+    <string name="shiba_prompt_options">Opcions</string>
+    <string name="shiba_prompt_search">Cerca</string>
+    <string name="shiba_prompt_type">Escriu</string>
+    <string name="shiba_prompt_change_view">Canvia la vista</string>
+    <string name="shiba_prompt_switch_source">Canvia la font</string>
+    <string name="shiba_prompt_view_game">Mostra el joc</string>
+    <string name="shiba_prompt_view_achievements">Mostra els assoliments</string>
+    <string name="shiba_prompt_attempt_match">Intenta associar</string>
+    <string name="shiba_prompt_search_online">Cerca en línia</string>
+    <string name="shiba_prompt_auto_match">Associació automàtica</string>
+    <string name="shiba_prompt_pick_game_folder">Tria la carpeta del joc</string>
+    <string name="shiba_prompt_reveal">Revela</string>
+    <string name="shiba_prompt_hide">Amaga</string>
+    <string name="shiba_prompt_navigate">Navega</string>
+    <string name="shiba_action_yes">Sí</string>
+    <string name="shiba_action_no">No</string>
+    <string name="shiba_action_cancel">Cancel·la</string>
+    <string name="shiba_action_close">Tanca</string>
+    <string name="shiba_action_link">Enllaça</string>
+    <string name="shiba_options_title">Opcions</string>
+    <string name="shiba_options_sort">Ordena</string>
+    <string name="shiba_options_provider">Proveïdor</string>
+    <string name="shiba_options_update_installed">Actualitza els assoliments instal·lats</string>
+    <string name="shiba_options_updating">S\'està actualitzant…</string>
+    <string name="shiba_sort_newest">Més recents</string>
+    <string name="shiba_sort_rarest">Més rars</string>
+    <string name="shiba_sort_tier">Categoria</string>
+    <string name="shiba_sort_earned">Aconseguits</string>
+    <string name="shiba_filter_all">Tots</string>
+    <string name="shiba_tier_bronze">Bronze</string>
+    <string name="shiba_tier_silver">Plata</string>
+    <string name="shiba_tier_gold">Or</string>
+    <string name="shiba_tier_platinum">Platí</string>
+    <string name="shiba_stat_shiba_level">NIVELL SHIBA</string>
+    <string name="shiba_stat_next_level">NIVELL SEGÜENT</string>
+    <string name="shiba_stat_total_coins">MONEDES TOTALS</string>
+    <string name="shiba_stat_total">TOTAL</string>
+    <string name="shiba_platform_not_installed">%1$s · No instal·lat</string>
+    <string name="shiba_time_just_now">Ara mateix</string>
+    <string name="shiba_time_minutes_ago">Fa %1$d min</string>
+    <string name="shiba_time_hours_ago">Fa %1$d h</string>
+    <string name="shiba_time_yesterday">Ahir</string>
+    <plurals name="shiba_time_days_ago">
+        <item quantity="one">Fa %1$d dia</item>
+        <item quantity="many">Fa %1$d dies</item>
+        <item quantity="other">Fa %1$d dies</item>
+    </plurals>
+    <string name="shiba_search_games_placeholder">Cerca jocs…</string>
+
+    <!-- ===== Estat del jugador ===== -->
+    <string name="shiba_player_status_title">Estat del jugador</string>
+    <string name="shiba_player_status_no_rarest">Encara no hi ha cap assoliment rar.</string>
+    <string name="shiba_player_status_rarest_unlocked">EL MÉS RAR DESBLOQUEJAT</string>
+    <string name="shiba_player_status_rarity_caption">dels jugadors el tenen</string>
+    <string name="shiba_player_status_game_and_time">%1$s · %2$s</string>
+    <plurals name="shiba_status_checking_games">
+        <item quantity="one">S\'està comprovant %1$d de %2$d joc…</item>
+        <item quantity="many">S\'estan comprovant %1$d de %2$d jocs…</item>
+        <item quantity="other">S\'estan comprovant %1$d de %2$d jocs…</item>
+    </plurals>
+    <string name="shiba_status_updating_achievements">S\'estan actualitzant els assoliments instal·lats…</string>
+
+    <!-- ===== Biblioteca d'assoliments ===== -->
+    <string name="shiba_library_view_tracked">Jocs seguits</string>
+    <string name="shiba_library_view_untracked">Jocs no seguits</string>
+    <string name="shiba_library_breadcrumb">Assoliments / %1$s</string>
+    <plurals name="shiba_library_game_count">
+        <item quantity="one">%1$d joc</item>
+        <item quantity="many">%1$d jocs</item>
+        <item quantity="other">%1$d jocs</item>
+    </plurals>
+    <string name="shiba_library_empty_no_match">Cap joc no coincideix amb \"%1$s\".</string>
+    <string name="shiba_library_empty_tracked">Encara no hi ha cap joc seguit.</string>
+    <string name="shiba_library_empty_untracked">Tots els jocs aptes ja se segueixen.</string>
+    <string name="shiba_library_sort_title_asc">Títol A–Z</string>
+    <string name="shiba_library_sort_title_desc">Títol Z–A</string>
+    <string name="shiba_library_sort_progress_asc">Progrés: primer el més baix</string>
+    <string name="shiba_library_sort_progress_desc">Progrés: primer el més alt</string>
+    <string name="shiba_library_sort_platform_asc">Plataforma A–Z</string>
+    <string name="shiba_library_sort_platform_desc">Plataforma Z–A</string>
+    <string name="shiba_library_search_online">Cerca en línia</string>
+    <string name="shiba_library_search_online_subtitle">Busca un joc que no és en aquest dispositiu</string>
+    <string name="shiba_library_awaiting_sync">Pendent de sincronitzar</string>
+
+    <!-- ===== Pàgina de Shiba Coins d'un joc ===== -->
+    <string name="shiba_coins_search_placeholder">Cerca monedes…</string>
+    <string name="shiba_coins_stat_completion">COMPLETAT</string>
+    <string name="shiba_coins_stat_earned">ACONSEGUIDES</string>
+    <string name="shiba_coins_tab_all">Totes %1$d</string>
+    <string name="shiba_coins_tab_earned">Aconseguides %1$d</string>
+    <string name="shiba_coins_tab_locked">Bloquejades %1$d</string>
+    <string name="shiba_coins_synced">Sincronitzat %1$s</string>
+    <string name="shiba_coins_not_linked">No enllaçat</string>
+    <string name="shiba_coins_never_synced">Mai sincronitzat</string>
+    <string name="shiba_coins_owned_on_steam">En propietat a Steam</string>
+    <string name="shiba_coins_tracked_locally">Seguiment local</string>
+    <string name="shiba_coins_empty_no_match">Cap moneda no coincideix amb \"%1$s\".</string>
+    <string name="shiba_coins_empty_none_earned">Encara no has aconseguit cap moneda.</string>
+    <string name="shiba_coins_empty_all_earned">Has aconseguit totes les monedes.</string>
+    <string name="shiba_coins_empty_default">No hi ha monedes per mostrar.</string>
+    <string name="shiba_coins_options_update">Actualitza els assoliments</string>
+    <string name="shiba_coins_options_change_match">Canvia l\'associació</string>
+    <string name="shiba_coins_options_unlink">Desenllaça el joc</string>
+    <string name="shiba_coins_unlink_title">Vols desenllaçar el joc?</string>
+    <string name="shiba_coins_unlink_message">%1$s ja no estarà associat, així que les seves monedes deixaran de mostrar-se. Les monedes ja desades a la memòria cau es conserven i tornaran quan el tornis a associar.</string>
+    <string name="shiba_coins_unlink_confirm">Desenllaça</string>
+    <string name="shiba_coin_hidden_title">Moneda oculta</string>
+    <string name="shiba_coin_hidden_hint">Continua jugant — o prem Confirma per revelar-la</string>
+    <string name="shiba_coin_description_secret">Steam manté en secret la descripció d\'aquesta</string>
+    <string name="shiba_coin_metric_of_players">dels jugadors</string>
+    <string name="shiba_coin_status_earned">Aconseguida</string>
+    <string name="shiba_coin_status_locked">Bloquejada</string>
+    <string name="shiba_platinum_crown_title">Corona de platí</string>
+    <string name="shiba_platinum_crown_description">Aconsegueix totes les altres monedes del joc</string>
+    <string name="shiba_platinum_crown_metric">monedes aconseguides</string>
+
+    <!-- Panell d'associació automàtica -->
+    <string name="shiba_link_not_linked_yet_game">Aquest joc encara no està enllaçat</string>
+    <string name="shiba_link_not_linked_yet">Encara no enllaçat</string>
+    <string name="shiba_link_steam_body">L\'associació automàtica et pregunta si és una còpia legítima de Steam i després la resol amb Steam o busca dades d\'emulador de Steam a les carpetes dels teus jocs.</string>
+    <string name="shiba_link_retro_body">RetroAchievements identifica els jocs pel hash de la ROM. L\'associació automàtica calcula el hash d\'aquesta ROM i el busca — només es pot enllaçar un bolcat verificat i registrat a RetroAchievements.</string>
+    <string name="shiba_link_local_steam_body">Tria la carpeta d\'aquest joc i PFP en llegirà l\'app id de Steam — de steam_appid.txt si hi és, o associant el títol si no hi és. Recorda la carpeta, així que no caldrà tornar-la a buscar.</string>
+    <string name="shiba_link_vita_body">Els trofeus de PS Vita s\'enllacen automàticament des de Vita3K. Defineix la carpeta de dades de Vita3K a la biblioteca i escaneja per enllaçar aquest joc.</string>
+    <string name="shiba_link_ps3_body">Els trofeus de PS3 s\'enllacen des del disc del mateix joc — defineix la carpeta de dades de PS3 a la biblioteca i fes servir l\'associació automàtica.</string>
+    <string name="shiba_link_x360_body">Els assoliments d\'Xbox 360 s\'enllacen a partir del title ID del joc — defineix la carpeta de dades d\'X360 Mobile o XenDroid a la biblioteca i fes servir l\'associació automàtica.</string>
+    <string name="shiba_link_auto_match">Associació automàtica</string>
+    <string name="shiba_link_matching">S\'està associant…</string>
+    <string name="shiba_link_pick_game_folder">Tria la carpeta del joc</string>
+    <string name="shiba_link_copy_title">És una còpia legítima de Steam?</string>
+    <string name="shiba_link_copy_body">Una còpia legítima s\'associa amb el teu compte de Steam. Qualsevol altra se segueix des de la carpeta del joc, que PFP et demanarà que indiquis.</string>
+    <string name="shiba_link_folder_title">En quina carpeta és aquest joc?</string>
+    <string name="shiba_link_folder_body">Tria la carpeta del joc — la que conté l\'.exe. PFP en llegeix l\'app id de Steam i segueix els desbloqueigs que l\'emulador hi escriu. Els teus jocs de Windows poden estar a qualsevol lloc; PFP recorda on és aquest perquè no l\'hagi de buscar mai.</string>
+    <string name="shiba_link_identify_title_steam">S\'està buscant la coincidència a Steam…</string>
+    <string name="shiba_link_identify_title_appid">S\'està determinant l\'app id de Steam…</string>
+    <string name="shiba_link_identify_body_steam">S\'està cercant el títol d\'aquest joc a Steam. Tria el correcte per tornar-lo a enllaçar.</string>
+    <string name="shiba_link_identify_body_appid">S\'està llegint steam_appid.txt de la carpeta i, si encara no en té, s\'està associant el títol del joc amb Steam.</string>
+    <string name="shiba_link_kit_title">Aquesta carpeta encara no té llista d\'assoliments</string>
+    <string name="shiba_link_kit_body_generic">L\'emulador necessita una llista d\'assoliments per poder registrar els desbloqueigs.</string>
+    <string name="shiba_link_kit_body">\"%1$s\" té l\'app id de Steam %2$s, però l\'emulador no té cap llista d\'assoliments on registrar-los. Instal·la i enllaça escriu achievements.json, stats.json i configs.user.ini a la carpeta, crea una carpeta saves i canvia el nom de steam_api64.dll a steam_api64_o.dll perquè l\'emulador inclòs es carregui a través seu — fes abans una còpia de les partides desades del joc. Només enllaça el segueix al 0%% i no escriu res més.</string>
+    <string name="shiba_link_kit_installer_off">Instal·la i enllaça necessita l\'opció Instal·la Goldberg i converteix jocs a la configuració d\'Assoliments.</string>
+    <string name="shiba_link_kit_install">Instal·la i enllaça</string>
+    <string name="shiba_link_kit_link_only">Només enllaça</string>
+    <string name="shiba_link_no_emu_title">No hi ha res a seguir en aquesta carpeta</string>
+    <string name="shiba_link_no_emu_default">Aquesta carpeta no conté dades d\'emulador de Steam.</string>
+    <string name="shiba_link_try_another_folder">Prova una altra carpeta</string>
+    <string name="shiba_link_appid_title">No s\'ha trobat cap associació automàtica</string>
+    <string name="shiba_link_appid_body">Introdueix l\'app id de Steam del joc:</string>
+    <string name="shiba_link_appid_field">App id de Steam</string>
+
+    <!-- Missatges després d'enllaçar o sincronitzar -->
+    <string name="shiba_coins_folder_unreadable">No s\'ha pogut llegir aquesta carpeta. Torna-la a triar o torna a muntar l\'emmagatzematge on és.</string>
+    <string name="shiba_coins_linked_to">Enllaçat a %1$s (appid %2$s).</string>
+    <string name="shiba_coins_nothing_written">No s\'ha escrit res. Defineix l\'associació de Steam del joc des de Detall del joc ▸ Associa el joc i torna a fer servir l\'associació automàtica — PFP utilitzarà aquest id.</string>
+    <string name="shiba_coins_appid_not_number">Un app id de Steam és un número — consulta steamdb.info per obtenir més informació sobre el joc</string>
+    <string name="shiba_coins_appid_no_match">L\'app id %1$s no coincideix — consulta steamdb.info per obtenir més informació sobre el joc</string>
+    <string name="shiba_coins_sync_not_linked">Primer enllaça aquest joc a un id de proveïdor</string>
+    <string name="shiba_coins_sync_not_installed">Aquest joc no està instal·lat — es mostren els assoliments desats</string>
+    <string name="shiba_coins_sync_missing_credentials">Afegeix la teva clau a Configuració ▸ Assoliments ▸ Credencials dels proveïdors</string>
+    <string name="shiba_coins_sync_profile_private">Els detalls dels jocs del teu perfil de Steam són privats</string>
+    <string name="shiba_coins_sync_not_found">No s\'ha trobat cap assoliment per a aquest joc</string>
+    <string name="shiba_coins_sync_failed">La sincronització ha fallat: %1$s</string>
+
+    <!-- ===== Detall del vídeo ===== -->
+    <string name="shiba_video_play">Reprodueix</string>
+    <string name="shiba_video_resume">Reprèn</string>
+    <string name="shiba_video_restart">Comença des del principi</string>
+    <string name="shiba_video_resume_at">Reprèn a %1$s</string>
+    <string name="shiba_video_group_library">Biblioteca</string>
+    <string name="shiba_video_group_customize">Personalitza</string>
+    <string name="shiba_video_group_manage">Gestiona</string>
+    <string name="shiba_video_favorite">Preferit</string>
+    <string name="shiba_video_favorite_on">Activat</string>
+    <string name="shiba_video_favorite_off">Desactivat</string>
+    <string name="shiba_video_add_to_playlist">Afegeix a una llista de reproducció</string>
+    <string name="shiba_video_create_playlist">Crea una llista de reproducció</string>
+    <string name="shiba_video_edit_title">Edita el títol</string>
+    <string name="shiba_video_change_thumbnail">Canvia la miniatura</string>
+    <string name="shiba_video_view_information">Mostra la informació</string>
+    <string name="shiba_video_show_location">Mostra la ubicació del fitxer</string>
+    <string name="shiba_video_remove">Treu de la biblioteca</string>
+    <string name="shiba_video_remove_message">\"%1$s\" es traurà d\'aquesta biblioteca. El fitxer del disc no se suprimeix.</string>
+    <string name="shiba_video_remove_confirm">Treu</string>
+    <string name="shiba_video_new_playlist_title">Llista de reproducció nova</string>
+    <string name="shiba_video_new_playlist_placeholder">Nom de la llista</string>
+    <string name="shiba_video_new_playlist_create">Crea</string>
+    <string name="shiba_video_launching">S\'està iniciant…</string>
+    <string name="shiba_video_player_ask">un reproductor extern</string>
+    <string name="shiba_video_player_fallback">reproductor extern</string>
+    <string name="shiba_video_launch_error_title">No es pot reproduir el vídeo</string>
+    <string name="shiba_video_added_favorite">S\'ha afegit als preferits</string>
+    <string name="shiba_video_removed_favorite">S\'ha tret dels preferits</string>
+    <string name="shiba_video_import_failed">No s\'ha pogut importar la imatge</string>
+    <string name="shiba_video_thumbnail_updated">S\'ha actualitzat la miniatura</string>
+    <string name="shiba_video_location_in">A: %1$s</string>
+    <string name="shiba_video_info_duration">Durada: %1$s</string>
+    <string name="shiba_video_info_resolution">Resolució: %1$s</string>
+    <string name="shiba_video_info_format">Format: %1$s</string>
+    <string name="shiba_video_info_type">Tipus: %1$s</string>
+    <string name="shiba_video_info_size">Mida: %1$s</string>
+    <string name="shiba_video_info_location">Ubicació: %1$s</string>
+    <string name="shiba_video_info_file">Fitxer: %1$s</string>
+
+    <!-- ===== Visualitzador de manuals ===== -->
+    <string name="shiba_manual_failed">No s\'ha pogut mostrar aquest manual.</string>
+    <string name="shiba_manual_page_description">%1$s — pàgina %2$d del manual</string>
+    <string name="shiba_manual_footer_hint">"◀ ▶  Pàgina   •   ▲ ▼  Desplaça   •   B  Tanca"</string>
+</resources>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Voice microphone sensitivity (Discord) -->
+    <string name="data_mic_sensitivity_auto">自动</string>
+    <string name="data_mic_sensitivity_high">高</string>
+    <string name="data_mic_sensitivity_low">低 · 过滤按键声</string>
+    <string name="data_mic_sensitivity_minimal">最低 · 仅限大声说话</string>
+
+    <!-- Discord sign-in errors -->
+    <string name="data_discord_offline">你已离线。请重新连接互联网后重试。</string>
+    <string name="data_discord_unreachable">无法连接到 Discord</string>
+    <string name="data_discord_signin_network_error">登录时出现网络错误</string>
+
+    <!-- Music and video players -->
+    <string name="data_music_no_player">没有音乐播放器能打开此曲目。请安装播放器，或在“设置 → 音乐”中选择一个。</string>
+    <string name="data_video_no_player_open">没有视频播放器能打开此文件。请安装播放器，或在“设置 → 视频”中选择一个。</string>
+    <string name="data_video_chooser_title">选择视频播放器…</string>
+    <string name="data_video_none_installed">未安装视频播放器。</string>
+    <string name="data_video_bad_location">此视频的位置无效。</string>
+    <string name="data_video_unreachable">找不到此视频文件或已失去访问权限。请尝试重新扫描库。</string>
+    <string name="data_video_player_cannot_open">%1$s 无法打开此视频，或未安装。</string>
+    <string name="data_video_that_player">该播放器</string>
+    <string name="data_video_none_installed_for_file">未安装可打开此文件的视频播放器。</string>
+
+    <!-- Lock screen image -->
+    <string name="data_lockscreen_unreadable">无法读取该图片</string>
+    <string name="data_lockscreen_rejected">此设备不接受锁屏图片</string>
+
+    <!-- PSP theme import (.ptf) -->
+    <string name="data_ptf_unreadable">无法读取文件（或文件过大）</string>
+    <string name="data_ptf_not_ptf">不是 PSP 主题（.ptf）文件</string>
+    <string name="data_ptf_unparseable">无法解析主题文件</string>
+    <string name="data_ptf_wallpaper_missing">此主题没有壁纸图片</string>
+    <string name="data_ptf_wallpaper_unsupported">此主题的壁纸使用了不受支持的压缩方式</string>
+    <string name="data_ptf_wallpaper_damaged">此主题的壁纸已损坏，无法解码</string>
+    <string name="data_ptf_save_failed">无法保存主题</string>
+
+    <!-- Custom media names -->
+    <string name="data_custom_video">自定义视频</string>
+    <string name="data_custom_sound">自定义声音</string>
+
+    <!-- Controllers -->
+    <string name="data_controller_fallback_name">控制器</string>
+</resources>

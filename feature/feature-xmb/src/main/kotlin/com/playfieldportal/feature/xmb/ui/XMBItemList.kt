@@ -1,5 +1,10 @@
 package com.playfieldportal.feature.xmb.ui
 
+import androidx.compose.ui.res.imageResource
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Pets
+import com.playfieldportal.core.ui.components.focusGlow
+import com.playfieldportal.core.ui.text.asString
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
@@ -202,6 +207,9 @@ internal const val MEMORY_CARD_DEFAULT_ART = "file:///android_asset/systems/phys
 // The UMD slot's unfocused icon: the PSP's physical media, for a game of any platform.
 internal const val UMD_SLOT_ART = "file:///android_asset/systems/physical-media/psp.png"
 
+/** The Shiba Coins player card's themeable icon (theme-kit IconSlots key). */
+internal const val PLAYER_CARD_SLOT_KEY = "item_shiba_player"
+
 /** The UMD slot's themeable art (theme-kit IconSlots key). */
 internal const val UMD_SLOT_KEY = "item_umd"
 
@@ -223,8 +231,8 @@ internal const val UMD_SLOT_KEY = "item_umd"
  */
 internal fun xmbRowShowsTitle(item: XMBItem, isSelected: Boolean, umdShowsGame: Boolean, moving: Boolean): Boolean = when {
     item.type == XMBItemType.UMD_SLOT -> !umdShowsGame || item.logoUri == null
-    // A row being moved always says so, logo or not.
-    moving -> true
+    // A game being moved is its icon alone, logo or not: the frame round the icon says it is lifted.
+    moving && item.gameId != null -> false
     else -> item.textOnly || item.gameId == null || (isSelected && item.logoUri == null)
 }
 
@@ -288,6 +296,10 @@ fun XmbDrillFlyout(
             selectedIndex = siblingIndex,
             onItemSelected = onSiblingTap,
             onItemLongPress = {},
+            // Which parent list this is. A deeper level can swap the column for a different list,
+            // and that must be drawn in place at once: without a key the list glided from the old
+            // position to the opened row, which showed as the new list scrolling down on entry.
+            columnKey = drillParentColumnKey(siblings),
             barTopY = barTopY,
             belowTopY = belowTopY,
             showLabels = false,
@@ -314,6 +326,12 @@ fun XmbDrillFlyout(
         )
     }
 }
+
+/**
+ * What makes the flyout's left column "the same list": its rows' ids, in order. A row's text or
+ * art changing (a friend count, an avatar loading) keeps the key; a different list changes it.
+ */
+internal fun drillParentColumnKey(siblings: List<XMBItem>): Any = siblings.map { it.id }
 
 // The flyout's game column: every game in one continuous column, laid out so [selectedIndex] lands on
 // [belowTopY]. Because it's pure layout (no LazyColumn scroll), the active card is always exactly on
@@ -809,6 +827,9 @@ private fun XmbVerticalListRow(
     val density = LocalDensity.current
     val iconCenterPx = remember(density) { with(density) { LEADING_ICON_CENTER.toPx() } }
     var rowWidthPx by remember { mutableStateOf(0f) }
+    // Arrangement state for this row: lifted (being moved) or marked (multi-select).
+    val decor = LocalXmbRowDecor.current
+    val moving = isSelected && decor.movingLabel != null
     // Outer row fills the slot for layout/centering; only the inner cluster is the tap target.
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -842,9 +863,7 @@ private fun XmbVerticalListRow(
                 )
                 .padding(horizontal = ROW_HORIZONTAL_PADDING),
         ) {
-            // Arrangement state for this row: lifted (being moved) or marked (multi-select).
-            val decor = LocalXmbRowDecor.current
-            val moving = isSelected && decor.movingLabel != null
+            // Marked (multi-select) state for this row; `moving` is read above.
             val marked = decor.markMode && item.gameId != null && item.gameId in decor.markedGameIds
             // A focused UMD slot stays the UMD, named, until the disc has been read.
             val umdShowsGame = isSelected && rememberUmdRead(umdReadKey(item.takeIf { isSelected }, columnIndex = 0))
@@ -857,16 +876,26 @@ private fun XmbVerticalListRow(
                     com.playfieldportal.core.ui.motion.LocalIconFocused provides isSelected,
                     com.playfieldportal.core.ui.motion.LocalMotionAllowed provides
                         (com.playfieldportal.core.ui.motion.LocalMotionAllowed.current && iconAnimatingAllowed),
+                    // A tile is framed, or glows, where it is drawn, at whatever size its display mode
+                    // gives it: the lifted frame while it is moved, the focus glow while it is focused.
+                    LocalIconFrame provides when {
+                        !liftedFrameSitsOnTheTile(item) -> Modifier
+                        moving -> Modifier.liftedFrame()
+                        else -> Modifier.focusGlow(active = isSelected, key = item.id)
+                    },
                 ) {
                 Box(
-                    modifier = Modifier.arrangeDecoration(
-                        moving = moving,
-                        marked = marked,
-                        // App icons are clipped to a rounded square (APP_ICON_CORNER), so their
-                        // outline follows that shape; everything else is a tile or a glyph.
-                        appIcon = item.isAndroidApp && item.gameId == null && item.iconUri == null,
-                        accent = LocalPFPColors.current.accentColor,
-                    ),
+                    modifier = Modifier
+                        .arrangeDecoration(
+                            marked = marked,
+                            accent = LocalPFPColors.current.accentColor,
+                        )
+                        // A card or glyph is a fixed square in the slot: framed, or glowing, from here.
+                        .moveIconOutline(moving && !liftedFrameSitsOnTheTile(item))
+                        .focusGlow(
+                            active = isSelected && !moving && !liftedFrameSitsOnTheTile(item),
+                            key = item.id,
+                        ),
                 ) {
                 XmbItemLeadingIcon(
                     item = item,
@@ -879,7 +908,7 @@ private fun XmbVerticalListRow(
 
             val showGameText = xmbRowShowsTitle(item, isSelected, umdShowsGame, moving)
             // "Moving · 2 of 5" replaces the subtitle on the lifted row.
-            val subtitleText = if (moving) decor.movingLabel else item.subtitle
+            val subtitleText = if (moving) decor.movingLabel else item.subtitleUi?.asString()
             if (showText && showGameText) {
                 // start padding pushes the label clear of the wallpaper's vertical cross bar, so the
                 // text doesn't butt against the black band (a small gap, PSP-style).
@@ -893,7 +922,7 @@ private fun XmbVerticalListRow(
                     val titleColor = themedText(glyphColor)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = item.title,
+                            text = item.titleUi.asString(),
                             color = titleColor,
                             fontSize = if (isSelected) XmbLayoutSpec.DEFAULT.itemTextSelectedSp.sp
                             else XmbLayoutSpec.DEFAULT.itemTextSp.sp,
@@ -903,7 +932,18 @@ private fun XmbVerticalListRow(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false),
                         )
-                        // Prestige Bones: "• N [bone glyph]" after the rank, player-card row only.
+                        // The player card's title line reads Title · Level · Bones.
+                        item.levelBadge?.let { level ->
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = "•  ${level.asString()}",
+                                color = titleColor,
+                                fontSize = if (isSelected) 13.sp else 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                            )
+                        }
+                        // Prestige Bones: "• N [bone glyph]" after the level, player-card row only.
                         if (item.boneCount > 0) {
                             Spacer(Modifier.width(8.dp))
                             Text(
@@ -951,7 +991,7 @@ private fun XmbVerticalListRow(
                                 Spacer(Modifier.width(6.dp))
                                 ControllerPromptGlyphs(
                                     icons = listOf(icon),
-                                    label = item.subtitleHintLabel.orEmpty(),
+                                    label = item.subtitleHintLabel?.asString().orEmpty(),
                                     labelColor = themedSubText(SecondaryText),
                                     labelStyle = TextStyle(
                                         fontSize = if (isSelected) 12.sp else 11.sp,
@@ -994,32 +1034,56 @@ data class XmbRowDecor(
 
 val LocalXmbRowDecor = androidx.compose.runtime.compositionLocalOf { XmbRowDecor() }
 
+// The lifted frame stands this far off the icon, a couple of pixels, and is rounded this much.
+private val LIFTED_FRAME_PAD = 3.dp
+private val LIFTED_FRAME_CORNER = 6.dp
+
 /**
- * Draws a row's arrangement state over its icon. A row being moved gets a white outline hugging
- * the icon with a chevron set into its top and bottom edges; a marked game gets a check badge on the icon's top
- * left. Drawn, not laid out, so neither changes the row's size or shifts its neighbours.
+ * Whether [item] draws a tile (a game, or an app given artwork) whose size depends on the icon
+ * display mode. Such a tile carries the lifted frame itself ([LocalIconFrame]); anything else is a
+ * fixed square in the icon slot and is framed by the row.
+ */
+internal fun liftedFrameSitsOnTheTile(item: XMBItem): Boolean =
+    item.gameId != null || (item.isAndroidApp && item.iconUri != null)
+
+/**
+ * The lifted frame for the box it is applied to: a white outline a couple of pixels off that box's
+ * own size, with a chevron set into the top and bottom edges. Put on the box an icon is drawn in,
+ * it fits the icon as displayed. Drawn, not laid out, and inside the row's scale.
+ */
+private fun Modifier.liftedFrame(): Modifier = drawWithContent {
+    drawContent()
+    drawMoveOutline(
+        frame = moveIconFrame(Rect(0f, 0f, size.width, size.height), pad = LIFTED_FRAME_PAD.toPx()),
+        corner = LIFTED_FRAME_CORNER,
+    )
+}
+
+/**
+ * A card or glyph row being moved: the same frame, round the square icon centred in the row's icon
+ * slot. Only the icon is framed; the name is not part of what is lifted.
+ */
+private fun Modifier.moveIconOutline(moving: Boolean): Modifier = if (!moving) this else drawWithContent {
+    drawContent()
+    drawMoveOutline(
+        frame = moveIconFrame(
+            leadingIconBounds(size.width, size.height, ARTWORK_TEXT_GAP.toPx()),
+            pad = LIFTED_FRAME_PAD.toPx(),
+        ),
+        corner = LIFTED_FRAME_CORNER,
+    )
+}
+
+/**
+ * Draws a row's arrangement state over its icon: a marked game gets a check badge on the icon's top
+ * left. Drawn, not laid out, so it does not change the row's size or shift its neighbours.
  */
 private fun Modifier.arrangeDecoration(
-    moving: Boolean,
     marked: Boolean,
-    appIcon: Boolean,
     accent: Color,
-): Modifier = if (!moving && !marked) this else drawWithContent {
+): Modifier = if (!marked) this else drawWithContent {
     drawContent()
-    // The icon's own bounds inside this box: a wide box is a game tile followed by its text gap,
-    // anything else is a glyph or app icon centred in the icon slot. The gap is taken off before
-    // comparing: an app row's slot (74×48dp) is wide too, but only because the slot is.
-    val isTile = size.width - ARTWORK_TEXT_GAP.toPx() > size.height * 1.5f
-    val iconWidth = if (isTile) size.width - ARTWORK_TEXT_GAP.toPx() else size.height
-    val left = if (isTile) 0f else (size.width - iconWidth) / 2f
-    if (moving) {
-        drawMoveOutline(
-            icon = androidx.compose.ui.geometry.Rect(left, 0f, left + iconWidth, size.height),
-            // An app's outline is concentric with its icon's clip: the same corner, grown by the
-            // gap between them.
-            corner = if (appIcon) APP_ICON_CORNER + 4.dp else 8.dp,
-        )
-    }
+    val left = leadingIconBounds(size.width, size.height, ARTWORK_TEXT_GAP.toPx()).left
     if (marked) {
         val radius = 10.dp.toPx()
         val center = Offset(left + 2.dp.toPx(), 2.dp.toPx())
@@ -1531,8 +1595,12 @@ private fun XmbItemLeadingIcon(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
+                // A Settings section row carries its own icon; the rows inside a section keep the wrench.
+                val sectionIconKey = com.playfieldportal.feature.xmb.viewmodel.settingsSectionIconSlotKey(item.id)
                 val settingsOverride = LocalXmbIcons.current["item_settings"]
-                if (settingsOverride != null) {
+                if (sectionIconKey != null) {
+                    SettingsSectionIcon(sectionIconKey, Modifier.size(LEADING_ICON_SIZE))
+                } else if (settingsOverride != null) {
                     com.playfieldportal.core.ui.icons.CustomIconSurface(
                         icon = settingsOverride,
                         contentDescription = null,
@@ -1547,23 +1615,26 @@ private fun XmbItemLeadingIcon(
                 }
             }
         }
-        // Shiba Coins player-card summary: a ring with the level centered in it (e.g. "Lv 27"),
-        // sized like the other item icons. Ring and text follow the theme's icon color; no fill.
+        // Shiba Coins player card: the Shiba's head, the player's own icon. The art is the head cut
+        // from the Shiba Coins medal (catbar_achievements) without its crown, wreath and ring, scaled
+        // to fill the icon box like the other row icons. Through PortalIcon, so it takes the theme's
+        // icon colour and the legibility matte. The level it used to carry in a ring is in the
+        // row's title line now (Title · Level · Bones).
         item.levelBadge != null -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(LEADING_ICON_SIZE * 0.8f)
-                        .clip(CircleShape)
-                        .border(2.dp, iconTint, CircleShape),
-                ) {
-                    Text(
-                        text = item.levelBadge,
-                        color = iconTint,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
+                // Two-tier like every themeable icon: the user's pick, then the applied theme's art.
+                val playerOverride = LocalXmbIcons.current[PLAYER_CARD_SLOT_KEY]
+                if (playerOverride != null) {
+                    com.playfieldportal.core.ui.icons.CustomIconSurface(
+                        icon = playerOverride,
+                        contentDescription = null,
+                        modifier = Modifier.size(LEADING_ICON_SIZE),
+                    )
+                } else {
+                    PortalIcon(
+                        painter = painterResource(com.playfieldportal.feature.xmb.R.drawable.player_shiba_head),
+                        contentDescription = null,
+                        modifier = Modifier.size(LEADING_ICON_SIZE),
                     )
                 }
             }

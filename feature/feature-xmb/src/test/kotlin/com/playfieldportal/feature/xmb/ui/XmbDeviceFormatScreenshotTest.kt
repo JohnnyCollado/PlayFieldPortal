@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui
 
+import com.playfieldportal.core.domain.text.UiText
 import android.app.Application
 import android.graphics.Bitmap
 import androidx.activity.ComponentActivity
@@ -37,7 +38,7 @@ import java.io.File
  * pre-AGSL path, which Robolectric can draw; One UI cutouts, taskbars and fold posture are not
  * modelled. Run:
  *
- *     ./gradlew :feature:feature-xmb:testDebugUnitTest --tests "*XmbDeviceFormatScreenshotTest*"
+ *     ./gradlew :feature:feature-xmb:testDebugUnitTest -Pmockups --tests "*XmbDeviceFormatScreenshotTest*"
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -159,7 +160,7 @@ class XmbDeviceFormatScreenshotTest {
     )
 
     private val appPickerState = AppPickerState(
-        title = "Add Apps",
+        title = UiText.raw("Add Apps"),
         target = AppPickerTarget.AndroidGames(platformId = "android"),
         apps = (1..28).map { i ->
             AppPickerEntry(

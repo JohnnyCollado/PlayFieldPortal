@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="xmb_icons_reset_removed_themed">Usunięto wybór — teraz widać ikonę zastosowanego motywu.</string>
+    <string name="xmb_icons_reset_themed_slot">Nie ma czego przywracać — ta ikona pochodzi z zastosowanego motywu.</string>
+    <string name="xmb_icons_reset_builtin_slot">Nie ma czego przywracać — to miejsce już używa wbudowanej ikony.</string>
+    <string name="xmb_icons_reset_all_none">Nie ma czego przywracać — nie wybrano żadnych ikon.</string>
+    <string name="xmb_icons_reset_all_themed">Wyczyszczono wybory — teraz widać ikony zastosowanego motywu.</string>
+</resources>

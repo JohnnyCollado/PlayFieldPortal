@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui
 
+import com.playfieldportal.core.ui.text.asString
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -59,6 +60,8 @@ import com.playfieldportal.feature.xmb.viewmodel.ColorSchemePickerState
 import com.playfieldportal.feature.xmb.viewmodel.previewArgb
 import com.playfieldportal.feature.xmb.viewmodel.selected
 import com.playfieldportal.feature.xmb.viewmodel.variantsAvailable
+import androidx.compose.ui.res.stringResource
+import com.playfieldportal.feature.xmb.R
 
 private val PickerWidth = 320.dp
 private val PanelEdgeGap = 20.dp
@@ -125,7 +128,7 @@ fun ColorSchemePickerOverlay(
             verticalArrangement = Arrangement.Center,
         ) {
             Text(
-                text = "Color Scheme",
+                text = stringResource(R.string.xmbu_color_scheme_title),
                 fontSize = 19.sp,
                 fontWeight = FontWeight.Light,
                 color = themedText(Color.White.copy(alpha = 0.92f)),
@@ -165,9 +168,6 @@ object ColorSchemePickerTags {
     const val DEPTH_NEXT = "color_scheme_depth_next"
 }
 
-private val HintTint = ControllerPromptItem.fixed(listOf(ControllerIcon.DPAD_LEFT, ControllerIcon.DPAD_RIGHT), "Tint")
-private val HintDepth = ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Depth")
-
 @Composable
 private fun ShadeControls(
     state: ColorSchemePickerState,
@@ -177,6 +177,10 @@ private fun ShadeControls(
     showHints: Boolean,
 ) {
     val preview = state.previewArgb
+    val tintTitle = stringResource(R.string.xmbu_color_scheme_tint)
+    val depthTitle = stringResource(R.string.xmbu_color_scheme_depth)
+    val hintTint = ControllerPromptItem.fixed(listOf(ControllerIcon.DPAD_LEFT, ControllerIcon.DPAD_RIGHT), tintTitle)
+    val hintDepth = ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), depthTitle)
     Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
         Box(Modifier.fillMaxWidth().padding(end = 8.dp).height(1.dp).background(Color.White.copy(alpha = 0.30f)))
         if (state.variantsAvailable) {
@@ -184,18 +188,18 @@ private fun ShadeControls(
             val variant = state.variant
             Spacer(Modifier.height(6.dp))
             ShadeStepper(
-                title = "Tint",
-                hint = HintTint.takeIf { showHints },
-                value = ColorNaming.tintLabel(base, variant.tint),
+                title = tintTitle,
+                hint = hintTint.takeIf { showHints },
+                value = ColorNaming.tintLabel(base, variant.tint).asString(),
                 step = variant.tint,
                 previousTag = ColorSchemePickerTags.TINT_PREVIOUS,
                 nextTag = ColorSchemePickerTags.TINT_NEXT,
                 onStep = { onStep(it, 0) },
             )
             ShadeStepper(
-                title = "Depth",
-                hint = HintDepth.takeIf { showHints },
-                value = ColorNaming.depthLabel(variant.depth),
+                title = depthTitle,
+                hint = hintDepth.takeIf { showHints },
+                value = ColorNaming.depthLabel(variant.depth).asString(),
                 step = variant.depth,
                 previousTag = ColorSchemePickerTags.DEPTH_PREVIOUS,
                 nextTag = ColorSchemePickerTags.DEPTH_NEXT,
@@ -207,7 +211,7 @@ private fun ShadeControls(
         // code stays at its end.
         Row(Modifier.fillMaxWidth().padding(end = 8.dp)) {
             Text(
-                text = ColorNaming.describe(preview),
+                text = ColorNaming.describe(preview).asString(),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = themedText(Color.White),
@@ -236,7 +240,7 @@ private fun ShadeControls(
 internal fun BackdropContrast(waveArgb: Long, menuText: Color) {
     val (top, bottom) = lightBackgroundAnchors(waveArgb)
     Spacer(Modifier.height(4.dp))
-    listOf("Top" to top, "Bottom" to bottom).forEach { (place, backdrop) ->
+    listOf(R.string.xmbu_color_scheme_contrast_top to top, R.string.xmbu_color_scheme_contrast_bottom to bottom).forEach { (lineRes, backdrop) ->
         val ratio = worstContrast(menuText, listOf(Color(backdrop)))
         val mark = when (ContrastVerdict.of(ratio)) {
             ContrastVerdict.EASY -> "✓"
@@ -244,7 +248,7 @@ internal fun BackdropContrast(waveArgb: Long, menuText: Color) {
             ContrastVerdict.HARD -> "⚠"
         }
         Text(
-            text = "$mark Text at ${place.lowercase()}  ${contrastReadout(ratio)}",
+            text = stringResource(lineRes, mark, contrastReadout(ratio)),
             fontSize = 11.sp,
             color = themedSubText(Color.White.copy(alpha = 0.86f)),
             style = TextStyle(shadow = PickerTextShadow),
@@ -357,14 +361,14 @@ private fun ColorSchemeRow(
             Spacer(Modifier.width(14.dp))
             Column {
                 Text(
-                    text = option.label,
+                    text = option.label.asString(),
                     fontSize = if (isSelected) 16.sp else 15.sp,
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                     color = themedText(if (isSelected) Color.White else Color.White.copy(alpha = 0.66f)),
                     style = TextStyle(shadow = PickerTextShadow),
                 )
                 Text(
-                    text = option.sublabel,
+                    text = option.sublabel.asString(),
                     fontSize = 11.sp,
                     color = themedSubText(Color.White.copy(alpha = if (isSelected) 0.78f else 0.5f)),
                     style = TextStyle(shadow = PickerTextShadow),
@@ -394,7 +398,7 @@ fun CustomColorPickerOverlay(
         if (showContrast) { { BackdropContrast(state.argb, menuText) } } else null
     Box(modifier = modifier) {
         HsvColorPickerDialog(
-            title = "Custom Color",
+            title = stringResource(R.string.xmbu_color_scheme_custom_title),
             state = state,
             onStateChange = onStateChange,
             onConfirm = onConfirm,

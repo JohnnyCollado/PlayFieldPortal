@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Music playback notification -->
+    <string name="xmbu_music_channel_name">Musikuppspelning</string>
+    <string name="xmbu_music_channel_description">Kontroller för det som spelas nu</string>
+    <string name="xmbu_music_notif_previous">Föregående</string>
+    <string name="xmbu_music_notif_play_pause">Spela upp/pausa</string>
+    <string name="xmbu_music_notif_next">Nästa</string>
+    <string name="xmbu_music_notif_stop">Stoppa</string>
+    <string name="xmbu_ptt_hold">"🎙  HÅLL"</string>
+    <string name="xmbu_clipfail_boot_label">Startsekvens</string>
+    <string name="xmbu_clipfail_gameboot_label">Game Boot</string>
+    <string name="xmbu_clipfail_boot_message">Din startvideo kunde inte spelas upp på enheten, så den inbyggda sekvensen spelades i stället. Exportera temat igen från Theme Studio (videon konverteras) eller välj ett annat klipp i inställningarna för Skärm.</string>
+    <string name="xmbu_clipfail_gameboot_message">Din Game Boot-video kunde inte spelas upp på enheten, så den inbyggda sekvensen spelades i stället. Exportera temat igen från Theme Studio (videon konverteras) eller välj ett annat klipp i inställningarna för Skärm.</string>
+    <string name="xmbu_common_options">Alternativ</string>
+    <string name="xmbu_common_back">Tillbaka</string>
+    <string name="xmbu_common_cancel">Avbryt</string>
+    <string name="xmbu_common_done">Klar</string>
+    <string name="xmbu_common_close">Stäng</string>
+    <string name="xmbu_common_reset">Återställ</string>
+    <string name="xmbu_common_remove">Ta bort</string>
+    <string name="xmbu_common_open">Öppna</string>
+    <string name="xmbu_common_toggle">Växla</string>
+    <string name="xmbu_common_search">Sök</string>
+    <string name="xmbu_common_artwork">Grafik</string>
+    <string name="xmbu_common_edit_title">Redigera titel</string>
+    <string name="xmbu_common_add_to_card">Lägg till på kort</string>
+    <string name="xmbu_common_on">På</string>
+    <string name="xmbu_common_off">Av</string>
+    <string name="xmbu_common_move">Flytta</string>
+    <string name="xmbu_common_navigate">Navigera</string>
+    <string name="xmbu_common_play">Spela upp</string>
+    <string name="xmbu_common_pause">Pausa</string>
+    <string name="xmbu_common_prev_next">Föreg. / Nästa</string>
+    <string name="xmbu_common_seek">Spola</string>
+    <string name="xmbu_common_confirm">Bekräfta</string>
+    <string name="xmbu_common_close_search">Stäng sökning</string>
+    <string name="xmbu_common_ellipsis_search">Sök …</string>
+    <!-- App Detail: Options menu rows -->
+    <string name="xmbu_app_opt_favorite">Favorit</string>
+    <string name="xmbu_app_opt_app_info">Appinfo</string>
+    <string name="xmbu_app_opt_hide">Dölj överallt</string>
+    <string name="xmbu_app_opt_change_icon">Byt ikon</string>
+    <string name="xmbu_app_opt_change_background">Byt bakgrund</string>
+    <string name="xmbu_app_opt_reset_artwork">Återställ all grafik</string>
+    <string name="xmbu_app_art_type_icon">Spelikon</string>
+    <string name="xmbu_app_art_type_hero">Hero-banner</string>
+    <string name="xmbu_app_art_type_background">Bakgrund</string>
+    <string name="xmbu_app_art_no_api_key">Ingen API-nyckel för SteamGridDB har konfigurerats – lägg till en i inställningarna för Grafik</string>
+    <string name="xmbu_app_art_search_failed">Sökningen misslyckades: %1$s</string>
+    <string name="xmbu_app_art_no_results">Inga resultat för \"%1$s\" på SteamGridDB</string>
+    <string name="xmbu_app_art_load_failed">Det gick inte att läsa in grafik: %1$s</string>
+    <string name="xmbu_app_art_none_found">Ingen grafik av typen %1$s hittades på SteamGridDB</string>
+    <string name="xmbu_app_art_download_failed">Det gick inte att ladda ned %1$s</string>
+    <string name="xmbu_app_art_import_failed">Det gick inte att importera %1$s</string>
+    <string name="xmbu_app_art_updated">%1$s har uppdaterats</string>
+    <string name="xmbu_app_art_reset">%1$s har återställts</string>
+    <string name="xmbu_app_art_all_reset">All grafik har återställts</string>
+    <string name="xmbu_app_no_launchable_package">Appen har inget paket som kan startas</string>
+    <string name="xmbu_common_launch">Starta</string>
+    <!-- App Detail screen -->
+    <string name="xmbu_app_breadcrumb_apps">Appar</string>
+    <string name="xmbu_app_breadcrumb_android_app">Android-app</string>
+    <string name="xmbu_app_edit_artwork_description">Redigera grafik</string>
+    <string name="xmbu_app_no_icon">Ingen ikon</string>
+    <string name="xmbu_app_art_change">Byt %1$s</string>
+    <string name="xmbu_app_art_saving">Sparar …</string>
+    <string name="xmbu_app_art_pick_local">Välj lokal fil</string>
+    <string name="xmbu_app_art_restore_icon">Återställ appens ikon</string>
+    <string name="xmbu_app_art_remove_custom">Ta bort egen grafik</string>
+    <string name="xmbu_app_art_picker_hint">"◄ ►  Bläddra   A  Välj   B  Tillbaka"</string>
+    <string name="xmbu_app_reset_title">Återställ all grafik?</string>
+    <string name="xmbu_app_reset_message">Den egna ikonen och bakgrunden för %1$s tas bort och appens egen ikon kommer tillbaka.</string>
+    <!-- Add to Card (collection) picker panel -->
+    <string name="xmbu_collection_picker_new_row">"＋  Nytt eget minneskort"</string>
+    <string name="xmbu_collection_new_title">Nytt eget minneskort</string>
+    <string name="xmbu_collection_new_placeholder">t.ex. Rollspel, Spelar nu</string>
+    <string name="xmbu_collection_new_create">Skapa</string>
+    <string name="xmbu_common_sort">Sortera</string>
+    <string name="xmbu_common_notifications">Aviseringar</string>
+    <!-- App picker (Add Apps / Remove Apps) -->
+    <string name="xmbu_app_picker_empty">Inga installerade appar</string>
+    <string name="xmbu_app_picker_no_match">Inga installerade appar matchar \"%1$s\"</string>
+    <string name="xmbu_app_picker_choose">Välj</string>
+    <!-- Arrange mode bars -->
+    <string name="xmbu_arrange_place">Placera</string>
+    <string name="xmbu_arrange_mark">Markera</string>
+    <string name="xmbu_arrange_move_left">Flytta vänster</string>
+    <string name="xmbu_arrange_move_right">Flytta höger</string>
+    <string name="xmbu_arrange_move_up">Flytta upp</string>
+    <string name="xmbu_arrange_move_down">Flytta ned</string>
+    <!-- Color Scheme picker overlay -->
+    <string name="xmbu_color_scheme_title">Färgschema</string>
+    <string name="xmbu_color_scheme_tint">Ton</string>
+    <string name="xmbu_color_scheme_depth">Djup</string>
+    <string name="xmbu_color_scheme_contrast_top">"%1$s Text överst  %2$s"</string>
+    <string name="xmbu_color_scheme_contrast_bottom">"%1$s Text nederst  %2$s"</string>
+    <string name="xmbu_color_scheme_custom_title">Egen färg</string>
+    <!-- Customize XMB Icons overlay -->
+    <string name="xmbu_icons_title">Anpassa XMB-ikoner</string>
+    <string name="xmbu_icons_source_user">Ditt val</string>
+    <string name="xmbu_icons_source_theme">Från tema</string>
+    <string name="xmbu_icons_source_default">Standard</string>
+    <string name="xmbu_icons_source_with_column">%1$s · kolumnen %2$s</string>
+    <string name="xmbu_icons_column">Kolumn</string>
+    <string name="xmbu_icons_tab">Flik</string>
+    <string name="xmbu_icons_pick">Välj</string>
+    <string name="xmbu_icons_reset_all">Återställ alla</string>
+    <string name="xmbu_icons_save_as_theme">Spara som tema</string>
+    <string name="xmbu_icons_save_as_theme_button">Spara som tema …</string>
+    <!-- Search box -->
+    <string name="xmbu_game_search_placeholder">Sök spel …</string>
+    <!-- Game picker -->
+    <string name="xmbu_picker_in_this_category">I den här kategorin</string>
+    <string name="xmbu_picker_in_category">I %1$s</string>
+    <string name="xmbu_picker_custom_cards">Egna minneskort</string>
+    <string name="xmbu_picker_no_changes">Inga ändringar</string>
+    <string name="xmbu_picker_menu_view">Visa</string>
+    <string name="xmbu_picker_menu_select_all">Markera alla</string>
+    <string name="xmbu_picker_open_toggle">Öppna / Markera</string>
+    <string name="xmbu_picker_no_games">Inga spel i ditt bibliotek ännu</string>
+    <string name="xmbu_picker_add_games">Lägg till spel</string>
+    <string name="xmbu_picker_view_mode">Vy: %1$s</string>
+    <string name="xmbu_picker_removing_prefix">"Tar bort · "</string>
+    <string name="xmbu_picker_search_placeholder">Sök på hyllan …</string>
+    <string name="xmbu_picker_shelves">Hyllor</string>
+    <string name="xmbu_picker_shelf">Hylla</string>
+    <!-- Music browser -->
+    <string name="xmbu_music_breadcrumb_playlists">"Musik  ›  Spellistor"</string>
+    <string name="xmbu_music_breadcrumb_music">Musik</string>
+    <string name="xmbu_music_breadcrumb_all_tracks">Alla spår</string>
+    <string name="xmbu_music_resume">Fortsätt: %1$s</string>
+    <!-- Music player -->
+    <string name="xmbu_music_now_playing">Spelas nu</string>
+    <string name="xmbu_music_nothing_playing">Inget spelas</string>
+    <string name="xmbu_music_visualizer">Visualisering</string>
+    <string name="xmbu_media_previous_track">Föregående spår</string>
+    <string name="xmbu_media_next_track">Nästa spår</string>
+    <string name="xmbu_media_previous_video">Föregående video</string>
+    <string name="xmbu_media_next_video">Nästa video</string>
+    <string name="xmbu_media_back_10">Bakåt 10 sekunder</string>
+    <string name="xmbu_media_forward_10">Framåt 10 sekunder</string>
+    <string name="xmbu_media_playing">Spelas upp</string>
+    <string name="xmbu_media_paused">Pausad</string>
+    <!-- Music track picker -->
+    <string name="xmbu_track_picker_title">Lägg till i %1$s</string>
+    <string name="xmbu_track_picker_add">Lägg till</string>
+    <string name="xmbu_track_picker_empty">Inga fler spår att lägga till – alla hittade låtar finns redan i spellistan.</string>
+    <!-- Notification panel and notification detail sheets -->
+    <string name="xmbu_notif_options_description">Aviseringsalternativ</string>
+    <string name="xmbu_notif_task_stopping">%1$s – Stoppar …</string>
+    <string name="xmbu_notif_task_detail">%1$s – %2$s</string>
+    <string name="xmbu_notif_kind_scan">Sökning</string>
+    <string name="xmbu_notif_kind_metadata">Metadata</string>
+    <string name="xmbu_notif_kind_achievements">Prestationer</string>
+    <string name="xmbu_notif_kind_system">System</string>
+    <string name="xmbu_notif_kind_download">Nedladdning</string>
+    <string name="xmbu_notif_kind_feed">Flöde</string>
+    <string name="xmbu_notif_action_go_to_game">Gå till spel</string>
+    <string name="xmbu_notif_action_open_card">Öppna minneskort</string>
+    <string name="xmbu_notif_action_open_settings">Öppna inställningar</string>
+    <string name="xmbu_notif_action_open_category">Öppna kategori</string>
+    <string name="xmbu_notif_action_review">Granska</string>
+    <string name="xmbu_time_just_now">Just nu</string>
+    <string name="xmbu_share_theme">Dela tema</string>
+    <string name="xmbu_move_position">Flyttar · %1$d av %2$d</string>
+    <string name="xmbu_common_later">Senare</string>
+    <!-- XMB shell dialogs -->
+    <string name="xmbu_shell_rename_shortcut">Byt namn på genväg</string>
+    <string name="xmbu_shell_playlist_name">Spellistans namn</string>
+    <string name="xmbu_shell_theme_name">Temats namn</string>
+    <string name="xmbu_shell_source_theme">Från det aktiva temat</string>
+    <string name="xmbu_shell_source_device">Från din enhet</string>
+    <string name="xmbu_shell_source_device_detail">PNG eller GIF</string>
+    <string name="xmbu_shell_continue">Fortsätt</string>
+    <string name="xmbu_shell_shortcut_title">Lägg till genväg?</string>
+    <string name="xmbu_shell_shortcut_message">En app vill lägga till genvägen \"%1$s\" som öppnar %2$s. Lägg bara till den om du själv precis skapade genvägen.</string>
+    <string name="xmbu_shell_shortcut_add">Lägg till</string>
+    <string name="xmbu_shell_shortcut_ignore">Ignorera</string>
+    <string name="xmbu_shell_windows_title">Slutför ditt Windows-bibliotek</string>
+    <string name="xmbu_shell_windows_message">Ett PC-spel lades till, men biblioteket Windows-spel har ingen mapp ännu. Konfigurera det i Bibliotekshanteraren så att spelmappar och prestationer kan sökas igenom.</string>
+    <string name="xmbu_shell_windows_set_up">Konfigurera</string>
+    <string name="xmbu_shell_import_position">%1$d av %2$d</string>
+    <string name="xmbu_shell_open_playlist">Öppna spellista</string>
+    <string name="xmbu_shell_stop">Stoppa</string>
+    <string name="xmbu_shell_keep_running">Fortsätt köra</string>
+    <!-- Launch recovery dialog -->
+    <string name="xmbu_recovery_retry">Försök igen</string>
+    <string name="xmbu_recovery_change_emulator">Byt emulator</string>
+    <string name="xmbu_recovery_change_default">Ändra standard för systemet</string>
+    <string name="xmbu_recovery_copy_diagnostics">Kopiera diagnostik</string>
+    <string name="xmbu_recovery_title">Det gick inte att starta %1$s</string>
+    <string name="xmbu_recovery_select">Välj</string>
+    <string name="xmbu_recovery_dismiss">Stäng</string>
+    <!-- Artwork folder prompts -->
+    <string name="xmbu_artfolder_unavailable_title">Grafikmappen är inte tillgänglig</string>
+    <string name="xmbu_artfolder_unavailable_message">PFP kan inte nå %1$s. Ny grafik är pausad tills du länkar mappen igen. Grafik du redan har visas fortfarande.</string>
+    <string name="xmbu_artfolder_relink">Länka mappen igen</string>
+    <string name="xmbu_artfolder_not_now">Inte nu</string>
+    <string name="xmbu_artfolder_move_title">Flytta din grafik till en mapp du äger</string>
+    <string name="xmbu_artfolder_choose">Välj grafikmapp</string>
+    <string name="xmbu_artfolder_choose_title">Välj en grafikmapp</string>
+    <string name="xmbu_artfolder_choose_message">Ny grafik sparas i en mapp du äger. Välj en så sparar PFP grafiken där.</string>
+    <string name="xmbu_artfolder_foreign_title">Mappen innehåller ett annat grafikbibliotek</string>
+    <string name="xmbu_artfolder_use_library">Använd det här biblioteket</string>
+    <string name="xmbu_artfolder_choose_another">Välj en annan mapp</string>
+    <!-- Status strip -->
+    <string name="xmbu_status_controller_connected">Handkontroll ansluten</string>
+    <string name="xmbu_status_battery">Batteri</string>
+    <string name="xmbu_status_battery_charging">Batteri, laddas</string>
+    <string name="xmbu_status_battery_plugged">Batteri, ansluten till ström</string>
+    <!-- Adjust XMB Layout overlay -->
+    <string name="xmbu_layout_title">Justera XMB-layout</string>
+    <string name="xmbu_layout_readout">"Skala %1$sx    Horisontellt %2$d%%    Vertikalt %3$d%%"</string>
+    <string name="xmbu_layout_scale">Skala</string>
+    <string name="xmbu_layout_horizontal">Horisontellt</string>
+    <string name="xmbu_layout_vertical">Vertikalt</string>
+    <string name="xmbu_layout_sliders">Reglage</string>
+    <string name="xmbu_layout_hide_sliders">Dölj reglage</string>
+    <string name="xmbu_layout_save">Spara</string>
+    <!-- Theme icon picker -->
+    <string name="xmbu_icon_grid_use">Använd den här ikonen</string>
+    <string name="xmbu_status_cellular_signal">Mobilsignal</string>
+    <string name="xmbu_notif_header_running">PÅGÅR</string>
+    <string name="xmbu_notif_header_earlier">TIDIGARE</string>
+    <string name="xmbu_notif_empty">Inga aviseringar</string>
+    <!-- Video player -->
+    <string name="xmbu_video_fit">Anpassa</string>
+    <string name="xmbu_video_zoom">Zooma</string>
+    <string name="xmbu_video_fill">Fyll</string>
+    <string name="xmbu_video_speed">Uppspelningshastighet</string>
+    <string name="xmbu_video_subtitles">Undertexter</string>
+    <string name="xmbu_video_audio_track">Ljudspår</string>
+    <string name="xmbu_video_screen_mode">Skärmläge</string>
+    <string name="xmbu_video_none">Ingen</string>
+    <string name="xmbu_video_default">Standard</string>
+    <string name="xmbu_video_track">Spår</string>
+    <string name="xmbu_video_err_not_found">Videon hittades inte.</string>
+    <string name="xmbu_video_err_permission">Behörighet nekades för filen.</string>
+    <string name="xmbu_video_err_decode">Videon kan inte avkodas på den här enheten.</string>
+    <string name="xmbu_video_err_unable">Det går inte att spela upp videon.</string>
+    <string name="xmbu_video_go_back">Gå tillbaka</string>
+    <string name="xmbu_video_status">%1$s× · %2$s</string>
+    <!-- Photo viewer -->
+    <string name="xmbu_photo_rotate_left">Rotera åt vänster</string>
+    <string name="xmbu_photo_rotate_right">Rotera åt höger</string>
+    <string name="xmbu_photo_zoom_in">Zooma in</string>
+    <string name="xmbu_photo_zoom_out">Zooma ut</string>
+    <string name="xmbu_photo_reset_zoom">Återställ zoom</string>
+    <string name="xmbu_photo_set_wallpaper">Ange som bakgrund i startprogrammet</string>
+    <string name="xmbu_photo_set_lock_screen">Ange som låsskärm</string>
+    <string name="xmbu_photo_view_info">Visa information</string>
+    <string name="xmbu_photo_show_location">Visa filens plats</string>
+    <string name="xmbu_photo_remove">Ta bort från biblioteket</string>
+    <string name="xmbu_photo_group_view">Visa</string>
+    <string name="xmbu_photo_group_manage">Hantera</string>
+    <string name="xmbu_photo_in_folder">I: %1$s</string>
+    <string name="xmbu_photo_wallpaper_unreadable">Det gick inte att ange bakgrund – bilden kunde inte läsas</string>
+    <string name="xmbu_photo_wallpaper_applied">Bakgrunden har tillämpats</string>
+    <string name="xmbu_photo_unreadable">Fotot kunde inte läsas</string>
+    <string name="xmbu_photo_lock_screen_set">Låsskärmen har angetts</string>
+    <string name="xmbu_photo_hide_controls">Dölj kontroller</string>
+    <string name="xmbu_photo_show_controls">Visa kontroller</string>
+    <string name="xmbu_photo_wallpaper_title">Ange som bakgrund i startprogrammet?</string>
+    <string name="xmbu_photo_wallpaper_note">Den ersätter XMB-vågbakgrunden.</string>
+    <string name="xmbu_photo_apply">Verkställ</string>
+    <string name="xmbu_photo_applying">Verkställer …</string>
+    <string name="xmbu_photo_remove_message">\"%1$s\" tas bort från biblioteket. Fotot på disken raderas inte.</string>
+    <string name="xmbu_photo_lock_message">\"%1$s\" blir enhetens låsskärmsbild, beskuren för att passa skärmen.</string>
+    <string name="xmbu_photo_set">Ange</string>
+    <!-- Photo information lines -->
+    <string name="xmbu_photo_info_resolution">Upplösning: %1$s</string>
+    <string name="xmbu_photo_info_taken">Tagen: %1$s</string>
+    <string name="xmbu_photo_info_modified">Ändrad: %1$s</string>
+    <string name="xmbu_photo_info_size">Storlek: %1$s</string>
+    <string name="xmbu_photo_info_type">Typ: %1$s</string>
+    <string name="xmbu_photo_info_location">Plats: %1$s</string>
+    <string name="xmbu_photo_info_file">Fil: %1$s</string>
+    <!-- Music visualizer picker -->
+    <string name="xmbu_visualizer_portal">Portal</string>
+    <string name="xmbu_visualizer_ripple">Krusning</string>
+    <string name="xmbu_visualizer_off">Av</string>
+    <string name="xmbu_visualizer_off_tile">AV</string>
+    <plurals name="xmbu_app_picker_selected">
+        <item quantity="one">%d markerad</item>
+        <item quantity="other">%d markerade</item>
+    </plurals>
+    <plurals name="xmbu_arrange_marked">
+        <item quantity="one">%d markerat</item>
+        <item quantity="other">%d markerade</item>
+    </plurals>
+    <plurals name="xmbu_picker_to_add">
+        <item quantity="one">%d att lägga till</item>
+        <item quantity="other">%d att lägga till</item>
+    </plurals>
+    <plurals name="xmbu_picker_to_remove">
+        <item quantity="one">%d att ta bort</item>
+        <item quantity="other">%d att ta bort</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_games">
+        <item quantity="one">%1$d spel · %2$d markerade</item>
+        <item quantity="other">%1$d spel · %2$d markerade</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_cards">
+        <item quantity="one">%d kort · om du väljer ett flyttas det hit</item>
+        <item quantity="other">%d kort · om du väljer ett flyttas det hit</item>
+    </plurals>
+    <plurals name="xmbu_picker_card_games">
+        <item quantity="one">%d spel</item>
+        <item quantity="other">%d spel</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_add_count">
+        <item quantity="one">Lägg till %d</item>
+        <item quantity="other">Lägg till %d</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_selected">
+        <item quantity="one">%d markerat</item>
+        <item quantity="other">%d markerade</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_add_tracks">
+        <item quantity="one">Lägg till %d spår</item>
+        <item quantity="other">Lägg till %d spår</item>
+    </plurals>
+    <plurals name="xmbu_time_minutes_ago">
+        <item quantity="one">För %d minut sedan</item>
+        <item quantity="other">För %d minuter sedan</item>
+    </plurals>
+    <plurals name="xmbu_time_hours_ago">
+        <item quantity="one">För %d timme sedan</item>
+        <item quantity="other">För %d timmar sedan</item>
+    </plurals>
+    <plurals name="xmbu_artfolder_move_message">
+        <item quantity="one">%d bild lagras i appen och går förlorad om du avinstallerar. Välj en mapp så flyttar PFP den dit.</item>
+        <item quantity="other">%d bilder lagras i appen och går förlorade om du avinstallerar. Välj en mapp så flyttar PFP dem dit.</item>
+    </plurals>
+    <plurals name="xmbu_artfolder_foreign_message">
+        <item quantity="one">%1$s konfigurerades av en annan installation (%2$d fil). Använd den så länkar PFP om dina spel till dess grafik, eller välj en annan mapp.</item>
+        <item quantity="other">%1$s konfigurerades av en annan installation (%2$d filer). Använd den så länkar PFP om dina spel till dess grafik, eller välj en annan mapp.</item>
+    </plurals>
+    <plurals name="xmbu_status_notifications_unread">
+        <item quantity="one">Aviseringar, %d oläst</item>
+        <item quantity="other">Aviseringar, %d olästa</item>
+    </plurals>
+</resources>

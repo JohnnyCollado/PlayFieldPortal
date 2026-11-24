@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.CategoryType
@@ -7,8 +8,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /** Pins where Fetch Artwork appears in the XMB game menu, and where it deliberately does not. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class GameContextMenuItemsTest {
 
     private val games = Category(
@@ -32,7 +38,7 @@ class GameContextMenuItemsTest {
     @Test
     fun `a game offers Fetch Artwork`() {
         val fetch = items().single { it.id == "fetch_artwork" }
-        assertEquals("Fetch Artwork", fetch.label)
+        assertEquals("Fetch Artwork", fetch.label.en())
         assertFalse(fetch.isDestructive)
     }
 
@@ -80,9 +86,9 @@ class GameContextMenuItemsTest {
         umd: UmdMenuState = UmdMenuState.NONE,
         canSelectMultiple: Boolean = false,
         item: XMBItem = game,
-        emulatorLabel: String = "Default",
-        iconDisplayLabel: String? = null,
-        launcherLabel: String? = null,
+        emulatorLabel: UiText = UiText.raw("Default"),
+        iconDisplayLabel: UiText? = null,
+        launcherLabel: UiText? = null,
     ) = gameContextMenuItems(
         item = item,
         discCount = 0,
@@ -102,7 +108,7 @@ class GameContextMenuItemsTest {
 
     @Test
     fun `a game's card rows say Card, never Collection`() {
-        val labels = menu(inCollection = true).map { it.label }
+        val labels = menu(inCollection = true).map { it.label.en() }
         assertTrue(labels.containsAll(listOf("Add to Card", "Remove from Card", "Manage Custom Cards")))
         assertFalse(labels.any { it.contains("Collection") })
     }
@@ -120,7 +126,7 @@ class GameContextMenuItemsTest {
     @Test
     fun `an unmarked app row in a custom card can be marked as a game again`() {
         val rows = menu(inCollection = true, item = demotedApp)
-        assertEquals("Mark as Game", rows.single { it.id == "mark_game" }.label)
+        assertEquals("Mark as Game", rows.single { it.id == "mark_game" }.label.en())
         assertFalse(rows.any { it.id == "unmark_game" })
     }
 
@@ -146,8 +152,8 @@ class GameContextMenuItemsTest {
 
     @Test
     fun `a game in a list offers Pin to Top with its state`() {
-        assertEquals("Off", menu(pinned = false).single { it.id == "pin_top" }.value)
-        assertEquals("On", menu(pinned = true).single { it.id == "unpin_top" }.value)
+        assertEquals("Off", menu(pinned = false).single { it.id == "pin_top" }.value.enOrNull())
+        assertEquals("On", menu(pinned = true).single { it.id == "unpin_top" }.value.enOrNull())
     }
 
     @Test
@@ -175,13 +181,13 @@ class GameContextMenuItemsTest {
 
     @Test
     fun `a game can be inserted as its column's UMD`() {
-        assertEquals("Insert as UMD", menu(umd = UmdMenuState.CAN_INSERT).single { it.id == "insert_umd" }.label)
+        assertEquals("Insert as UMD", menu(umd = UmdMenuState.CAN_INSERT).single { it.id == "insert_umd" }.label.en())
         assertFalse(menu(umd = UmdMenuState.CAN_INSERT).any { it.id == "eject_umd" })
     }
 
     @Test
     fun `the inserted game offers Eject instead`() {
-        assertEquals("Eject UMD", menu(umd = UmdMenuState.INSERTED).single { it.id == "eject_umd" }.label)
+        assertEquals("Eject UMD", menu(umd = UmdMenuState.INSERTED).single { it.id == "eject_umd" }.label.en())
         assertFalse(menu(umd = UmdMenuState.INSERTED).any { it.id == "insert_umd" })
     }
 
@@ -214,7 +220,7 @@ class GameContextMenuItemsTest {
     private fun List<XMBContextMenuItem>.groups(): Map<String, String> {
         var current = ""
         return associate { row ->
-            row.header?.let { current = it }
+            row.header.enOrNull()?.let { current = it }
             row.id to current
         }
     }
@@ -223,13 +229,13 @@ class GameContextMenuItemsTest {
 
     @Test
     fun `the groups run Play, Library, Arrange, Customize, Manage in order`() {
-        val headers = menu(pinned = false, canMove = true, currentCategory = custom).mapNotNull { it.header }
+        val headers = menu(pinned = false, canMove = true, currentCategory = custom).mapNotNull { it.header.enOrNull() }
         assertEquals(listOf("Play", "Library", "Arrange", "Customize", "Manage"), headers)
     }
 
     @Test
     fun `a PC game gets a PC group between Customize and Manage`() {
-        val headers = menu(item = pcGame, pinned = false).mapNotNull { it.header }
+        val headers = menu(item = pcGame, pinned = false).mapNotNull { it.header.enOrNull() }
         assertEquals(listOf("Play", "Library", "Arrange", "Customize", "PC", "Manage"), headers)
     }
 
@@ -246,7 +252,7 @@ class GameContextMenuItemsTest {
         listOf("pin_top", "move_row", "move_category", "remove_category").forEach { assertEquals(it, "Arrange", g[it]) }
         listOf("icon_display", "fetch_artwork").forEach { assertEquals(it, "Customize", g[it]) }
         listOf("install_goldberg", "export_game").forEach { assertEquals(it, "PC", g[it]) }
-        assertEquals("PC", menu(item = pcGame, launcherLabel = "GameNative").groups()["launch_with"])
+        assertEquals("PC", menu(item = pcGame, launcherLabel = UiText.raw("GameNative")).groups()["launch_with"])
         // Manage Custom Cards stays on the game row, under Manage (Resolved Decision Q2).
         listOf("manage_collections", "file_location").forEach { assertEquals(it, "Manage", g[it]) }
     }
@@ -254,7 +260,7 @@ class GameContextMenuItemsTest {
     @Test
     fun `Remove from Library is the last row`() {
         assertEquals("remove_game", menu().last().id)
-        assertEquals("Remove from Library", menu().last().label)
+        assertEquals("Remove from Library", menu().last().label.en())
     }
 
     @Test
@@ -270,10 +276,10 @@ class GameContextMenuItemsTest {
     fun `Favorite is one fixed label with an On or Off value, silent`() {
         val off = menu(item = game.copy(isFavorite = false)).single { it.id == "favorite_toggle" }
         val on = menu(item = game.copy(isFavorite = true)).single { it.id == "favorite_toggle" }
-        assertEquals("Favorite", off.label)
-        assertEquals("Favorite", on.label)
-        assertEquals("Off", off.value)
-        assertEquals("On", on.value)
+        assertEquals("Favorite", off.label.en())
+        assertEquals("Favorite", on.label.en())
+        assertEquals("Off", off.value.enOrNull())
+        assertEquals("On", on.value.enOrNull())
         assertTrue(off.silent)
         assertFalse(menu().any { it.id == "favorite" || it.id == "unfavorite" })
     }
@@ -281,29 +287,29 @@ class GameContextMenuItemsTest {
     @Test
     fun `Add to Card opens a menu`() {
         val row = menu().single { it.id == "add_to_collection" }
-        assertEquals("Add to Card", row.label)
+        assertEquals("Add to Card", row.label.en())
         assertTrue(row.opensMenu)
     }
 
     @Test
     fun `the file row says Show File Location`() {
-        assertEquals("Show File Location", menu().single { it.id == "file_location" }.label)
+        assertEquals("Show File Location", menu().single { it.id == "file_location" }.label.en())
     }
 
     @Test
     fun `Change Emulator shows the override, or Default, and opens a menu`() {
         val default = menu().single { it.id == "change_emulator" }
-        assertEquals("Default", default.value)
+        assertEquals("Default", default.value.enOrNull())
         assertTrue(default.opensMenu)
-        assertEquals("Dolphin", menu(emulatorLabel = "Dolphin").single { it.id == "change_emulator" }.value)
+        assertEquals("Dolphin", menu(emulatorLabel = UiText.raw("Dolphin")).single { it.id == "change_emulator" }.value.enOrNull())
     }
 
     @Test
     fun `a PC game with a launcher leads its PC group with Launch With, showing the launcher`() {
-        val pc = menu(item = pcGame, launcherLabel = "Bannerlator").dropWhile { it.header != "PC" }
+        val pc = menu(item = pcGame, launcherLabel = UiText.raw("Bannerlator")).dropWhile { it.header.enOrNull() != "PC" }
         assertEquals("launch_with", pc.first().id)
-        assertEquals("Launch With", pc.first().label)
-        assertEquals("Bannerlator", pc.first().value)
+        assertEquals("Launch With", pc.first().label.en())
+        assertEquals("Bannerlator", pc.first().value.enOrNull())
         assertTrue(pc.first().opensMenu)
     }
 
@@ -315,8 +321,8 @@ class GameContextMenuItemsTest {
 
     @Test
     fun `Icon Display shows the mode in force and opens a menu`() {
-        val row = menu(iconDisplayLabel = "Box Art").single { it.id == "icon_display" }
-        assertEquals("Box Art", row.value)
+        val row = menu(iconDisplayLabel = UiText.raw("Box Art")).single { it.id == "icon_display" }
+        assertEquals("Box Art", row.value.enOrNull())
         assertTrue(row.opensMenu)
     }
 }

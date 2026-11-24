@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- App context menu: group headings -->
+    <string name="apps_menu_group_library">Библиотека</string>
+    <string name="apps_menu_group_arrange">Порядок</string>
+    <string name="apps_menu_group_manage">Управление</string>
+
+    <!-- App context menu: rows -->
+    <string name="apps_menu_launch">Запустить</string>
+    <string name="apps_menu_edit_details">Изменить сведения</string>
+    <string name="apps_menu_mark_game">Отметить как игру</string>
+    <string name="apps_menu_unmark_game">Это не игра</string>
+    <string name="apps_menu_favorite">Избранное</string>
+    <string name="apps_menu_add_to_card">Добавить на карту</string>
+    <string name="apps_menu_pin_to_top">Закрепить вверху</string>
+    <string name="apps_menu_move">Переместить</string>
+    <string name="apps_menu_move_to_category">Переместить в категорию</string>
+    <string name="apps_menu_add_to_category">Добавить в категорию</string>
+    <string name="apps_menu_remove_from_category">Убрать из категории</string>
+    <string name="apps_menu_rename_shortcut">Переименовать ярлык</string>
+    <string name="apps_menu_hide_from">Скрыть из «%1$s»</string>
+    <string name="apps_menu_hide_everywhere">Скрыть везде</string>
+    <string name="apps_menu_app_info">О приложении</string>
+    <string name="apps_menu_uninstall">Удалить</string>
+    <string name="apps_value_on">Вкл.</string>
+    <string name="apps_value_off">Выкл.</string>
+    <string name="apps_uninstall_title">Удалить %1$s?</string>
+    <string name="apps_uninstall_message">%1$s будет удалено с устройства. Android попросит подтверждение.</string>
+
+    <!-- Category tabs and header title -->
+    <string name="apps_filter_all">Все приложения</string>
+    <string name="apps_filter_games">Игры</string>
+    <string name="apps_filter_emulators">Эмуляторы</string>
+    <string name="apps_filter_recent">Недавние</string>
+
+    <!-- Header search -->
+    <string name="apps_search_placeholder">Поиск…</string>
+    <string name="apps_search_button">Поиск</string>
+
+    <!-- Empty states -->
+    <string name="apps_empty_no_match">Приложения не найдены</string>
+    <string name="apps_empty_no_games">Игры не найдены</string>
+    <string name="apps_empty_no_emulators">Эмуляторы не установлены</string>
+    <string name="apps_empty_usage_access">Нужен доступ к истории использования</string>
+    <string name="apps_empty_no_recent">Недавно использованных приложений пока нет</string>
+    <string name="apps_empty_no_apps">Приложения не установлены</string>
+    <string name="apps_hint_try_search">Попробуйте другой запрос</string>
+    <string name="apps_hint_games">Здесь появятся приложения, отмеченные в Play Store как игры</string>
+    <string name="apps_hint_emulators">Установите RetroArch, PPSSPP или другой эмулятор</string>
+    <string name="apps_hint_usage_access">Дайте доступ, чтобы PFP сортировал приложения по времени использования</string>
+    <string name="apps_open_usage_access">Открыть доступ к истории</string>
+    <string name="apps_hint_prev">Назад</string>
+    <string name="apps_hint_next">Далее</string>
+    <string name="apps_hint_back">Назад</string>
+    <string name="apps_hint_launch">Запустить</string>
+    <string name="apps_hint_options">Параметры</string>
+    <string name="apps_hint_search">Поиск</string>
+    <string name="apps_drawer_title">Меню приложений</string>
+    <string name="apps_drawer_subtitle">Приложения на этом устройстве</string>
+</resources>

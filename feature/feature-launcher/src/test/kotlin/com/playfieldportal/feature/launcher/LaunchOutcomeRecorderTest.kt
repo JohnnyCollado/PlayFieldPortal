@@ -6,6 +6,8 @@ import com.playfieldportal.core.domain.model.NotificationDetail
 import com.playfieldportal.core.domain.model.NotificationKind
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.slot
@@ -13,6 +15,8 @@ import io.mockk.verify
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
@@ -21,7 +25,10 @@ import kotlin.test.assertTrue
  * A failed launch becomes a Notes row in the panel — the record the user finds after the recovery
  * sheet is long gone — through the shared task center, so it gets the cue like every other row.
  */
+@RunWith(RobolectricTestRunner::class)
 class LaunchOutcomeRecorderTest {
+
+    private val context: Context = ApplicationProvider.getApplicationContext()
 
     private val dao = mockk<LaunchOutcomeDao>(relaxed = true)
     private val tasks = mockk<BackgroundTaskCenter>(relaxed = true)
@@ -37,7 +44,7 @@ class LaunchOutcomeRecorderTest {
     @Test
     fun `a failed launch posts a notes row with its code and facts`() = runTest {
         coEvery { dao.recentForGame(7L, any()) } returns emptyList()
-        val recorder = LaunchOutcomeRecorder(dao, StandardTestDispatcher(testScheduler), tasks)
+        val recorder = LaunchOutcomeRecorder(dao, StandardTestDispatcher(testScheduler), tasks, context)
         recorder.record(outcome(LaunchOutcomeStatus.NEVER_FOREGROUNDED, code = "LN-4003"))
 
         val detail = slot<NotificationDetail>()
@@ -60,7 +67,7 @@ class LaunchOutcomeRecorderTest {
 
     @Test
     fun `a success posts nothing`() = runTest {
-        val recorder = LaunchOutcomeRecorder(dao, StandardTestDispatcher(testScheduler), tasks)
+        val recorder = LaunchOutcomeRecorder(dao, StandardTestDispatcher(testScheduler), tasks, context)
         recorder.record(outcome(LaunchOutcomeStatus.SUCCEEDED))
 
         verify(exactly = 0) { tasks.report(any(), any(), any(), any(), any(), any(), any(), any()) }

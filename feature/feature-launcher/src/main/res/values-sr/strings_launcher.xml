@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Slice H2: feature-launcher (launching games and apps, emulator setup) -->
+    <!-- Launch refusals shown before an emulator starts. %1$s names a game or an emulator unless noted -->
+    <string name="launch_err_custom_command">Профили прилагођених команди више нису подржани. Пребаците овај емулатор на начин покретања „Отвори ROM апликацијом“ или „Отвори екран апликације“.</string>
+    <string name="launch_err_shortcut_unsupported">Покретање пречице није подржано са овог екрана</string>
+    <!-- %1$s is a game title -->
+    <string name="launch_err_no_package">Није забележен Android пакет за %1$s</string>
+    <!-- %1$s is an Android package name -->
+    <string name="launch_err_app_not_launchable">Android апликација није инсталирана или не може да се покрене: %1$s</string>
+    <!-- %1$s is the emulator name, %2$s its Android package name -->
+    <string name="launch_err_emulator_not_installed">Емулатор није инсталиран: %1$s (%2$s)</string>
+    <!-- %1$s is the emulator name, %2$s its Android package name -->
+    <string name="launch_err_wrong_build">%1$s (%2$s) није очекивана верзија: сертификат за потписивање се не поклапа. Поново инсталирајте емулатор из званичног извора.</string>
+    <!-- %1$s is the emulator name -->
+    <string name="launch_err_no_activity_for_path">За %1$s није забележена активност покретања, па му није могуће проследити путању датотеке. Поново увезите његов унос из базе знања или поново откријте емулатор.</string>
+    <!-- %1$s is the emulator name. ACTIVITY and COMPONENT are technical terms -->
+    <string name="launch_err_activity_required">За овај начин покретања потребан је назив екрана апликације - профил: %1$s</string>
+    <!-- %1$s is the emulator name, %2$s the name of the activity class it no longer provides -->
+    <string name="launch_err_activity_gone">%1$s више не пружа своју активност покретања (%2$s). Ажурирајте емулатор или изаберите други емулатор за ову платформу.</string>
+    <!-- %1$s is a game title -->
+    <string name="launch_err_no_launch_id">Није забележен ID за покретање за %1$s. Поново скенирајте његову библиотеку.</string>
+    <string name="launch_err_rom_link_invalid">ROM веза ове игре је неважећа. Поново скенирајте њену библиотеку.</string>
+    <string name="launch_err_lost_access">Play Field Portal је изгубио приступ датотеци ове игре. Поново повежите меморију и поново скенирајте њену библиотеку.</string>
+    <!-- %1$s is a game title -->
+    <string name="launch_err_rom_path_required">За покретање %1$s потребна је путања до ROM-а</string>
+    <!-- %1$s is a file path -->
+    <string name="launch_err_rom_not_found">ROM датотека није пронађена: %1$s</string>
+    <!-- %1$s is a platform id such as psx, %2$s the emulator profile name -->
+    <string name="launch_err_no_core">Није подешено RetroArch језгро за платформу „%1$s“ у профилу „%2$s“. Отворите RetroArch → Core Downloader да бисте инсталирали језгро за овај систем.</string>
+    <!-- %1$s is the emulator name -->
+    <string name="launch_err_cannot_open_rom_type">%1$s не може да отвори овај тип ROM-а. Покушајте поново да инсталирате емулатор или проверите дозволе апликације у подешавањима Android-а.</string>
+    <!-- %1$s is a game title, %2$s the emulator name -->
+    <string name="launch_err_no_file_path">%1$s нема путању датотеке на овом уређају, па %2$s не може да зна коју игру да покрене.</string>
+    <!-- %1$s is a game title, %2$s the emulator name -->
+    <string name="launch_err_not_in_rom_folder">%1$s није у подешеној ROM фасцикли, па није могуће проследити га емулатору %2$s. Проверите фасциклу подешену за ову меморијску картицу у Подешавањима.</string>
+
+    <!-- Emulator choice problems. %1$s is the emulator name, %2$s one of the launch_source_*_lower phrases -->
+    <!-- %1$s is a phrase from launch_phrase_*, %2$s the stored emulator id or package -->
+    <string name="launch_err_configured_missing">Емулатор за %1$s није инсталиран или није доступан: %2$s</string>
+    <string name="launch_err_core_not_installed">%1$s је подешен као %2$s, али то језгро није инсталирано у RetroArch-у. Инсталирајте га или изаберите други емулатор.</string>
+    <string name="launch_err_no_longer_available">%1$s је подешен као %2$s, али више није доступан. Изаберите други емулатор.</string>
+    <!-- %1$s is the emulator name, %2$s a console id in capitals such as PSX -->
+    <string name="launch_err_not_configured_for_platform">%1$s није подешен за %2$s</string>
+    <!-- %1$s is a console id in capitals such as PSX -->
+    <string name="launch_err_no_emulator_for_platform">Није подешен емулатор за %1$s. Изаберите емулатор за ову игру или подесите подразумевани за платформу.</string>
+
+    <!-- Where an emulator choice came from (shown under the emulator on Game Detail), and the same in lowercase for use inside a sentence -->
+    <string name="launch_source_per_game">Посебно за игру</string>
+    <string name="launch_source_per_game_lower">посебно подешавање за игру</string>
+    <string name="launch_source_memory_card">Подразумевано за меморијску картицу</string>
+    <string name="launch_source_memory_card_lower">подразумевани за меморијску картицу</string>
+    <string name="launch_source_platform">Подразумевано за платформу</string>
+    <string name="launch_source_platform_lower">подразумевани за платформу</string>
+    <string name="launch_source_recommended">Препоручено</string>
+    <string name="launch_source_recommended_lower">препоручени</string>
+    <!-- Noun phrases placed in "The ... emulator is not installed or available" -->
+    <string name="launch_phrase_per_game">посебно подешавање за игру</string>
+    <string name="launch_phrase_memory_card">емулатор меморијске картице</string>
+    <string name="launch_phrase_platform">подразумевани за платформу</string>
+
+    <!-- Launch hand-off failures -->
+    <string name="launch_err_emulator_not_found">Емулатор није пронађен. Да ли је инсталиран?</string>
+    <string name="launch_err_permission_denied">Дозвола за покретање емулатора је одбијена</string>
+    <!-- %1$s is the system's error text -->
+    <string name="launch_err_open_emulator">Отварање емулатора није успело: %1$s</string>
+    <string name="launch_never_foreground">Емулатор није прешао у први план након покретања.</string>
+    <string name="launch_never_appeared">Емулатор се није појавио. Проверите да ли је инсталиран и ажуриран, па покушајте поново.</string>
+    <!-- %1$d is how many of the recent launches failed, %2$d how many recent launches there are -->
+    <plurals name="launch_history_failed">
+        <item quantity="one">%1$d од последњих %2$d покретања ове игре није успело.</item>
+        <item quantity="few">%1$d од последњих %2$d покретања ове игре нису успела.</item>
+        <item quantity="other">%1$d од последњих %2$d покретања ове игре није успело.</item>
+    </plurals>
+
+    <!-- Launch failure notification -->
+    <!-- %1$s is a game title -->
+    <string name="launch_rec_title">Покретање није успело: %1$s</string>
+    <string name="launch_rec_could_not_start">Емулатор није могао да се покрене</string>
+    <string name="launch_rec_never_foreground">Емулатор није прешао у први план</string>
+    <!-- Labels of the facts listed in the notification detail -->
+    <string name="launch_fact_emulator">Емулатор</string>
+    <string name="launch_fact_core">Језгро</string>
+    <string name="launch_fact_platform">Платформа</string>
+    <string name="launch_fact_recent">Недавна покретања</string>
+    <!-- %1$d is how many of the recent launches failed, %2$d how many recent launches there are -->
+    <string name="launch_fact_recent_value">Неуспешно %1$d од последњих %2$d</string>
+
+    <!-- Shortcut requests. %1$s is the shortcut's name, %2$s the app it opens -->
+    <string name="launch_shortcut_request_title">Захтев за пречицу: %1$s (отвара %2$s)</string>
+    <string name="launch_shortcut_request_message">Додајте је само ако сте управо сами направили ову пречицу.</string>
+    <string name="launch_shortcut_added_title">Пречица је додата: %1$s</string>
+    <string name="launch_shortcut_ignored_title">Пречица је занемарена: %1$s</string>
+    <!-- %1$s is the name of the app the shortcut came from -->
+    <string name="launch_shortcut_from">Од: %1$s</string>
+    <!-- %1$s is a game title -->
+    <string name="launch_windows_added_title">„%1$s“ је додата у Windows игре</string>
+    <string name="launch_windows_added_message">Завршите подешавање Windows библиотеке да бисте скенирали њену фасциклу</string>
+
+    <!-- First-run setup prompts -->
+    <string name="launch_setup_add_rom_folder">Додајте ROM фасциклу да бисте започели библиотеку</string>
+    <string name="launch_setup_add_console_card">Додајте меморијску картицу конзоле у коју ће се скенирати</string>
+    <string name="launch_setup_install_emulator">Инсталирајте емулатор да бисте играли игре</string>
+
+    <!-- Emulator detection notes for an app being added -->
+    <!-- %1$s is the emulator name -->
+    <string name="launch_inspect_known">Аутоматски попуњено из уграђеног профила за %1$s. Потврдите платформе и сачувајте.</string>
+    <string name="launch_inspect_best_guess">Најбоља процена на основу тога како ова апликација отвара ROM датотеке. Подесите платформе, па испробајте ROM пре чувања.</string>
+    <string name="launch_inspect_minimal">Није могуће утврдити како ова апликација прихвата ROM-ове. Ручно попуните подешавања активности / intent-а, па испробајте ROM.</string>
+
+    <!-- Emulator knowledge file updates -->
+    <!-- %1$d is the maximum number of files -->
+    <string name="launch_kb_too_many_files">Може се увести највише %1$d датотека базе знања; прво уклоните једну</string>
+    <string name="launch_kb_installed">Ажурирано</string>
+    <string name="launch_kb_not_configured">Ажурирања нису подешена у овој верзији</string>
+    <string name="launch_kb_offline">Повезивање са сервером за ажурирања није успело</string>
+    <string name="launch_kb_too_large">Датотека ажурирања је превелика</string>
+    <string name="launch_kb_signature_invalid">Потпис ажурирања није важећи</string>
+    <string name="launch_kb_needs_app_update">Ово ажурирање захтева новију верзију апликације</string>
+    <string name="launch_kb_older">Ажурирање је старије од већ инсталираног</string>
+    <string name="launch_kb_invalid_content">Датотека ажурирања има неважећи садржај</string>
+    <string name="launch_kb_storage_failed">Ажурирање није могуће сачувати</string>
+    <string name="launch_kb_skipped">Провера није била потребна</string>
+
+    <!-- Windows game launchers: why an unrecognised app is listed, and the choice offered for it -->
+    <string name="launch_unknown_gamehub_or_bannerhub">може бити GameHub или BannerHub</string>
+    <string name="launch_unknown_gamehublite_or_bannerhub">може бити GameHub Lite или BannerHub</string>
+    <string name="launch_unknown_not_in_list">није на листи PFP-а</string>
+    <!-- One of the values the user cycles through for an unrecognised app -->
+    <string name="launch_choice_not_a_launcher">Није лаунчер</string>
+    <!-- Hints for where to find a game id when adding a Windows game by id -->
+    <string name="launch_id_prompt_gamehub">ID игре — на страници игре: додирните Copy поред Local Game ID или ⋮ → Banner Tools → Show Game ID</string>
+    <string name="launch_id_prompt_gamenative">Steam App ID (или ID апликације у продавници) за инсталирану игру</string>
+</resources>

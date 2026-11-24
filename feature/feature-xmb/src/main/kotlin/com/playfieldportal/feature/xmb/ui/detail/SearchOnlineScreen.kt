@@ -36,6 +36,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -53,6 +55,8 @@ import com.playfieldportal.core.ui.detail.DetailPalette
 import com.playfieldportal.core.ui.detail.PfpDetailBackground
 import com.playfieldportal.core.ui.detail.PfpDetailHelperFooter
 import com.playfieldportal.core.ui.detail.detailPalette
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.achievements.preview.PreviewCandidate
 import com.playfieldportal.feature.xmb.ui.PspIcon0Icon
 
@@ -149,7 +153,7 @@ fun SearchOnlineScreen(
                 editing = state.searchEditingNow,
                 focused = state.searchFocused,
                 palette = palette,
-                placeholder = state.searchPlaceholder,
+                placeholder = state.searchPlaceholder.asString(),
                 onQueryChange = viewModel::setQuery,
                 onClick = viewModel::onSearchClick,
                 onEditEnded = viewModel::onSearchEditEnded,
@@ -200,7 +204,7 @@ fun SearchOnlineScreen(
             // Results are looked up only; the line below the list says so where the eye ends up.
             if (!state.inPreview && state.status == SearchStatus.RESULTS) {
                 Text(
-                    text = LOOKUP_ONLY,
+                    text = stringResource(R.string.det_search_lookup_only),
                     color = palette.textMuted,
                     fontSize = 12.sp,
                     modifier = Modifier.padding(horizontal = DetailContentPadding + 10.dp, vertical = 6.dp),
@@ -208,7 +212,7 @@ fun SearchOnlineScreen(
             }
 
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                PfpDetailHelperFooter(items = searchOnlineHelperItems(state), visible = !showTouchControls)
+                PfpDetailHelperFooter(items = searchOnlineHelperItems(state).toPromptItems(), visible = !showTouchControls)
                 // Touch mode: the hints fade and the controller-only actions become pills in the
                 // same reserved band (rows, Search and ◀ are tappable already).
                 if (showTouchControls && state.options == null) {
@@ -216,7 +220,7 @@ fun SearchOnlineScreen(
                         if (state.inPreview) {
                             // ◀ closes the preview as B does, so no Close pill; the Options menu's
                             // only entry on a preview has no Triangle on touch.
-                            XmbHeaderPill(label = "Refresh Preview", onClick = viewModel::refreshPreview)
+                            XmbHeaderPill(label = stringResource(R.string.det_search_refresh_preview), onClick = viewModel::refreshPreview)
                         } else {
                             SearchProvider.entries.forEach { provider ->
                                 XmbHeaderPill(
@@ -234,8 +238,8 @@ fun SearchOnlineScreen(
         // right-side menu the library and the coins page open on Triangle.
         state.options?.let { menu ->
             PspContextMenuOverlay(
-                title = menu.title,
-                rows = state.optionRows.map { row -> PspMenuRow(label = row.label, checked = row.checked, value = row.value, opensMenu = row.opensMenu) },
+                title = menu.title.asString(),
+                rows = state.optionRows.map { row -> PspMenuRow(label = row.label.asString(), checked = row.checked, value = row.value, opensMenu = row.opensMenu) },
                 selectedIndex = menu.selectedIndex,
                 onRowActivated = viewModel::onOptionActivated,
                 onDismiss = viewModel::closeOptions,
@@ -243,9 +247,6 @@ fun SearchOnlineScreen(
         }
     }
 }
-
-private const val LOOKUP_ONLY =
-    "Results are looked up only — nothing here is added to your library or your coin wallet."
 
 // ── Header ────────────────────────────────────────────────────────────────────
 
@@ -282,7 +283,7 @@ private fun SearchOnlineHeader(
             }
             Spacer(Modifier.width(4.dp))
             Text(
-                text = state.title,
+                text = state.title.asString(),
                 color = palette.textPrimary,
                 fontSize = 25.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -295,7 +296,7 @@ private fun SearchOnlineHeader(
             if (preview != null) {
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        "AVAILABLE",
+                        stringResource(R.string.det_search_available),
                         color = palette.textMuted,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -326,7 +327,7 @@ private fun SearchOnlineHeader(
         ) {
             if (state.inPreview) PreviewChip()
             Text(
-                text = state.subtitle,
+                text = state.subtitle.asString(),
                 color = palette.textMuted,
                 fontSize = 14.sp,
                 maxLines = 1,
@@ -337,14 +338,15 @@ private fun SearchOnlineHeader(
     }
 }
 
+@Composable
 private fun achievementCount(count: Int): String =
-    if (count == 1) "1 achievement" else "$count achievements"
+    pluralStringResource(R.plurals.det_search_achievement_count, count, count)
 
 /** The gold PREVIEW chip: this game is not on this device and nothing here is being kept. */
 @Composable
 private fun PreviewChip() {
     Text(
-        text = "PREVIEW",
+        text = stringResource(R.string.det_search_preview_chip),
         color = PreviewGold,
         fontSize = 11.sp,
         fontWeight = FontWeight.SemiBold,
@@ -372,8 +374,7 @@ private fun PreviewNotice(palette: DetailPalette) {
         Icon(Icons.Filled.Info, contentDescription = null, tint = PreviewGold, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(10.dp))
         Text(
-            text = "Preview only. This game isn't on this device, so nothing here is tracked, " +
-                "counted or synced. Closing the preview discards it.",
+            text = stringResource(R.string.det_search_preview_notice),
             color = palette.textMuted,
             fontSize = 12.sp,
         )
@@ -389,10 +390,10 @@ private fun ListMessage(state: SearchOnlineUiState, palette: DetailPalette, view
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier.padding(horizontal = DetailContentPadding + 10.dp, vertical = 24.dp),
     ) {
-        Text(state.emptyMessage, color = palette.textMuted, fontSize = 15.sp)
+        Text(state.emptyMessage.asString(), color = palette.textMuted, fontSize = 15.sp)
         state.recovery?.let { recovery ->
             RecoveryButton(
-                label = recovery.label,
+                label = stringResource(recovery.labelRes),
                 palette = palette,
                 onClick = when (recovery) {
                     SearchRecovery.RETRY -> viewModel::retrySearch
@@ -478,10 +479,12 @@ private fun ResultRow(
 }
 
 /** "Steam · app 645730" / "PlayStation · game 11240" — the provider's own name for this entry. */
-private fun candidateSubtitle(candidate: PreviewCandidate): String {
-    val id = when (candidate.provider) {
-        AchievementProvider.STEAM -> "app ${candidate.providerGameId}"
-        else -> "game ${candidate.providerGameId}"
-    }
-    return "${candidate.platformLabel} · $id"
-}
+@Composable
+private fun candidateSubtitle(candidate: PreviewCandidate): String = stringResource(
+    when (candidate.provider) {
+        AchievementProvider.STEAM -> R.string.det_search_candidate_app
+        else -> R.string.det_search_candidate_game
+    },
+    candidate.platformLabel,
+    candidate.providerGameId,
+)

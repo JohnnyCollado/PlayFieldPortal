@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blur_title">Làm mờ nền</string>
+    <string name="blur_sublabel">Mức độ làm mờ màn hình phía sau thông báo và menu tùy chọn. Kéo về không để tắt.</string>
+    <string name="blur_unavailable">Cần Android 12 trở lên.</string>
+</resources>

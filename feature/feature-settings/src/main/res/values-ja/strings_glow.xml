@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_title">フォーカスの光</string>
+    <string name="glow_sub_off">選択中のアイコンの周りに光を表示しません。</string>
+    <string name="glow_sub_steady">選択中のアイコンの周りにやわらかい光を表示します。動きません。</string>
+    <string name="glow_sub_pulsing">選択中のアイコンの周りの光がゆっくり強まり、弱まります。「モーション」が「静止」の間は動きません。</string>
+    <string name="glow_value_off">オフ</string>
+    <string name="glow_value_steady">固定</string>
+    <string name="glow_value_pulsing">パルス</string>
+</resources>

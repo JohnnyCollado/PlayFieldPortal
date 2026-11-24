@@ -14,6 +14,8 @@ import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamGa
 import com.playfieldportal.feature.artwork.match.MatchConfidence
 import com.playfieldportal.feature.artwork.match.MatchSignal
 import com.playfieldportal.feature.artwork.match.ScoredStorefrontCandidate
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.artwork.match.Storefront
 import com.playfieldportal.feature.artwork.match.StorefrontCandidate
 import com.playfieldportal.feature.artwork.match.StorefrontMatchResult
@@ -167,7 +169,7 @@ class ShibaCoinsFolderMatchTest {
 
         assertNull(state.autoMatchStep)
         assertNull(state.storefrontMatch)
-        assertTrue(state.message!!.contains("620"))
+        assertEquals(UiText.res(R.string.shiba_coins_linked_to, "Portal 2", "620"), state.message)
         coVerify { achievements.syncGameById(gameId) }
     }
 
@@ -231,19 +233,19 @@ class ShibaCoinsFolderMatchTest {
     @Test
     fun `a pick that resolves nothing is terminal and names the actual cause`() {
         coEvery { linker.link(gameId, pickedUri) } returns
-            LocalSteamFolderLinker.LinkOutcome.NoEmuData("No Steam library file in that folder.")
+            LocalSteamFolderLinker.LinkOutcome.NoEmuData(UiText.raw("No Steam library file in that folder."))
 
         viewModel.onFolderPicked(pickedUri)
 
         assertEquals(AutoMatchStep.NO_EMU_DATA, state.autoMatchStep)
-        assertEquals("No Steam library file in that folder.", state.noEmuDataReason)
+        assertEquals(UiText.raw("No Steam library file in that folder."), state.noEmuDataReason)
         coVerify(exactly = 0) { achievements.syncGameById(any()) }
     }
 
     @Test
     fun `a lost grant mid-flow is reported and offers another pick`() {
         coEvery { linker.link(gameId, pickedUri) } returns
-            LocalSteamFolderLinker.LinkOutcome.Failed("That folder could not be read back.")
+            LocalSteamFolderLinker.LinkOutcome.Failed(UiText.raw("That folder could not be read back."))
 
         viewModel.onFolderPicked(pickedUri)
         assertEquals(AutoMatchStep.NO_EMU_DATA, state.autoMatchStep)
@@ -296,7 +298,7 @@ class ShibaCoinsFolderMatchTest {
         viewModel.handleGamepadAction(GamepadAction.SELECT)
 
         assertEquals(AutoMatchStep.NO_EMU_DATA, state.autoMatchStep)
-        assertTrue(state.noEmuDataReason!!.contains("Nothing was written"))
+        assertEquals(UiText.res(R.string.shiba_coins_nothing_written), state.noEmuDataReason)
         coVerify(exactly = 0) { linker.confirmCandidate(any(), any(), any()) }
     }
 
@@ -317,7 +319,7 @@ class ShibaCoinsFolderMatchTest {
         for (outcome in listOf(
             LocalSteamFolderLinker.LinkOutcome.NeedsConfirmation(candidateResult(), "portal 2", "Portal 2"),
             LocalSteamFolderLinker.LinkOutcome.NeedsKit("620", "Portal 2", true, AppIdSource.MARKER),
-            LocalSteamFolderLinker.LinkOutcome.NoEmuData("nope"),
+            LocalSteamFolderLinker.LinkOutcome.NoEmuData(UiText.raw("nope")),
         )) {
             coEvery { linker.link(gameId, pickedUri) } returns outcome
             viewModel.onFolderPicked(pickedUri)

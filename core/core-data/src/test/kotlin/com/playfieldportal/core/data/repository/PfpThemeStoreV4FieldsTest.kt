@@ -160,7 +160,7 @@ class PfpThemeStoreV4FieldsTest {
         val manifest = requireNotNull(PfpThemeCodec.readManifest(File(context.filesDir, "pfpthemes/${saved.id}.pfptheme")))
 
         assertEquals(false, manifest.textColorExact)
-        assertEquals(ThemeLegibility(text = "auto", icon = "none", solidUnfocusedIcons = false), manifest.legibility)
+        assertEquals(ThemeLegibility(text = "auto", icon = "offset_shadow", solidUnfocusedIcons = false), manifest.legibility)
         assertEquals(PfpThemeManifest.WAVE_ANIMATED, manifest.waveStyleV4)
         assertNull(manifest.subTextColor, "no Sub Font Colour set means the theme says nothing")
     }

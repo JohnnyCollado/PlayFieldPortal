@@ -1,0 +1,329 @@
+New
+Open…
+Upgrade folder…
+Convert .ptf…
+Batch convert…
+Unpack assets…
+Undo
+Redo
+Export .pfptheme…
+Import PSP theme ▾
+Working…
+Open ▾
+Open: {0} ▾
+XMB (back to the crossbar)
+Stop {0}
+Play {0}
+Video only — sound plays on the device
+This theme uses an older format. Saving upgrades it to the current one.
+See changes
+Something went wrong
+OK
+Cancel
+Open theme
+PSP theme to convert
+Export theme
+Info
+Color
+Background
+Legibility
+Layout
+Icons
+Sounds
+Boot & Game Boot
+Export check
+Untitled
+Video
+Image
+Wave
+Not set
+Set
+Preview only
+None custom
+{0} custom
+None set
+{0} set
+{0} of 2
+Ready
+Untitled Theme
+App Drawer
+Settings
+App Picker
+Game Picker
+Artwork Studio
+Game Detail Screen
+Achievement Screen
+Per-Game Achievement Screen
+Lock Screen
+Boot
+Game Boot
+In this file
+Nothing embedded yet
+Theme name
+Author
+Short description
+New theme — not saved yet
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.
+Accent color
+Auto (from the wallpaper)
+Custom
+Each new wallpaper or video sets the accent. Pick a color to keep your own.
+Your accent stays when the wallpaper or video changes.
+Custom accent
+Icon color
+Auto (follows the theme)
+White
+Main text color
+Titles and labels: the crossbar, list rows and status strip, and every screen.
+Auto (built-in colors)
+Use my exact color
+Subtext color
+Subtitles, sublabels and values.
+Same as main text
+Source
+Wave motion
+Video playback
+Moving
+Moving, dim
+Still
+Still, dim
+None — live wave background
+Replace…
+Re-crop…
+Clear
+Clear video
+Pick frame…
+The preview always shows a frozen wave; the style plays on the device.
+Lock screen
+None — the theme leaves the device lock screen alone
+Choose Image…
+Use Poster
+Use Wallpaper
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.
+Crop
+Zoom
+Center
+Apply
+Reset
+Text
+Automatic
+None
+Drop shadow
+Outline
+Contrast plate
+Offset shadow (dark)
+Offset shadow (light)
+Contour dark
+Contour light
+Contour auto
+Solid unfocused icons
+Older launchers ignore these and show plain text and icons.
+Preview with my layout
+Preview only — never saved in the theme. Remembered on this computer.
+Use my layout in the preview
+Scale — {0}
+Horizontal — {0}
+Vertical — {0}
+Biblically Accurate preview
+Adjust on preview
+All {0}
+Crossbar {0}
+Items {0}
+Consoles {0}
+Physical Media {0}
+On screen
+Customized {0}
+Showing {0} of {1}
+Select a slot to see it at real size, replace it, or export its template.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.
+Import icon pack… ▾
+Export templates…
+Reset all
+Local file…
+From theme…
+Export template
+Menu sounds
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.
+Navigation
+Category change
+Options panel
+Back / cancel
+Confirm / apply
+Error / invalid
+Notification
+Ambience (loops)
+Built-in
+Up to {0}
+Choose…
+▶ Play
+■ Stop
+Boot sequences
+Choose the built-in sequence or your own MP4 for each.
+The launcher's own {0} sequence.
+Your own MP4 (H.264).
+Choose MP4…
+Play in preview
+Use built-in
+All media is within limits
+Opens on older launchers
+Fix the items marked ✕ before exporting.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.
+Opened {0}
+Exported {0}
+Folder of .pfptheme files to upgrade
+Folder with .ptf files
+Output folder for .pfptheme files
+PSP theme to unpack
+Folder for unpacked assets
+Converting {0}  ({1}/{2})
+This theme was made by a newer version (format v{0}). Parts this version doesn't know are kept when you save.
+CXMB theme
+This file is a CXMB custom firmware theme (.ctf). Those replace PSP system files rather than describing wallpaper and colors, so they can't be converted. Official PSP themes (.ptf) open fine.
+Batch conversion finished
+Converted: {0}
+Converted with caveats: {0}
+Skipped (CXMB): {0} — {1}
+Failed: {0}
+Theme upgrade finished
+Upgraded: {0} (originals kept as .bak)
+Already current: {0}
+Made by a newer version, left alone: {0}
+Report: {0}
+Background motion
+Still: frame at {0}
+Still: baked into the theme
+Import wallpaper
+Import video
+Lock screen image
+(embedded image)
+Fit
+Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.
+The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, a Still style, or Motion set to Static on the device).
+The theme offers this image for the device lock screen
+Output {0}×{1}
+{0}–{1} recommended, {2} max, {3} MB max
+Whether the boot video and Game Boot play at all is a device setting: {0}
+This clip is longer than the cap — the launcher will refuse it.
+Choose a {0} video
+Dark icon color — icons may be hard to see over the wallpaper scrim.
+Saved in the theme for a later update. The launcher currently shows the color exactly as picked.
+Original
+Classic Blue
+Sunset Orange
+Fresh Green
+Royal Purple
+Crimson Red
+Silver
+Sakura Pink
+Golden Amber
+Aqua Teal
+Midnight Navy
+Charcoal
+Format: schema {0} → {1}
+Format: new theme → {0}
+Kept
+Added
+Repaired
+Can't recover
+What saving does
+Motion has a still poster
+Motion needs a still wallpaper as its poster - add one or remove the video
+Media outside limits: {0}
+This wallpaper is busy behind the labels - pick a text legibility style so they stay readable
+Text should read clearly on this wallpaper
+{0} - launchers from before this format refuse files over 64 MB
+Opens on older launchers, which ignore sounds, boot clips, legibility and crop
+{0} is over the {1} MB limit for a theme file
+Saving upgrades this theme from {0}; {1} part(s) can't be recovered
+Saving upgrades this theme from {0}
+an older format
+Imported from {0}
+Imported from {0} — firmware {1}
+a PSP theme
+Created {0}
+On the device these live in {0}.
+Scale
+Horizontal
+Vertical
+This wallpaper is busy behind the labels — a text style helps them stay readable.
+Settings › Interface › Display › Adjust XMB Layout
+Settings › Interface › Sound
+Settings › Interface › Display › Show Boot Sequence / Game Boot
+Battery Saver and Thermal Throttle (Settings › Interface › Display) freeze the animated wave on the device.
+Pick…
+Plays on the device
+Length unknown
+Volumes stay on the device: {0}
+Couldn't play {0} here — it will play on the device.
+Choose a sound for {0}
+Icon image for {0}
+Template for {0}
+Template written to {0}
+Template export failed: {0}
+Search {0} slots: battery, PS3, voice…
+No slot matches. Clear the search or a filter.
+Pack folder…
+Icon pack folder
+Pack .zip…
+Icon pack zip
+Folder for icon templates
+Packs are folders or zips of <slot key>.png / .gif, the names the templates use. Multi-frame GIFs animate on the launcher when focused; they must stay within 512px, 120 frames and 10 seconds.
+Icon pack imported
+Icon pack refused
+{0}: {1} added, {2} replaced, {3} unmatched, {4} rejected
+Icon pack {0}: {1} added, {2} replaced, {3} unmatched, {4} rejected
+{0} - did you mean {1}?
+{0} - no matching slot
+{0} error
+{0} errors
+{0} warning
+{0} warnings
+{0} of {1} MB
+{0} of {1} MB - older launchers refuse over 64 MB
+Wallpaper
+Preview
+Motion
+Ambience
+Other files
+{0} is too large to be a theme file
+Imported {0}
+Imported with a caveat
+{0} is not a valid .pfptheme bundle
+{0} — {1} icon(s) for parts themes don't customize were left out
+Motion wallpaper: {0}
+Could not keep: {0}
+Parts of the theme not kept
+Motion wallpaper not kept
+{0} is not a readable image
+{0} converted to H.264 for Android ({1})
+Couldn't read that frame of the video
+The crop does not match this image
+Wallpaper: {0} ({1}×{2})
+Added {0} — converted to H.264 for Android ({1})
+Added {0}
+Export failed: {0}
+{0} is not a PSP theme file
+Unpack failed: {0}
+Theme unpacked
+{0} images written to {1} (see report.txt).
+{0} images and {1} data files written to {2} (see report.txt).
+Unpacked {0}: {1} images
+Templates exported to {0} ({1} icons)
+WebM clips can't be checked in the Studio (it reads MP4/H.264 only) — convert the clip to MP4
+That isn't a media slot this import can fill
+That file is too large for a theme — {0} MB or less
+Unsupported video — use an MP4 (H.264)
+{0} video isn't guaranteed to play on Android
+H.264 {0} doesn't play on Android
+{0} video doesn't play on Android
+Couldn't convert this video for Android ({0}). Re-encode it as MP4 H.264 and try again.
+{0} is not a folder or .zip
+Pack refused: {0}
+Pack could not be read
+Pack could not be read: {0}
+Pack has more than {0} files
+Not a PSP theme file
+Corrupt or truncated PTF
+This theme contains no wallpaper image.
+The wallpaper could not be extracted: this theme uses a compression method this importer doesn't recognize. The theme was imported without its wallpaper.
+The wallpaper data in this theme is damaged and could not be decoded. The theme was imported without its wallpaper.

@@ -44,8 +44,24 @@ class EmulatorIntentResolverPreflightTest {
         return mockk<Context>().apply {
             every { this@apply.packageManager } returns pm
             every { this@apply.contentResolver } returns resolver
+            // The few refusals these tests assert on, in English: this context has no resources.
+            every { getString(any<Int>()) } answers { english(firstArg()) }
+            every { getString(any<Int>(), *anyVararg()) } answers {
+                english(firstArg(), args.drop(1).flatMap { if (it is Array<*>) it.toList() else listOf(it) })
+            }
         }
     }
+
+    private fun english(id: Int, formatArgs: List<Any?> = emptyList()): String = when (id) {
+        R.string.launch_err_lost_access ->
+            "Play Field Portal lost access to this game's file. Reconnect the storage and rescan its library."
+        R.string.launch_err_wrong_build ->
+            "%1\$s (%2\$s) is not the expected build: its signing certificate does not match. " +
+                "Reinstall the emulator from its official source."
+        R.string.launch_err_custom_command ->
+            "Custom command profiles are no longer supported. Switch this emulator to ACTION_VIEW or COMPONENT."
+        else -> "string-$id"
+    }.format(*formatArgs.toTypedArray())
 
     private val romUri = "content://com.android.externalstorage.documents/document/roms%2Fgame.bin"
 

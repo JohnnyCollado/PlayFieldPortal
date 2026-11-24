@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared -->
+    <string name="art_error_unexpected">Eroare neașteptată</string>
+    <string name="art_no_folder_linked">Niciun dosar de artwork legat</string>
+    <string name="art_paused_message">Artwork-ul este întrerupt. Leagă din nou dosarul de artwork pentru a salva artwork nou.</string>
+    <string name="art_error_game_not_found">Jocul nu a fost găsit</string>
+    <string name="art_error_not_found_any_source">Negăsit în nicio sursă</string>
+    <string name="art_found_via">Găsit prin %1$s</string>
+    <string name="art_results_label_updated">Actualizate</string>
+    <string name="art_results_label_imported">Importate</string>
+
+    <!-- Live scrape progress -->
+    <string name="art_progress_hashing">Se calculează hash-ul ROM-ului…</string>
+    <string name="art_progress_searching">Se caută…</string>
+    <string name="art_asset_hero">Hero</string>
+    <string name="art_asset_background">Fundal</string>
+    <string name="art_asset_logo">Logo</string>
+    <string name="art_asset_box_art">Copertă</string>
+    <string name="art_asset_physical_media">Suport fizic</string>
+    <string name="art_asset_3d_box">Cutie 3D</string>
+    <string name="art_asset_screenshot">Captură de ecran</string>
+    <string name="art_asset_manual">Manual</string>
+    <string name="art_asset_video">Video</string>
+    <string name="art_asset_icon_video">Video pictogramă</string>
+    <string name="art_asset_icon_video_converting">Video pictogramă (se convertește)</string>
+    <string name="art_source_storefronts">Magazine</string>
+
+    <!-- Metadata fields -->
+    <string name="art_field_title">Titlu</string>
+    <string name="art_field_description">Descriere</string>
+    <string name="art_field_developer">Dezvoltator</string>
+    <string name="art_field_publisher">Editor</string>
+    <string name="art_field_year">An</string>
+    <string name="art_field_release_date">Data lansării</string>
+    <string name="art_field_genre">Gen</string>
+    <string name="art_field_age_rating">Clasificare de vârstă</string>
+    <string name="art_field_franchise">Franciză</string>
+    <string name="art_field_rating">Evaluare</string>
+
+    <!-- Ways to apply scraped metadata -->
+    <string name="art_policy_replace_all">Înlocuiește tot</string>
+    <string name="art_policy_fill_missing">Completează doar lipsurile</string>
+    <string name="art_policy_choose_fields">Alege câmpurile</string>
+    <string name="art_policy_keep_current">Păstrează actualele</string>
+
+    <!-- Scrape (background task) -->
+    <string name="art_scrape_label_all">Se redescarcă artwork-ul pentru toate jocurile</string>
+    <string name="art_scrape_label_missing">Se descarcă artwork-ul lipsă</string>
+    <string name="art_scrape_stop_note">Artwork-ul deja descărcat se păstrează.</string>
+    <string name="art_scrape_paused_all_title">Redescărcarea artwork-ului a fost întreruptă</string>
+    <string name="art_scrape_paused_title">Descărcarea artwork-ului a fost întreruptă</string>
+    <string name="art_scrape_finished_all_title">Redescărcarea artwork-ului s-a încheiat</string>
+    <string name="art_scrape_finished_title">Descărcarea artwork-ului s-a încheiat</string>
+    <string name="art_scrape_stopped_title">Descărcarea artwork-ului a fost oprită</string>
+    <string name="art_scrape_failed_title">Descărcarea artwork-ului a eșuat</string>
+    <string name="art_scrape_result">%1$d reușite, %2$d eșuate din %3$d</string>
+    <plurals name="art_scrape_stopped_after">
+        <item quantity="one">Oprit după %1$d joc — artwork-ul descărcat până acum se păstrează</item>
+        <item quantity="few">Oprit după %1$d jocuri — artwork-ul descărcat până acum se păstrează</item>
+        <item quantity="other">Oprit după %1$d de jocuri — artwork-ul descărcat până acum se păstrează</item>
+    </plurals>
+
+    <!-- Relink (background task) -->
+    <string name="art_relink_label">Se leagă din nou artwork-ul</string>
+    <plurals name="art_relink_label_consoles">
+        <item quantity="one">Se leagă din nou artwork-ul pentru %1$d consolă</item>
+        <item quantity="few">Se leagă din nou artwork-ul pentru %1$d console</item>
+        <item quantity="other">Se leagă din nou artwork-ul pentru %1$d de console</item>
+    </plurals>
+    <string name="art_relink_stop_note">Artwork-ul deja legat rămâne legat.</string>
+    <string name="art_relink_finished_title">Relegarea artwork-ului s-a încheiat</string>
+    <string name="art_relink_stopped_title">Relegarea artwork-ului a fost oprită</string>
+    <string name="art_relink_stopped_note">Artwork-ul legat până acum se păstrează</string>
+    <string name="art_relink_failed_title">Relegarea artwork-ului a eșuat</string>
+    <plurals name="art_relink_games_linked">
+        <item quantity="one">%1$d joc legat</item>
+        <item quantity="few">%1$d jocuri legate</item>
+        <item quantity="other">%1$d de jocuri legate</item>
+    </plurals>
+    <plurals name="art_relink_files">
+        <item quantity="one">%1$d fișier</item>
+        <item quantity="few">%1$d fișiere</item>
+        <item quantity="other">%1$d de fișiere</item>
+    </plurals>
+    <string name="art_relink_result">%1$s din %2$s</string>
+    <string name="art_relink_result_unmatched">%1$s · %2$d fără corespondență</string>
+
+    <!-- Export to ES-DE (background task) -->
+    <string name="art_export_label">Se exportă artwork-ul pentru ES-DE</string>
+    <string name="art_export_stop_note">Fișierele deja exportate rămân pe loc.</string>
+    <string name="art_export_error_no_destination">Niciun dosar de destinație</string>
+    <string name="art_export_error_access_lost">Accesul la dosarul de artwork s-a pierdut</string>
+    <string name="art_export_dest_not_created">Dosarul de destinație nu a putut fi creat.</string>
+    <plurals name="art_export_files_badge">
+        <item quantity="one">%1$d fișier</item>
+        <item quantity="few">%1$d fișiere</item>
+        <item quantity="other">%1$d de fișiere</item>
+    </plurals>
+    <string name="art_export_failed_title">Exportul artwork-ului a eșuat</string>
+    <string name="art_export_stopped_title">Exportul artwork-ului a fost oprit</string>
+    <string name="art_export_finished_title">Exportul artwork-ului s-a încheiat</string>
+    <plurals name="art_export_stopped_note">
+        <item quantity="one">%1$d fișier exportat înainte</item>
+        <item quantity="few">%1$d fișiere exportate înainte</item>
+        <item quantity="other">%1$d de fișiere exportate înainte</item>
+    </plurals>
+    <string name="art_export_result">%1$d copiate, %2$d deja prezente, %3$d eșuate</string>
+
+    <!-- Import (background task and its notification) -->
+    <string name="art_import_plan_not_found">Planul de import nu a fost găsit</string>
+    <string name="art_import_plan_unreadable">Planul de import nu poate fi citit</string>
+    <string name="art_import_label">Se importă artwork-ul — %1$s</string>
+    <string name="art_import_stop_note">Artwork-ul deja importat se păstrează.</string>
+    <string name="art_import_failed_title">Importul artwork-ului a eșuat</string>
+    <string name="art_import_cancelled">Importul artwork-ului a fost anulat</string>
+    <string name="art_import_done">Artwork importat</string>
+    <plurals name="art_import_needs_review">
+        <item quantity="one">Artwork importat, %1$d element necesită verificare</item>
+        <item quantity="few">Artwork importat, %1$d elemente necesită verificare</item>
+        <item quantity="other">Artwork importat, %1$d de elemente necesită verificare</item>
+    </plurals>
+    <string name="art_import_headline">%1$s: %2$s</string>
+    <string name="art_import_counts">%1$d importate, %2$d omise, %3$d eșuate, %4$d ambigue, %5$d fără corespondență.</string>
+    <string name="art_import_results_summary">%1$d importate, %2$d omise</string>
+
+    <!-- Move artwork into the linked folder (background task) -->
+    <string name="art_move_label">Se mută artwork-ul în dosarul tău</string>
+    <string name="art_move_failed_title">Mutarea artwork-ului a eșuat</string>
+    <string name="art_move_stopped_title">Mutarea artwork-ului a fost oprită</string>
+    <string name="art_move_finished_title">Mutarea artwork-ului s-a încheiat</string>
+    <plurals name="art_move_stopped_note">
+        <item quantity="one">%1$d fișier mutat înainte</item>
+        <item quantity="few">%1$d fișiere mutate înainte</item>
+        <item quantity="other">%1$d de fișiere mutate înainte</item>
+    </plurals>
+    <string name="art_move_result">%1$d mutate, %2$d deja acoperite, %3$d eșuate</string>
+</resources>

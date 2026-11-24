@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Backup failures -->
+    <string name="bak_no_folder">Nie ustawiono folderu kopii zapasowych. Wybierz go w Ustawienia → Kopia zapasowa i przywracanie → Folder kopii.</string>
+    <string name="bak_too_large">Ta kopia byłaby za duża do przywrócenia (mieści do 20 000 plików i 2 GB). Usuń nieużywane grafiki lub multimedia i spróbuj ponownie.</string>
+    <string name="bak_write_failed">Nie można zapisać w folderze kopii zapasowych. Wybierz folder ponownie w Ustawienia ▸ System ▸ Kopia zapasowa i przywracanie.</string>
+    <string name="bak_unknown_error">Nieznany błąd</string>
+
+    <!-- Restore failures -->
+    <string name="bak_open_failed">Nie można otworzyć pliku kopii</string>
+    <string name="bak_missing_manifest">W kopii brakuje manifestu</string>
+    <string name="bak_format_too_new">Format kopii v%1$d jest nowszy niż obsługiwany przez aplikację (v%2$d)</string>
+    <string name="bak_no_uri">Nie podano URI</string>
+
+    <!-- Notification titles -->
+    <string name="bak_task_created">Utworzono kopię zapasową</string>
+    <string name="bak_task_failed">Kopia zapasowa nie powiodła się</string>
+    <string name="bak_task_restored">Przywrócono kopię zapasową</string>
+    <string name="bak_task_restore_failed">Przywracanie nie powiodło się</string>
+    <string name="bak_results_restored">Przywrócono</string>
+    <plurals name="bak_items_skipped">
+        <item quantity="one">Pominięto %d element</item>
+        <item quantity="few">Pominięto %d elementy</item>
+        <item quantity="many">Pominięto %d elementów</item>
+        <item quantity="other">Pominięto %d elementu</item>
+    </plurals>
+
+    <!-- Items turned away during restore -->
+    <string name="bak_refused_out_of_root">Odrzucono \'%1$s\': poza folderem do przywrócenia</string>
+    <string name="bak_refused_profiles_unparseable">Odrzucono profile emulatorów: nie można przetworzyć pliku</string>
+    <string name="bak_refused_profile">Odrzucono profil emulatora \'%1$s\': %2$s</string>
+</resources>

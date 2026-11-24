@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
+import com.playfieldportal.core.ui.components.PfpBusyRing
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -32,7 +32,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,6 +49,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.lightBackgroundAnchors
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.components.PfpModalSpec
 import com.playfieldportal.core.ui.components.PspContextMenuOverlay
 import com.playfieldportal.core.ui.components.PspMenuRow
@@ -60,6 +64,7 @@ import com.playfieldportal.core.ui.theme.StorefrontColors
 import com.playfieldportal.core.ui.theme.deriveStorefrontColors
 import com.playfieldportal.core.ui.theme.dimmed
 import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.feature.appbar.R
 import com.playfieldportal.feature.appbar.appdrawer.AppDrawerCategoryTabs
 import com.playfieldportal.feature.appbar.appdrawer.AppDrawerGrid
 import com.playfieldportal.feature.appbar.appdrawer.AppDrawerHeader
@@ -130,9 +135,12 @@ fun AppDrawerScreen(
 
     // Uninstall asks through the shared confirm modal. Its cursor lives in the host, so a press goes
     // there first while one is up and only otherwise reaches the drawer.
+    LocalConfiguration.current
+    val resources = LocalContext.current.resources
     val modal = rememberPfpModalHost(
         uninstallModalSpec(
             state = state,
+            resolve = { it.resolve(resources) },
             onConfirm = viewModel::confirmUninstall,
             onCancel = viewModel::cancelUninstall,
         ),
@@ -231,15 +239,16 @@ fun AppDrawerScreen(
  */
 internal fun uninstallModalSpec(
     state: AppDrawerUiState,
+    resolve: (UiText) -> String,
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
 ): PfpModalSpec? {
     val app = state.confirmUninstall ?: return null
     return PfpModalSpec.Confirm(
         key = "uninstall:${app.packageName}",
-        title = "Uninstall ${app.label}?",
-        message = "This removes ${app.label} from your device. Android will ask you to confirm.",
-        confirmLabel = "Uninstall",
+        title = resolve(UiText.res(R.string.apps_uninstall_title, app.label)),
+        message = resolve(UiText.res(R.string.apps_uninstall_message, app.label)),
+        confirmLabel = resolve(UiText.res(R.string.apps_menu_uninstall)),
         destructive = true,
         onConfirm = onConfirm,
         onCancel = onCancel,
@@ -317,7 +326,6 @@ internal fun AppDrawerContent(
         Column(modifier = Modifier.fillMaxSize()) {
             // ── Header / breadcrumb bar ──────────────────────────────────
             AppDrawerHeader(
-                categoryLabel = state.activeFilter.label,
                 searchQuery = state.searchQuery,
                 searchActive = searchActive,
                 searchFocus = searchFocus,
@@ -328,13 +336,7 @@ internal fun AppDrawerContent(
                 colors = sf,
                 searchEdit = searchEdit,
             )
-            // Thin accent divider under the header
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(sf.chromeDivider),
-            )
+            // (The breadcrumb draws its own divider.)
 
             // ── Horizontal category tabs ────────────────────────────────
             AppDrawerCategoryTabs(
@@ -348,11 +350,13 @@ internal fun AppDrawerContent(
             // BoxWithConstraints puts the viewport height in composition scope, so the adaptive
             // artwork size is resolved BEFORE the first tile composes — tiles render at their
             // final size on frame one, no resize jump.
-            BoxWithConstraints(modifier = Modifier.weight(1f)) {
+            // Full width as well as the leftover height: the grid fills it on its own, but an empty
+            // tab's message would otherwise centre in a box only as wide as the message, at the left.
+            BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 val artworkSize = adaptiveArtworkSize(maxHeight)
                 when {
                     state.isLoading -> {
-                        CircularProgressIndicator(
+                        PfpBusyRing(
                             color = menuCursorEdge(),
                             modifier = Modifier.align(Alignment.Center),
                         )
@@ -410,9 +414,11 @@ internal fun AppDrawerContent(
         // ── Overlays ──────────────────────────────────────────────────────
         state.menuApp?.let { app ->
             val actions = state.menuRows
+            LocalConfiguration.current
+            val resources = LocalContext.current.resources
             PspContextMenuOverlay(
                 title = app.label,
-                rows = actions.map { it.toPspMenuRow() },
+                rows = actions.map { row -> row.toPspMenuRow { it.resolve(resources) } },
                 selectedIndex = state.menuIndex,
                 onRowActivated = { onMenuAction(actions[it]) },
                 onDismiss = onCloseMenu,
@@ -422,11 +428,11 @@ internal fun AppDrawerContent(
 }
 
 /** The panel's row for a menu entry: value, chevron, red and silent all carry over. */
-internal fun AppMenuEntry.toPspMenuRow() = PspMenuRow(
-    label = label,
+internal fun AppMenuEntry.toPspMenuRow(resolve: (UiText) -> String) = PspMenuRow(
+    label = resolve(label),
     isDestructive = isDestructive,
-    value = value,
-    header = header,
+    value = value?.let(resolve),
+    header = header?.let(resolve),
     opensMenu = opensMenu,
     silent = silent,
 )
@@ -445,22 +451,22 @@ private fun EmptyDrawerMessage(
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = when {
-                hasQuery -> "No apps match your search"
-                filter == AppFilter.GAMES -> "No games found"
-                filter == AppFilter.EMULATORS -> "No emulators installed"
-                filter == AppFilter.RECENT && !hasUsageAccess -> "Usage access needed"
-                filter == AppFilter.RECENT -> "No recently used apps yet"
-                else -> "No apps installed"
+                hasQuery -> stringResource(R.string.apps_empty_no_match)
+                filter == AppFilter.GAMES -> stringResource(R.string.apps_empty_no_games)
+                filter == AppFilter.EMULATORS -> stringResource(R.string.apps_empty_no_emulators)
+                filter == AppFilter.RECENT && !hasUsageAccess -> stringResource(R.string.apps_empty_usage_access)
+                filter == AppFilter.RECENT -> stringResource(R.string.apps_empty_no_recent)
+                else -> stringResource(R.string.apps_empty_no_apps)
             },
             color = colors.textSecondary,
             fontSize = 16.sp,
             textAlign = TextAlign.Center,
         )
         val hint = when {
-            hasQuery -> "Try a different search term"
-            filter == AppFilter.GAMES -> "Apps marked as games in the Play Store appear here"
-            filter == AppFilter.EMULATORS -> "Install RetroArch, PPSSPP, or another emulator"
-            filter == AppFilter.RECENT && !hasUsageAccess -> "Grant access so PFP can sort apps by last used time"
+            hasQuery -> stringResource(R.string.apps_hint_try_search)
+            filter == AppFilter.GAMES -> stringResource(R.string.apps_hint_games)
+            filter == AppFilter.EMULATORS -> stringResource(R.string.apps_hint_emulators)
+            filter == AppFilter.RECENT && !hasUsageAccess -> stringResource(R.string.apps_hint_usage_access)
             else -> null
         }
         // No hint (e.g. Recently Used with nothing used yet) → skip the spacer and the empty line,
@@ -478,7 +484,7 @@ private fun EmptyDrawerMessage(
         if (filter == AppFilter.RECENT && !hasUsageAccess) {
             Spacer(Modifier.height(16.dp))
             Text(
-                text = "Open Usage Access",
+                text = stringResource(R.string.apps_open_usage_access),
                 color = colors.textPrimary,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,

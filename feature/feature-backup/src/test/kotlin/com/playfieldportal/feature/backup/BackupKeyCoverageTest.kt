@@ -134,6 +134,7 @@ class BackupKeyCoverageTest {
             "controller_left_backs_out",
             "controller_mappings_v1",
             "controller_virtual_keyboard",
+            "controller_haptic_feedback",
         )
     }
 

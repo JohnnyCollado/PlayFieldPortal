@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
@@ -49,6 +50,9 @@ import com.playfieldportal.core.ui.motion.MotionWallpaperBackground
 import com.playfieldportal.core.ui.motion.MotionWallpaperPolicy
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.UiMediaSlot
+import com.playfieldportal.core.domain.text.labelRes
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.core.ui.sound.LocalMenuSounds
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.theme.LocalPFPColors
@@ -159,8 +163,8 @@ fun DisplaySettingsScreen(
     // moves — see the interceptor's own note on why a consumed action cannot be voiced centrally.
     val menuSounds = LocalMenuSounds.current
 
-    val wallpaperMessage = state.wallpaperMessage
-    val contrastNotice = state.textContrastNotice
+    val wallpaperMessage = state.wallpaperMessage?.asString()
+    val contrastNotice = state.textContrastNotice?.asString()
     // The pick-one row whose choice dialog is open (DisplayOptionChoices.kt).
     var optionPicker by remember { mutableStateOf<DisplayOption?>(null) }
     // Read once into a local, as the two messages above are: a delegated property cannot smart-cast.
@@ -169,10 +173,9 @@ fun DisplaySettingsScreen(
         when {
             pspConfirmOpen -> PfpModalSpec.Confirm(
                 key = "psp_layout",
-                title = "Apply Biblically Accurate PSP XMB?",
-                message = "Sets this screen's XMB scale and crossbar position to the PSP's own proportions. " +
-                    "Your current layout for this screen size is replaced; other screen sizes keep theirs.",
-                confirmLabel = "Apply",
+                title = stringResource(R.string.setd_psp_confirm_title),
+                message = stringResource(R.string.setd_psp_confirm_message),
+                confirmLabel = stringResource(R.string.setd_apply),
                 // Opens on Cancel, so a stray double press never replaces a tuned layout.
                 openOnCancel = true,
                 onConfirm = { viewModel.applyPspLayout(); pspConfirmOpen = false },
@@ -180,7 +183,7 @@ fun DisplaySettingsScreen(
             )
             wallpaperMessage != null -> PfpModalSpec.Notice(
                 key = "wallpaper:$wallpaperMessage",
-                title = "Wallpaper",
+                title = stringResource(R.string.setd_wallpaper_title),
                 message = wallpaperMessage,
                 onDismiss = { viewModel.dismissWallpaperMessage() },
             )
@@ -188,11 +191,14 @@ fun DisplaySettingsScreen(
             // (survey L18, P6). It was a Material dialog with no controller routing.
             contrastNotice != null -> PfpModalSpec.Choice(
                 key = "text_contrast:$contrastNotice",
-                title = "Font colour may be hard to read",
+                title = stringResource(R.string.setd_contrast_title),
                 message = contrastNotice,
-                options = listOf(PfpChoiceOption("OK"), PfpChoiceOption("Don't warn me again")),
-                confirmLabel = "Select",
-                cancelLabel = "Close",
+                options = listOf(
+                    PfpChoiceOption(stringResource(R.string.setd_contrast_ok)),
+                    PfpChoiceOption(stringResource(R.string.setd_contrast_dont_warn)),
+                ),
+                confirmLabel = stringResource(R.string.setd_select),
+                cancelLabel = stringResource(R.string.setd_close),
                 onConfirm = { index ->
                     if (index == 1) viewModel.suppressTextContrastNotice() else viewModel.dismissTextContrastNotice()
                 },
@@ -201,10 +207,10 @@ fun DisplaySettingsScreen(
             // A pick-one setting: its values, opened on the one in use. Select stores the pick.
             openOption != null -> PfpModalSpec.Choice(
                 key = "option:${openOption.name}",
-                title = openOption.title,
-                message = openOption.summary,
-                options = openOption.choices.map { PfpChoiceOption(it.label, it.detail) },
-                confirmLabel = "Select",
+                title = openOption.title.asString(),
+                message = openOption.summary.asString(),
+                options = openOption.choices.map { PfpChoiceOption(it.label.asString(), it.detail?.asString()) },
+                confirmLabel = stringResource(R.string.setd_select),
                 initialSelected = viewModel.selectedChoice(openOption),
                 onConfirm = { index -> viewModel.choose(openOption, index); optionPicker = null },
                 onCancel = { optionPicker = null },
@@ -214,8 +220,8 @@ fun DisplaySettingsScreen(
     )
 
     SettingsScaffold(
-        title    = "Settings",
-        subtitle = "Display",
+        title    = stringResource(R.string.settings_title),
+        subtitle = stringResource(R.string.setd_display_title),
         modalOpen = modal.open || fontPicker != null,
         onBack   = onBack,
         modifier = modifier,
@@ -299,7 +305,26 @@ fun DisplaySettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState),
         ) {
-            SettingsGroup("Appearance")
+            // One setting above every other motion choice (it was Artwork ▸ Animated images, and
+            // only covered images). Static holds the wave, a motion wallpaper, video snaps and the
+            // glow's pulse still; the rows it overrides say so.
+            val motionStatic = state.motion == com.playfieldportal.core.domain.model.ImageMotion.STATIC
+            SettingsGroup(stringResource(R.string.motion_title))
+            SettingsValueRow(
+                label    = DisplayOption.MOTION.title.asString(),
+                sublabel = stringResource(
+                    when (state.motion) {
+                        com.playfieldportal.core.domain.model.ImageMotion.ANIMATED -> R.string.motion_sub_animated
+                        com.playfieldportal.core.domain.model.ImageMotion.REDUCED -> R.string.motion_sub_reduced
+                        com.playfieldportal.core.domain.model.ImageMotion.STATIC -> R.string.motion_sub_static
+                    },
+                ),
+                value    = stringResource(state.motion.labelRes),
+                onClick  = { optionPicker = DisplayOption.MOTION },
+                opensPicker = true,
+            )
+
+            SettingsGroup(stringResource(R.string.setd_group_appearance))
 
             // Setting a wallpaper automatically replaces the wave; resetting it brings
             // the wave back. No separate mode toggle needed.
@@ -313,10 +338,10 @@ fun DisplaySettingsScreen(
                 )
             } else {
                 SettingsRow(
-                    label    = "Choose wallpaper",
-                    sublabel = if (state.motionWallpaperPath != null) "Motion wallpaper set — a looping video replaces the wave"
-                               else if (state.customWallpaperPath != null) "Custom wallpaper set — replaces the wave"
-                               else "Pick an image or a short video (PNG, JPG, WEBP, MP4, WEBM, GIF) — replaces the wave",
+                    label    = stringResource(R.string.setd_wallpaper_choose),
+                    sublabel = if (state.motionWallpaperPath != null) stringResource(R.string.setd_wallpaper_choose_motion_set)
+                               else if (state.customWallpaperPath != null) stringResource(R.string.setd_wallpaper_choose_custom_set)
+                               else stringResource(R.string.setd_wallpaper_choose_none),
                     onClick  = ::launchWallpaperPicker,
                 )
 
@@ -324,44 +349,16 @@ fun DisplaySettingsScreen(
                 // only said "No wallpaper selected yet" (survey U31).
                 if (state.customWallpaperPath != null) {
                     SettingsRow(
-                        label    = "Preview wallpaper",
-                        sublabel = "See the selected wallpaper full-screen",
+                        label    = stringResource(R.string.setd_wallpaper_preview),
+                        sublabel = stringResource(R.string.setd_wallpaper_preview_sublabel),
                         onClick  = { viewModel.showWallpaperPreview() },
                     )
                     SettingsRow(
-                        label    = "Reset wallpaper",
-                        sublabel = "Remove custom wallpaper and restore the default background",
+                        label    = stringResource(R.string.setd_wallpaper_reset_row),
+                        sublabel = stringResource(R.string.setd_wallpaper_reset_row_sublabel),
                         onClick  = { viewModel.clearWallpaper() },
                     )
                 }
-            }
-
-            // ── Lock screen image — the DEVICE lock screen, a still only ──────────
-            SettingsGroup("Lock screen")
-            SettingsRow(
-                label    = "Choose lock screen image",
-                sublabel = when {
-                    lockState.busy -> "Setting the lock screen…"
-                    lockState.fromTheme -> "Set by the applied theme — pick an image to use your own"
-                    lockState.isSet -> "Your image is on the lock screen"
-                    else -> "Pick an image (PNG, JPG, WEBP) for the device lock screen"
-                },
-                onClick  = if (lockState.busy) null else ({ lockScreenPicker.launch(arrayOf("image/png", "image/jpeg", "image/webp")) }),
-            )
-            if (lockState.hasLauncherWallpaper) {
-                SettingsRow(
-                    label    = "Use launcher wallpaper",
-                    sublabel = if (state.motionWallpaperPath != null) "Uses the motion wallpaper's still frame"
-                               else "Uses the wallpaper behind the XMB",
-                    onClick  = if (lockState.busy) null else ({ lockScreenViewModel.useLauncherWallpaper() }),
-                )
-            }
-            if (lockState.isSet) {
-                SettingsRow(
-                    label    = "Reset lock screen",
-                    sublabel = "Back to the device's default lock screen",
-                    onClick  = if (lockState.busy) null else ({ lockScreenViewModel.reset() }),
-                )
             }
 
             // ── Wave Style — only relevant when no wallpaper is set. When a MOTION wallpaper
@@ -371,35 +368,66 @@ fun DisplaySettingsScreen(
             // moment they pick a video).
             if (state.customWallpaperPath == null) {
                 SettingsValueRow(
-                    label    = DisplayOption.WAVE_STYLE.title,
-                    sublabel = DisplayOption.WAVE_STYLE.summary,
-                    value    = state.waveStyleLabel,
+                    label    = DisplayOption.WAVE_STYLE.title.asString(),
+                    sublabel = if (motionStatic) stringResource(R.string.motion_holds_background)
+                    else DisplayOption.WAVE_STYLE.summary.asString(),
+                    value    = state.waveStyleLabel.asString(),
                     onClick  = { optionPicker = DisplayOption.WAVE_STYLE },
                     opensPicker = true,
                 )
             } else if (state.motionWallpaperPath != null) {
                 SettingsValueRow(
-                    label    = DisplayOption.BACKGROUND_MOTION.title,
-                    sublabel = DisplayOption.BACKGROUND_MOTION.summary,
-                    value    = state.waveStyleLabel,
+                    label    = DisplayOption.BACKGROUND_MOTION.title.asString(),
+                    sublabel = if (motionStatic) stringResource(R.string.motion_holds_background)
+                    else DisplayOption.BACKGROUND_MOTION.summary.asString(),
+                    value    = state.waveStyleLabel.asString(),
                     onClick  = { optionPicker = DisplayOption.BACKGROUND_MOTION },
                     opensPicker = true,
                 )
             }
 
+            // ── Lock screen image — the DEVICE lock screen, a still only ──────────
+            SettingsGroup(stringResource(R.string.setd_group_lock_screen))
+            SettingsRow(
+                label    = stringResource(R.string.setd_lock_choose),
+                sublabel = when {
+                    lockState.busy -> stringResource(R.string.setd_lock_choose_busy)
+                    lockState.fromTheme -> stringResource(R.string.setd_lock_choose_from_theme)
+                    lockState.isSet -> stringResource(R.string.setd_lock_choose_set)
+                    else -> stringResource(R.string.setd_lock_choose_none)
+                },
+                onClick  = if (lockState.busy) null else ({ lockScreenPicker.launch(arrayOf("image/png", "image/jpeg", "image/webp")) }),
+            )
+            if (lockState.hasLauncherWallpaper) {
+                SettingsRow(
+                    label    = stringResource(R.string.setd_lock_use_wallpaper),
+                    sublabel = if (state.motionWallpaperPath != null) stringResource(R.string.setd_lock_use_wallpaper_motion)
+                               else stringResource(R.string.setd_lock_use_wallpaper_still),
+                    onClick  = if (lockState.busy) null else ({ lockScreenViewModel.useLauncherWallpaper() }),
+                )
+            }
+            if (lockState.isSet) {
+                SettingsRow(
+                    label    = stringResource(R.string.setd_lock_reset_row),
+                    sublabel = stringResource(R.string.setd_lock_reset_row_sublabel),
+                    onClick  = if (lockState.busy) null else ({ lockScreenViewModel.reset() }),
+                )
+            }
+
+            SettingsGroup(stringResource(R.string.tidy_group_text_icons))
             // Icon legibility is an appearance choice, NOT gated on a wallpaper being set —
             // it matters most over a wallpaper, but still applies over the wave.
             SettingsValueRow(
-                label    = DisplayOption.ICON_LEGIBILITY.title,
-                sublabel = DisplayOption.ICON_LEGIBILITY.summary,
-                value    = state.iconLegibility.label,
+                label    = DisplayOption.ICON_LEGIBILITY.title.asString(),
+                sublabel = DisplayOption.ICON_LEGIBILITY.summary.asString(),
+                value    = stringResource(state.iconLegibility.labelRes),
                 onClick  = { optionPicker = DisplayOption.ICON_LEGIBILITY },
                 opensPicker = true,
             )
 
             SettingsToggleRow(
-                label    = "Solid unfocused icons",
-                sublabel = "Draw unselected icons at full opacity — selection still reads by size and label",
+                label    = stringResource(R.string.setd_solid_icons),
+                sublabel = stringResource(R.string.setd_solid_icons_sublabel),
                 checked  = state.solidUnfocusedIcons,
                 onToggle = { viewModel.setSolidUnfocusedIcons(it) },
             )
@@ -407,24 +435,24 @@ fun DisplaySettingsScreen(
             // Default on: the shadow is subtle and helper text over bright wallpaper reads far
             // better with it. Users on static dark wallpapers can turn it off.
             SettingsToggleRow(
-                label    = "Text shadow",
-                sublabel = "Drop shadow behind row helper text — keeps it readable over bright wallpaper regions",
+                label    = stringResource(R.string.setd_text_shadow),
+                sublabel = stringResource(R.string.setd_text_shadow_sublabel),
                 checked  = state.textShadow,
                 onToggle = { viewModel.setTextShadow(it) },
             )
 
             SettingsValueRow(
-                label    = DisplayOption.ITEM_LIST_MOTION.title,
-                sublabel = DisplayOption.ITEM_LIST_MOTION.summary,
-                value    = state.itemListMotion.label,
+                label    = DisplayOption.ITEM_LIST_MOTION.title.asString(),
+                sublabel = DisplayOption.ITEM_LIST_MOTION.summary.asString(),
+                value    = stringResource(state.itemListMotion.labelRes),
                 onClick  = { optionPicker = DisplayOption.ITEM_LIST_MOTION },
                 opensPicker = true,
             )
 
             SettingsValueRow(
-                label    = DisplayOption.UMD_SLOT.title,
-                sublabel = DisplayOption.UMD_SLOT.summary,
-                value    = state.umdSlotMode.label,
+                label    = DisplayOption.UMD_SLOT.title.asString(),
+                sublabel = DisplayOption.UMD_SLOT.summary.asString(),
+                value    = stringResource(state.umdSlotMode.labelRes),
                 onClick  = { optionPicker = DisplayOption.UMD_SLOT },
                 opensPicker = true,
             )
@@ -433,11 +461,11 @@ fun DisplaySettingsScreen(
             // Deliberately next to Text Shadow: the two answer the same question (how does text
             // survive the wallpaper), and AUTO reads the shadow toggle as "may I use a shadow?".
             SettingsValueRow(
-                label    = "Font colour",
-                sublabel = "Colour for labels and body text across the interface",
+                label    = stringResource(R.string.setd_font_colour),
+                sublabel = stringResource(R.string.setd_font_colour_sublabel),
                 value    = state.textColorArgb
                     ?.let { hexOf(Color(it and 0xFFFFFFFFL)) }
-                    ?: "Theme Default",
+                    ?: stringResource(R.string.setd_font_colour_theme_default),
                 onClick  = {
                     pickingSubFont = false
                     fontPicker = HsvPickerState.fromArgb(state.textColorArgb ?: 0xFFFFFFFFL)
@@ -445,11 +473,11 @@ fun DisplaySettingsScreen(
             )
 
             SettingsValueRow(
-                label    = "Sub font colour",
-                sublabel = "Colour for subtitles, sublabels and values. Follows Font Colour until set",
+                label    = stringResource(R.string.setd_sub_font_colour),
+                sublabel = stringResource(R.string.setd_sub_font_colour_sublabel),
                 value    = state.subTextColorArgb
                     ?.let { hexOf(Color(it and 0xFFFFFFFFL)) }
-                    ?: "Same as Font Colour",
+                    ?: stringResource(R.string.setd_sub_font_colour_same),
                 onClick  = {
                     pickingSubFont = true
                     fontPicker = HsvPickerState.fromArgb(state.subTextColorArgb ?: state.textColorArgb ?: 0xFFFFFFFFL)
@@ -458,16 +486,16 @@ fun DisplaySettingsScreen(
 
             if (state.subTextColorArgb != null) {
                 SettingsRow(
-                    label    = "Reset sub font colour",
-                    sublabel = "Go back to following Font Colour",
+                    label    = stringResource(R.string.setd_sub_font_colour_reset),
+                    sublabel = stringResource(R.string.setd_sub_font_colour_reset_sublabel),
                     onClick  = { viewModel.setSubTextColor(null) },
                 )
             }
 
             if (state.textColorArgb != null) {
                 SettingsRow(
-                    label    = "Reset font colour",
-                    sublabel = "Go back to the colour the current theme supplies",
+                    label    = stringResource(R.string.setd_font_colour_reset),
+                    sublabel = stringResource(R.string.setd_font_colour_reset_sublabel),
                     onClick  = { viewModel.setTextColor(null) },
                 )
             }
@@ -475,18 +503,16 @@ fun DisplaySettingsScreen(
             // Honest copy: the choice is stored and travels with themes and backups, but no
             // renderer reads it yet (survey U2, docs/audits/codebase-survey-2026-10-22.md).
             SettingsValueRow(
-                label    = DisplayOption.TEXT_LEGIBILITY.title,
-                sublabel = DisplayOption.TEXT_LEGIBILITY.summary,
-                value    = state.textLegibility.label,
+                label    = DisplayOption.TEXT_LEGIBILITY.title.asString(),
+                sublabel = DisplayOption.TEXT_LEGIBILITY.summary.asString(),
+                value    = stringResource(state.textLegibility.labelRes),
                 onClick  = { optionPicker = DisplayOption.TEXT_LEGIBILITY },
                 opensPicker = true,
             )
 
-            SettingsGroup("XMB layout")
+            SettingsGroup(stringResource(R.string.setd_group_xmb_layout))
             Text(
-                text     = "Position the XMB live for this screen — scale it, and shift the crossbar " +
-                    "up/down and left/right — over the real interface. Each screen size (handheld, " +
-                    "foldable, tablet) keeps its own tuning.",
+                text     = stringResource(R.string.setd_xmb_layout_intro),
                 color    = SettingsSubtext,
                 fontSize = 12.sp,
                 // Same helper-text shadow as the row family — this paragraph sits directly
@@ -496,37 +522,37 @@ fun DisplaySettingsScreen(
             )
 
             SettingsRow(
-                label    = "Adjust XMB layout",
-                sublabel = "Live editor — scale + reposition the crossbar with the D-pad or sliders",
+                label    = stringResource(R.string.setd_xmb_adjust),
+                sublabel = stringResource(R.string.setd_xmb_adjust_sublabel),
                 onClick  = onOpenXmbLayoutAdjust,
             )
 
             // Greyed out while this screen size's saved layout IS the preset; any change saved from
             // the editor above, a reset to default included, brings it back.
             SettingsRow(
-                label    = "Biblically Accurate PSP XMB",
+                label    = stringResource(R.string.setd_psp_row),
                 sublabel = if (state.pspLayoutApplied) {
-                    "Applied to this screen. Change the layout with Adjust XMB Layout to use it again"
+                    stringResource(R.string.setd_psp_row_applied)
                 } else {
-                    "Apply the PSP's own proportions to this screen"
+                    stringResource(R.string.setd_psp_row_apply)
                 },
                 enabled  = !state.pspLayoutApplied,
                 onClick  = { pspConfirmOpen = true },
             )
 
-            SettingsGroup("Boot sequence")
+            SettingsGroup(stringResource(R.string.setd_group_boot_sequence))
 
             SettingsToggleRow(
-                label    = "Show boot sequence",
-                sublabel = "PSP-style boot animation on every launch",
+                label    = stringResource(R.string.setd_boot_show),
+                sublabel = stringResource(R.string.setd_boot_show_sublabel),
                 onFocusChangedExternal = { if (it) focusedSlot = null },
                 checked  = state.showBootSequence,
                 onToggle = { viewModel.setShowBootSequence(it) },
             )
 
             SettingsToggleRow(
-                label    = "Show boot sequence on resume",
-                sublabel = "Also play when returning from a game",
+                label    = stringResource(R.string.setd_boot_resume),
+                sublabel = stringResource(R.string.setd_boot_resume_sublabel),
                 onFocusChangedExternal = { if (it) focusedSlot = null },
                 checked  = state.showBootOnResume,
                 onToggle = { viewModel.setShowBootOnResume(it) },
@@ -537,11 +563,13 @@ fun DisplaySettingsScreen(
             // thing. Boot SOUND is deliberately not here — it is the seventh row of
             // Interface ▸ Sound, which owns every sound in the app.
             MediaAssignmentRow(
-                label    = "Boot video",
+                label    = stringResource(R.string.setd_boot_video),
                 focusKey = "display_${UiMediaSlot.BOOT_VIDEO.key}",
-                sublabel = "Play your own video instead of the PFP logo animation " +
-                    UiMediaRowText.videoCap(UiMediaSlot.BOOT_VIDEO),
-                value    = state.bootVideoLabel,
+                sublabel = stringResource(
+                    R.string.setd_boot_video_sublabel,
+                    UiMediaRowText.videoCap(UiMediaSlot.BOOT_VIDEO).asString(),
+                ),
+                value    = state.bootVideoLabel.asString(),
                 isAssigned = state.bootVideoAssigned,
                 onPick   = { pickUiMedia(UiMediaSlot.BOOT_VIDEO) },
                 onPreview = onPreviewBootSequence,
@@ -549,13 +577,11 @@ fun DisplaySettingsScreen(
                 onFocusChanged = { focusedSlot = if (it) UiMediaSlot.BOOT_VIDEO else null },
             )
 
-            SettingsGroup("GameBoot")
+            SettingsGroup(stringResource(R.string.setd_group_game_boot))
 
             SettingsToggleRow(
-                label    = "GameBoot",
-                sublabel = "A short presentation between confirming a game and the emulator " +
-                    "opening — five seconds built in, up to ten with your own clip — skippable " +
-                    "with Confirm or Back.  Off is a silent launch — no animation, no sound.",
+                label    = stringResource(R.string.setd_gameboot),
+                sublabel = stringResource(R.string.setd_gameboot_sublabel),
                 onFocusChangedExternal = { if (it) focusedSlot = null },
                 checked  = state.gameBootEnabled,
                 onToggle = { viewModel.setGameBootEnabled(it) },
@@ -565,11 +591,13 @@ fun DisplaySettingsScreen(
             // presentation that never plays is a row that lies about what it does.
             if (state.gameBootEnabled) {
                 MediaAssignmentRow(
-                    label    = "GameBoot video",
+                    label    = stringResource(R.string.setd_gameboot_video),
                     focusKey = "display_${UiMediaSlot.GAMEBOOT_VIDEO.key}",
-                    sublabel = "Replace the built-in sequence with your own clip, which plays with " +
-                        "its own sound, at the GameBoot level in Sound ▸ Levels " + UiMediaRowText.videoCap(UiMediaSlot.GAMEBOOT_VIDEO),
-                    value    = state.gameBootVideoLabel,
+                    sublabel = stringResource(
+                        R.string.setd_gameboot_video_sublabel,
+                        UiMediaRowText.videoCap(UiMediaSlot.GAMEBOOT_VIDEO).asString(),
+                    ),
+                    value    = state.gameBootVideoLabel.asString(),
                     isAssigned = state.gameBootVideoAssigned,
                     onPick   = { pickUiMedia(UiMediaSlot.GAMEBOOT_VIDEO) },
                     onPreview = onPreviewGameBoot,
@@ -578,12 +606,12 @@ fun DisplaySettingsScreen(
                 )
             }
 
-            SettingsGroup("Orientation")
+            SettingsGroup(stringResource(R.string.setd_group_orientation))
 
             SettingsValueRow(
-                label    = DisplayOption.SCREEN_ORIENTATION.title,
-                sublabel = DisplayOption.SCREEN_ORIENTATION.summary,
-                value    = viewModel.screenOrientationLabel(),
+                label    = DisplayOption.SCREEN_ORIENTATION.title.asString(),
+                sublabel = DisplayOption.SCREEN_ORIENTATION.summary.asString(),
+                value    = viewModel.screenOrientationLabel().asString(),
                 onClick  = { optionPicker = DisplayOption.SCREEN_ORIENTATION },
                 opensPicker = true,
             )
@@ -591,34 +619,34 @@ fun DisplaySettingsScreen(
             // (The old "Icon Style" option lived here — replaced by Artwork ▸ Game Icon
             // Display, which offers the same cartridge look via Physical Media mode.)
 
-            SettingsGroup("Interface")
+            SettingsGroup(stringResource(R.string.setd_group_interface))
 
             SettingsValueRow(
-                label    = DisplayOption.TOUCH_NAV_BUTTON.title,
-                sublabel = DisplayOption.TOUCH_NAV_BUTTON.summary,
-                value    = viewModel.touchNavButtonLabel(),
+                label    = DisplayOption.TOUCH_NAV_BUTTON.title.asString(),
+                sublabel = DisplayOption.TOUCH_NAV_BUTTON.summary.asString(),
+                value    = viewModel.touchNavButtonLabel().asString(),
                 onClick  = { optionPicker = DisplayOption.TOUCH_NAV_BUTTON },
                 opensPicker = true,
             )
 
             SettingsValueRow(
-                label    = DisplayOption.TOUCH_SENSITIVITY.title,
-                sublabel = DisplayOption.TOUCH_SENSITIVITY.summary,
-                value    = viewModel.touchSensitivityLabel(),
+                label    = DisplayOption.TOUCH_SENSITIVITY.title.asString(),
+                sublabel = DisplayOption.TOUCH_SENSITIVITY.summary.asString(),
+                value    = viewModel.touchSensitivityLabel().asString(),
                 onClick  = { optionPicker = DisplayOption.TOUCH_SENSITIVITY },
                 opensPicker = true,
             )
 
             SettingsToggleRow(
-                label    = SettingsLabels.OPTIONS_HINT,
-                sublabel = "Show the idle “Options” pill over XMB items with a context menu",
+                label    = stringResource(SettingsLabels.OPTIONS_HINT_RES),
+                sublabel = stringResource(R.string.setd_options_hint_sublabel),
                 checked  = state.contextMenuHintEnabled,
                 onToggle = { viewModel.setContextMenuHintEnabled(it) },
             )
 
             SettingsSliderRow(
-                label     = "Hint delay",
-                sublabel  = "Show after ${formatHintDelay(state.contextMenuHintDelaySeconds)} of inactivity (1–5 seconds)",
+                label     = stringResource(R.string.setd_hint_delay),
+                sublabel  = stringResource(R.string.setd_hint_delay_sublabel, formatHintDelay(state.contextMenuHintDelaySeconds)),
                 value     = state.contextMenuHintDelaySeconds,
                 onValueChange = viewModel::setContextMenuHintDelaySeconds,
                 valueRange = 1f..5f,
@@ -627,18 +655,54 @@ fun DisplaySettingsScreen(
                 valueFormatter = { formatHintDelay(it) },
             )
 
-            SettingsGroup("Performance")
+            // The light round the focused icon. Pulsing says when it will hold still (Animated
+            // Images: Static).
+            SettingsValueRow(
+                label    = stringResource(R.string.glow_title),
+                sublabel = stringResource(
+                    when (state.focusGlow) {
+                        com.playfieldportal.core.domain.model.FocusGlowMode.OFF -> R.string.glow_sub_off
+                        com.playfieldportal.core.domain.model.FocusGlowMode.STEADY -> R.string.glow_sub_steady
+                        com.playfieldportal.core.domain.model.FocusGlowMode.PULSING ->
+                            if (motionStatic) R.string.motion_holds_glow else R.string.glow_sub_pulsing
+                    },
+                ),
+                value    = stringResource(
+                    when (state.focusGlow) {
+                        com.playfieldportal.core.domain.model.FocusGlowMode.OFF -> R.string.glow_value_off
+                        com.playfieldportal.core.domain.model.FocusGlowMode.STEADY -> R.string.glow_value_steady
+                        com.playfieldportal.core.domain.model.FocusGlowMode.PULSING -> R.string.glow_value_pulsing
+                    },
+                ),
+                onClick  = { viewModel.cycleFocusGlow() },
+            )
+
+            SettingsGroup(stringResource(R.string.setd_group_performance))
+
+            // The blur drawn behind prompts and the options panel. Its maximum is the strength the
+            // feature first shipped with; this row can only weaken it, down to off. Android 12+ only.
+            val blurAvailable = android.os.Build.VERSION.SDK_INT >= 31
+            SettingsSliderRow(
+                label     = stringResource(R.string.blur_title),
+                sublabel  = stringResource(if (blurAvailable) R.string.blur_sublabel else R.string.blur_unavailable),
+                value     = state.backdropBlurStrength,
+                onValueChange = viewModel::setBackdropBlurStrength,
+                valueRange = 0f..1f,
+                steps     = com.playfieldportal.core.domain.model.BackdropBlur.SLIDER_STEPS,
+                enabled   = blurAvailable,
+                valueFormatter = { "${Math.round(it * 100)}%" },
+            )
 
             SettingsToggleRow(
-                label    = "Thermal throttle awareness",
-                sublabel = "Freeze the background (wave or motion wallpaper) while the device reports it is running hot",
+                label    = stringResource(R.string.setd_thermal),
+                sublabel = stringResource(R.string.setd_thermal_sublabel),
                 checked  = state.thermalThrottleAware,
                 onToggle = { viewModel.setThermalThrottleAware(it) },
             )
 
             SettingsToggleRow(
-                label    = "Battery saver mode",
-                sublabel = "Freeze the background (wave or motion wallpaper) when Battery Saver is active",
+                label    = stringResource(R.string.setd_battery_saver),
+                sublabel = stringResource(R.string.setd_battery_saver_sublabel),
                 checked  = state.respectBatterySaver,
                 onToggle = { viewModel.setRespectBatterySaver(it) },
             )
@@ -648,11 +712,11 @@ fun DisplaySettingsScreen(
             // toggle it used to hold is gone entirely: master at 0 is the mute. No duplicate row
             // may remain.)
 
-            SettingsGroup("Games")
+            SettingsGroup(stringResource(R.string.setd_group_games))
 
             SettingsToggleRow(
-                label    = "Launch games directly",
-                sublabel = "Confirm starts the game immediately instead of opening Game Details — use \"View Game Details\" in a game's Options menu to edit",
+                label    = stringResource(R.string.setd_direct_launch),
+                sublabel = stringResource(R.string.setd_direct_launch_sublabel),
                 checked  = state.directLaunch,
                 onToggle = { viewModel.setDirectLaunch(it) },
             )
@@ -687,7 +751,7 @@ fun DisplaySettingsScreen(
             } else {
                 AsyncImage(
                     model              = state.customWallpaperPath,
-                    contentDescription = "Wallpaper preview",
+                    contentDescription = stringResource(R.string.setd_wallpaper_preview_cd),
                     contentScale       = ContentScale.Fit,
                     modifier           = Modifier.fillMaxSize(),
                 )
@@ -704,7 +768,7 @@ fun DisplaySettingsScreen(
                 composite(solveScrimColor(pfp.backgroundBottom, 0.90f).copy(alpha = 0.90f), Color.White)
         }
         HsvColorPickerDialog(
-            title           = if (pickingSubFont) "Sub Font Colour" else "Font Colour",
+            title           = stringResource(if (pickingSubFont) R.string.setd_picker_sub_font_title else R.string.setd_picker_font_title),
             state           = open,
             onStateChange   = { fontPicker = it },
             accent          = SettingsAccent,

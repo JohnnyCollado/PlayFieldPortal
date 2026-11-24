@@ -1,0 +1,398 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Wizard chrome -->
+    <string name="setup_title">Početno postavljanje</string>
+    <string name="setup_prompt_enter">Uđi</string>
+    <string name="setup_prompt_change">Promijeni</string>
+    <string name="setup_prompt_back">Natrag</string>
+    <string name="setup_prompt_skip">Preskoči</string>
+    <string name="setup_row_edit">Uredi</string>
+    <string name="setup_row_remove">Ukloni</string>
+    <string name="setup_message_dismiss_hint">Odaberite za odbacivanje — ili potvrdite na ovom retku</string>
+
+    <!-- Page names, used as "Next: ..." on the previous page -->
+    <string name="setup_step_welcome">Dobro došli</string>
+    <string name="setup_step_controller">Kontroler</string>
+    <string name="setup_step_rom_roots">Mape s ROM-ovima</string>
+    <string name="setup_step_music">Glazba</string>
+    <string name="setup_step_video">Video</string>
+    <string name="setup_step_photo">Fotografije</string>
+    <string name="setup_step_artwork">Grafike</string>
+    <string name="setup_step_services">Mrežne usluge</string>
+    <string name="setup_step_achievements">Usluge postignuća</string>
+    <string name="setup_step_local_achievements">Lokalna postignuća</string>
+    <string name="setup_step_retroarch">RetroArch</string>
+    <string name="setup_step_emulators">Emulatori</string>
+    <string name="setup_step_windows">Windows igre</string>
+    <string name="setup_step_hints">Savjeti i dodir</string>
+    <string name="setup_step_home_app">Početna aplikacija</string>
+    <string name="setup_step_finish">Završetak</string>
+
+    <!-- Page headings -->
+    <string name="setup_heading_welcome">Dobro došli u Play Field Portal.</string>
+    <string name="setup_heading_controller">Odaberite svoj kontroler.</string>
+    <string name="setup_heading_rom_roots">Odaberite mape s ROM-ovima.</string>
+    <string name="setup_heading_music">Odaberite mape s glazbom.</string>
+    <string name="setup_heading_video">Odaberite mape s videozapisima.</string>
+    <string name="setup_heading_photo">Odaberite mape s fotografijama.</string>
+    <string name="setup_heading_artwork">Odaberite mapu s grafikama.</string>
+    <string name="setup_heading_services">Povežite izvore grafika.</string>
+    <string name="setup_heading_achievements">Povežite usluge postignuća.</string>
+    <string name="setup_heading_local_achievements">Povežite podatkovne mape emulatora.</string>
+    <string name="setup_heading_retroarch">Povežite RetroArchovu mapu jezgri.</string>
+    <string name="setup_heading_emulators">Provjerite emulatore.</string>
+    <string name="setup_heading_windows">Postavite Windows igre.</string>
+    <string name="setup_heading_hints">Odaberite kako vam launcher pomaže.</string>
+    <string name="setup_heading_home_app">Postavite Play Field Portal kao početni zaslon.</string>
+    <string name="setup_heading_finish">Sve je spremno!</string>
+
+    <!-- Page hints (the line under a heading) -->
+    <string name="setup_hint_welcome">Većina koraka nije obavezna. Morat ćete odabrati mapu s grafikama.</string>
+    <string name="setup_hint_controller">Postavlja ikone tipki i tipku za potvrdu kako bi svaka uputa odsad odgovarala vašem kontroleru.</string>
+    <string name="setup_hint_rom_roots">Dodajte jednu ili više mapa ROM-ova — igre svake konzole nalaze se u podmapi unutar njih.</string>
+    <string name="setup_hint_media_roots">Dodajte više korijenskih mapa kako biste obuhvatili unutarnju pohranu i SD karticu.</string>
+    <string name="setup_hint_artwork">Obavezno. Vaše grafike nalaze se ovdje, izvan aplikacije, pa preživljavaju ponovnu instalaciju.</string>
+    <string name="setup_hint_services">Sve je neobavezno i besplatno. SteamGridDB, TheGamesDB, IGDB i ScreenScraper preuzimaju grafike i metapodatke igara.</string>
+    <string name="setup_hint_achievements">RetroAchievements i Steam prate postignuća kao Shiba Coins.</string>
+    <string name="setup_hint_local_achievements">Trofeji i postignuća koja vaši emulatori spremaju na ovaj uređaj. Jedno dopuštenje po emulatoru povezuje sve naslove.</string>
+    <string name="setup_hint_retroarch">Launcher točno zna koje jezgre imate pa nudi samo njih.</string>
+    <string name="setup_hint_emulators">Zadani emulator za svaku konzolu, odabran od instaliranih. Promijenite one koji se čine pogrešnima.</string>
+    <string name="setup_hint_windows">Instaliran je Windows emulator — odaberite gdje se nalaze vaše PC igre.</string>
+    <string name="setup_hint_hints">Savjeti za tipke pojavljuju se kad zastanete i nestaju čim nešto pritisnete.</string>
+    <string name="setup_hint_home_app">Tipka Početna tada vas vraća ovamo umjesto na zadani launcher.</string>
+    <string name="setup_hint_finish">Sve u nastavku možete bilo kada promijeniti u Postavkama.</string>
+
+    <!-- Continue row (bottom of every page) -->
+    <string name="setup_continue">Nastavi</string>
+    <string name="setup_continue_next">Sljedeće: %1$s</string>
+    <string name="setup_continue_blocked">Najprije odaberite mapu</string>
+
+    <!-- Welcome page -->
+    <string name="setup_welcome_intro">Ovo brzo postavljanje usmjerava launcher na vaše mape s medijima i povezuje mrežne usluge za grafike i postignuća.</string>
+    <string name="setup_welcome_start">Započni</string>
+    <string name="setup_welcome_start_sub">Najprije odaberite kontroler</string>
+    <string name="setup_welcome_skip">Preskoči postavljanje</string>
+    <string name="setup_welcome_skip_sub">Idite ravno u launcher — Čarobnjak za postavljanje možete bilo kada pokrenuti u Postavke ▸ Sustav</string>
+
+    <!-- Folder rows shared by the ROM, Music, Video and Photo pages -->
+    <string name="setup_root_access_lost">Pristup izgubljen — upotrijebite ✎ za ponovno dodjeljivanje pristupa</string>
+
+    <!-- ROM roots page -->
+    <string name="setup_rom_empty">Još nema mapa ROM-ova. Dodajte mapu u kojoj su igre vaših konzola — jedna podmapa po konzoli, automatski se skenira.</string>
+    <string name="setup_rom_add">Dodaj mapu ROM-ova</string>
+    <string name="setup_rom_add_sub">Dodijelite mapu ROM-ova s jednom podmapom po konzoli</string>
+    <string name="setup_rom_rescan">Ponovno skeniraj mape ROM-ova</string>
+    <string name="setup_rom_rescan_sub">Automatski prepoznaj konzole i skeniraj njihove igre</string>
+    <string name="setup_rom_root_linked">Povezano — mape konzola čitaju se odavde</string>
+    <string name="setup_rom_create_folders">Stvori standardne mape</string>
+    <string name="setup_rom_create_folders_sub">Jedna podmapa po konzoli, nazvana za vaše igre</string>
+
+    <!-- Music roots page -->
+    <string name="setup_music_empty">Još nema korijenskih mapa glazbe. Dodajte mapu u kojoj je vaša glazba — više korijenskih mapa može obuhvatiti unutarnju pohranu i SD karticu.</string>
+    <string name="setup_music_add">Dodaj korijensku mapu glazbe</string>
+    <string name="setup_music_add_sub">Dodijelite korijensku mapu (npr. /Music) — dodajte ih više za različite lokacije</string>
+    <string name="setup_music_root_linked">Ovdje je biblioteka glazbe</string>
+    <string name="setup_music_rescan">Ponovno skeniraj biblioteku glazbe</string>
+
+    <!-- Video roots page -->
+    <string name="setup_video_empty">Još nema korijenskih mapa videozapisa. Dodajte mapu u kojoj su vaši videozapisi — više korijenskih mapa može obuhvatiti unutarnju pohranu i SD karticu.</string>
+    <string name="setup_video_add">Dodaj korijensku mapu videozapisa</string>
+    <string name="setup_video_add_sub">Dodijelite korijensku mapu (npr. /Videos) — dodajte ih više za različite lokacije</string>
+    <string name="setup_video_root_linked">Ovdje je biblioteka videozapisa</string>
+    <string name="setup_video_rescan">Ponovno skeniraj biblioteku videozapisa</string>
+
+    <!-- Photo roots page -->
+    <string name="setup_photo_empty">Još nema korijenskih mapa fotografija. Dodajte mapu u kojoj su vaše fotografije — više korijenskih mapa može obuhvatiti unutarnju pohranu i SD karticu.</string>
+    <string name="setup_photo_add">Dodaj korijensku mapu fotografija</string>
+    <string name="setup_photo_add_sub">Dodijelite korijensku mapu (npr. /Photos) — dodajte ih više za različite lokacije</string>
+    <string name="setup_photo_root_linked">Ovdje je biblioteka fotografija</string>
+    <string name="setup_photo_rescan">Ponovno skeniraj biblioteku fotografija</string>
+
+    <string name="setup_media_rescan_sub">Ažuriraj biblioteke iz svih korijenskih mapa</string>
+
+    <!-- Artwork page -->
+    <string name="setup_artwork_empty">Odaberite mapu u koju se može pisati. Launcher u njoj automatski postavlja biblioteku grafika — igre dobivaju grafike kako se dodaju.</string>
+    <string name="setup_artwork_unavailable">Nedostupno. Ponovno povežite za nastavak novih grafika</string>
+    <string name="setup_artwork_folder_sub">Biblioteka grafika — upotrijebite ✎ za odabir druge mape</string>
+    <string name="setup_artwork_choose">Odaberi mapu s grafikama</string>
+    <string name="setup_artwork_choose_sub">Jedna mapa sadrži biblioteku grafika</string>
+    <string name="setup_artwork_import_title">Uvesti grafike sada?</string>
+    <string name="setup_artwork_import_sub_one">Kopiraj %1$s iz mape import/ u biblioteku</string>
+    <plurals name="setup_artwork_import_sub_many">
+    <item quantity="one">Kopiraj %1$d izvornu mapu iz mape import/ u biblioteku</item>
+    <item quantity="few">Kopiraj %1$d izvorne mape iz mape import/ u biblioteku</item>
+    <item quantity="other">Kopiraj %1$d izvornih mapa iz mape import/ u biblioteku</item>
+</plurals>
+    <string name="setup_artwork_import_row">Uvoz grafika</string>
+    <string name="setup_artwork_import_none_sub">Još nema ničega za uvoz — dodajte mapu s medijima nekog launchera u import/</string>
+
+    <!-- Online services page -->
+    <string name="setup_services_intro">Svi su računi neobavezni i besplatni. SteamGridDB, TheGamesDB, IGDB i ScreenScraper preuzimaju grafike i metapodatke igara za vašu biblioteku.</string>
+    <string name="setup_field_api_key">API ključ</string>
+    <string name="setup_field_api_key_saved">API ključ (spremljen)</string>
+    <string name="setup_field_web_api_key">Web API ključ</string>
+    <string name="setup_field_web_api_key_saved">Web API ključ (spremljen)</string>
+    <string name="setup_field_client_id">Client ID</string>
+    <string name="setup_field_client_id_saved">Client ID (spremljen)</string>
+    <string name="setup_field_client_secret">Client Secret</string>
+    <string name="setup_field_client_secret_saved">Client Secret (spremljen)</string>
+    <string name="setup_field_username">Korisničko ime</string>
+    <string name="setup_field_username_saved">Korisničko ime (spremljeno)</string>
+    <string name="setup_field_password">Zaporka</string>
+    <string name="setup_field_password_saved">Zaporka (spremljena)</string>
+    <string name="setup_field_steam_id">SteamID64 ili prilagođeni naziv</string>
+    <string name="setup_field_steam_id_saved">SteamID64 ili prilagođeni naziv (spremljen)</string>
+    <string name="setup_placeholder_tap_to_replace">Odaberite za zamjenu</string>
+    <string name="setup_placeholder_secret_saved">••••••••  (odaberite za zamjenu)</string>
+    <string name="setup_placeholder_sgdb_key">Zalijepite svoj SteamGridDB ključ</string>
+    <string name="setup_placeholder_tgdb_key">Zalijepite svoj TheGamesDB ključ</string>
+    <string name="setup_placeholder_twitch_client_id">Twitch Client ID</string>
+    <string name="setup_placeholder_twitch_client_secret">Twitch Client Secret</string>
+    <string name="setup_placeholder_ss_username">Korisničko ime za ScreenScraper</string>
+    <string name="setup_placeholder_ss_password">Zaporka za ScreenScraper</string>
+    <string name="setup_placeholder_ra_username">Vaše RA korisničko ime</string>
+    <string name="setup_placeholder_ra_key">Zalijepite svoj RA Web API ključ</string>
+    <string name="setup_placeholder_steam_id">7656119… ili naziv vašeg prilagođenog URL-a</string>
+    <string name="setup_placeholder_steam_key">Zalijepite svoj Steam Web API ključ</string>
+    <string name="setup_connect_sgdb">Poveži SteamGridDB</string>
+    <string name="setup_connect_tgdb">Poveži TheGamesDB</string>
+    <string name="setup_connect_igdb">Poveži IGDB</string>
+    <string name="setup_connect_ss">Poveži ScreenScraper</string>
+    <string name="setup_connect_ra">Poveži RetroAchievements</string>
+    <string name="setup_connect_steam">Poveži Steam</string>
+    <string name="setup_test_credentials">Provjeri vjerodajnice</string>
+    <string name="setup_test_account">Provjeri račun</string>
+    <string name="setup_connected_as">Povezano kao</string>
+
+    <!-- Achievement services page -->
+    <string name="setup_achievements_intro">Neobavezno i besplatno. RetroAchievements i Steam prate postignuća kao Shiba Coins.</string>
+
+    <!-- Controller page -->
+    <string name="setup_controller_type">Vrsta kontrolera</string>
+    <string name="setup_controller_type_sub">Mijenja ikone tipki u svakoj uputi</string>
+    <string name="setup_controller_ab_swap">Zamijeni potvrdu i natrag</string>
+    <string name="setup_controller_xy_swap">Zamijeni opcije i poredak</string>
+    <string name="setup_controller_xy_swap_sub">Samo izbornici launchera — kontrole emulatora ostaju netaknute</string>
+    <string name="setup_on">Uključeno</string>
+    <string name="setup_off">Isključeno</string>
+    <string name="setup_controller_summary">%1$s · %2$s potvrđuje</string>
+    <string name="setup_button_circle">Krug</string>
+    <string name="setup_button_cross">Križić</string>
+    <string name="setup_confirm_swap_off">Isključeno — %1$s potvrđuje, %2$s vraća natrag</string>
+    <string name="setup_confirm_swap_on">Uključeno — %1$s potvrđuje, %2$s vraća natrag</string>
+
+    <!-- Local achievements page -->
+    <string name="setup_local_vita_header">PS Vita · Vita3K</string>
+    <string name="setup_local_vita_set">Postavi podatkovnu mapu Vita3K</string>
+    <string name="setup_local_vita_set_sub">Dodijelite mapu ux0 (ili mapu koja je sadrži)</string>
+    <string name="setup_local_vita_folder_sub">Podatkovna mapa Vita3K — upotrijebite ✎ za odabir druge</string>
+    <string name="setup_local_ps3_header">PS3 · ARMSX3</string>
+    <string name="setup_local_ps3_set">Postavi podatkovnu mapu ARMSX3</string>
+    <string name="setup_local_ps3_set_sub">Dodijelite PS3/config/dev_hdd0 — ili bilo koju mapu iznad ili ispod nje</string>
+    <string name="setup_local_ps3_folder_sub">Podatkovna mapa ARMSX3 — upotrijebite ✎ za odabir druge</string>
+    <string name="setup_local_x360_header">Xbox 360 · X360 Mobile</string>
+    <string name="setup_local_x360_set">Postavi podatkovnu mapu X360 Mobile</string>
+    <string name="setup_local_x360_set_sub">Odaberite X360 Mobile u bočnom izborniku odabira mape, a zatim dopustite pristup</string>
+    <string name="setup_local_x360_folder_sub">Podatkovna mapa X360 Mobile — upotrijebite ✎ za odabir druge</string>
+    <string name="setup_local_xendroid_header">Xbox 360 · XenDroid</string>
+    <string name="setup_local_xendroid_set">Postavi podatkovnu mapu XenDroid</string>
+    <string name="setup_local_xendroid_set_sub">Dodijelite Android/data/xendroid.compose — ili bilo koju mapu iznad ili ispod nje</string>
+    <string name="setup_local_xendroid_folder_sub">Podatkovna mapa XenDroid — upotrijebite ✎ za odabir druge</string>
+
+    <!-- RetroArch page -->
+    <string name="setup_retroarch_cores_folder">Mapa jezgri</string>
+    <plurals name="setup_retroarch_cores_detected">
+    <item quantity="one">Prepoznata %1$d jezgra</item>
+    <item quantity="few">Prepoznate %1$d jezgre</item>
+    <item quantity="other">Prepoznato %1$d jezgri</item>
+</plurals>
+    <string name="setup_retroarch_linked">Povezano</string>
+    <string name="setup_retroarch_relink">Ponovno poveži mapu</string>
+    <string name="setup_retroarch_relink_sub">Ponovno odaberite RetroArchovu mapu</string>
+    <string name="setup_retroarch_recheck">Ponovno provjeri jezgre</string>
+    <string name="setup_retroarch_recheck_sub">Nakon instalacije novih jezgri</string>
+    <string name="setup_retroarch_unlink">Prekini vezu s RetroArchom</string>
+    <string name="setup_retroarch_unlink_sub">Vrati se na nuđenje svih odabranih jezgri</string>
+    <string name="setup_retroarch_intro">RetroArch je instaliran. Povežite njegovu mapu kako bi se pri pokretanju igara nudile samo jezgre koje stvarno imate — inače se prikazuju sve odabrane jezgre (neprovjereno).</string>
+    <string name="setup_retroarch_link">Poveži mapu RetroArcha</string>
+    <string name="setup_retroarch_link_sub">Odaberite stablo dokumenata com.retroarch</string>
+
+    <!-- Emulators page -->
+    <string name="setup_emulators_empty">Još nema konzola s igrama. Kad se vaše mape s ROM-ovima skeniraju, svaka se konzola ovdje prikazuje s emulatorom koji će pokretati — promijenite ga bilo kada u Postavke ▸ Emulatori.</string>
+    <string name="setup_emulators_none">Ništa</string>
+
+    <!-- Windows games page -->
+    <string name="setup_windows_intro">Odaberite mapu koja sadrži jednu podmapu po igri. PFP u njoj traži vaše Windows igre; ništa se u njoj ne mijenja.</string>
+    <string name="setup_windows_detected">Prepoznato</string>
+    <string name="setup_windows_set">Postavi mapu Windows igara</string>
+    <string name="setup_windows_change">Promijeni mapu Windows igara</string>
+    <string name="setup_windows_set_sub">Dodijelite mapu u koju su instalirane vaše igre</string>
+
+    <!-- Hints and touch page -->
+    <string name="setup_hints_enabled">Savjeti za tipke</string>
+    <string name="setup_hints_enabled_sub">Savjet pri mirovanju na XMB-u, u Postavkama i na zaslonima medija</string>
+    <string name="setup_hints_delay">Odgoda savjeta</string>
+    <string name="setup_hints_delay_sub">Koliko dugo zastati prije pojave savjeta (1–5 sekundi)</string>
+    <plurals name="setup_hints_delay_seconds">
+    <item quantity="one">%1$d sekunda</item>
+    <item quantity="few">%1$d sekunde</item>
+    <item quantity="other">%1$d sekundi</item>
+</plurals>
+    <string name="setup_hints_delay_fraction">%1$s s</string>
+    <string name="setup_hints_touch">Gumb na dodir</string>
+    <string name="setup_hints_touch_sub">Gumb ladice aplikacija na zaslonu — Automatski ga prikazuje nakon što dodirnete zaslon</string>
+    <string name="setup_touch_auto">Automatski</string>
+    <string name="setup_touch_always_show">Uvijek prikaži</string>
+    <string name="setup_touch_always_hide">Uvijek sakrij</string>
+    <string name="setup_hints_summary_on">Uključeno · %1$s</string>
+
+    <!-- Home app page -->
+    <string name="setup_home_intro">Android će vas zamoliti da odaberete početnu aplikaciju i potvrdite je. Možete se vratiti bilo kada u Androidovim postavkama Zadane aplikacije.</string>
+    <string name="setup_home_current">Trenutačna početna aplikacija</string>
+    <string name="setup_home_set">Postavi kao početnu aplikaciju</string>
+    <string name="setup_home_set_sub">Otvara Androidov odabir početne aplikacije</string>
+    <string name="setup_home_is_pfp">Play Field Portal</string>
+    <string name="setup_home_not_pfp">Nije Play Field Portal</string>
+
+    <!-- Finish page -->
+    <string name="setup_finish_nothing">Još ništa nije postavljeno — svaku mapu i uslugu možete bilo kada dodati u Postavkama.</string>
+    <string name="setup_finish_summary">Sažetak</string>
+    <string name="setup_summary_controller">Kontroler</string>
+    <string name="setup_summary_rom">Biblioteka ROM-ova</string>
+    <string name="setup_summary_music">Glazba</string>
+    <string name="setup_summary_video">Video</string>
+    <string name="setup_summary_photo">Fotografije</string>
+    <string name="setup_summary_artwork">Biblioteka grafika</string>
+    <string name="setup_summary_vita">Podatkovna mapa Vite</string>
+    <string name="setup_summary_ps3">Podatkovna mapa PS3</string>
+    <string name="setup_summary_x360">Podatkovna mapa X360 Mobile</string>
+    <string name="setup_summary_xendroid">Podatkovna mapa XenDroid</string>
+    <string name="setup_summary_windows">Windows igre</string>
+    <string name="setup_summary_hints">Savjeti za tipke</string>
+    <string name="setup_summary_home">Početna aplikacija</string>
+    <string name="setup_not_set">Nije postavljeno</string>
+    <string name="setup_connected">Povezano</string>
+    <string name="setup_retroarch_not_linked">Nije povezano</string>
+    <plurals name="setup_retroarch_cores_count">
+    <item quantity="one">%1$d jezgra</item>
+    <item quantity="few">%1$d jezgre</item>
+    <item quantity="other">%1$d jezgri</item>
+</plurals>
+    <string name="setup_roots_more">%1$s +%2$d više</string>
+    <string name="setup_finish_xmb_header">Raspored XMB-a</string>
+    <string name="setup_finish_autofit">Automatski prilagodi raspored XMB-a (proporcije PSP-a) — promjenjivo bilo kada u Postavkama</string>
+    <string name="setup_finish_open_lm">Otvori Upravitelj biblioteke</string>
+    <string name="setup_finish_open_lm_sub">Dodajte konzole i skenirajte upravo postavljene mape ROM-ova</string>
+    <string name="setup_finish_go_library">Idi u biblioteku</string>
+    <string name="setup_finish_go_library_sub">Skoči ravno na Sve igre</string>
+    <string name="setup_finish_done">Završi</string>
+    <string name="setup_finish_done_sub">Idi u launcher</string>
+
+    <!-- Messages the wizard shows or sends to the notification tray -->
+    <string name="setup_status_testing">Provjera…</string>
+    <plurals name="setup_msg_rom_folders_created">
+    <item quantity="one">Stvorena je %1$d mapa konzole. Kopirajte igre u odgovarajuće mape.</item>
+    <item quantity="few">Stvorene su %1$d mape konzola. Kopirajte igre u odgovarajuće mape.</item>
+    <item quantity="other">Stvoreno je %1$d mapa konzola. Kopirajte igre u odgovarajuće mape.</item>
+</plurals>
+    <plurals name="setup_msg_rom_folders_created_existing">
+    <item quantity="one">Stvorena je %1$d mapa konzole (već postoji: %2$d). Kopirajte igre u odgovarajuće mape.</item>
+    <item quantity="few">Stvorene su %1$d mape konzola (već postoji: %2$d). Kopirajte igre u odgovarajuće mape.</item>
+    <item quantity="other">Stvoreno je %1$d mapa konzola (već postoji: %2$d). Kopirajte igre u odgovarajuće mape.</item>
+</plurals>
+    <string name="setup_msg_artwork_failed">U toj mapi nije moguće postaviti biblioteku grafika. Odaberite mapu u koju se može pisati.</string>
+    <string name="setup_msg_artwork_reconnected">Postojeća biblioteka grafika ponovno je povezana.</string>
+    <string name="setup_msg_artwork_created">Biblioteka grafika stvorena.</string>
+    <plurals name="setup_msg_artwork_games_linked">
+    <item quantity="one">%1$d igra povezana iz datoteka koje su već u mapi.</item>
+    <item quantity="few">%1$d igre povezane iz datoteka koje su već u mapi.</item>
+    <item quantity="other">%1$d igara povezano iz datoteka koje su već u mapi.</item>
+</plurals>
+    <string name="setup_msg_artwork_import_hint">Stavite medije drugih launchera u njezinu mapu import/ kako biste ih skupili ovdje.</string>
+    <string name="setup_msg_import_none_yet">Još nema ničega za uvoz — stavite datoteke u direktorij import/ mape s grafikama.</string>
+    <string name="setup_msg_import_unreadable">Taj izvor uvoza nije moguće pročitati.</string>
+    <string name="setup_msg_import_empty">Nema ničega za uvoz — sve već postoji.</string>
+    <string name="setup_msg_import_started">Uvoz \"%1$s\" — napredak se prikazuje u obavijestima; pojedinosti su u Postavke ▸ Uvoz grafika.</string>
+    <string name="setup_msg_retroarch_linked">RetroArch povezan — instalirane jezgre sada se nude u Emulatorima.</string>
+    <string name="setup_msg_retroarch_rechecked">RetroArch jezgre ponovno provjerene.</string>
+    <string name="setup_msg_retroarch_unlinked">Veza s RetroArchom uklonjena — RetroArch jezgre neće se nuditi dok ga ponovno ne povežete.</string>
+    <string name="setup_msg_vita_set">Podatkovna mapa Vita3K postavljena. Instalirani naslovi mogu se skenirati s memorijske kartice PS Vita u Upravitelju biblioteke.</string>
+    <string name="setup_msg_vita_released">Podatkovna mapa Vita3K otpuštena — datoteke na disku nisu dirane.</string>
+    <string name="setup_msg_ps3_set">Podatkovna mapa PS3 postavljena. Pokrenite Automatsko povezivanje u Postavke ▸ Postignuća ▸ Ažuriraj postignuća kako biste povezali PS3 trofeje.</string>
+    <string name="setup_msg_ps3_released">Podatkovna mapa PS3 otpuštena — datoteke na disku nisu dirane.</string>
+    <string name="setup_msg_x360_set">Podatkovna mapa %1$s postavljena. Pokrenite Automatsko povezivanje u Postavke ▸ Postignuća ▸ Ažuriraj postignuća kako biste povezali Xbox 360 postignuća.</string>
+    <string name="setup_msg_x360_released">Podatkovna mapa %1$s otpuštena — datoteke na disku nisu dirane.</string>
+    <string name="setup_msg_sgdb_connected">SteamGridDB povezan</string>
+    <string name="setup_msg_tgdb_connected">TheGamesDB povezan</string>
+    <string name="setup_msg_igdb_connected">IGDB povezan</string>
+    <string name="setup_msg_ss_connected">ScreenScraper povezan</string>
+    <string name="setup_msg_ra_connected">RetroAchievements povezan</string>
+
+    <!-- ROM root scan report (also shown by Library Manager) -->
+    <string name="setup_rom_scan_no_root">Najprije dodajte mapu ROM-ova u Postavke ▸ Biblioteka ▸ Upravitelj biblioteke.</string>
+    <string name="setup_rom_scan_none">Skenirano: %1$s (%2$s); nisu pronađeni novi ROM-ovi. Kopirajte igre u odgovarajuće mape sustava i pokušajte ponovno.</string>
+    <string name="setup_rom_scan_loaded">Učitano: %1$s, %2$s (%3$s).</string>
+    <string name="setup_rom_scan_systems_new">%1$s (%2$s)</string>
+    <plurals name="setup_rom_scan_folders">
+    <item quantity="one">%1$d mapa</item>
+    <item quantity="few">%1$d mape</item>
+    <item quantity="other">%1$d mapa</item>
+</plurals>
+    <plurals name="setup_rom_scan_systems">
+    <item quantity="one">%1$d sustav</item>
+    <item quantity="few">%1$d sustava</item>
+    <item quantity="other">%1$d sustava</item>
+</plurals>
+    <plurals name="setup_rom_scan_new_consoles">
+    <item quantity="one">%1$d nova konzola</item>
+    <item quantity="few">%1$d nove konzole</item>
+    <item quantity="other">%1$d novih konzola</item>
+</plurals>
+    <plurals name="setup_rom_scan_roms">
+    <item quantity="one">%1$d ROM</item>
+    <item quantity="few">%1$d ROM-a</item>
+    <item quantity="other">%1$d ROM-ova</item>
+</plurals>
+    <plurals name="setup_rom_scan_roots">
+    <item quantity="one">%1$d mapa ROM-ova</item>
+    <item quantity="few">%1$d mape ROM-ova</item>
+    <item quantity="other">%1$d mapa ROM-ova</item>
+</plurals>
+    <plurals name="setup_rom_scan_skipped">
+    <item quantity="one">%1$d mapa preskočena (biblioteka nije čitljiva).</item>
+    <item quantity="few">%1$d mape preskočene (biblioteka nije čitljiva).</item>
+    <item quantity="other">%1$d mapa preskočeno (biblioteka nije čitljiva).</item>
+</plurals>
+
+    <!-- Media library scans started by the wizard and Settings -->
+    <string name="setup_media_add_root_first">Najprije dodajte korijensku mapu.</string>
+    <string name="setup_media_not_ready">Pohrana ove mape još nije spremna. Pokušajte ponovno za trenutak.</string>
+    <string name="setup_media_scan_failed_title">Skeniranje nije uspjelo: %1$s</string>
+    <string name="setup_media_scan_finished_title">Skeniranje završeno: %1$s</string>
+    <string name="setup_media_scan_stopped_title">Skeniranje zaustavljeno: %1$s</string>
+    <string name="setup_media_scanning_title">Skeniranje: %1$s</string>
+    <string name="setup_media_stop_note">Mapa će se ponovno skenirati sljedeći put.</string>
+    <string name="setup_media_stopped">Zaustavljeno prije završetka</string>
+    <plurals name="setup_media_tracks">
+    <item quantity="one">%1$d pjesma</item>
+    <item quantity="few">%1$d pjesme</item>
+    <item quantity="other">%1$d pjesama</item>
+</plurals>
+    <plurals name="setup_media_photos">
+    <item quantity="one">%1$d fotografija</item>
+    <item quantity="few">%1$d fotografije</item>
+    <item quantity="other">%1$d fotografija</item>
+</plurals>
+    <plurals name="setup_media_videos">
+    <item quantity="one">%1$d videozapis</item>
+    <item quantity="few">%1$d videozapisa</item>
+    <item quantity="other">%1$d videozapisa</item>
+</plurals>
+    <plurals name="setup_media_roots">
+    <item quantity="one">%1$d korijenska mapa</item>
+    <item quantity="few">%1$d korijenske mape</item>
+    <item quantity="other">%1$d korijenskih mapa</item>
+</plurals>
+    <string name="setup_media_found">Pronađeno: %1$s (%2$s).</string>
+</resources>

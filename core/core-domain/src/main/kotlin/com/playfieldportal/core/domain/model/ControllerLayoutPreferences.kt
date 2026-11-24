@@ -72,4 +72,7 @@ data class ControllerLayoutPrefs(
     // Controller-started text entry opens PFP's own on-screen keyboard; touch always gets the
     // system keyboard. Defaults ON, read from an absent key.
     val virtualKeyboard: Boolean               = true,
+    // A light tick on each menu step and a firmer one on confirm, on the device and on a controller
+    // that reports a vibrator. Defaults OFF, read from an absent key.
+    val hapticFeedback: Boolean                = false,
 )

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Configurações</string>
+    <string name="sound_title">Som</string>
+    <string name="sound_group_master">Geral</string>
+    <string name="sound_group_levels">Níveis</string>
+    <string name="sound_group_sounds">Sons</string>
+    <string name="sound_master_volume">Volume geral</string>
+    <string name="sound_master_volume_help">Ajusta todos os sons do launcher. Em 0, o launcher fica mudo.</string>
+    <string name="sound_ambience_help">Repete enquanto você navega. OGG repete sem cortes; MP3 pode dar um estalo.</string>
+    <string name="sound_rejected_title">Não foi possível usar esse som</string>
+    <string name="sound_reset_confirm_title">Restaurar o som para os padrões?</string>
+    <string name="sound_reset_confirm_message">Cada som do menu volta para a amostra PFP incluída e cada nível, inclusive o geral, volta ao máximo. Sua faixa de ambiente e as mídias de Boot Video e Game Boot não são afetadas.</string>
+    <string name="sound_reset_confirm_action">Restaurar</string>
+    <string name="sound_reset_row">Restaurar som para os padrões</string>
+    <string name="sound_reset_row_help">Volta cada som do menu para a amostra PFP incluída e cada nível ao máximo. Mantém sua faixa de ambiente.</string>
+    <string name="sound_channel_navigation">Navegação</string>
+    <string name="sound_channel_back">Voltar / Cancelar</string>
+    <string name="sound_channel_confirm">Confirmar / Aplicar</string>
+    <string name="sound_channel_error">Erro / Inválido</string>
+    <string name="sound_channel_notification">Notificação</string>
+    <string name="sound_channel_boot">Sequência de inicialização</string>
+    <string name="sound_channel_ambience">Ambiente</string>
+    <string name="sound_slot_navigation">Navegação</string>
+    <string name="sound_slot_back">Voltar / Cancelar</string>
+    <string name="sound_slot_confirm">Confirmar / Aplicar</string>
+    <string name="sound_slot_error">Erro / Inválido</string>
+    <string name="sound_slot_notification">Notificação</string>
+    <string name="sound_slot_ambience">Faixa de ambiente</string>
+</resources>

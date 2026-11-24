@@ -7,6 +7,7 @@ import android.os.Build
 import android.util.DisplayMetrics
 import android.view.WindowManager
 import androidx.datastore.preferences.core.edit
+import com.playfieldportal.core.data.R
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -71,13 +72,13 @@ class LockScreenImage(
     suspend fun set(bytes: ByteArray, source: Source): Result = withContext(Dispatchers.IO) {
         val target = maxOf(system.screenWidth, system.screenHeight).takeIf { it > 0 } ?: MAX_EDGE
         val decoded = SafeMedia.decodeBitmapCapped(bytes, targetDimension = target)
-            ?: return@withContext Result.Failed(UNREADABLE)
+            ?: return@withContext Result.Failed(context.getString(R.string.data_lockscreen_unreadable))
         val crop = centerCrop(decoded.width, decoded.height, system.screenWidth, system.screenHeight)
         val cropped = runCatching {
             Bitmap.createBitmap(decoded, crop.left, crop.top, crop.width, crop.height)
-        }.getOrNull() ?: return@withContext Result.Failed(UNREADABLE)
+        }.getOrNull() ?: return@withContext Result.Failed(context.getString(R.string.data_lockscreen_unreadable))
         if (!runCatching { system.setLock(cropped) }.getOrDefault(false)) {
-            return@withContext Result.Failed("This device did not accept a lock screen image")
+            return@withContext Result.Failed(context.getString(R.string.data_lockscreen_rejected))
         }
 
         val dir = File(context.filesDir, DIR).apply { mkdirs() }
@@ -95,7 +96,7 @@ class LockScreenImage(
     /** [set] from a file on disk (the launcher's own wallpaper poster, a photo, a theme's image). */
     suspend fun setFromFile(path: String, source: Source): Result = withContext(Dispatchers.IO) {
         val bytes = runCatching { File(path).readBytes() }.getOrNull()
-            ?: return@withContext Result.Failed(UNREADABLE)
+            ?: return@withContext Result.Failed(context.getString(R.string.data_lockscreen_unreadable))
         set(bytes, source)
     }
 
@@ -150,7 +151,6 @@ class LockScreenImage(
         /** Its own folder under filesDir: carried by backups, never swept with the wallpaper folder. */
         const val DIR = "lockscreen"
         private const val MAX_EDGE = 2560
-        private const val UNREADABLE = "That image could not be read"
 
         /** The centred region of a [srcW]×[srcH] image with the screen's shape; the whole image when the screen is unknown. */
         fun centerCrop(srcW: Int, srcH: Int, dstW: Int, dstH: Int): Crop {

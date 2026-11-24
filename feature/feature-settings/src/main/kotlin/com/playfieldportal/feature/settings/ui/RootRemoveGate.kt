@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.feature.settings.R
+import android.content.res.Resources
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,7 +17,7 @@ import com.playfieldportal.core.ui.components.PfpModalSpec
  * this gate instead: [request] holds the removal, [spec] is the question, and only its Confirm runs
  * it. One gate per screen; a screen shows [spec] through its modal host.
  */
-internal class RootRemoveGate {
+internal class RootRemoveGate(private val resources: Resources) {
 
     private class Pending(val name: String, val remove: () -> Unit)
 
@@ -31,10 +33,9 @@ internal class RootRemoveGate {
         get() = pending?.let { asked ->
             PfpModalSpec.Confirm(
                 key = "remove_root:${asked.name}",
-                title = "Remove this folder?",
-                message = "PFP will stop using \"${asked.name}\", and what it found there leaves the library. " +
-                    "No files are deleted from your storage.",
-                confirmLabel = "Remove",
+                title = resources.getString(R.string.sets_root_remove_title),
+                message = resources.getString(R.string.sets_root_remove_message, asked.name),
+                confirmLabel = resources.getString(R.string.sets_root_remove_confirm),
                 // Destructive: red Confirm, and the modal opens on Cancel so a double press is harmless.
                 destructive = true,
                 onConfirm = { pending = null; asked.remove() },
@@ -44,4 +45,7 @@ internal class RootRemoveGate {
 }
 
 @Composable
-internal fun rememberRootRemoveGate(): RootRemoveGate = remember { RootRemoveGate() }
+internal fun rememberRootRemoveGate(): RootRemoveGate {
+    val resources = rememberSettingsResources()
+    return remember(resources) { RootRemoveGate(resources) }
+}

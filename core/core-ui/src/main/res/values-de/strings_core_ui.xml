@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Localization slice G1: core-ui shared components -->
+<resources>
+
+    <!-- Shared button and prompt labels -->
+    <string name="core_cancel">Abbrechen</string>
+    <string name="core_ok">OK</string>
+    <string name="core_save">Speichern</string>
+    <string name="core_apply">Anwenden</string>
+    <string name="core_select">Auswählen</string>
+    <string name="core_close">Schließen</string>
+    <string name="core_back">Zurück</string>
+
+    <!-- Modals (text entry) -->
+    <string name="core_modal_name_label">Name</string>
+    <string name="core_modal_counter">%1$d / %2$d</string>
+
+    <!-- Convert-to-achievement-tracking picker -->
+    <string name="core_steam_convert_title">Errungenschafts-Tracking installieren?</string>
+    <string name="core_steam_convert_selected_count">%1$d von %2$d</string>
+    <string name="core_steam_convert_found_count">%1$d gefunden</string>
+    <string name="core_steam_convert_hints">"Hoch/Runter  Zeilen  •  Select  Umschalten  •  △  Alle/Keine  •  Start  Installieren  •  B  Abbrechen"</string>
+    <string name="core_steam_convert_loading">Errungenschaftsliste jedes Spiels wird von Steam gelesen…</string>
+    <string name="core_steam_convert_install">Installieren (%1$d)</string>
+    <string name="core_steam_convert_none">Keine</string>
+    <string name="core_steam_convert_all">Alle</string>
+    <string name="core_steam_convert_skip_sync">Überspringen &amp; Synchronisieren</string>
+    <string name="core_steam_convert_write_notice">In den Ordner jedes ausgewählten Spiels schreibt PFP achievements.json, stats.json und configs.user.ini, legt einen saves-Ordner an und benennt steam_api64.dll in steam_api64_o.dll um, damit der mitgelieferte Emulator darüber geladen werden kann.</string>
+    <string name="core_steam_convert_backup_warning">Sichere die Speicherdateien aller Spiele, die du bereits gespielt hast, bevor du sie konvertierst – der Emulator liest danach vom neuen Speicherort.</string>
+
+    <!-- Shiba player card -->
+    <string name="core_shiba_xp">%1$s XP</string>
+    <string name="core_shiba_progress_next_bone">%1$s / %2$s bis zum nächsten Knochen</string>
+    <string name="core_shiba_progress_next_level">%1$s / %2$s bis Level %3$d</string>
+    <string name="core_shiba_level_abbrev">LV</string>
+
+    <!-- Colour picker -->
+    <string name="core_hsv_hex">Hex</string>
+    <string name="core_hsv_hue">Farbton</string>
+    <string name="core_hsv_saturation">Sättigung</string>
+    <string name="core_hsv_brightness">Helligkeit</string>
+    <string name="core_hsv_hint_move">Bewegen</string>
+    <string name="core_hsv_hint_type_hex">Hex eingeben</string>
+    <string name="core_hsv_hint_adjust">Anpassen</string>
+    <string name="core_hsv_sample_text">Beispieltext</string>
+    <string name="core_color_default">Standard</string>
+    <string name="core_color_pink">Pink</string>
+    <string name="core_color_gold">Gold</string>
+    <string name="core_color_aqua">Aqua</string>
+    <string name="core_color_sky_blue">Himmelblau</string>
+    <string name="core_color_green">Grün</string>
+    <string name="core_color_coral">Koralle</string>
+    <string name="core_color_slate">Schiefer</string>
+    <string name="core_color_custom">Eigene</string>
+
+    <!-- Notification detail sheets -->
+    <string name="core_sheet_copied">Kopiert</string>
+    <string name="core_sheet_copy_details">Details kopieren</string>
+    <string name="core_sheet_copy_list">Liste kopieren</string>
+    <string name="core_sheet_filter">Filter</string>
+    <string name="core_sheet_what_happened">Was ist passiert</string>
+    <string name="core_sheet_diagnostic_open">"▾  Diagnosedetails"</string>
+    <string name="core_sheet_diagnostic_closed">"▸  Diagnosedetails"</string>
+    <string name="core_sheet_diagnostic_heading">Diagnose</string>
+    <string name="core_sheet_summary_chip">%1$d %2$s</string>
+    <string name="core_sheet_filter_all">Alle</string>
+    <string name="core_sheet_more">+%1$d weitere</string>
+    <string name="core_sheet_what_you_can_do">Was du tun kannst</string>
+
+    <!-- On-screen keyboard -->
+    <string name="core_vk_prompt_type">Tippen</string>
+    <string name="core_vk_prompt_delete">Löschen</string>
+    <string name="core_vk_prompt_cursor">Cursor</string>
+    <string name="core_vk_prompt_caps">Feststell.</string>
+    <string name="core_vk_key_space">Leertaste</string>
+    <string name="core_vk_key_shift">Umschalt</string>
+    <string name="core_vk_key_backspace">Rücktaste</string>
+    <string name="core_vk_key_done">Fertig</string>
+    <string name="core_vk_shift_off">Aus</string>
+    <string name="core_vk_shift_once">Ein für den nächsten Buchstaben</string>
+    <string name="core_vk_shift_held">Ein, solange gedrückt</string>
+    <string name="core_vk_shift_locked">Feststelltaste ein</string>
+
+    <!-- Background tasks -->
+    <string name="core_task_failed">Aufgabe fehlgeschlagen</string>
+    <string name="core_task_done">Fertig</string>
+
+    <!-- Detail screens -->
+    <string name="core_detail_favorite_badge">FAVORIT</string>
+    <string name="core_detail_video_badge">VIDEO</string>
+    <string name="core_detail_confirm_collapse">Bestätigen zum Einklappen</string>
+    <string name="core_detail_confirm_read_more">Bestätigen für mehr</string>
+
+    <!-- Rotate-to-landscape prompt -->
+    <string name="core_rotate_title">Ins Querformat drehen</string>
+    <string name="core_rotate_message">PlayField Portal läuft im Querformat. Drehe dein Gerät seitlich, um fortzufahren.</string>
+    <string name="core_rotate_switch_launcher">Launcher wechseln</string>
+</resources>

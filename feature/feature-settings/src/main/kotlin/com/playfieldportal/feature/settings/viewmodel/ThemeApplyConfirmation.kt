@@ -1,6 +1,8 @@
 package com.playfieldportal.feature.settings.viewmodel
 
 import com.playfieldportal.core.domain.model.UiMediaSlot
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.themekit.CustomizableIcons
 
 /**
@@ -29,7 +31,7 @@ data class ThemeApplyConfirmation(
      */
     val offersLockScreen: Boolean = false,
 ) {
-    val title: String get() = "Apply \"$themeName\"?"
+    val title: UiText get() = UiText.res(R.string.setd_apply_theme_title, themeName)
 
     private val replacesAnything: Boolean get() = replace.isNotEmpty() || replaceIcons.isNotEmpty()
 
@@ -37,37 +39,43 @@ data class ThemeApplyConfirmation(
     val hasChoices: Boolean get() = replacesAnything || turnOnGameBoot || turnOnBoot
 
     /** The choice to make, in [USE_THEMES] / [APPLY_ONLY] order; empty when there is none. */
-    val options: List<String>
+    val options: List<UiText>
         get() = when {
-            replacesAnything -> listOf("Use the Theme's", "Keep Mine")
-            hasChoices -> listOf("Turn On", "Leave Off")
+            replacesAnything -> listOf(UiText.res(R.string.setd_apply_use_themes), UiText.res(R.string.setd_apply_keep_mine))
+            hasChoices -> listOf(UiText.res(R.string.setd_apply_turn_on), UiText.res(R.string.setd_apply_leave_off))
             else -> emptyList()
         }
 
-    val applyLabel: String get() = "Apply"
+    val applyLabel: UiText get() = UiText.res(R.string.setd_apply)
 
-    val cancelLabel: String get() = "Cancel"
+    val cancelLabel: UiText get() = UiText.res(R.string.setd_cancel)
 
-    val message: String
-        get() = buildList {
-            add(BASE_MESSAGE)
-            if (replaceIcons.isNotEmpty()) {
-                add(
-                    "This theme has its own icons for " +
-                        replaceIcons.joinToString(", ") { CustomizableIcons.byKey(it)?.displayName ?: it } +
-                        ", but yours are set and show instead. Use the theme's? Yours are removed for these.",
-                )
-            }
-            if (replace.isNotEmpty()) {
-                add(
-                    "This theme has its own " + replace.joinToString(", ") { UiMediaRowText.slotName(it) } +
-                        ", but yours is set and plays instead. Use the theme's? Yours are removed for these.",
-                )
-            }
-            if (turnOnBoot) add("Boot Sequence is off — turn it on to play the theme's Boot Video.")
-            if (turnOnGameBoot) add("GameBoot is off — turn it on to play the theme's GameBoot Video.")
-            if (offersLockScreen) add("It also has a lock screen image — you'll be asked about it after applying.")
-        }.joinToString("\n\n")
+    val message: UiText
+        get() = UiText.Joined(
+            buildList<UiText> {
+                add(BASE_MESSAGE)
+                if (replaceIcons.isNotEmpty()) {
+                    add(
+                        UiText.res(
+                            R.string.setd_apply_replace_icons,
+                            UiText.Joined(replaceIcons.map { UiText.raw(CustomizableIcons.byKey(it)?.displayName ?: it) }, ", "),
+                        ),
+                    )
+                }
+                if (replace.isNotEmpty()) {
+                    add(
+                        UiText.res(
+                            R.string.setd_apply_replace_media,
+                            UiText.Joined(replace.map { UiMediaRowText.slotName(it) }, ", "),
+                        ),
+                    )
+                }
+                if (turnOnBoot) add(UiText.res(R.string.setd_apply_boot_off))
+                if (turnOnGameBoot) add(UiText.res(R.string.setd_apply_gameboot_off))
+                if (offersLockScreen) add(UiText.res(R.string.setd_apply_lock_screen))
+            },
+            "\n\n",
+        )
 
     companion object {
         /** [options] index: apply, replacing and switching on what the theme needs. */
@@ -76,7 +84,7 @@ data class ThemeApplyConfirmation(
         /** [options] index: apply and change nothing else. */
         const val APPLY_ONLY = 1
 
-        const val BASE_MESSAGE = "This changes the launcher's colors, icons and background."
+        val BASE_MESSAGE: UiText = UiText.res(R.string.setd_apply_base_message)
 
         /**
          * The confirmation for theme [themeId], from what the theme carries ([themeMedia],

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared -->
+    <string name="art_error_unexpected">Oväntat fel</string>
+    <string name="art_no_folder_linked">Ingen grafikmapp är länkad</string>
+    <string name="art_paused_message">Grafiken har pausats. Länka grafikmappen igen för att spara ny grafik.</string>
+    <string name="art_error_game_not_found">Spelet hittades inte</string>
+    <string name="art_error_not_found_any_source">Hittades inte i någon källa</string>
+    <string name="art_found_via">Hittades via %1$s</string>
+    <string name="art_results_label_updated">Uppdaterat</string>
+    <string name="art_results_label_imported">Importerat</string>
+    <string name="art_progress_hashing">Beräknar hash för ROM …</string>
+    <string name="art_progress_searching">Söker …</string>
+    <string name="art_asset_hero">Hero</string>
+    <string name="art_asset_background">Bakgrund</string>
+    <string name="art_asset_logo">Logotyp</string>
+    <string name="art_asset_box_art">Omslag</string>
+    <string name="art_asset_physical_media">Fysiskt medium</string>
+    <string name="art_asset_3d_box">3D-omslag</string>
+    <string name="art_asset_screenshot">Skärmbild</string>
+    <string name="art_asset_manual">Manual</string>
+    <string name="art_asset_video">Video</string>
+    <string name="art_asset_icon_video">Ikonvideo</string>
+    <string name="art_asset_icon_video_converting">Ikonvideo (konverteras)</string>
+    <string name="art_source_storefronts">Butiker</string>
+    <!-- Metadata fields -->
+    <string name="art_field_title">Titel</string>
+    <string name="art_field_description">Beskrivning</string>
+    <string name="art_field_developer">Utvecklare</string>
+    <string name="art_field_publisher">Utgivare</string>
+    <string name="art_field_year">År</string>
+    <string name="art_field_release_date">Releasedatum</string>
+    <string name="art_field_genre">Genre</string>
+    <string name="art_field_age_rating">Åldersgräns</string>
+    <string name="art_field_franchise">Serie</string>
+    <string name="art_field_rating">Betyg</string>
+    <!-- Ways to apply scraped metadata -->
+    <string name="art_policy_replace_all">Ersätt allt</string>
+    <string name="art_policy_fill_missing">Fyll bara i saknade</string>
+    <string name="art_policy_choose_fields">Välj fält</string>
+    <string name="art_policy_keep_current">Behåll nuvarande</string>
+    <!-- Scrape (background task) -->
+    <string name="art_scrape_label_all">Hämtar om grafik för alla spel</string>
+    <string name="art_scrape_label_missing">Hämtar saknad grafik</string>
+    <string name="art_scrape_stop_note">Grafik som redan har hämtats behålls.</string>
+    <string name="art_scrape_paused_all_title">Omhämtningen av grafik har pausats</string>
+    <string name="art_scrape_paused_title">Hämtningen av grafik har pausats</string>
+    <string name="art_scrape_finished_all_title">Omhämtningen av grafik är klar</string>
+    <string name="art_scrape_finished_title">Hämtningen av grafik är klar</string>
+    <string name="art_scrape_stopped_title">Hämtningen av grafik stoppades</string>
+    <string name="art_scrape_failed_title">Hämtningen av grafik misslyckades</string>
+    <string name="art_scrape_result">%1$d lyckades, %2$d misslyckades av %3$d</string>
+    <plurals name="art_scrape_stopped_after">
+        <item quantity="one">Stoppades efter %1$d spel – grafik som hämtats hittills behålls</item>
+        <item quantity="other">Stoppades efter %1$d spel – grafik som hämtats hittills behålls</item>
+    </plurals>
+    <!-- Relink (background task) -->
+    <string name="art_relink_label">Länkar om grafik</string>
+    <plurals name="art_relink_label_consoles">
+        <item quantity="one">Länkar om grafik för %1$d konsol</item>
+        <item quantity="other">Länkar om grafik för %1$d konsoler</item>
+    </plurals>
+    <string name="art_relink_stop_note">Grafik som redan är länkad förblir länkad.</string>
+    <string name="art_relink_finished_title">Omlänkningen av grafik är klar</string>
+    <string name="art_relink_stopped_title">Omlänkningen av grafik stoppades</string>
+    <string name="art_relink_stopped_note">Grafik som länkats hittills behålls</string>
+    <string name="art_relink_failed_title">Omlänkningen av grafik misslyckades</string>
+    <plurals name="art_relink_games_linked">
+        <item quantity="one">%1$d spel länkat</item>
+        <item quantity="other">%1$d spel länkade</item>
+    </plurals>
+    <plurals name="art_relink_files">
+        <item quantity="one">%1$d fil</item>
+        <item quantity="other">%1$d filer</item>
+    </plurals>
+    <string name="art_relink_result">%1$s av %2$s</string>
+    <string name="art_relink_result_unmatched">%1$s · %2$d omatchade</string>
+    <!-- Export to ES-DE (background task) -->
+    <string name="art_export_label">Exporterar grafik för ES-DE</string>
+    <string name="art_export_stop_note">Filer som redan har exporterats ligger kvar.</string>
+    <string name="art_export_error_no_destination">Ingen målmapp</string>
+    <string name="art_export_error_access_lost">Åtkomsten till grafikmappen förlorades</string>
+    <string name="art_export_dest_not_created">Målmappen kunde inte skapas.</string>
+    <plurals name="art_export_files_badge">
+        <item quantity="one">%1$d fil</item>
+        <item quantity="other">%1$d filer</item>
+    </plurals>
+    <string name="art_export_failed_title">Exporten av grafik misslyckades</string>
+    <string name="art_export_stopped_title">Exporten av grafik stoppades</string>
+    <string name="art_export_finished_title">Exporten av grafik är klar</string>
+    <plurals name="art_export_stopped_note">
+        <item quantity="one">%1$d fil exporterades först</item>
+        <item quantity="other">%1$d filer exporterades först</item>
+    </plurals>
+    <string name="art_export_result">%1$d kopierade, %2$d fanns redan, %3$d misslyckades</string>
+    <!-- Import (background task and its notification) -->
+    <string name="art_import_plan_not_found">Importplanen hittades inte</string>
+    <string name="art_import_plan_unreadable">Importplanen kan inte läsas</string>
+    <string name="art_import_label">Importerar grafik – %1$s</string>
+    <string name="art_import_stop_note">Grafik som redan har importerats behålls.</string>
+    <string name="art_import_failed_title">Importen av grafik misslyckades</string>
+    <string name="art_import_cancelled">Importen av grafik avbröts</string>
+    <string name="art_import_done">Grafiken har importerats</string>
+    <plurals name="art_import_needs_review">
+        <item quantity="one">Grafiken har importerats, %1$d objekt behöver granskas</item>
+        <item quantity="other">Grafiken har importerats, %1$d objekt behöver granskas</item>
+    </plurals>
+    <string name="art_import_headline">%1$s: %2$s</string>
+    <string name="art_import_counts">%1$d importerade, %2$d överhoppade, %3$d misslyckades, %4$d tvetydiga, %5$d omatchade.</string>
+    <string name="art_import_results_summary">%1$d importerade, %2$d överhoppade</string>
+    <!-- Move artwork into the linked folder (background task) -->
+    <string name="art_move_label">Flyttar grafik till din mapp</string>
+    <string name="art_move_failed_title">Flytten av grafik misslyckades</string>
+    <string name="art_move_stopped_title">Flytten av grafik stoppades</string>
+    <string name="art_move_finished_title">Flytten av grafik är klar</string>
+    <plurals name="art_move_stopped_note">
+        <item quantity="one">%1$d fil flyttades först</item>
+        <item quantity="other">%1$d filer flyttades först</item>
+    </plurals>
+    <string name="art_move_result">%1$d flyttade, %2$d fanns redan, %3$d misslyckades</string>
+</resources>

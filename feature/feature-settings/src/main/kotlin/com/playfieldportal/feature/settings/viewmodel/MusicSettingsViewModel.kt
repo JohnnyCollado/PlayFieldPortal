@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import com.playfieldportal.feature.settings.R
+import com.playfieldportal.core.domain.text.UiText
 import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
@@ -30,16 +32,16 @@ data class MusicSettingsUiState(
     val defaultPlayer: String? = null,
     val availablePlayers: List<MusicPlayerApp> = emptyList(),
     val scanning: Boolean = false,
-    val scanMessage: String? = null,
+    val scanMessage: UiText? = null,
     val showPlayerPicker: Boolean = false,
 ) {
     val hasRoots: Boolean get() = roots.isNotEmpty()
 
-    val defaultPlayerLabel: String
+    val defaultPlayerLabel: UiText
         get() = when (defaultPlayer) {
-            MusicIntentResolver.BUILTIN -> "Play Field Portal"
-            null -> "System Default"
-            else -> availablePlayers.firstOrNull { it.packageName == defaultPlayer }?.label ?: defaultPlayer
+            MusicIntentResolver.BUILTIN -> UiText.res(R.string.sets_player_builtin)
+            null -> UiText.res(R.string.sets_player_system_default)
+            else -> UiText.raw(availablePlayers.firstOrNull { it.packageName == defaultPlayer }?.label ?: defaultPlayer)
         }
 }
 
@@ -116,11 +118,11 @@ class MusicSettingsViewModel @Inject constructor(
      */
     fun rescan() {
         viewModelScope.launch {
-            _ui.update { it.copy(scanning = true, scanMessage = "Scanning…") }
+            _ui.update { it.copy(scanning = true, scanMessage = UiText.res(R.string.sets_scanning)) }
             val message = scanRunner.scanAllRoots(MediaRootKind.MUSIC, force = true) { progress ->
-                _ui.update { it.copy(scanMessage = progress) }
+                _ui.update { it.copy(scanMessage = UiText.raw(progress)) }
             }
-            _ui.update { it.copy(scanning = false, scanMessage = message) }
+            _ui.update { it.copy(scanning = false, scanMessage = UiText.raw(message)) }
         }
     }
 
@@ -145,5 +147,5 @@ class MusicSettingsViewModel @Inject constructor(
         runCatching { DocumentFile.fromTreeUri(context, Uri.parse(treeUri))?.name }.getOrNull()
             ?.takeIf { it.isNotBlank() }
             ?: Uri.parse(treeUri).lastPathSegment?.substringAfterLast('/')?.substringAfterLast(':')
-            ?: "Music"
+            ?: context.getString(R.string.sets_root_fallback_music)
 }

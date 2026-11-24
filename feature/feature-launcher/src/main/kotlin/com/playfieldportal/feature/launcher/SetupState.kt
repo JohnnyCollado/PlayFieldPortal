@@ -2,6 +2,7 @@ package com.playfieldportal.feature.launcher
 
 import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.data.repository.RomRootRepository
+import com.playfieldportal.core.domain.text.UiText
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -17,21 +18,21 @@ import javax.inject.Singleton
  * console Memory Card (scans need somewhere to land), then an emulator (games would launch into
  * nothing). [firstGap] names the one thing to fix next; [isPlayable] installs are done.
  */
-enum class SetupGap(val repairScreenId: String, val message: String) {
+enum class SetupGap(val repairScreenId: String, val message: UiText) {
     NO_ROM_ROOT(
         repairScreenId = "settings_library",
-        message = "Add a ROM folder to start your library",
+        message = UiText.res(R.string.launch_setup_add_rom_folder),
     ),
     NO_CONSOLES(
         repairScreenId = "settings_library",
-        message = "Add a console Memory Card to scan into",
+        message = UiText.res(R.string.launch_setup_add_console_card),
     ),
     NO_EMULATORS(
         repairScreenId = "settings_emulators",
-        message = "Install an emulator to play your games",
+        message = UiText.res(R.string.launch_setup_install_emulator),
     ),
     /** Everything needed is in place — the library can actually launch a game. */
-    NONE(repairScreenId = "", message = ""),
+    NONE(repairScreenId = "", message = UiText.raw("")),
 }
 
 /**

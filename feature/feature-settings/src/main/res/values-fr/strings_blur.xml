@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blur_title">Flou d\'arrière-plan</string>
+    <string name="blur_sublabel">Intensité du flou de l\'écran derrière les messages et le menu des options. Réglez-le sur zéro pour le désactiver.</string>
+    <string name="blur_unavailable">Nécessite Android 12 ou version ultérieure.</string>
+</resources>

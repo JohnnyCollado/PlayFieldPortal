@@ -3,6 +3,7 @@ package com.playfieldportal.feature.artwork.match
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.domain.model.MetadataOverrides
 import com.playfieldportal.feature.artwork.MetadataCandidates
+import com.playfieldportal.feature.artwork.R
 
 /**
  * C16 task 3.2 — Current-vs-Incoming metadata, and the four ways to apply it.
@@ -13,31 +14,31 @@ import com.playfieldportal.feature.artwork.MetadataCandidates
  */
 
 /** One text field a [MetadataPreset] can carry, in preview order. `players` stays out (Non-Goals). */
-enum class MetadataField(val label: String) {
-    TITLE("Title"),
-    DESCRIPTION("Description"),
-    DEVELOPER("Developer"),
-    PUBLISHER("Publisher"),
-    RELEASE_YEAR("Year"),
-    RELEASE_DATE("Release Date"),
-    GENRE("Genre"),
-    AGE_RATING("Age Rating"),
-    FRANCHISE("Franchise"),
-    COMMUNITY_RATING("Rating"),
+enum class MetadataField(val labelRes: Int) {
+    TITLE(R.string.art_field_title),
+    DESCRIPTION(R.string.art_field_description),
+    DEVELOPER(R.string.art_field_developer),
+    PUBLISHER(R.string.art_field_publisher),
+    RELEASE_YEAR(R.string.art_field_year),
+    RELEASE_DATE(R.string.art_field_release_date),
+    GENRE(R.string.art_field_genre),
+    AGE_RATING(R.string.art_field_age_rating),
+    FRANCHISE(R.string.art_field_franchise),
+    COMMUNITY_RATING(R.string.art_field_rating),
 }
 
-enum class MetadataApplyPolicy(val label: String) {
+enum class MetadataApplyPolicy(val labelRes: Int) {
     /** Every incoming value that differs overwrites the current one. A blank never clears. */
-    REPLACE_ALL("Replace All"),
+    REPLACE_ALL(R.string.art_policy_replace_all),
 
     /** Only fields empty today are filled — `GameDao.updateMetadataIfMissing`. */
-    FILL_MISSING_ONLY("Fill Missing Only"),
+    FILL_MISSING_ONLY(R.string.art_policy_fill_missing),
 
     /** Replace All, restricted to the fields the user ticked. */
-    CHOOSE_FIELDS("Choose Fields"),
+    CHOOSE_FIELDS(R.string.art_policy_choose_fields),
 
     /** Close the preview and write nothing. */
-    KEEP_CURRENT("Keep Current"),
+    KEEP_CURRENT(R.string.art_policy_keep_current),
 }
 
 /** One Current-vs-Incoming line. Only fields the provider actually supplied get a row. */

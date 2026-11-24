@@ -2,10 +2,13 @@ package com.playfieldportal.feature.xmb.ui
 
 import com.playfieldportal.core.domain.model.PfpNotification
 import com.playfieldportal.core.domain.model.BackgroundTaskInfo
-import java.text.SimpleDateFormat
-import java.util.Date
+import com.playfieldportal.core.ui.text.PfpDateFormat
+import com.playfieldportal.core.ui.text.PfpDateStyle
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import android.content.res.Resources
+import com.playfieldportal.feature.xmb.R
+import com.playfieldportal.core.domain.text.UiText
 
 /**
  * The notification panel's list, built as plain data so the split between the two sections, the
@@ -23,7 +26,7 @@ sealed interface NotificationRow {
      */
     val isSelectable: Boolean get() = false
 
-    data class Header(val title: String) : NotificationRow
+    data class Header(val title: UiText) : NotificationRow
 
     data class Running(val task: BackgroundTaskInfo) : NotificationRow {
         override val isSelectable: Boolean get() = task.stoppable && !task.stopping
@@ -37,9 +40,8 @@ sealed interface NotificationRow {
     data object Empty : NotificationRow
 }
 
-const val RUNNING_HEADER = "RUNNING"
-const val EARLIER_HEADER = "EARLIER"
-const val EMPTY_PANEL_MESSAGE = "No notifications"
+val RUNNING_HEADER = UiText.res(R.string.xmbu_notif_header_running)
+val EARLIER_HEADER = UiText.res(R.string.xmbu_notif_header_earlier)
 
 /**
  * RUNNING above EARLIER, each behind its own header, headers omitted when their section is empty.
@@ -109,20 +111,21 @@ fun List<NotificationRow>.runningAt(cursor: Int): BackgroundTaskInfo? =
  */
 fun notificationTimestamp(
     createdAt: Long,
+    res: Resources,
     now: Long = System.currentTimeMillis(),
+    /** The device 12/24-hour setting; null follows the locale's own habit (callers without a Context). */
+    is24Hour: Boolean? = null,
     locale: Locale = Locale.getDefault(),
 ): String {
     val elapsed = now - createdAt
     // A clock change (or a row written a moment "ahead") must not render as "-3 Minutes Ago".
-    if (elapsed < 0) return "Just Now"
+    if (elapsed < 0) return res.getString(R.string.xmbu_time_just_now)
     val minutes = TimeUnit.MILLISECONDS.toMinutes(elapsed)
     val hours = TimeUnit.MILLISECONDS.toHours(elapsed)
     return when {
-        minutes < 1L -> "Just Now"
-        minutes == 1L -> "1 Minute Ago"
-        hours < 1L -> "$minutes Minutes Ago"
-        hours == 1L -> "1 Hour Ago"
-        hours < 24L -> "$hours Hours Ago"
-        else -> SimpleDateFormat("M/d h:mm a", locale).format(Date(createdAt))
+        minutes < 1L -> res.getString(R.string.xmbu_time_just_now)
+        hours < 1L -> res.getQuantityString(R.plurals.xmbu_time_minutes_ago, minutes.toInt(), minutes.toInt())
+        hours < 24L -> res.getQuantityString(R.plurals.xmbu_time_hours_ago, hours.toInt(), hours.toInt())
+        else -> PfpDateFormat.format(PfpDateStyle.ShortDateTime, createdAt, locale, is24Hour)
     }
 }

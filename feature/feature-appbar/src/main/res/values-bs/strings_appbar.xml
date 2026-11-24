@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App context menu: group headings -->
+    <string name="apps_menu_group_library">Biblioteka</string>
+    <string name="apps_menu_group_arrange">Raspored</string>
+    <string name="apps_menu_group_manage">Upravljanje</string>
+
+    <!-- App context menu: rows -->
+    <string name="apps_menu_launch">Pokreni</string>
+    <string name="apps_menu_edit_details">Uredi podatke aplikacije</string>
+    <string name="apps_menu_mark_game">Označi kao igru</string>
+    <string name="apps_menu_unmark_game">Ukloni oznaku igre</string>
+    <string name="apps_menu_favorite">Favorit</string>
+    <string name="apps_menu_add_to_card">Dodaj na karticu</string>
+    <string name="apps_menu_pin_to_top">Prikvači na vrh</string>
+    <string name="apps_menu_move">Premjesti</string>
+    <string name="apps_menu_move_to_category">Premjesti u kategoriju</string>
+    <string name="apps_menu_add_to_category">Dodaj u kategoriju</string>
+    <string name="apps_menu_remove_from_category">Ukloni iz kategorije</string>
+    <string name="apps_menu_rename_shortcut">Preimenuj prečicu</string>
+    <string name="apps_menu_hide_from">Sakrij iz: %1$s</string>
+    <string name="apps_menu_hide_everywhere">Sakrij svugdje</string>
+    <string name="apps_menu_app_info">Podaci o aplikaciji</string>
+    <string name="apps_menu_uninstall">Deinstaliraj</string>
+    <string name="apps_value_on">Uključeno</string>
+    <string name="apps_value_off">Isključeno</string>
+
+    <!-- Uninstall confirmation -->
+    <string name="apps_uninstall_title">Deinstalirati %1$s?</string>
+    <string name="apps_uninstall_message">Time se %1$s uklanja s vašeg uređaja. Android će zatražiti potvrdu.</string>
+
+    <!-- Category tabs and header title -->
+    <string name="apps_filter_all">Sve aplikacije</string>
+    <string name="apps_filter_games">Igre</string>
+    <string name="apps_filter_emulators">Emulatori</string>
+    <string name="apps_filter_recent">Nedavno korišteno</string>
+
+    <!-- Header search -->
+    <string name="apps_search_placeholder">Pretraži…</string>
+    <string name="apps_search_button">Pretraži</string>
+
+    <!-- Empty states -->
+    <string name="apps_empty_no_match">Nijedna aplikacija ne odgovara pretraživanju</string>
+    <string name="apps_empty_no_games">Nema pronađenih igara</string>
+    <string name="apps_empty_no_emulators">Nema instaliranih emulatora</string>
+    <string name="apps_empty_usage_access">Potreban je pristup podacima o upotrebi</string>
+    <string name="apps_empty_no_recent">Još nema nedavno korištenih aplikacija</string>
+    <string name="apps_empty_no_apps">Nema instaliranih aplikacija</string>
+    <string name="apps_hint_try_search">Pokušajte s drugim pojmom za pretraživanje</string>
+    <string name="apps_hint_games">Ovdje se prikazuju aplikacije koje su u Trgovini Play označene kao igre</string>
+    <string name="apps_hint_emulators">Instalirajte RetroArch, PPSSPP ili neki drugi emulator</string>
+    <string name="apps_hint_usage_access">Dopustite pristup kako bi PFP mogao razvrstati aplikacije prema zadnjoj upotrebi</string>
+    <string name="apps_open_usage_access">Otvori pristup upotrebi</string>
+
+    <!-- Controller hint bar -->
+    <string name="apps_hint_prev">Preth.</string>
+    <string name="apps_hint_next">Sljed.</string>
+    <string name="apps_hint_back">Nazad</string>
+    <string name="apps_hint_launch">Pokreni</string>
+    <string name="apps_hint_options">Opcije</string>
+    <string name="apps_hint_search">Pretraži</string>
+    <string name="apps_drawer_title">Ladica aplikacija</string>
+    <string name="apps_drawer_subtitle">Aplikacije na ovom uređaju</string>
+</resources>

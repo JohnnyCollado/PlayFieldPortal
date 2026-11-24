@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Échecs de sauvegarde -->
+    <string name="bak_no_folder">Aucun dossier de sauvegarde défini. Choisissez-en un dans Paramètres → Sauvegarde et restauration → Dossier de sauvegarde.</string>
+    <string name="bak_too_large">Cette sauvegarde serait trop volumineuse pour être restaurée (20 000 fichiers et 2 GB au maximum). Supprimez les illustrations ou médias inutilisés et réessayez.</string>
+    <string name="bak_write_failed">Impossible d\'écrire dans le dossier de sauvegarde. Choisissez à nouveau le dossier dans Paramètres ▸ Système ▸ Sauvegarde et restauration.</string>
+    <string name="bak_unknown_error">Erreur inconnue</string>
+
+    <!-- Échecs de restauration -->
+    <string name="bak_open_failed">Impossible d\'ouvrir le fichier de sauvegarde</string>
+    <string name="bak_missing_manifest">Le manifeste de la sauvegarde est absent</string>
+    <string name="bak_format_too_new">Le format de sauvegarde v%1$d est plus récent que celui pris en charge par cette application (v%2$d)</string>
+    <string name="bak_no_uri">Aucun URI fourni</string>
+
+    <!-- Titres de notification -->
+    <string name="bak_task_created">Sauvegarde créée</string>
+    <string name="bak_task_failed">Échec de la sauvegarde</string>
+    <string name="bak_task_restored">Sauvegarde restaurée</string>
+    <string name="bak_task_restore_failed">Échec de la restauration</string>
+    <string name="bak_results_restored">Restaurés</string>
+    <plurals name="bak_items_skipped">
+        <item quantity="one">%d élément ignoré</item>
+        <item quantity="many">%d éléments ignorés</item>
+        <item quantity="other">%d éléments ignorés</item>
+    </plurals>
+
+    <!-- Éléments refusés pendant la restauration -->
+    <string name="bak_refused_out_of_root">Refusé \'%1$s\' : pas dans un dossier restaurable</string>
+    <string name="bak_refused_profiles_unparseable">Profils d\'émulateur refusés : impossible d\'analyser le fichier</string>
+    <string name="bak_refused_profile">Profil d\'émulateur refusé \'%1$s\' : %2$s</string>
+</resources>

@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Initial Setup wizard -->
+    <!-- Wizard chrome -->
+    <string name="setup_title">Eerste installatie</string>
+    <string name="setup_prompt_enter">Openen</string>
+    <string name="setup_prompt_change">Wijzigen</string>
+    <string name="setup_prompt_back">Terug</string>
+    <string name="setup_prompt_skip">Overslaan</string>
+    <string name="setup_row_edit">Bewerken</string>
+    <string name="setup_row_remove">Verwijderen</string>
+    <string name="setup_message_dismiss_hint">Selecteer om te sluiten — of bevestig op deze rij</string>
+    <!-- Page names -->
+    <string name="setup_step_welcome">Welkom</string>
+    <string name="setup_step_controller">Controller</string>
+    <string name="setup_step_rom_roots">ROM-mappen</string>
+    <string name="setup_step_music">Muziek</string>
+    <string name="setup_step_video">Video</string>
+    <string name="setup_step_photo">Foto</string>
+    <string name="setup_step_artwork">Artwork</string>
+    <string name="setup_step_services">Onlinediensten</string>
+    <string name="setup_step_achievements">Prestatiediensten</string>
+    <string name="setup_step_local_achievements">Lokale prestaties</string>
+    <string name="setup_step_retroarch">RetroArch</string>
+    <string name="setup_step_emulators">Emulators</string>
+    <string name="setup_step_windows">Windows-spellen</string>
+    <string name="setup_step_hints">Hints en aanraking</string>
+    <string name="setup_step_home_app">Startscherm-app</string>
+    <string name="setup_step_finish">Voltooien</string>
+    <!-- Page headings -->
+    <string name="setup_heading_welcome">Welkom bij Play Field Portal.</string>
+    <string name="setup_heading_controller">Kies je controller.</string>
+    <string name="setup_heading_rom_roots">Kies je ROM-mappen.</string>
+    <string name="setup_heading_music">Kies je muziekmappen.</string>
+    <string name="setup_heading_video">Kies je videomappen.</string>
+    <string name="setup_heading_photo">Kies je fotomappen.</string>
+    <string name="setup_heading_artwork">Kies je artworkmap.</string>
+    <string name="setup_heading_services">Verbind je artworkbronnen.</string>
+    <string name="setup_heading_achievements">Verbind je prestatiediensten.</string>
+    <string name="setup_heading_local_achievements">Koppel de gegevensmappen van je emulators.</string>
+    <string name="setup_heading_retroarch">Koppel de coresmap van RetroArch.</string>
+    <string name="setup_heading_emulators">Controleer je emulators.</string>
+    <string name="setup_heading_windows">Stel Windows-spellen in.</string>
+    <string name="setup_heading_hints">Kies hoe de launcher je helpt.</string>
+    <string name="setup_heading_home_app">Maak Play Field Portal je startscherm.</string>
+    <string name="setup_heading_finish">Je bent er klaar voor!</string>
+    <!-- Page hints -->
+    <string name="setup_hint_welcome">De meeste stappen zijn optioneel. Je moet wel een artworkmap kiezen.</string>
+    <string name="setup_hint_controller">Stelt de knoppictogrammen in en welke knop bevestigt, zodat elke prompt vanaf nu bij je controller past.</string>
+    <string name="setup_hint_rom_roots">Voeg een of meer ROM-mappen toe — de spellen van elke console staan in een submap daarin.</string>
+    <string name="setup_hint_media_roots">Voeg meerdere hoofdmappen toe om interne opslag en een SD-kaart te omvatten.</string>
+    <string name="setup_hint_artwork">Vereist. Je art staat hier, buiten de app, zodat die een herinstallatie overleeft.</string>
+    <string name="setup_hint_services">Allemaal optioneel en gratis. SteamGridDB, TheGamesDB, IGDB en ScreenScraper halen artwork en metadata van spellen op.</string>
+    <string name="setup_hint_achievements">RetroAchievements en Steam houden prestaties bij als Shiba Coins.</string>
+    <string name="setup_hint_local_achievements">Trophies en prestaties die je emulators op dit apparaat opslaan. Eén keer toegang per emulator koppelt elke titel.</string>
+    <string name="setup_hint_retroarch">Laat de launcher precies weten welke cores je hebt, zodat alleen die worden aangeboden.</string>
+    <string name="setup_hint_emulators">De standaard van elke console, gekozen uit wat er is geïnstalleerd. Wijzig wat niet klopt.</string>
+    <string name="setup_hint_windows">Er is een Windows-emulator geïnstalleerd — kies waar je pc-spellen staan.</string>
+    <string name="setup_hint_hints">Knophints verschijnen als je pauzeert en verdwijnen zodra je iets indrukt.</string>
+    <string name="setup_hint_home_app">De startknop brengt je dan hier terug in plaats van naar de standaardlauncher.</string>
+    <string name="setup_hint_finish">Alles hieronder kun je altijd aanpassen in Instellingen.</string>
+    <!-- Continue row -->
+    <string name="setup_continue">Doorgaan</string>
+    <string name="setup_continue_next">Volgende: %1$s</string>
+    <string name="setup_continue_blocked">Kies eerst een map</string>
+    <!-- Welcome page -->
+    <string name="setup_welcome_intro">Deze snelle installatie wijst de launcher naar je mediamappen en verbindt de onlinediensten voor artwork en prestaties.</string>
+    <string name="setup_welcome_start">Aan de slag</string>
+    <string name="setup_welcome_start_sub">Kies eerst je controller</string>
+    <string name="setup_welcome_skip">Installatie overslaan</string>
+    <string name="setup_welcome_skip_sub">Ga direct naar de launcher — start de installatiewizard altijd via Instellingen ▸ Systeem</string>
+    <!-- Folder rows -->
+    <string name="setup_root_access_lost">Toegang verloren — gebruik ✎ om opnieuw toegang te geven</string>
+    <!-- ROM roots page -->
+    <string name="setup_rom_empty">Nog geen ROM-mappen. Voeg de map toe waarin de spellen van je consoles staan — één submap per console, automatisch gescand.</string>
+    <string name="setup_rom_add">ROM-map toevoegen</string>
+    <string name="setup_rom_add_sub">Geef toegang tot een ROM-map met één submap per console</string>
+    <string name="setup_rom_rescan">ROM-mappen opnieuw scannen</string>
+    <string name="setup_rom_rescan_sub">Consoles automatisch detecteren en hun spellen scannen</string>
+    <string name="setup_rom_root_linked">Gekoppeld — consolemappen worden hier gelezen</string>
+    <string name="setup_rom_create_folders">Standaardmappen maken</string>
+    <string name="setup_rom_create_folders_sub">Eén submap per console, genoemd naar je spellen</string>
+    <!-- Music roots page -->
+    <string name="setup_music_empty">Nog geen muziekhoofdmappen. Voeg de map toe waarin je muziek staat — meerdere hoofdmappen kunnen interne opslag en een SD-kaart omvatten.</string>
+    <string name="setup_music_add">Muziekhoofdmap toevoegen</string>
+    <string name="setup_music_add_sub">Geef toegang tot een hoofdmap (bijv. /Music) — voeg er meerdere toe voor meer locaties</string>
+    <string name="setup_music_root_linked">Muziekbibliotheek staat hier</string>
+    <string name="setup_music_rescan">Muziekbibliotheek opnieuw scannen</string>
+    <!-- Video roots page -->
+    <string name="setup_video_empty">Nog geen videohoofdmappen. Voeg de map toe waarin je video\'s staan — meerdere hoofdmappen kunnen interne opslag en een SD-kaart omvatten.</string>
+    <string name="setup_video_add">Videohoofdmap toevoegen</string>
+    <string name="setup_video_add_sub">Geef toegang tot een hoofdmap (bijv. /Videos) — voeg er meerdere toe voor meer locaties</string>
+    <string name="setup_video_root_linked">Videobibliotheek staat hier</string>
+    <string name="setup_video_rescan">Videobibliotheek opnieuw scannen</string>
+    <!-- Photo roots page -->
+    <string name="setup_photo_empty">Nog geen fotohoofdmappen. Voeg de map toe waarin je foto\'s staan — meerdere hoofdmappen kunnen interne opslag en een SD-kaart omvatten.</string>
+    <string name="setup_photo_add">Fotohoofdmap toevoegen</string>
+    <string name="setup_photo_add_sub">Geef toegang tot een hoofdmap (bijv. /Photos) — voeg er meerdere toe voor meer locaties</string>
+    <string name="setup_photo_root_linked">Fotobibliotheek staat hier</string>
+    <string name="setup_photo_rescan">Fotobibliotheek opnieuw scannen</string>
+    <string name="setup_media_rescan_sub">De bibliotheken bijwerken vanuit elke hoofdmap</string>
+    <!-- Artwork page -->
+    <string name="setup_artwork_empty">Kies een beschrijfbare map. De launcher richt er automatisch een artworkbibliotheek in — spellen krijgen art zodra ze worden toegevoegd.</string>
+    <string name="setup_artwork_unavailable">Niet beschikbaar. Koppel opnieuw om nieuwe artwork te hervatten</string>
+    <string name="setup_artwork_folder_sub">Artworkbibliotheek — gebruik ✎ om een andere map te kiezen</string>
+    <string name="setup_artwork_choose">Artworkmap kiezen</string>
+    <string name="setup_artwork_choose_sub">Eén map bevat de artworkbibliotheek</string>
+    <string name="setup_artwork_import_title">Nu artwork importeren?</string>
+    <string name="setup_artwork_import_sub_one">%1$s uit import/ van de map naar de bibliotheek kopiëren</string>
+    <plurals name="setup_artwork_import_sub_many">
+        <item quantity="one">%1$d bronmap uit import/ van de map naar de bibliotheek kopiëren</item>
+        <item quantity="other">%1$d bronmappen uit import/ van de map naar de bibliotheek kopiëren</item>
+    </plurals>
+    <string name="setup_artwork_import_row">Artwork importeren</string>
+    <string name="setup_artwork_import_none_sub">Nog niets te importeren — voeg de mediamap van een launcher toe onder import/</string>
+    <!-- Online services page -->
+    <string name="setup_services_intro">Alle accounts zijn optioneel en gratis. SteamGridDB, TheGamesDB, IGDB en ScreenScraper halen artwork en metadata op voor je bibliotheek.</string>
+    <string name="setup_field_api_key">API-sleutel</string>
+    <string name="setup_field_api_key_saved">API-sleutel (opgeslagen)</string>
+    <string name="setup_field_web_api_key">Web API-sleutel</string>
+    <string name="setup_field_web_api_key_saved">Web API-sleutel (opgeslagen)</string>
+    <string name="setup_field_client_id">Client-ID</string>
+    <string name="setup_field_client_id_saved">Client-ID (opgeslagen)</string>
+    <string name="setup_field_client_secret">Clientgeheim</string>
+    <string name="setup_field_client_secret_saved">Clientgeheim (opgeslagen)</string>
+    <string name="setup_field_username">Gebruikersnaam</string>
+    <string name="setup_field_username_saved">Gebruikersnaam (opgeslagen)</string>
+    <string name="setup_field_password">Wachtwoord</string>
+    <string name="setup_field_password_saved">Wachtwoord (opgeslagen)</string>
+    <string name="setup_field_steam_id">SteamID64 of eigen URL-naam</string>
+    <string name="setup_field_steam_id_saved">SteamID64 of eigen URL-naam (opgeslagen)</string>
+    <string name="setup_placeholder_tap_to_replace">Selecteer om te vervangen</string>
+    <string name="setup_placeholder_secret_saved">••••••••  (selecteer om te vervangen)</string>
+    <string name="setup_placeholder_sgdb_key">Plak je SteamGridDB-sleutel</string>
+    <string name="setup_placeholder_tgdb_key">Plak je TheGamesDB-sleutel</string>
+    <string name="setup_placeholder_twitch_client_id">Twitch-client-ID</string>
+    <string name="setup_placeholder_twitch_client_secret">Twitch-clientgeheim</string>
+    <string name="setup_placeholder_ss_username">ScreenScraper-gebruikersnaam</string>
+    <string name="setup_placeholder_ss_password">ScreenScraper-wachtwoord</string>
+    <string name="setup_placeholder_ra_username">Je RA-gebruikersnaam</string>
+    <string name="setup_placeholder_ra_key">Plak je RA Web API-sleutel</string>
+    <string name="setup_placeholder_steam_id">7656119… of je eigen URL-naam</string>
+    <string name="setup_placeholder_steam_key">Plak je Steam Web API-sleutel</string>
+    <string name="setup_connect_sgdb">SteamGridDB verbinden</string>
+    <string name="setup_connect_tgdb">TheGamesDB verbinden</string>
+    <string name="setup_connect_igdb">IGDB verbinden</string>
+    <string name="setup_connect_ss">ScreenScraper verbinden</string>
+    <string name="setup_connect_ra">RetroAchievements verbinden</string>
+    <string name="setup_connect_steam">Steam verbinden</string>
+    <string name="setup_test_credentials">Inloggegevens testen</string>
+    <string name="setup_test_account">Account testen</string>
+    <string name="setup_connected_as">Verbonden als</string>
+    <!-- Achievement services page -->
+    <string name="setup_achievements_intro">Optioneel en gratis. RetroAchievements en Steam houden prestaties bij als Shiba Coins.</string>
+    <!-- Controller page -->
+    <string name="setup_controller_type">Type controller</string>
+    <string name="setup_controller_type_sub">Wijzigt de knoppictogrammen in elke prompt</string>
+    <string name="setup_controller_ab_swap">Bevestigen en terug omwisselen</string>
+    <string name="setup_controller_xy_swap">Opties en sorteren omwisselen</string>
+    <string name="setup_controller_xy_swap_sub">Alleen launchermenu\'s — emulatorbediening blijft ongewijzigd</string>
+    <string name="setup_on">Aan</string>
+    <string name="setup_off">Uit</string>
+    <string name="setup_controller_summary">%1$s · %2$s bevestigt</string>
+    <string name="setup_button_circle">Rondje</string>
+    <string name="setup_button_cross">Kruisje</string>
+    <string name="setup_confirm_swap_off">Uit — %1$s bevestigt, %2$s gaat terug</string>
+    <string name="setup_confirm_swap_on">Aan — %1$s bevestigt, %2$s gaat terug</string>
+    <!-- Local achievements page -->
+    <string name="setup_local_vita_header">PS Vita · Vita3K</string>
+    <string name="setup_local_vita_set">Vita3K-gegevensmap instellen</string>
+    <string name="setup_local_vita_set_sub">Geef toegang tot de map ux0 (of de map die deze bevat)</string>
+    <string name="setup_local_vita_folder_sub">Vita3K-gegevensmap — gebruik ✎ om een andere te kiezen</string>
+    <string name="setup_local_ps3_header">PS3 · ARMSX3</string>
+    <string name="setup_local_ps3_set">ARMSX3-gegevensmap instellen</string>
+    <string name="setup_local_ps3_set_sub">Geef toegang tot PS3/config/dev_hdd0 — of een map erboven of eronder</string>
+    <string name="setup_local_ps3_folder_sub">ARMSX3-gegevensmap — gebruik ✎ om een andere te kiezen</string>
+    <string name="setup_local_x360_header">Xbox 360 · X360 Mobile</string>
+    <string name="setup_local_x360_set">X360 Mobile-gegevensmap instellen</string>
+    <string name="setup_local_x360_set_sub">Kies X360 Mobile in het zijmenu van de mapkiezer en sta toegang toe</string>
+    <string name="setup_local_x360_folder_sub">X360 Mobile-gegevensmap — gebruik ✎ om een andere te kiezen</string>
+    <string name="setup_local_xendroid_header">Xbox 360 · XenDroid</string>
+    <string name="setup_local_xendroid_set">XenDroid-gegevensmap instellen</string>
+    <string name="setup_local_xendroid_set_sub">Geef toegang tot Android/data/xendroid.compose — of een map erboven of eronder</string>
+    <string name="setup_local_xendroid_folder_sub">XenDroid-gegevensmap — gebruik ✎ om een andere te kiezen</string>
+    <!-- RetroArch page -->
+    <string name="setup_retroarch_cores_folder">Coresmap</string>
+    <plurals name="setup_retroarch_cores_detected">
+        <item quantity="one">%1$d core gedetecteerd</item>
+        <item quantity="other">%1$d cores gedetecteerd</item>
+    </plurals>
+    <string name="setup_retroarch_linked">Gekoppeld</string>
+    <string name="setup_retroarch_relink">Map opnieuw koppelen</string>
+    <string name="setup_retroarch_relink_sub">Kies de map van RetroArch opnieuw</string>
+    <string name="setup_retroarch_recheck">Cores opnieuw controleren</string>
+    <string name="setup_retroarch_recheck_sub">Na het installeren van nieuwe cores</string>
+    <string name="setup_retroarch_unlink">RetroArch ontkoppelen</string>
+    <string name="setup_retroarch_unlink_sub">Terugvallen op het aanbieden van elke geselecteerde core</string>
+    <string name="setup_retroarch_intro">RetroArch is geïnstalleerd. Koppel de map zodat bij het starten van spellen alleen de cores worden aangeboden die je echt hebt — anders wordt elke geselecteerde core getoond (niet geverifieerd).</string>
+    <string name="setup_retroarch_link">RetroArch-map koppelen</string>
+    <string name="setup_retroarch_link_sub">Kies de documentenstructuur com.retroarch</string>
+    <!-- Emulators page -->
+    <string name="setup_emulators_empty">Nog geen consoles met spellen. Zodra je ROM-mappen zijn gescand, verschijnt hier elke console met de emulator die hij start — wijzig dit altijd in Instellingen ▸ Emulators.</string>
+    <string name="setup_emulators_none">Geen</string>
+    <!-- Windows games page -->
+    <string name="setup_windows_intro">Kies de map met één submap per spel. PFP scant die op je Windows-spellen; er wordt niets in gewijzigd.</string>
+    <string name="setup_windows_detected">Gedetecteerd</string>
+    <string name="setup_windows_set">Map voor Windows-spellen instellen</string>
+    <string name="setup_windows_change">Map voor Windows-spellen wijzigen</string>
+    <string name="setup_windows_set_sub">Geef toegang tot de map waarin je spellen zijn geïnstalleerd</string>
+    <!-- Hints and touch page -->
+    <string name="setup_hints_enabled">Knophints</string>
+    <string name="setup_hints_enabled_sub">De hintchip bij inactiviteit op de XMB, in Instellingen en op mediaschermen</string>
+    <string name="setup_hints_delay">Hintvertraging</string>
+    <string name="setup_hints_delay_sub">Hoe lang je pauzeert voordat hints verschijnen (1–5 seconden)</string>
+    <plurals name="setup_hints_delay_seconds">
+        <item quantity="one">%1$d seconde</item>
+        <item quantity="other">%1$d seconden</item>
+    </plurals>
+    <string name="setup_hints_delay_fraction">%1$s seconden</string>
+    <string name="setup_hints_touch">Aanraakknop</string>
+    <string name="setup_hints_touch_sub">De knop voor de app-lade op het scherm — Automatisch toont hem nadat je het scherm aanraakt</string>
+    <string name="setup_touch_auto">Automatisch</string>
+    <string name="setup_touch_always_show">Altijd tonen</string>
+    <string name="setup_touch_always_hide">Altijd verbergen</string>
+    <string name="setup_hints_summary_on">Aan · %1$s</string>
+    <!-- Home app page -->
+    <string name="setup_home_intro">Android vraagt je een startscherm-app te kiezen en te bevestigen. Je kunt altijd terugschakelen via Standaard-apps in de Android-instellingen.</string>
+    <string name="setup_home_current">Huidige startscherm-app</string>
+    <string name="setup_home_set">Instellen als startscherm-app</string>
+    <string name="setup_home_set_sub">Opent de Android-kiezer voor de startscherm-app</string>
+    <string name="setup_home_is_pfp">Play Field Portal</string>
+    <string name="setup_home_not_pfp">Niet Play Field Portal</string>
+    <!-- Finish page -->
+    <string name="setup_finish_nothing">Er is nog niets ingesteld — elke map en dienst kun je altijd toevoegen via Instellingen.</string>
+    <string name="setup_finish_summary">Overzicht</string>
+    <string name="setup_summary_controller">Controller</string>
+    <string name="setup_summary_rom">ROM-bibliotheek</string>
+    <string name="setup_summary_music">Muziek</string>
+    <string name="setup_summary_video">Video</string>
+    <string name="setup_summary_photo">Foto</string>
+    <string name="setup_summary_artwork">Artworkbibliotheek</string>
+    <string name="setup_summary_vita">Vita-gegevensmap</string>
+    <string name="setup_summary_ps3">PS3-gegevensmap</string>
+    <string name="setup_summary_x360">X360 Mobile-gegevensmap</string>
+    <string name="setup_summary_xendroid">XenDroid-gegevensmap</string>
+    <string name="setup_summary_windows">Windows-spellen</string>
+    <string name="setup_summary_hints">Knophints</string>
+    <string name="setup_summary_home">Startscherm-app</string>
+    <string name="setup_not_set">Niet ingesteld</string>
+    <string name="setup_connected">Verbonden</string>
+    <string name="setup_retroarch_not_linked">Niet gekoppeld</string>
+    <plurals name="setup_retroarch_cores_count">
+        <item quantity="one">%1$d core</item>
+        <item quantity="other">%1$d cores</item>
+    </plurals>
+    <string name="setup_roots_more">%1$s +%2$d meer</string>
+    <string name="setup_finish_xmb_header">XMB-indeling</string>
+    <string name="setup_finish_autofit">XMB-indeling automatisch passend maken (PSP-verhoudingen) — altijd te wijzigen in Instellingen</string>
+    <string name="setup_finish_open_lm">Bibliotheekbeheer openen</string>
+    <string name="setup_finish_open_lm_sub">Consoles toevoegen en de zojuist ingestelde ROM-mappen scannen</string>
+    <string name="setup_finish_go_library">Naar je bibliotheek</string>
+    <string name="setup_finish_go_library_sub">Direct naar Alle spellen</string>
+    <string name="setup_finish_done">Voltooien</string>
+    <string name="setup_finish_done_sub">Naar de launcher</string>
+    <!-- Messages -->
+    <string name="setup_status_testing">Testen…</string>
+    <plurals name="setup_msg_rom_folders_created">
+        <item quantity="one">%1$d consolemap gemaakt. Kopieer je spellen naar de bijbehorende mappen.</item>
+        <item quantity="other">%1$d consolemappen gemaakt. Kopieer je spellen naar de bijbehorende mappen.</item>
+    </plurals>
+    <plurals name="setup_msg_rom_folders_created_existing">
+        <item quantity="one">%1$d consolemap gemaakt (%2$d bestonden al). Kopieer je spellen naar de bijbehorende mappen.</item>
+        <item quantity="other">%1$d consolemappen gemaakt (%2$d bestonden al). Kopieer je spellen naar de bijbehorende mappen.</item>
+    </plurals>
+    <string name="setup_msg_artwork_failed">Kan geen artworkbibliotheek in die map inrichten. Kies een beschrijfbare map.</string>
+    <string name="setup_msg_artwork_reconnected">Bestaande artworkbibliotheek opnieuw verbonden.</string>
+    <string name="setup_msg_artwork_created">Artworkbibliotheek gemaakt.</string>
+    <plurals name="setup_msg_artwork_games_linked">
+        <item quantity="one">%1$d spel gekoppeld vanuit bestanden die al in de map stonden.</item>
+        <item quantity="other">%1$d spellen gekoppeld vanuit bestanden die al in de map stonden.</item>
+    </plurals>
+    <string name="setup_msg_artwork_import_hint">Zet media van andere launchers in de map import/ om ze hier te verzamelen.</string>
+    <string name="setup_msg_import_none_yet">Nog niets te importeren — zet bestanden in de map import/ van de artworkmap.</string>
+    <string name="setup_msg_import_unreadable">Kan die importbron niet lezen.</string>
+    <string name="setup_msg_import_empty">Niets te importeren — alles is al aanwezig.</string>
+    <string name="setup_msg_import_started">\"%1$s\" importeren — de voortgang staat in meldingen; details komen in Instellingen ▸ Artwork importeren.</string>
+    <string name="setup_msg_retroarch_linked">RetroArch gekoppeld — geïnstalleerde cores worden nu aangeboden in Emulators.</string>
+    <string name="setup_msg_retroarch_rechecked">RetroArch-cores opnieuw gecontroleerd.</string>
+    <string name="setup_msg_retroarch_unlinked">RetroArch-koppeling verwijderd — er worden geen RetroArch-cores aangeboden totdat je opnieuw koppelt.</string>
+    <string name="setup_msg_vita_set">Vita3K-gegevensmap ingesteld. Geïnstalleerde titels kunnen worden gescand vanaf de PS Vita-geheugenkaart in Bibliotheekbeheer.</string>
+    <string name="setup_msg_vita_released">Vita3K-gegevensmap vrijgegeven — bestanden op de schijf zijn niet aangeraakt.</string>
+    <string name="setup_msg_ps3_set">PS3-gegevensmap ingesteld. Voer Automatisch koppelen uit in Instellingen ▸ Prestaties ▸ Prestaties bijwerken om PS3-trophies te koppelen.</string>
+    <string name="setup_msg_ps3_released">PS3-gegevensmap vrijgegeven — bestanden op de schijf zijn niet aangeraakt.</string>
+    <string name="setup_msg_x360_set">Gegevensmap van %1$s ingesteld. Voer Automatisch koppelen uit in Instellingen ▸ Prestaties ▸ Prestaties bijwerken om Xbox 360-prestaties te koppelen.</string>
+    <string name="setup_msg_x360_released">Gegevensmap van %1$s vrijgegeven — bestanden op de schijf zijn niet aangeraakt.</string>
+    <string name="setup_msg_sgdb_connected">SteamGridDB verbonden</string>
+    <string name="setup_msg_tgdb_connected">TheGamesDB verbonden</string>
+    <string name="setup_msg_igdb_connected">IGDB verbonden</string>
+    <string name="setup_msg_ss_connected">ScreenScraper verbonden</string>
+    <string name="setup_msg_ra_connected">RetroAchievements verbonden</string>
+    <!-- ROM root scan report -->
+    <string name="setup_rom_scan_no_root">Voeg eerst een ROM-map toe in Instellingen ▸ Bibliotheek ▸ Bibliotheekbeheer.</string>
+    <string name="setup_rom_scan_none">%1$s gescand in %2$s; geen nieuwe ROM\'s gevonden. Kopieer spellen naar de bijbehorende systeemmappen en probeer het opnieuw.</string>
+    <string name="setup_rom_scan_loaded">%1$s geladen, %2$s uit %3$s.</string>
+    <string name="setup_rom_scan_systems_new">%1$s (%2$s)</string>
+    <plurals name="setup_rom_scan_folders">
+        <item quantity="one">%1$d map</item>
+        <item quantity="other">%1$d mappen</item>
+    </plurals>
+    <plurals name="setup_rom_scan_systems">
+        <item quantity="one">%1$d systeem</item>
+        <item quantity="other">%1$d systemen</item>
+    </plurals>
+    <plurals name="setup_rom_scan_new_consoles">
+        <item quantity="one">%1$d nieuwe console</item>
+        <item quantity="other">%1$d nieuwe consoles</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roms">
+        <item quantity="one">%1$d ROM</item>
+        <item quantity="other">%1$d ROM\'s</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roots">
+        <item quantity="one">%1$d ROM-map</item>
+        <item quantity="other">%1$d ROM-mappen</item>
+    </plurals>
+    <plurals name="setup_rom_scan_skipped">
+        <item quantity="one">%1$d map overgeslagen (bibliotheek onleesbaar).</item>
+        <item quantity="other">%1$d mappen overgeslagen (bibliotheek onleesbaar).</item>
+    </plurals>
+    <!-- Media library scans -->
+    <string name="setup_media_add_root_first">Voeg eerst een hoofdmap toe.</string>
+    <string name="setup_media_not_ready">De opslag van deze map is nog niet klaar. Probeer het zo opnieuw.</string>
+    <string name="setup_media_scan_failed_title">Scan van %1$s mislukt</string>
+    <string name="setup_media_scan_finished_title">Scan van %1$s voltooid</string>
+    <string name="setup_media_scan_stopped_title">Scan van %1$s gestopt</string>
+    <string name="setup_media_scanning_title">%1$s scannen</string>
+    <string name="setup_media_stop_note">De map wordt de volgende keer opnieuw gescand.</string>
+    <string name="setup_media_stopped">Gestopt voordat de scan klaar was</string>
+    <plurals name="setup_media_tracks">
+        <item quantity="one">%1$d nummer</item>
+        <item quantity="other">%1$d nummers</item>
+    </plurals>
+    <plurals name="setup_media_photos">
+        <item quantity="one">%1$d foto</item>
+        <item quantity="other">%1$d foto\'s</item>
+    </plurals>
+    <plurals name="setup_media_videos">
+        <item quantity="one">%1$d video</item>
+        <item quantity="other">%1$d video\'s</item>
+    </plurals>
+    <plurals name="setup_media_roots">
+        <item quantity="one">%1$d hoofdmap</item>
+        <item quantity="other">%1$d hoofdmappen</item>
+    </plurals>
+    <string name="setup_media_found">%1$s gevonden in %2$s.</string>
+</resources>

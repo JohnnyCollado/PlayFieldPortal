@@ -6,6 +6,7 @@ import com.playfieldportal.core.data.repository.CategoryRepositoryImpl
 import com.playfieldportal.core.data.repository.CollectionRepository
 import com.playfieldportal.core.data.repository.CustomIconStore
 import com.playfieldportal.core.data.repository.ThemeTiers
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.themekit.PtfIcons
 import io.mockk.coEvery
@@ -64,7 +65,7 @@ class CardIconViewModelTest {
         coEvery { store.import(any(), any(), any()) } returns CustomIconStore.ImportResult(false, "Too many frames")
         val vm = vm()
         vm.importCardImage(7L, mockk(), "image/gif")
-        assertEquals("Too many frames", vm.iconMessage.value)
+        assertEquals(UiText.raw("Too many frames"), vm.iconMessage.value)
     }
 
     @Test

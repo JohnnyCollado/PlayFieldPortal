@@ -2,6 +2,7 @@ package com.playfieldportal.feature.launcher
 
 import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.core.domain.model.IntentType
+import com.playfieldportal.core.domain.text.UiText
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -148,7 +149,7 @@ class EmulatorLaunchResolverTest {
         ).exceptionOrNull()
 
         assertTrue(resolved != null, "An unavailable-only platform must not resolve")
-        assertTrue(resolved.message!!.contains("No emulator configured for PSX"))
+        assertEquals(UiText.res(R.string.launch_err_no_emulator_for_platform, "PSX"), (resolved as LaunchFailure).text)
     }
 
     // ── Failures ───────────────────────────────────────────────────────────
@@ -163,7 +164,14 @@ class EmulatorLaunchResolverTest {
         ).exceptionOrNull()
 
         assertTrue(failure != null)
-        assertTrue(failure.message!!.contains("per-game override emulator is not installed or available: ghost_emulator"))
+        assertEquals(
+            UiText.res(
+                R.string.launch_err_configured_missing,
+                UiText.res(R.string.launch_phrase_per_game),
+                "ghost_emulator",
+            ),
+            (failure as LaunchFailure).text,
+        )
     }
 
     // Regression: availability was filtered only into [platformProfiles], the automatic fallback
@@ -190,9 +198,9 @@ class EmulatorLaunchResolverTest {
         ).exceptionOrNull()
 
         assertTrue(failure != null, "An unavailable platform default must not resolve")
-        assertTrue(
-            failure.message!!.contains("not installed in RetroArch"),
-            "Message should name the real problem, was: ${failure.message}",
+        assertEquals(
+            UiText.res(R.string.launch_err_core_not_installed, deadCore.name, UiText.res(R.string.launch_source_platform_lower)),
+            (failure as LaunchFailure).text,
         )
     }
 
@@ -233,7 +241,7 @@ class EmulatorLaunchResolverTest {
         ).exceptionOrNull()
 
         assertTrue(failure != null)
-        assertTrue(failure.message!!.contains("melonds is not configured for PSX"))
+        assertEquals(UiText.res(R.string.launch_err_not_configured_for_platform, dsOnly.name, "PSX"), (failure as LaunchFailure).text)
     }
 
     @Test
@@ -245,7 +253,7 @@ class EmulatorLaunchResolverTest {
         ).exceptionOrNull()
 
         assertTrue(failure != null)
-        assertTrue(failure.message!!.contains("No emulator configured for PSX"))
+        assertEquals(UiText.res(R.string.launch_err_no_emulator_for_platform, "PSX"), (failure as LaunchFailure).text)
     }
 
     // ── Core visibility ────────────────────────────────────────────────────

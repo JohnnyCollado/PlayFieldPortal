@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -35,6 +36,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.components.PspContextMenuOverlay
 import com.playfieldportal.core.ui.components.PspMenuRow
 import com.playfieldportal.core.ui.achievement.BoneGlyph
@@ -44,6 +46,8 @@ import com.playfieldportal.core.ui.detail.PfpDetailBackground
 import com.playfieldportal.core.ui.detail.PfpDetailBreadcrumb
 import com.playfieldportal.core.ui.detail.PfpDetailHelperFooter
 import com.playfieldportal.core.ui.detail.detailPalette
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.xmb.R
 
 @Composable
 fun PlayerStatusScreen(
@@ -102,7 +106,7 @@ fun PlayerStatusScreen(
             )
             state.message?.let { message ->
                 Text(
-                    message,
+                    message.asString(),
                     color = palette.textMuted,
                     fontSize = 13.sp,
                     modifier = Modifier
@@ -135,13 +139,13 @@ fun PlayerStatusScreen(
                 }
             }
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                PfpDetailHelperFooter(items = playerStatusHelperItems(state), visible = !showTouchControls)
+                PfpDetailHelperFooter(items = playerStatusHelperItems(state).toPromptItems(), visible = !showTouchControls)
             }
         }
         state.options?.let { menu ->
             PspContextMenuOverlay(
-                title = menu.title,
-                rows = state.optionRows.map { PspMenuRow(label = it.label, checked = it.checked, value = it.value, opensMenu = it.opensMenu) },
+                title = menu.title.asString(),
+                rows = state.optionRows.map { PspMenuRow(label = it.label.asString(), checked = it.checked, value = it.value?.asString(), opensMenu = it.opensMenu) },
                 selectedIndex = menu.selectedIndex,
                 onRowActivated = viewModel::onOptionActivated,
                 onDismiss = viewModel::closeOptions,
@@ -160,13 +164,13 @@ private fun PlayerStatusHeader(
 ) {
     Column(Modifier.fillMaxWidth().background(headerShade(palette))) {
         PfpDetailBreadcrumb(
-            title = "Player Status",
+            title = stringResource(R.string.shiba_player_status_title),
             subtitle = "Shiba Coins",
             onBack = onBack,
             modifier = Modifier,
             trailing = {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(state.rankLabel, color = palette.focus, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Text(state.rankLabel?.asString().orEmpty(), color = palette.focus, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                     if (state.bones > 0) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             BoneGlyph(tint = palette.focus, size = 18.dp)
@@ -181,14 +185,14 @@ private fun PlayerStatusHeader(
             horizontalArrangement = Arrangement.spacedBy(28.dp),
             verticalAlignment = Alignment.Bottom,
         ) {
-            StatBlock("SHIBA LEVEL", state.level.toString(), palette)
+            StatBlock(stringResource(R.string.shiba_stat_shiba_level), state.level.toString(), palette)
             Column {
-                Text("NEXT LEVEL", color = palette.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.shiba_stat_next_level), color = palette.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                 Text("${(state.levelFraction * 100).toInt()}%", color = palette.textPrimary, fontSize = 19.sp, fontWeight = FontWeight.Medium)
                 Spacer(Modifier.height(4.dp))
                 ProgressLine(state.levelFraction, palette, Modifier.width(74.dp), height = 4.dp)
             }
-            StatBlock("TOTAL COINS", "%,d".format(state.totalXp), palette)
+            StatBlock(stringResource(R.string.shiba_stat_total_coins), "%,d".format(state.totalXp), palette)
             Spacer(Modifier.weight(1f))
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 TierStat(ShibaTier.PLATINUM, state.platinum, palette)
@@ -222,7 +226,7 @@ private fun RarestRow(state: PlayerStatusUiState, palette: DetailPalette, onClic
     val rarest = state.rarest
     Column {
         if (rarest == null) {
-            Text("No rarest achievement yet.", color = palette.textMuted, fontSize = 14.sp, modifier = Modifier.padding(12.dp))
+            Text(stringResource(R.string.shiba_player_status_no_rarest), color = palette.textMuted, fontSize = 14.sp, modifier = Modifier.padding(12.dp))
         } else {
             Row(
                 modifier = Modifier
@@ -235,13 +239,13 @@ private fun RarestRow(state: PlayerStatusUiState, palette: DetailPalette, onClic
                 CoinArt(rarest.iconUrl, rarest.tier, Modifier.size(72.dp), cornerRadius = 6.dp)
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("RAREST UNLOCKED", color = palette.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
+                    Text(stringResource(R.string.shiba_player_status_rarest_unlocked), color = palette.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
                     Text(rarest.coinTitle, color = palette.textPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(rarest.gameTitle, color = palette.textMuted, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(if (rarest.globalRarity < 0) "—" else String.format(java.util.Locale.US, "%.1f%%", rarest.globalRarity), color = palette.focus, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-                    Text("of players have this", color = palette.textMuted, fontSize = 11.sp)
+                    Text(stringResource(R.string.shiba_player_status_rarity_caption), color = palette.textMuted, fontSize = 11.sp)
                 }
             }
         }
@@ -269,9 +273,9 @@ private fun RecentAchievementRow(
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(row.coinTitle, color = palette.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("${row.gameTitle} · ${relativeTime(row.earnedAt)}", color = palette.textMuted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(UiText.res(R.string.shiba_player_status_game_and_time, row.gameTitle, relativeTime(row.earnedAt)).asString(), color = palette.textMuted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            Text(row.tier.name, color = palette.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(row.tier.shibaTierNameRes).uppercase(), color = palette.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
         }
         Separator(palette)
     }

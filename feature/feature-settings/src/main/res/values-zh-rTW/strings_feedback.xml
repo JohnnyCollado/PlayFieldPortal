@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings > Sound: two more assignable sounds. Each follows Navigation until set. -->
+    <!-- Name of the sound that plays when a category changes (row and level slider). -->
+    <string name="fb_sound_slot_category">類別</string>
+    <string name="fb_sound_channel_category">類別</string>
+    <!-- Name of the sound that plays when an options menu opens (row and level slider). -->
+    <string name="fb_sound_slot_options">選項</string>
+    <string name="fb_sound_channel_options">選項</string>
+
+    <!-- Settings > Controller: haptic feedback switch. -->
+    <string name="fb_haptic_feedback">觸覺回饋</string>
+    <string name="fb_haptic_feedback_help">每移動一步輕微震動一下，確認時震動較強，適用於這部裝置和支援震動的控制器。</string>
+</resources>

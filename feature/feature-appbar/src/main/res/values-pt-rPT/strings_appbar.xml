@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- App context menu: group headings -->
+    <string name="apps_menu_group_library">Biblioteca</string>
+    <string name="apps_menu_group_arrange">Organizar</string>
+    <string name="apps_menu_group_manage">Gerir</string>
+
+    <!-- App context menu: rows -->
+    <string name="apps_menu_launch">Iniciar</string>
+    <string name="apps_menu_edit_details">Editar detalhes da app</string>
+    <string name="apps_menu_mark_game">Marcar como jogo</string>
+    <string name="apps_menu_unmark_game">Desmarcar como jogo</string>
+    <string name="apps_menu_favorite">Favorito</string>
+    <string name="apps_menu_add_to_card">Adicionar ao cartão</string>
+    <string name="apps_menu_pin_to_top">Fixar no topo</string>
+    <string name="apps_menu_move">Mover</string>
+    <string name="apps_menu_move_to_category">Mover para categoria</string>
+    <string name="apps_menu_add_to_category">Adicionar à categoria</string>
+    <string name="apps_menu_remove_from_category">Remover da categoria</string>
+    <string name="apps_menu_rename_shortcut">Mudar o nome do atalho</string>
+    <string name="apps_menu_hide_from">Ocultar de %1$s</string>
+    <string name="apps_menu_hide_everywhere">Ocultar em todo o lado</string>
+    <string name="apps_menu_app_info">Informações da app</string>
+    <string name="apps_menu_uninstall">Desinstalar</string>
+    <string name="apps_value_on">Ativado</string>
+    <string name="apps_value_off">Desativado</string>
+    <string name="apps_uninstall_title">Desinstalar %1$s?</string>
+    <string name="apps_uninstall_message">Isto remove %1$s do seu dispositivo. O Android vai pedir a sua confirmação.</string>
+
+    <!-- Category tabs and header title -->
+    <string name="apps_filter_all">Todas as apps</string>
+    <string name="apps_filter_games">Jogos</string>
+    <string name="apps_filter_emulators">Emuladores</string>
+    <string name="apps_filter_recent">Usados recentemente</string>
+
+    <!-- Header search -->
+    <string name="apps_search_placeholder">Pesquisar…</string>
+    <string name="apps_search_button">Pesquisar</string>
+
+    <!-- Empty states -->
+    <string name="apps_empty_no_match">Nenhuma app corresponde à pesquisa</string>
+    <string name="apps_empty_no_games">Nenhum jogo encontrado</string>
+    <string name="apps_empty_no_emulators">Nenhum emulador instalado</string>
+    <string name="apps_empty_usage_access">É necessário o acesso de utilização</string>
+    <string name="apps_empty_no_recent">Nenhuma app usada recentemente</string>
+    <string name="apps_empty_no_apps">Nenhuma app instalada</string>
+    <string name="apps_hint_try_search">Tente outro termo de pesquisa</string>
+    <string name="apps_hint_games">As apps marcadas como jogos na Play Store aparecem aqui</string>
+    <string name="apps_hint_emulators">Instale o RetroArch, o PPSSPP ou outro emulador</string>
+    <string name="apps_hint_usage_access">Conceda acesso para o PFP ordenar as apps pela última utilização</string>
+    <string name="apps_open_usage_access">Abrir acesso de utilização</string>
+    <string name="apps_hint_prev">Anterior</string>
+    <string name="apps_hint_next">Seguinte</string>
+    <string name="apps_hint_back">Voltar</string>
+    <string name="apps_hint_launch">Iniciar</string>
+    <string name="apps_hint_options">Opções</string>
+    <string name="apps_hint_search">Pesquisar</string>
+    <string name="apps_drawer_title">Gaveta de aplicações</string>
+    <string name="apps_drawer_subtitle">Aplicações neste dispositivo</string>
+</resources>

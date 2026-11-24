@@ -17,7 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import com.playfieldportal.core.ui.components.PfpBusyRing
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.toClipEntry
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -43,6 +44,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.playfieldportal.core.domain.discord.DeviceAuthChallenge
 import com.playfieldportal.core.domain.discord.DeviceLoginState
+import com.playfieldportal.feature.social.R
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
 import kotlinx.coroutines.delay
@@ -83,7 +85,7 @@ fun QrLoginScreen(
 
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         when (val s = state) {
-            DeviceLoginState.Requesting -> Status("Preparing sign-in…", showSpinner = true)
+            DeviceLoginState.Requesting -> Status(stringResource(R.string.soc_qr_preparing), showSpinner = true)
 
             is DeviceLoginState.AwaitingApproval -> QrPrompt(
                 challenge = s.challenge,
@@ -91,16 +93,16 @@ fun QrLoginScreen(
                 confirmPresses = confirmPresses,
             )
 
-            is DeviceLoginState.Success -> Status("Connected", showSpinner = false)
+            is DeviceLoginState.Success -> Status(stringResource(R.string.soc_qr_connected), showSpinner = false)
 
             DeviceLoginState.Expired ->
-                Retry("The code expired.", onRetry = viewModel::start, onCancel = onCancel)
+                Retry(stringResource(R.string.soc_qr_expired), onRetry = viewModel::start, onCancel = onCancel)
 
             DeviceLoginState.Denied ->
-                Retry("Sign-in was declined.", onRetry = viewModel::start, onCancel = onCancel)
+                Retry(stringResource(R.string.soc_qr_declined), onRetry = viewModel::start, onCancel = onCancel)
 
             is DeviceLoginState.Error ->
-                Retry("Couldn’t sign in. ${s.message}", onRetry = viewModel::start, onCancel = onCancel)
+                Retry(stringResource(R.string.soc_qr_error, s.message), onRetry = viewModel::start, onCancel = onCancel)
         }
     }
 }
@@ -154,7 +156,7 @@ private fun QrPrompt(challenge: DeviceAuthChallenge, onCancel: () -> Unit, confi
         val qrImage: @Composable () -> Unit = {
             Image(
                 bitmap = qr,
-                contentDescription = "Discord sign-in QR code",
+                contentDescription = stringResource(R.string.soc_qr_content_description),
                 modifier = Modifier.size(qrSize),
             )
         }
@@ -207,7 +209,7 @@ private fun QrDetails(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("Sign in with Discord", color = themedText(Color.White), fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+        Text(stringResource(R.string.soc_qr_title), color = themedText(Color.White), fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
         Text(
             userCode,
             color = themedText(Color.White),
@@ -220,23 +222,23 @@ private fun QrDetails(
                 .padding(horizontal = 20.dp, vertical = 8.dp),
         )
         Text(
-            if (copied) "Copied!" else "Tap the code to copy",
+            stringResource(if (copied) R.string.soc_qr_copied else R.string.soc_qr_tap_to_copy),
             color = themedSubText(Color(0xCCFFFFFF)),
             fontSize = 13.sp,
         )
         Text(
-            "Scan with your phone’s camera, or go to discord.com/activate and paste the code.",
+            stringResource(R.string.soc_qr_instructions),
             color = themedSubText(Color(0xCCFFFFFF)),
             fontSize = 14.sp,
             textAlign = TextAlign.Center,
         )
         Text(
-            if (remaining > 0) "Expires in ${remaining}s" else "Expired",
+            if (remaining > 0) stringResource(R.string.soc_qr_expires_in, remaining) else stringResource(R.string.soc_qr_expired_short),
             color = themedSubText(Color(0x99FFFFFF)),
             fontSize = 12.sp,
         )
         Button(onClick = onCancel, contentPadding = PaddingValues(horizontal = 28.dp, vertical = 10.dp)) {
-            Text("Cancel")
+            Text(stringResource(R.string.soc_qr_cancel))
         }
     }
 }
@@ -247,7 +249,7 @@ private fun Status(message: String, showSpinner: Boolean) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        if (showSpinner) CircularProgressIndicator(color = Color.White)
+        if (showSpinner) PfpBusyRing(color = Color.White)
         Text(message, color = themedText(Color.White), fontSize = 18.sp)
     }
 }
@@ -260,8 +262,8 @@ private fun Retry(message: String, onRetry: () -> Unit, onCancel: () -> Unit) {
         modifier = Modifier.padding(24.dp),
     ) {
         Text(message, color = themedText(Color.White), fontSize = 18.sp, textAlign = TextAlign.Center)
-        Button(onClick = onRetry) { Text("Try again") }
-        Button(onClick = onCancel) { Text("Cancel") }
+        Button(onClick = onRetry) { Text(stringResource(R.string.soc_qr_try_again)) }
+        Button(onClick = onCancel) { Text(stringResource(R.string.soc_qr_cancel)) }
     }
 }
 

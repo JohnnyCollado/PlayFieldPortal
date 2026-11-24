@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Backup failures -->
+    <string name="bak_no_folder">Ingen säkerhetskopieringsmapp har angetts. Välj en under Inställningar → Säkerhetskopiering och återställning → Säkerhetskopieringsmapp.</string>
+    <string name="bak_too_large">Säkerhetskopian skulle bli för stor för att återställa (högst 20 000 filer och 2 GB). Ta bort oanvänd grafik eller media och försök igen.</string>
+    <string name="bak_write_failed">Det gick inte att skriva till säkerhetskopieringsmappen. Välj mappen igen i Inställningar ▸ System ▸ Säkerhetskopiering och återställning.</string>
+    <string name="bak_unknown_error">Okänt fel</string>
+    <!-- Restore failures -->
+    <string name="bak_open_failed">Det gick inte att öppna säkerhetskopian</string>
+    <string name="bak_missing_manifest">Manifest saknas i säkerhetskopian</string>
+    <string name="bak_format_too_new">Säkerhetskopians format v%1$d är nyare än appen stöder (v%2$d)</string>
+    <string name="bak_no_uri">Ingen URI angavs</string>
+    <!-- Notification titles -->
+    <string name="bak_task_created">Säkerhetskopia skapad</string>
+    <string name="bak_task_failed">Säkerhetskopieringen misslyckades</string>
+    <string name="bak_task_restored">Säkerhetskopian återställdes</string>
+    <string name="bak_task_restore_failed">Återställningen misslyckades</string>
+    <string name="bak_results_restored">Återställt</string>
+    <plurals name="bak_items_skipped">
+        <item quantity="one">%d objekt hoppades över</item>
+        <item quantity="other">%d objekt hoppades över</item>
+    </plurals>
+    <string name="bak_refused_out_of_root">Nekade \'%1$s\': inte i en mapp som kan återställas</string>
+    <string name="bak_refused_profiles_unparseable">Nekade emulatorprofiler: filen kunde inte tolkas</string>
+    <string name="bak_refused_profile">Nekade emulatorprofilen \'%1$s\': %2$s</string>
+</resources>

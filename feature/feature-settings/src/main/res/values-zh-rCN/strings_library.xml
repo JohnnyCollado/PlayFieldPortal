@@ -1,0 +1,789 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Settings ▸ Hidden Items -->
+    <string name="lib_hidden_items_title">隐藏的项目</string>
+    <string name="lib_hidden_items_group">隐藏的项目</string>
+    <string name="lib_hidden_items_help">你隐藏的应用和游戏，按项目分组并列出各自被隐藏的位置。可在项目的选项菜单中隐藏，在此处取消隐藏。</string>
+    <string name="lib_hidden_items_empty">没有隐藏任何内容。</string>
+    <string name="lib_hidden_unhide">取消隐藏</string>
+    <string name="lib_hidden_all_locations">所有位置</string>
+    <string name="lib_hidden_unhide_all">全部取消隐藏</string>
+    <string name="lib_hidden_everywhere">所有位置</string>
+
+    <!-- Default music / video player picker -->
+    <string name="lib_player_use_this">使用此播放器</string>
+    <string name="lib_player_close">关闭</string>
+
+    <!-- Settings ▸ Categories -->
+    <string name="lib_cat_title">类别</string>
+    <string name="lib_cat_scaffold_title">类别</string>
+    <string name="lib_cat_group_manage">管理</string>
+    <string name="lib_cat_create">创建类别</string>
+    <string name="lib_cat_create_sub">向 XMB 栏添加新类别</string>
+    <string name="lib_cat_group_xmb">XMB 类别</string>
+    <string name="lib_cat_row_hidden">"%1$s（已隐藏）"</string>
+    <string name="lib_cat_row_sub_builtin">"图标：%1$s  ·  内置"</string>
+    <string name="lib_cat_row_sub_custom">"图标：%1$s  ·  自定义"</string>
+    <string name="lib_cat_home_game">游戏</string>
+    <string name="lib_cat_home_app_store">应用商店</string>
+    <string name="lib_cat_created_image_failed">类别已创建，但无法保存其图片</string>
+    <!-- Name entry dialog -->
+    <string name="lib_cat_rename_title">重命名类别</string>
+    <string name="lib_cat_new_title">新建类别</string>
+    <string name="lib_cat_name_placeholder">类别名称</string>
+    <string name="lib_cat_save">保存</string>
+    <string name="lib_cat_next">下一步</string>
+    <!-- Delete dialog -->
+    <string name="lib_cat_delete_title">删除类别</string>
+    <string name="lib_cat_delete">删除</string>
+    <string name="lib_cat_delete_games_message">“%1$s”将被删除。其中的游戏会保留在你的库中。</string>
+    <string name="lib_cat_delete_apps_message">“%1$s”将被删除。其中的应用不会被卸载。</string>
+    <plurals name="lib_cat_delete_cards_games_message">
+        <item quantity="other">“%1$s”将被删除。其中的游戏会保留在你的库中。其中的 %2$d 张自定义记忆卡要如何处理？</item>
+    </plurals>
+    <plurals name="lib_cat_delete_cards_apps_message">
+        <item quantity="other">“%1$s”将被删除。其中的应用不会被卸载。其中的 %2$d 张自定义记忆卡要如何处理？</item>
+    </plurals>
+    <string name="lib_cat_delete_move_cards">将自定义卡片移至 %1$s</string>
+    <string name="lib_cat_delete_cards_too">一并删除自定义卡片</string>
+    <!-- Pick icon -->
+    <string name="lib_cat_choose_icon">选择图标</string>
+    <string name="lib_cat_change_icon_title">更换图标</string>
+    <string name="lib_cat_group_device">来自你的设备</string>
+    <string name="lib_cat_choose_image">选择图片…</string>
+    <string name="lib_cat_choose_image_sub">PNG、JPG、WEBP、BMP、HEIC 或 GIF · 动态 GIF 会播放</string>
+    <string name="lib_cat_your_image_row">你的图片</string>
+    <string name="lib_cat_image_animated_in_use">动态 · 使用中</string>
+    <string name="lib_cat_image_in_use">使用中</string>
+    <string name="lib_cat_your_image">你的图片</string>
+    <string name="lib_cat_replace_image">替换图片…</string>
+    <string name="lib_cat_replace_image_sub">选择其他文件</string>
+    <string name="lib_cat_remove_image">移除图片</string>
+    <string name="lib_cat_remove_image_sub">恢复为内置图标（%1$s）</string>
+    <string name="lib_cat_group_builtin">内置 · %1$s</string>
+    <string name="lib_cat_icon_fallback">图标</string>
+    <!-- Pick type -->
+    <string name="lib_cat_content_type">内容类型</string>
+    <string name="lib_cat_type_group">类别类型</string>
+    <string name="lib_cat_type_gaming">游戏</string>
+    <string name="lib_cat_type_gaming_sub">用于游戏和自定义记忆卡</string>
+    <string name="lib_cat_type_non_gaming">非游戏</string>
+    <string name="lib_cat_type_non_gaming_sub">用于视频、音乐、照片等应用</string>
+    <!-- Category detail -->
+    <string name="lib_cat_group_edit">编辑</string>
+    <string name="lib_cat_rename">重命名类别</string>
+    <string name="lib_cat_change_icon">更换图标</string>
+    <string name="lib_cat_show_on_bar_sub">在 XMB 中隐藏或显示此类别</string>
+    <string name="lib_cat_type">类型</string>
+    <string name="lib_cat_type_apps">应用</string>
+    <string name="lib_cat_type_gaming_note">包含游戏和自定义记忆卡。在创建类别时设置。</string>
+    <string name="lib_cat_type_apps_note">包含应用和自定义记忆卡。在创建类别时设置。</string>
+    <string name="lib_cat_group_order">顺序</string>
+    <string name="lib_cat_move">移动</string>
+    <string name="lib_cat_move_sub">用左右键沿 XMB 滑动，然后确认放置</string>
+    <string name="lib_cat_move_disabled_sub">开启“在栏上显示”后才能移动此类别</string>
+    <string name="lib_cat_group_danger">危险操作</string>
+    <string name="lib_cat_delete_row">删除类别</string>
+    <string name="lib_cat_delete_row_sub">移除此自定义类别。游戏和应用会保留在你的库中。</string>
+
+    <!-- Settings ▸ Custom Memory Cards -->
+    <string name="lib_coll_title">自定义记忆卡</string>
+    <string name="lib_coll_group_manage">管理</string>
+    <string name="lib_coll_new">新建自定义记忆卡</string>
+    <string name="lib_coll_new_sub">用于游戏或应用，例如角色扮演、正在玩、工作应用</string>
+    <string name="lib_coll_group_yours">你的自定义记忆卡</string>
+    <string name="lib_coll_none">还没有自定义记忆卡</string>
+    <string name="lib_coll_none_sub">在上方创建一张，或使用游戏或应用选项菜单中的“添加到卡片”。</string>
+    <plurals name="lib_coll_games_count">
+        <item quantity="other">%d 个游戏</item>
+    </plurals>
+    <plurals name="lib_coll_apps_count">
+        <item quantity="other">%d 个应用</item>
+    </plurals>
+    <!-- Name entry dialog -->
+    <string name="lib_coll_new_title">新建自定义记忆卡</string>
+    <string name="lib_coll_rename_title">重命名自定义记忆卡</string>
+    <string name="lib_coll_name_placeholder">卡片名称</string>
+    <string name="lib_coll_save">保存</string>
+    <string name="lib_coll_next">下一步</string>
+    <!-- Delete dialog -->
+    <string name="lib_coll_delete_title">删除自定义卡片</string>
+    <string name="lib_coll_delete_apps_message">“%1$s”将被删除。其中的应用仍会保持安装。</string>
+    <string name="lib_coll_delete_games_message">“%1$s”将被删除。其中的游戏会保留在你的库中。</string>
+    <string name="lib_coll_delete">删除</string>
+    <!-- Menu on a game inside a custom card -->
+    <string name="lib_coll_menu_view_details">查看游戏详情</string>
+    <string name="lib_coll_menu_remove">从卡片中移除</string>
+    <!-- Card detail -->
+    <string name="lib_coll_group_card">自定义记忆卡</string>
+    <string name="lib_coll_rename">重命名</string>
+    <string name="lib_coll_change_icon">更换图标</string>
+    <string name="lib_coll_default_icon">默认（记忆卡）</string>
+    <string name="lib_coll_move_up">上移</string>
+    <string name="lib_coll_move_down">下移</string>
+    <string name="lib_coll_delete_row">删除自定义卡片</string>
+    <string name="lib_coll_delete_row_apps_sub">移除卡片，其中的应用仍会保持安装</string>
+    <string name="lib_coll_delete_row_games_sub">移除卡片，其中的游戏会保留在你的库中</string>
+    <string name="lib_coll_group_apps">应用（%1$d）</string>
+    <string name="lib_coll_group_games">游戏（%1$d）</string>
+    <string name="lib_coll_no_apps">此卡片中没有应用</string>
+    <string name="lib_coll_no_apps_sub">可通过应用选项菜单中的“添加到卡片”添加应用。</string>
+    <string name="lib_coll_no_games">此卡片中没有游戏</string>
+    <string name="lib_coll_no_games_sub">可通过游戏选项菜单中的“添加到卡片”添加游戏。</string>
+    <!-- Category picker for a new card -->
+    <string name="lib_coll_card_kind_game">游戏卡片</string>
+    <string name="lib_coll_card_kind_app">应用卡片</string>
+    <string name="lib_coll_pick_category_title">添加到类别</string>
+    <string name="lib_coll_pick_category_message">“%1$s”应显示在哪一栏中？</string>
+    <string name="lib_coll_create">创建</string>
+    <!-- Card icon step -->
+    <string name="lib_coll_icon_title">卡片图标 · %1$s</string>
+    <string name="lib_coll_group_device">来自你的设备</string>
+    <string name="lib_coll_group_theme">来自已应用的主题</string>
+    <string name="lib_coll_animated">动态</string>
+    <string name="lib_coll_group_builtin">内置</string>
+    <string name="lib_coll_image_unusable">无法使用该图片。</string>
+
+    <!-- Settings ▸ Emulators -->
+    <string name="lib_emu_title">模拟器</string>
+    <string name="lib_emu_subtitle_installed">模拟器 · 已安装</string>
+    <string name="lib_emu_subtitle_custom">模拟器 · 自定义</string>
+    <string name="lib_emu_subtitle_retroarch">模拟器 · RetroArch</string>
+    <string name="lib_emu_add_title">添加模拟器</string>
+    <string name="lib_emu_detecting">正在检测…</string>
+    <string name="lib_emu_inspecting">正在检查已安装的应用…</string>
+    <string name="lib_emu_reset_title">重置模拟器配置？</string>
+    <string name="lib_emu_reset_message">这将清除所有自动检测和自定义的模拟器启动设置，然后恢复内置的默认设置。\n\n你的游戏库、ROM 路径、图片、元数据和存档数据不受影响。</string>
+    <string name="lib_emu_reset">重置</string>
+    <string name="lib_emu_group_installed">已安装</string>
+    <string name="lib_emu_none_installed">此设备上未检测到受支持的模拟器</string>
+    <string name="lib_emu_group_available">可用（未安装）</string>
+    <string name="lib_emu_all_installed">所有已知模拟器均已安装</string>
+    <string name="lib_emu_group_custom">自定义配置文件</string>
+    <string name="lib_emu_none_custom">还没有自定义配置文件</string>
+    <string name="lib_emu_add_custom">添加自定义模拟器</string>
+    <string name="lib_emu_add_custom_sub">选择一个应用，我们会自动检测其启动设置</string>
+    <string name="lib_emu_group_ra_detection">RetroArch 核心检测</string>
+    <string name="lib_emu_ra_scanning">正在扫描 RetroArch 中已安装的核心…</string>
+    <plurals name="lib_emu_ra_linked">
+        <item quantity="other">已关联，检测到 %d 个核心。只会提供已安装的核心，因此不会因缺少核心而黑屏。</item>
+    </plurals>
+    <string name="lib_emu_ra_access_lost">已关联，但访问权限已丢失（例如重新安装后）。请重新关联 RetroArch 以再次检测核心。</string>
+    <string name="lib_emu_ra_not_linked">未关联。PFP 无法得知已安装了哪些 RetroArch 核心，因此会提供全部核心；启动未安装的核心会出现黑屏。请关联 RetroArch 以检测已安装的核心。</string>
+    <string name="lib_emu_ra_relink">重新关联 RetroArch 文件夹</string>
+    <string name="lib_emu_ra_link">关联 RetroArch 以检测核心</string>
+    <string name="lib_emu_ra_link_sub">在选择器中选择 RetroArch 的文件夹（授予访问权限），以便 PFP 读取其已安装的核心</string>
+    <string name="lib_emu_group_cores">可用核心</string>
+    <string name="lib_emu_ra_no_cores">尚未检测到 RetroArch 核心。</string>
+    <string name="lib_emu_ra_core_available">可在 RetroArch 中使用</string>
+    <string name="lib_emu_ra_rescan">重新扫描已安装的核心</string>
+    <string name="lib_emu_ra_rescan_sub">在 RetroArch 的核心下载器中下载更多核心后运行</string>
+    <string name="lib_emu_ra_unlink">取消关联 RetroArch</string>
+    <string name="lib_emu_ra_unlink_sub">恢复为提供所有未经验证的核心</string>
+    <string name="lib_emu_group_maintenance">维护</string>
+    <string name="lib_emu_reset_row">重置模拟器配置</string>
+    <string name="lib_emu_reset_row_sub">清除启动设置并恢复默认设置。你的游戏、图片和存档不受影响。</string>
+    <!-- Add emulator wizard -->
+    <string name="lib_emu_pick_app">选择应用</string>
+    <string name="lib_emu_group_apps">已安装的应用</string>
+    <string name="lib_emu_no_apps">未找到可启动的应用。</string>
+    <!-- Test launch -->
+    <string name="lib_emu_test_title">测试启动</string>
+    <string name="lib_emu_test_pick_rom">选择 ROM</string>
+    <string name="lib_emu_test_group_roms">你的 ROM</string>
+    <string name="lib_emu_test_no_roms">没有已扫描的 ROM 可供测试。请先扫描一个主机，或直接保存后在库中尝试。</string>
+    <string name="lib_emu_preview_group">Intent 预览</string>
+    <string name="lib_emu_preview_package">软件包</string>
+    <string name="lib_emu_preview_activity">Activity</string>
+    <string name="lib_emu_preview_activity_default">（由软件包解析）</string>
+    <string name="lib_emu_preview_action">Action</string>
+    <string name="lib_emu_preview_mime">MIME</string>
+    <string name="lib_emu_preview_uri_mode">URI 模式</string>
+    <string name="lib_emu_preview_rom">ROM</string>
+    <string name="lib_emu_preview_extras">Extras</string>
+    <string name="lib_emu_preview_flags">Flags</string>
+    <string name="lib_emu_none">（无）</string>
+    <string name="lib_emu_uri_mode_raw_path">原始路径（由模拟器自行打开文件）</string>
+    <string name="lib_emu_uri_mode_saf">content://（FileProvider，已授予读取权限）</string>
+    <string name="lib_emu_uri_mode_file">file://（API 24+ 上为 content://）</string>
+    <string name="lib_emu_action_unsupported">（不支持）</string>
+    <string name="lib_emu_action_shortcut">（快捷方式）</string>
+    <string name="lib_emu_result_group">结果</string>
+    <string name="lib_emu_actions_group">操作</string>
+    <string name="lib_emu_launch_now">立即启动</string>
+    <string name="lib_emu_launch_now_sub">将 intent 发送给应用</string>
+    <string name="lib_emu_pick_other_rom">选择其他 ROM</string>
+    <string name="lib_emu_test_rom_unloadable">无法载入该 ROM。</string>
+    <string name="lib_emu_test_resolves_ok">解析成功。按“立即启动”即可尝试。</string>
+    <string name="lib_emu_test_launched">已启动，请检查模拟器。</string>
+    <string name="lib_emu_error_activity_not_found">找不到该应用界面，或该应用不允许从外部打开它。请检查界面名称，或改用“用应用打开 ROM”启动方式。</string>
+    <string name="lib_emu_error_permission_denied">权限被拒绝：应用拒绝了 ROM URI。请尝试在 SAF（content://）和文件 URI 之间切换。</string>
+    <string name="lib_emu_error_rom_not_accepted">%1$s 应用不接受此 MIME 类型 / URI 模式，请尝试另一种 URI 模式。</string>
+    <string name="lib_emu_error_unknown">启动因未知原因失败。</string>
+    <string name="lib_emu_error_name_required">名称为必填项</string>
+    <string name="lib_emu_error_package_required">软件包名称为必填项</string>
+    <string name="lib_emu_row_sub">"%1$s  ·  %2$s"</string>
+    <string name="lib_emu_row_sub_retroarch_core">"%1$s  ·  %2$s  ·  RetroArch 核心"</string>
+    <string name="lib_emu_row_sub_auto">"%1$s  ·  %2$s  ·  自动检测"</string>
+    <string name="lib_emu_badge_unavailable">不可用</string>
+    <string name="lib_emu_badge_auto">自动</string>
+    <string name="lib_emu_badge_edited">已编辑</string>
+    <string name="lib_emu_edit">编辑</string>
+
+    <!-- Emulator profile editor -->
+    <string name="lib_prof_new">新建配置文件</string>
+    <string name="lib_prof_edit">编辑配置文件</string>
+    <string name="lib_prof_group_templates">推荐模板</string>
+    <string name="lib_emu_template_view_content">用应用打开 ROM（content:// 链接）</string>
+    <string name="lib_emu_template_view_content_desc">大多数现代模拟器（Eden、Azahar、PPSSPP） · ACTION_VIEW</string>
+    <string name="lib_emu_template_view_file">用应用打开 ROM（文件路径）</string>
+    <string name="lib_emu_template_view_file_desc">读取原始文件路径的旧版模拟器 · ACTION_VIEW</string>
+    <string name="lib_emu_template_component">使用启动路径打开应用界面</string>
+    <string name="lib_emu_template_component_desc">DuckStation / AetherSX2 风格 · COMPONENT</string>
+    <string name="lib_emu_template_retroarch">RetroArch 核心（ROM + LIBRETRO）</string>
+    <string name="lib_emu_template_retroarch_desc">在 LIBRETRO 中设置核心路径</string>
+    <string name="lib_prof_group_required">必填</string>
+    <string name="lib_prof_display_name">显示名称</string>
+    <string name="lib_prof_display_name_hint">例如：My Emulator</string>
+    <string name="lib_prof_package">软件包名称</string>
+    <string name="lib_prof_package_hint">例如：com.example.emulator</string>
+    <string name="lib_prof_group_launch">启动方式</string>
+    <string name="lib_prof_type_view">用应用打开 ROM：大多数模拟器（PPSSPP、Dolphin、DuckStation…）。Android 术语：ACTION_VIEW</string>
+    <string name="lib_prof_type_component">打开应用界面：RetroArch 以及需要指定特定界面的应用。Android 术语：COMPONENT</string>
+    <string name="lib_prof_type_shortcut">主屏幕快捷方式：Winlator、GameHub 及自定义启动器</string>
+    <string name="lib_prof_type_custom">不支持：启动时会拒绝自定义命令</string>
+    <string name="lib_prof_group_optional">可选</string>
+    <string name="lib_prof_activity">应用界面（Activity class）</string>
+    <string name="lib_prof_activity_hint">例如：com.example.emulator.MainActivity（留空则使用默认值）</string>
+    <string name="lib_prof_platforms">支持的平台</string>
+    <string name="lib_prof_platforms_hint">psx,psp,ps2（以逗号分隔的平台 ID）</string>
+    <string name="lib_prof_mime">MIME 类型</string>
+    <string name="lib_prof_mime_hint">例如：application/octet-stream</string>
+    <string name="lib_prof_notes">备注</string>
+    <string name="lib_prof_notes_hint">此配置文件的可选备注</string>
+    <string name="lib_prof_group_uri">URI 标志</string>
+    <string name="lib_prof_use_file_uri">使用文件 URI</string>
+    <string name="lib_prof_use_file_uri_sub">以 file:// URI 传递 ROM 路径（大多数模拟器）</string>
+    <string name="lib_prof_use_saf_uri">使用 SAF URI</string>
+    <string name="lib_prof_use_saf_uri_sub">传递 SAF content:// URI，而不是文件路径</string>
+    <string name="lib_prof_group_advanced">高级</string>
+    <string name="lib_prof_intent_help">自定义 intent 的工作原理</string>
+    <string name="lib_prof_intent_help_hide">按下即可隐藏字段说明</string>
+    <string name="lib_prof_intent_help_show">悬停或按下即可显示字段说明</string>
+    <string name="lib_prof_intent_action">Intent action</string>
+    <string name="lib_prof_intent_action_hint">例如：me.magnum.melonds.LAUNCH_ROM（留空 = 默认）</string>
+    <string name="lib_prof_intent_extras">Intent extras</string>
+    <string name="lib_prof_intent_extras_hint">每行一个 key=value。可用 {rom_path}、{rom_uri}、{core_path} 标记。true/false = 布尔值。</string>
+    <string name="lib_prof_intent_flags">Intent flags</string>
+    <string name="lib_prof_intent_flags_hint">CLEAR_TASK, CLEAR_TOP, NEW_TASK（以逗号分隔）</string>
+    <string name="lib_prof_intent_category">Intent category</string>
+    <string name="lib_prof_intent_category_hint">例如：android.intent.category.LEANBACK_LAUNCHER</string>
+    <string name="lib_prof_core_path">RetroArch 核心路径</string>
+    <string name="lib_prof_extensions">支持的扩展名</string>
+    <string name="lib_prof_extensions_hint">iso,cso,chd（仅供参考）</string>
+    <string name="lib_prof_group_test">测试</string>
+    <string name="lib_prof_test">使用 ROM 测试启动</string>
+    <string name="lib_prof_test_sub">选择已扫描的 ROM，预览 intent 并尝试启动</string>
+    <string name="lib_prof_group_actions">操作</string>
+    <string name="lib_prof_saving">正在保存…</string>
+    <string name="lib_prof_save">保存配置文件</string>
+    <string name="lib_prof_save_new_sub">添加到自定义配置文件</string>
+    <string name="lib_prof_save_edit_sub">更新此配置文件</string>
+    <string name="lib_prof_delete">删除配置文件</string>
+    <string name="lib_prof_delete_sub">永久移除此自定义配置文件</string>
+    <string name="lib_prof_delete_button">删除</string>
+    <!-- Field guide shown in the profile editor -->
+    <string name="lib_help_launch_method">启动方式</string>
+    <string name="lib_help_launch_view">用应用打开 ROM：将 ROM 以文件链接的形式交给应用（ACTION_VIEW）。适用于大多数模拟器。</string>
+    <string name="lib_help_launch_component">打开应用界面：附带额外设置启动应用的特定界面（COMPONENT）。RetroArch、DuckStation。</string>
+    <string name="lib_help_action">Intent Action</string>
+    <string name="lib_help_action_line">模拟器 Activity 所需的 action。留空 = 默认（VIEW / MAIN）。</string>
+    <string name="lib_help_action_examples">"例如：me.magnum.melonds.LAUNCH_ROM   或   android.nfc.action.TECH_DISCOVERED"</string>
+    <string name="lib_help_extras">"Intent Extras（每行一个 key=value）"</string>
+    <string name="lib_help_extras_tokens">以下标记会在启动时被替换：</string>
+    <string name="lib_help_extras_rom_uri">"   {rom_uri}：content:// URI（推荐；适用于分区存储）"</string>
+    <string name="lib_help_extras_rom_path">"   {rom_path}：原始文件路径      {core_path}   {package}   {platform}"</string>
+    <string name="lib_help_extras_boolean">值为 true 或 false 时会作为布尔型 extra 发送。</string>
+    <string name="lib_help_extras_examples">"例如：   bootPath={rom_uri}      resumeState=false"</string>
+    <string name="lib_help_flags">Intent Flags</string>
+    <string name="lib_help_flags_line">"以逗号分隔：  CLEAR_TASK, CLEAR_TOP, NEW_TASK"</string>
+    <string name="lib_help_category">Intent Category</string>
+    <string name="lib_help_category_line">例如：android.intent.category.LEANBACK_LAUNCHER</string>
+    <string name="lib_help_tip">提示</string>
+    <string name="lib_help_tip_line1">建议在开启“使用 SAF URI”的情况下使用 {rom_uri}，这样模拟器可获得</string>
+    <string name="lib_help_tip_line2">该 ROM 的读取权限，而无需任何全部存储权限。</string>
+
+    <!-- Settings ▸ Emulators ▸ Per-System Defaults -->
+    <string name="lib_assign_title">各系统默认设置</string>
+    <string name="lib_assign_task_label">模拟器分配</string>
+    <string name="lib_assign_default_set">%1$s：默认模拟器已设为 %2$s</string>
+    <string name="lib_assign_using_recommended">%1$s：正在使用推荐的模拟器</string>
+    <plurals name="lib_assign_overrides_cleared">
+        <item quantity="other">%1$s：已清除 %2$d 个单独游戏设置，这些游戏现在将使用平台默认设置</item>
+    </plurals>
+    <string name="lib_assign_group_consoles">有游戏的主机</string>
+    <string name="lib_assign_none">还没有包含游戏的主机。请先扫描一个主机，然后在此处设置其默认模拟器和核心。</string>
+    <string name="lib_assign_overridden">%1$d 个单独设置</string>
+    <string name="lib_assign_badge_core_missing">缺少核心</string>
+    <string name="lib_assign_badge_no_emulator">无模拟器</string>
+    <string name="lib_assign_badge_active">使用中</string>
+    <string name="lib_assign_badge_default">默认</string>
+    <string name="lib_assign_badge_recommended">推荐</string>
+    <string name="lib_assign_default_is">默认：%1$s</string>
+    <string name="lib_assign_no_emulator">无模拟器</string>
+    <string name="lib_assign_core_is">核心：%1$s</string>
+    <plurals name="lib_assign_game_count">
+        <item quantity="other">%d 个游戏</item>
+    </plurals>
+    <plurals name="lib_assign_clear_title">
+        <item quantity="other">清除 %d 个单独设置？</item>
+    </plurals>
+    <string name="lib_assign_clear_message">这些 %1$s 游戏各自固定了模拟器，会忽略此平台的默认设置。清除后，%1$s 上的所有游戏都将使用默认设置。</string>
+    <string name="lib_assign_clear">清除</string>
+    <string name="lib_assign_group_current">当前默认</string>
+    <string name="lib_assign_emulator">模拟器</string>
+    <string name="lib_assign_none_value">无</string>
+    <string name="lib_assign_ra_core">RetroArch 核心</string>
+    <string name="lib_assign_group_choose">选择默认</string>
+    <string name="lib_assign_automatic">自动（推荐）</string>
+    <string name="lib_assign_automatic_sub">第一个已安装的模拟器，独立模拟器优先于 RetroArch 核心</string>
+    <string name="lib_assign_no_candidates">没有已安装的模拟器能运行此平台。请安装一个，或关联 RetroArch 并通过核心检测生成配置文件，之后启动时会自动确定模拟器。</string>
+    <string name="lib_assign_group_overrides">单独游戏设置</string>
+    <string name="lib_assign_overrides_label">使用自定义模拟器的游戏</string>
+    <string name="lib_assign_overrides_value">%1$d / %2$d</string>
+    <string name="lib_assign_overrides_none">无，所有游戏都使用上方的默认设置</string>
+    <string name="lib_assign_overrides_some">这些游戏使用各自固定的模拟器启动，会忽略默认设置</string>
+    <plurals name="lib_assign_clear_all">
+        <item quantity="other">清除全部 %d 个单独设置</item>
+    </plurals>
+    <string name="lib_assign_clear_all_sub">将这些游戏重置为使用平台默认设置</string>
+    <string name="lib_assign_source_card">主机默认：在此处或库管理器中设置</string>
+    <string name="lib_assign_source_platform">平台默认</string>
+    <string name="lib_assign_source_game">单独游戏设置</string>
+    <string name="lib_assign_source_auto">自动：第一个已安装的模拟器</string>
+    <string name="lib_assign_source_stored_missing">已保存的默认模拟器（%1$s）未安装或无法运行此平台</string>
+    <string name="lib_assign_source_platform_missing">平台默认模拟器未安装或无法运行此平台</string>
+    <string name="lib_assign_source_none">此平台未安装模拟器</string>
+
+    <!-- Settings ▸ Emulators ▸ Emulator knowledge -->
+    <string name="lib_kb_title">模拟器知识库</string>
+    <string name="lib_kb_status_builtin">仅内置</string>
+    <string name="lib_kb_status_not_configured">内置 · 未配置更新</string>
+    <string name="lib_kb_status_official">官方</string>
+    <string name="lib_kb_status_official_version">官方 v%1$s</string>
+    <string name="lib_kb_status_verified">已验证</string>
+    <plurals name="lib_kb_emulators_count">
+        <item quantity="other">%d 个模拟器</item>
+    </plurals>
+    <plurals name="lib_kb_consoles_count">
+        <item quantity="other">%d 个主机</item>
+    </plurals>
+    <plurals name="lib_kb_console_updates_count">
+        <item quantity="other">%d 个主机更新</item>
+    </plurals>
+    <string name="lib_kb_checked_today">今天 %1$s 已检查</string>
+    <string name="lib_kb_checked_yesterday">昨天 %1$s 已检查</string>
+    <string name="lib_kb_checked_on">%1$s %2$s 已检查</string>
+    <string name="lib_kb_import_label">导入 %1$s</string>
+    <string name="lib_kb_update_label">更新 %1$s</string>
+    <string name="lib_kb_import_and_update_label">导入 %1$s并更新 %2$s</string>
+    <string name="lib_kb_export_label">导出 %1$s</string>
+    <string name="lib_kb_group_status">状态</string>
+    <string name="lib_kb_new_file_types">新文件类型</string>
+    <string name="lib_kb_new_file_types_sub">%1$s 重新扫描你的库即可识别这些类型。</string>
+    <string name="lib_kb_group_updates">更新</string>
+    <string name="lib_kb_check">检查更新</string>
+    <string name="lib_kb_check_sub">仅限来自 PlayFieldPortal 的已签名文件</string>
+    <string name="lib_kb_checking">正在检查…</string>
+    <string name="lib_kb_not_available">此版本不可用</string>
+    <string name="lib_kb_auto_update">自动更新</string>
+    <string name="lib_kb_auto_update_sub">每天最多一次</string>
+    <string name="lib_kb_check_failed">无法完成检查。</string>
+    <string name="lib_kb_group_files">文件</string>
+    <string name="lib_kb_import">导入知识文件</string>
+    <string name="lib_kb_import_sub">此设备上的 .json 文件，导入前会先检查</string>
+    <string name="lib_kb_group_your_files">你的文件</string>
+    <string name="lib_kb_file_unreadable_sub">无法读取 · 未签名</string>
+    <plurals name="lib_kb_file_sub">
+        <item quantity="other">%d 个模拟器 · 未签名</item>
+    </plurals>
+    <string name="lib_kb_remove_file">移除 %1$s</string>
+    <string name="lib_kb_badge_custom">自定义</string>
+    <string name="lib_kb_badge_unreadable">无法读取</string>
+    <string name="lib_kb_export">导出你的模拟器</string>
+    <string name="lib_kb_export_sub">将你的自定义模拟器和编辑过的模拟器作为一个 .json 分享</string>
+    <string name="lib_kb_group_reset">重置</string>
+    <string name="lib_kb_reset_row">恢复为内置版本</string>
+    <string name="lib_kb_reset_row_sub">丢弃更新和你的文件</string>
+    <string name="lib_kb_remove_title">移除文件？</string>
+    <string name="lib_kb_remove_message">“%1$s”将从此设备中移除。内置和官方的模拟器知识库不受影响。</string>
+    <string name="lib_kb_remove">移除</string>
+    <string name="lib_kb_remove_failed_title">无法移除文件</string>
+    <string name="lib_kb_remove_failed_message">无法移除该文件。</string>
+    <string name="lib_kb_reset_title">恢复为内置版本？</string>
+    <string name="lib_kb_reset_message">已下载的更新和你导入的文件将被丢弃。PlayField Portal 自带的模拟器知识库会保留。</string>
+    <string name="lib_kb_reset">重置</string>
+    <string name="lib_kb_reset_failed_title">无法重置</string>
+    <string name="lib_kb_reset_failed_message">无法重置模拟器知识库。</string>
+    <string name="lib_kb_import_failed_title">无法导入该文件</string>
+    <string name="lib_kb_import_too_large">该文件过大，不可能是模拟器知识文件。</string>
+    <string name="lib_kb_import_unreadable">无法读取该文件。</string>
+    <string name="lib_kb_import_nothing">该文件中没有可在此设备上导入的内容。</string>
+    <string name="lib_kb_import_save_failed">无法在此设备上保存该文件。</string>
+    <string name="lib_kb_import_refresh_failed">文件已保存，但刷新模拟器检测失败。</string>
+    <string name="lib_kb_review_title">检查 %1$s</string>
+    <string name="lib_kb_review_unsigned">未签名 · 来自此设备上的文件</string>
+    <string name="lib_kb_review_unsigned_sub">请只导入你信任的文件：这些文件会告诉 PFP 用哪个应用打开你的游戏。</string>
+    <string name="lib_kb_badge_unsigned">未签名</string>
+    <string name="lib_kb_group_new">新模拟器</string>
+    <string name="lib_kb_review_add">添加 %1$s</string>
+    <string name="lib_kb_group_existing">已在此设备上</string>
+    <string name="lib_kb_review_override">覆盖 %1$s</string>
+    <string name="lib_kb_badge_overrides_official">覆盖官方</string>
+    <string name="lib_kb_badge_your_edit">你的编辑</string>
+    <string name="lib_kb_group_consoles">主机</string>
+    <string name="lib_kb_review_update">更新 %1$s</string>
+    <string name="lib_kb_review_extensions">+ 扩展名：%1$s</string>
+    <string name="lib_kb_group_blocked">已阻止</string>
+    <string name="lib_kb_review_entry">条目 %1$d</string>
+    <string name="lib_kb_review_unchanged">%1$d 项已是最新</string>
+    <string name="lib_kb_group_finish">完成</string>
+    <string name="lib_kb_cancel">取消</string>
+    <string name="lib_kb_prompt_toggle">切换</string>
+    <string name="lib_kb_prompt_cancel">取消</string>
+    <string name="lib_kb_opens_game_file">打开游戏文件</string>
+    <string name="lib_kb_opens_own_activity">通过其自身的 Activity 打开</string>
+    <string name="lib_kb_opens_shortcut">通过快捷方式打开</string>
+    <string name="lib_kb_opens_custom_command">通过自定义命令打开</string>
+    <string name="lib_kb_intent_view">打开 ROM 文件</string>
+    <string name="lib_kb_intent_component">打开特定界面</string>
+    <string name="lib_kb_intent_shortcut">通过快捷方式打开</string>
+    <string name="lib_kb_export_title_sub">保存为一个可分享的 .json 文件</string>
+    <string name="lib_kb_export_select_all">全选</string>
+    <string name="lib_kb_export_selected">已选择 %1$d / %2$d 个</string>
+    <string name="lib_kb_group_custom">自定义模拟器</string>
+    <string name="lib_kb_group_edited">编辑过的官方模拟器</string>
+    <string name="lib_kb_export_changes_only">仅你的更改 · %1$s</string>
+    <string name="lib_kb_export_privacy">只保存启动设置，不包含游戏列表、ROM 路径或帐号信息。</string>
+    <string name="lib_kb_group_cant_share">无法分享</string>
+    <string name="lib_kb_export_nothing_title">没有可导出的内容</string>
+    <string name="lib_kb_export_none_message">你还没有可分享的自定义模拟器或编辑过的模拟器。</string>
+    <string name="lib_kb_export_none_shareable">你的模拟器都无法分享</string>
+    <string name="lib_kb_exported_title">已导出</string>
+    <plurals name="lib_kb_exported_message">
+        <item quantity="other">已导出 %d 个模拟器</item>
+    </plurals>
+    <string name="lib_kb_export_failed_title">无法导出</string>
+    <string name="lib_kb_export_failed_message">无法保存该文件。</string>
+
+    <!-- Windows ▸ Game List -->
+    <string name="lib_win_title">Windows 游戏</string>
+    <plurals name="lib_win_game_count">
+        <item quantity="other">%d 个游戏</item>
+    </plurals>
+    <string name="lib_win_empty">还没有 Windows 游戏。请先通过“导入 PC 游戏”导入一些游戏。</string>
+    <string name="lib_win_working">正在处理…</string>
+    <string name="lib_win_current">当前</string>
+    <string name="lib_win_link_folder">关联文件夹</string>
+    <string name="lib_win_change_folder">更改关联的文件夹</string>
+    <string name="lib_win_label_non_steam">非 Steam（已拥有）</string>
+    <string name="lib_win_label_local">本地</string>
+    <string name="lib_win_auto_value">自动：%1$s</string>
+    <string name="lib_win_auto_option">自动（%1$s）</string>
+    <string name="lib_win_auto">自动</string>
+    <string name="lib_win_not_set">未设置</string>
+    <string name="lib_win_label_save_failed">无法保存该标签。</string>
+    <string name="lib_win_label_steam_not_found">已标记为 Steam，但未找到匹配的 Steam 游戏，因此未关联任何内容。</string>
+    <string name="lib_win_folder_unreadable">无法读取该文件夹。请重新选择，或重新挂载其所在的存储设备。</string>
+    <string name="lib_win_several_matches">有多个 Steam 游戏与“%1$s”匹配。请在该游戏的 Shiba Coins 页面中完成此文件夹的关联，并在那里选择正确的游戏。</string>
+    <string name="lib_win_kit_title">“%1$s”中没有成就列表</string>
+    <string name="lib_win_kit_message_installer">此文件夹中还没有模拟器成就数据。你可以直接关联，或先将模拟器套件安装到其中。</string>
+    <string name="lib_win_kit_message_no_installer">此文件夹中还没有模拟器成就数据。你可以直接关联，或在“设置 ▸ 成就 ▸ 本地 Windows”中开启“安装 Goldberg 并转换游戏”来安装套件。</string>
+    <string name="lib_win_kit_link_only">仅关联</string>
+    <string name="lib_win_kit_install_and_link">安装套件并关联</string>
+    <string name="lib_win_kit_link">关联</string>
+
+    <!-- PC games: scan and export messages -->
+    <string name="lib_pc_scan_no_root">请先添加 ROM 文件夹。PFP 会为导出的游戏创建 &lt;ROM 文件夹&gt;/windows/import。</string>
+    <string name="lib_pc_scan_folder_unreadable">无法读取该文件夹。请选择你的启动器导出游戏的文件夹。</string>
+    <string name="lib_pc_scan_none_found">在所选文件夹中未找到导出的 PC 游戏。</string>
+    <plurals name="lib_pc_scan_imported">
+        <item quantity="other">已导入 %1$d 个 PC 游戏。</item>
+    </plurals>
+    <plurals name="lib_pc_scan_imported_skipped">
+        <item quantity="other">已导入 %1$d 个 PC 游戏，跳过 %2$d 个（未安装匹配的启动器）。</item>
+    </plurals>
+    <plurals name="lib_pc_scan_restored">
+        <item quantity="other">已从 .pfpgame 文件恢复 %1$d 个游戏，并匹配 %2$d 个游戏。</item>
+    </plurals>
+    <plurals name="lib_pc_scan_restore_skipped">
+        <item quantity="other">已跳过 %d 个 .pfpgame 文件：未安装启动器、有歧义，或固定的快捷方式不在库中。</item>
+    </plurals>
+    <plurals name="lib_pc_scan_restore_untrusted">
+        <item quantity="other">已忽略 %d 个无法读取或不受信任的 .pfpgame 文件。</item>
+    </plurals>
+    <plurals name="lib_pc_scan_relinked">
+        <item quantity="other">已按名称重新连接导出的图片（已更新 %d 个游戏）。</item>
+    </plurals>
+    <string name="lib_pc_scan_relink_no_folder">请关联图片文件夹，然后重新扫描以重新连接导出的图片。</string>
+    <string name="lib_pc_scan_relink_failed">重新连接导出的图片失败，请查看日志。</string>
+    <plurals name="lib_pc_scan_pins_reconciled">
+        <item quantity="other">已核对 %d 个固定的快捷方式。</item>
+    </plurals>
+    <string name="lib_pc_export_game_gone">该游戏已不在库中。</string>
+    <string name="lib_pc_export_pc_only">只能导出 PC 游戏。</string>
+    <string name="lib_pc_export_no_launcher">%1$s 没有可用于恢复它的启动器，因此无法导出。</string>
+    <string name="lib_pc_export_one_done">已将 %1$s 导出到 windows/import，文件名为 %2$s。</string>
+    <string name="lib_pc_export_one_failed">无法将 %1$s 写入 windows/import。</string>
+    <string name="lib_pc_export_no_root">请先添加 ROM 文件夹。PFP 会将 PC 游戏导出到 &lt;ROM 文件夹&gt;/windows/import。</string>
+    <string name="lib_pc_export_no_folder">无法打开 &lt;windows&gt;/import。请重新关联 ROM 文件夹后重试。</string>
+    <string name="lib_pc_export_nothing_needed">没有需要导出文件的 PC 游戏：启动器导出的游戏和没有图片的固定快捷方式会自动恢复。</string>
+    <plurals name="lib_pc_export_bulk_done">
+        <item quantity="other">已将 %d 个 PC 游戏导出到 windows/import</item>
+    </plurals>
+    <string name="lib_pc_export_bulk_skipped">%1$d 个无需文件</string>
+    <string name="lib_pc_export_bulk_failed">%1$d 个无法写入</string>
+
+    <!-- Settings ▸ Library Manager -->
+    <string name="lib_lm_title">库管理器</string>
+    <string name="lib_lm_library_title">库</string>
+    <string name="lib_lm_root_group">ROM 文件夹访问权限</string>
+    <string name="lib_lm_root_add">添加 ROM 文件夹</string>
+    <string name="lib_lm_root_add_sub">授权一个 ROM 文件夹（例如 /Roms），或第二个位置，例如 SD 卡</string>
+    <string name="lib_lm_root_scan">扫描 ROM 文件夹</string>
+    <string name="lib_lm_root_scan_sub">在 ROM 文件夹中查找主机文件夹并添加其中的游戏</string>
+    <string name="lib_lm_group_consoles">主机</string>
+    <string name="lib_lm_no_consoles">未配置主机。添加主机即可创建一张显示在“游戏”中的记忆卡。</string>
+    <string name="lib_lm_card_hidden">"%1$s（已隐藏）"</string>
+    <string name="lib_lm_pinned">已置顶</string>
+    <string name="lib_lm_group_manage">管理</string>
+    <string name="lib_lm_add_console">添加主机</string>
+    <string name="lib_lm_add_console_sub">选择一个平台，其游戏位于主 ROM 文件夹中对应的文件夹内</string>
+    <string name="lib_lm_setup_folders">设置 ROM 文件夹（ES-DE）</string>
+    <string name="lib_lm_setup_folders_sub">选择一个空文件夹，PFP 会为你创建标准的 ES-DE 系统文件夹（gba、snes、psx…），供你复制游戏进去。无需猜测文件夹名称</string>
+    <string name="lib_lm_scan_all">扫描所有主机</string>
+    <string name="lib_lm_scanning_count">正在扫描 %1$d 个…</string>
+    <string name="lib_lm_configure_first">请先配置 ROM 文件夹</string>
+    <string name="lib_lm_scan_all_sub">扫描每个已启用主机的文件夹</string>
+    <string name="lib_lm_rescan_all">全部重新扫描（标记缺失）</string>
+    <string name="lib_lm_rescan_all_sub">同时将 ROM 文件已不存在的游戏标记为缺失。这些游戏仍会保留在你的库中</string>
+    <string name="lib_lm_rescan_confirm">确认：重新扫描并标记缺失的游戏？</string>
+    <string name="lib_lm_rescan_confirm_sub">将 ROM 文件已不存在的游戏标记为缺失；收藏夹、游戏时间和图片会保留。库较大时可能需要一些时间</string>
+    <string name="lib_lm_cancel">取消</string>
+    <!-- Add console flow -->
+    <string name="lib_lm_add_console_title">添加主机</string>
+    <string name="lib_lm_choose_platform">选择平台</string>
+    <string name="lib_lm_group_platforms">支持的平台</string>
+    <string name="lib_lm_assign_emulator">分配模拟器</string>
+    <string name="lib_lm_emulator">模拟器</string>
+    <string name="lib_lm_no_emulators">未检测到此平台的已安装模拟器。你可以稍后在主机详情界面中分配。</string>
+    <string name="lib_lm_decide_later">稍后决定</string>
+    <string name="lib_lm_scan_now_title">立即扫描？</string>
+    <string name="lib_lm_new_console">新主机</string>
+    <string name="lib_lm_rom_directory">ROM 目录</string>
+    <string name="lib_lm_not_set">未设置</string>
+    <string name="lib_lm_scan_now">立即扫描</string>
+    <string name="lib_lm_scan_now_sub">创建记忆卡并立即扫描其文件夹</string>
+    <string name="lib_lm_add_no_scan">添加但不扫描</string>
+    <string name="lib_lm_add_no_scan_sub">现在创建记忆卡，稍后再扫描</string>
+    <!-- Console (Memory Card) detail -->
+    <string name="lib_lm_rename_title">重命名记忆卡</string>
+    <string name="lib_lm_rename_placeholder">记忆卡名称</string>
+    <string name="lib_lm_remove_card_title">移除 %1$s？</string>
+    <string name="lib_lm_remove_card_message">此操作会从库中移除该主机及其已扫描的游戏。ROM 文件仍会保留在你的设备上。</string>
+    <string name="lib_lm_remove_app_message">此操作会从此库中移除该应用。应用本身仍会保持安装。</string>
+    <string name="lib_lm_remove">移除</string>
+    <string name="lib_lm_group_library">库</string>
+    <string name="lib_lm_games_directory">游戏目录</string>
+    <string name="lib_lm_windows_no_root">请添加 ROM 文件夹，PFP 会自动创建并使用 &lt;ROM 文件夹&gt;/windows</string>
+    <string name="lib_lm_games">游戏</string>
+    <string name="lib_lm_group_actions">操作</string>
+    <string name="lib_lm_game_list">Windows 游戏</string>
+    <string name="lib_lm_game_list_sub">为每个 Windows 游戏标记为 Steam、非 Steam 或本地，并关联本地文件夹</string>
+    <string name="lib_lm_import_pc">导入 PC 游戏</string>
+    <string name="lib_lm_import_pc_sub">导出的游戏、按 ID 添加以及启动器状态</string>
+    <string name="lib_lm_vita_folder">Vita3K 数据文件夹</string>
+    <string name="lib_lm_vita_folder_set">正在从此 ux0 文件夹读取已安装的游戏</string>
+    <string name="lib_lm_vita_folder_unset">选择你的 Vita3K ux0 文件夹（例如 Roms/vita/ux0），以便 PFP 找到游戏</string>
+    <string name="lib_lm_scan_vita">扫描 Vita 游戏</string>
+    <string name="lib_lm_scan_vita_sub">从你的 Vita3K 数据文件夹中的 ux0/app 读取已安装的游戏</string>
+    <string name="lib_lm_group_apps">应用</string>
+    <string name="lib_lm_add_apps">添加应用</string>
+    <string name="lib_lm_add_apps_sub">选择要添加到此库的已安装应用</string>
+    <string name="lib_lm_no_apps">还没有应用。使用“添加应用”为此库选择已安装的应用。</string>
+    <string name="lib_lm_rom_directory_default">扫描主 ROM 文件夹中此主机的文件夹</string>
+    <string name="lib_lm_none">无</string>
+    <string name="lib_lm_set_emulator">设置模拟器</string>
+    <string name="lib_lm_current">当前</string>
+    <string name="lib_lm_group_files">支持的文件</string>
+    <string name="lib_lm_no_extensions">未设置扩展名。请至少添加一个，扫描时才能匹配此主机的 ROM。</string>
+    <string name="lib_lm_remove_extension">移除扩展名</string>
+    <string name="lib_lm_remove_from_library">从库中移除</string>
+    <string name="lib_lm_add_extension">添加扩展名</string>
+    <string name="lib_lm_extension_hint">例如：iso、chd、zip</string>
+    <string name="lib_lm_extension_helper">扫描时不区分大小写。</string>
+    <string name="lib_lm_prompt_type">输入</string>
+    <string name="lib_lm_add_extension_named">添加“.%1$s”</string>
+    <string name="lib_lm_scan_console">扫描此主机</string>
+    <string name="lib_lm_scanning_ellipsis">正在扫描…</string>
+    <string name="lib_lm_rom_dir_unconfigured">未配置 ROM 目录</string>
+    <string name="lib_lm_scan_console_sub">仅扫描此主机的文件夹</string>
+    <string name="lib_lm_group_achievements">成就</string>
+    <string name="lib_lm_ps3_folder">PS3 数据文件夹</string>
+    <string name="lib_lm_ps3_folder_set_sub">正在从此 ARMSX3 PS3 文件夹读取奖杯</string>
+    <string name="lib_lm_ps3_folder_unset">选择你的 ARMSX3 PS3 文件夹，以便 PFP 读取奖杯</string>
+    <string name="lib_lm_ps3_hint">授权 ARMSX3 PS3 文件夹（包含 config/dev_hdd0 的那个），然后在“设置 ▸ 成就 ▸ 更新成就”中运行自动匹配。奖杯 ID 来自每个游戏自身的光盘，因此即使从未启动过的游戏也能关联。</string>
+    <string name="lib_lm_x360_folder">X360 Mobile 数据文件夹</string>
+    <string name="lib_lm_x360_folder_set_sub">正在从 X360 Mobile 的个人资料读取成就</string>
+    <string name="lib_lm_x360_folder_unset">在文件夹选择器的侧边菜单中选择 X360 Mobile</string>
+    <string name="lib_lm_xendroid_folder">XenDroid 数据文件夹</string>
+    <string name="lib_lm_xendroid_folder_set_sub">正在从 XenDroid 的个人资料读取成就</string>
+    <string name="lib_lm_xendroid_folder_unset">选择 Android/data/xendroid.compose</string>
+    <string name="lib_lm_x360_hint">授权你所用模拟器的数据文件夹，然后在“设置 ▸ 成就 ▸ 更新成就”中运行自动匹配。Title ID 来自每个游戏自身的文件，因此即使从未启动过的游戏也能关联。</string>
+    <string name="lib_lm_rename_card">重命名记忆卡</string>
+    <string name="lib_lm_show_in_games_sub">启用或隐藏此记忆卡</string>
+    <string name="lib_lm_move_up">上移</string>
+    <string name="lib_lm_move_down">下移</string>
+    <string name="lib_lm_group_danger">危险操作</string>
+    <string name="lib_lm_remove_card">移除记忆卡</string>
+    <string name="lib_lm_remove_card_sub">移除此主机及其游戏。ROM 文件仍会保留在你的设备上。</string>
+    <string name="lib_lm_card_sub">"%1$s  ·  %2$s"</string>
+    <string name="lib_lm_no_rom_directory">无 ROM 目录</string>
+    <plurals name="lib_lm_game_count">
+        <item quantity="other">%d 个游戏</item>
+    </plurals>
+    <string name="lib_lm_tap_dismiss">选择即可关闭</string>
+    <!-- Import PC games -->
+    <string name="lib_lm_import_pc_title">导入 PC 游戏</string>
+    <string name="lib_lm_group_home">“添加到主屏幕”捕获</string>
+    <string name="lib_lm_home_label">将 Play Field Portal 设为主屏幕</string>
+    <string name="lib_lm_home_active">已启用</string>
+    <string name="lib_lm_home_set">设置…</string>
+    <string name="lib_lm_home_active_sub">在受支持的启动器中使用“添加到主屏幕”，即可自动将游戏导入到这里</string>
+    <string name="lib_lm_home_set_sub">将 PFP 设为主屏幕应用，这样启动器的“添加到主屏幕”选项会将游戏导入 PFP</string>
+    <string name="lib_lm_group_exported">导出的游戏</string>
+    <string name="lib_lm_scan_import">扫描导入文件夹</string>
+    <string name="lib_lm_scan_import_sub">每次扫描都会自动读取 &lt;ROM 文件夹&gt;/windows/import。此项用于一次性选择其他位置的文件夹：PFP 会扫描其中的 GameNative / Winlator 导出文件（.steam · .epic · .gog · .amazon · .pcgame · .desktop）以及 PFP 自己的 .pfpgame 导出文件，并将其导入</string>
+    <string name="lib_lm_export_manual">导出手动添加的游戏</string>
+    <string name="lib_lm_export_manual_sub">为每个按 ID 添加或捕获的游戏，以及每个带图片的固定快捷方式，在 &lt;windows&gt;/import 中写入一个 .pfpgame 文件，以便全新安装后能连同图片一起恢复</string>
+    <string name="lib_lm_group_local">本地 Windows</string>
+    <string name="lib_lm_batch_match">批量匹配本地游戏</string>
+    <string name="lib_lm_batch_match_sub">请选择“包含”各游戏文件夹的那个文件夹。已在你的 Windows 库中的每个游戏都会被识别、记住并关联；其余的保持不变</string>
+    <string name="lib_lm_matched_local">已匹配的本地游戏（%1$d）</string>
+    <string name="lib_lm_none_yet">暂无</string>
+    <string name="lib_lm_matched_local_empty">尚未指定任何文件夹。请使用上方的批量匹配，或在单个游戏的 Shiba Coins 页面中使用自动匹配</string>
+    <string name="lib_lm_matched_local_forget_note">“忘记”只会移除 PFP 对文件夹位置的记录，已获得的金币会保留</string>
+    <string name="lib_lm_goldberg">Goldberg 安装程序</string>
+    <string name="lib_lm_on">开</string>
+    <string name="lib_lm_off">关</string>
+    <string name="lib_lm_goldberg_sub">允许 PFP 将成就列表写入游戏文件夹，并换入内置的 Steam 模拟器。与“设置 ▸ 成就 ▸ 本地 Windows”中的开关相同</string>
+    <string name="lib_lm_goldberg_backup">转换前，请先备份你已玩过的游戏的存档文件。模拟器将从新的存档位置读取，PFP 无法为你恢复旧存档。</string>
+    <string name="lib_lm_group_launchers">PC 启动器</string>
+    <string name="lib_lm_not_installed">未安装</string>
+    <string name="lib_lm_add_by_id">按 ID 添加…</string>
+    <string name="lib_lm_add_by_id_sub">按 ID 添加游戏，或使用该应用自带的“添加到主屏幕”选项</string>
+    <string name="lib_lm_installed">已安装</string>
+    <string name="lib_lm_no_add_by_id">不支持按 ID 添加，请改为将游戏导出到 &lt;windows&gt;/import</string>
+    <string name="lib_lm_group_unknown">未知的 Windows 模拟器</string>
+    <string name="lib_lm_unknown_choose">选择…</string>
+    <string name="lib_lm_show_hidden">显示隐藏的应用</string>
+    <plurals name="lib_lm_show_hidden_sub">
+        <item quantity="other">%d 个应用被标记为“不是启动器”，可将其恢复后重新选择</item>
+    </plurals>
+    <string name="lib_lm_group_found">找到的游戏（%1$d）</string>
+    <string name="lib_lm_no_found">尚未捕获任何 PC 游戏。</string>
+    <string name="lib_lm_import">导入</string>
+    <string name="lib_lm_import_all">全部导入</string>
+    <string name="lib_lm_import_all_sub">将所有找到的游戏移入 Windows 游戏记忆卡</string>
+    <string name="lib_lm_forget">忘记</string>
+    <!-- Add a game by its ID -->
+    <string name="lib_lm_add_game_title">添加 %1$s 游戏</string>
+    <string name="lib_lm_group_game">游戏</string>
+    <string name="lib_lm_game_id">游戏 ID</string>
+    <string name="lib_lm_game_name">游戏名称</string>
+    <string name="lib_lm_source">来源</string>
+    <string name="lib_lm_source_sub">按下即可切换商店</string>
+    <string name="lib_lm_group_add">添加</string>
+    <string name="lib_lm_test_launch">测试启动</string>
+    <string name="lib_lm_test_launch_sub">在 %1$s 中打开游戏以检查 ID</string>
+    <string name="lib_lm_add_game">添加游戏</string>
+    <string name="lib_lm_add_game_sub">将其添加到你的 Windows 库</string>
+    <string name="lib_lm_add_game_blocked">请先设置游戏 ID 和名称</string>
+    <!-- Messages and notifications -->
+    <string name="lib_lm_all_platforms_added">每个受支持的平台都已有记忆卡。</string>
+    <string name="lib_lm_android_added_title">已添加 Android 库</string>
+    <string name="lib_lm_android_added_message">请在“游戏 → 查找游戏”中打开它以添加应用。</string>
+    <string name="lib_lm_need_rom_root">请先设置 ROM 文件夹：在“ROM 文件夹访问权限”下为其授权，然后添加主机。</string>
+    <string name="lib_lm_ps3_folder_set">已设置 PS3 数据文件夹。请在“设置 ▸ 成就 ▸ 更新成就”中运行自动匹配，以关联 PS3 奖杯。</string>
+    <string name="lib_lm_x360_folder_set">已设置 %1$s 数据文件夹。请在“设置 ▸ 成就 ▸ 更新成就”中运行自动匹配，以关联 Xbox 360 成就。</string>
+    <string name="lib_lm_invalid_game_id">请输入有效的游戏 ID：一个数字，或从启动器的游戏页面复制的 local_… ID。</string>
+    <string name="lib_lm_test_launch_failed">测试启动失败：%1$s。该启动器可能会阻止外部启动。</string>
+    <string name="lib_lm_enter_game_name">请输入游戏名称，它显示在 %1$s 中 ID 的旁边。</string>
+    <string name="lib_lm_windows_games">Windows 游戏</string>
+    <string name="lib_lm_pc_game_added">“%1$s”已添加到 Windows 游戏。</string>
+    <string name="lib_lm_pc_add_failed">无法添加游戏：%1$s</string>
+    <string name="lib_lm_pc_import_failed">无法导入“%1$s”：%2$s</string>
+    <string name="lib_lm_game_not_found">找不到游戏</string>
+    <string name="lib_lm_scanning">正在扫描 %1$s</string>
+    <string name="lib_lm_scanning_vita">正在扫描 PS Vita</string>
+    <string name="lib_lm_scanning_windows">正在扫描 Windows 游戏</string>
+    <string name="lib_lm_scanning_rom_root">正在扫描 ROM 文件夹</string>
+    <string name="lib_lm_stop_note_games">已找到的游戏会保留。</string>
+    <string name="lib_lm_rom_root_stop_note">已扫描的系统会保留新找到的游戏。</string>
+    <string name="lib_lm_matching_stop_note">已匹配的游戏会保持关联。</string>
+    <string name="lib_lm_stopped">在完成前已停止</string>
+    <string name="lib_lm_scan_stopped">%1$s 扫描已停止</string>
+    <string name="lib_lm_scan_finished">%1$s 扫描完成</string>
+    <string name="lib_lm_scan_failed">%1$s 扫描失败</string>
+    <string name="lib_lm_scan_skipped">%1$s 扫描已跳过</string>
+    <string name="lib_lm_vita_finished">PS Vita 扫描完成</string>
+    <string name="lib_lm_vita_failed">PS Vita 扫描失败</string>
+    <string name="lib_lm_vita_failed_message">Vita 扫描失败</string>
+    <string name="lib_lm_vita_stopped">PS Vita 扫描已停止</string>
+    <string name="lib_lm_windows_scan_stopped">Windows 游戏扫描已停止</string>
+    <string name="lib_lm_windows_scan_failed">Windows 游戏扫描失败</string>
+    <string name="lib_lm_windows_scan_finished">Windows 游戏扫描完成</string>
+    <string name="lib_lm_pc_scan_failed_message">PC 扫描失败</string>
+    <string name="lib_lm_rom_root_stopped">ROM 文件夹扫描已停止</string>
+    <string name="lib_lm_rom_root_finished">ROM 文件夹扫描完成</string>
+    <string name="lib_lm_matching">正在匹配本地 Windows 游戏</string>
+    <string name="lib_lm_match_stopped">Windows 成就匹配已停止</string>
+    <string name="lib_lm_match_failed">Windows 成就匹配失败</string>
+    <string name="lib_lm_match_failed_message">批量匹配失败</string>
+    <string name="lib_lm_match_finished">Windows 成就匹配已完成</string>
+    <string name="lib_lm_convert_label">Goldberg 转换</string>
+    <string name="lib_lm_convert_linked">%1$d 个已关联到库中的游戏。</string>
+    <plurals name="lib_lm_converted">
+        <item quantity="other">已转换 %d 个游戏</item>
+    </plurals>
+    <string name="lib_lm_convert_no_achievements">%1$d 个没有成就</string>
+    <string name="lib_lm_convert_no_key">%1$d 个需要 Steam Web API 密钥</string>
+    <string name="lib_lm_convert_failed">%1$d 个失败</string>
+    <string name="lib_lm_convert_play_note">通过模拟器玩每个游戏即可开始赚取金币。</string>
+    <string name="lib_lm_export_label">导出手动添加的游戏</string>
+    <string name="lib_lm_export_failed">导出失败，请查看日志。</string>
+    <string name="lib_lm_rom_root_ready">ROM 文件夹已就绪</string>
+    <plurals name="lib_lm_folders_created">
+        <item quantity="other">已创建 %d 个文件夹</item>
+    </plurals>
+    <string name="lib_lm_folders_existing">%1$d 个已存在</string>
+    <string name="lib_lm_rom_root_next">请将游戏复制到对应的文件夹中，然后选择“扫描 ROM 文件夹”。</string>
+    <plurals name="lib_lm_import_all_done">
+        <item quantity="other">已将 %d 个 PC 游戏导入 Windows 游戏。</item>
+    </plurals>
+    <plurals name="lib_lm_import_all_none">
+        <item quantity="other">%d 个 PC 游戏均无法导入。</item>
+    </plurals>
+    <plurals name="lib_lm_import_all_some">
+        <item quantity="other">已将 %1$d 个 PC 游戏导入 Windows 游戏。%2$d 个无法导入。</item>
+    </plurals>
+    <string name="lib_lm_local_appid">appid %1$s</string>
+    <string name="lib_lm_local_from_marker">来自 steam_appid.txt</string>
+    <string name="lib_lm_local_from_stored">来自已保存的 Steam 匹配项</string>
+    <string name="lib_lm_local_by_title">按标题匹配</string>
+    <string name="lib_lm_local_tracking">正在追踪</string>
+    <string name="lib_lm_local_no_list">尚无成就列表</string>
+    <string name="lib_kb_import_invalid">该文件不是 PlayFieldPortal 模拟器信息文件，或已损坏。</string>
+    <string name="lib_kb_import_too_many">该文件列出的模拟器或主机数量超过了 PlayFieldPortal 可导入的上限。</string>
+</resources>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Errors de còpia de seguretat -->
+    <string name="bak_no_folder">No hi ha cap carpeta de còpia de seguretat definida. Tria\'n una a Configuració → Còpia de seguretat i restauració → Carpeta de còpia de seguretat.</string>
+    <string name="bak_too_large">Aquesta còpia de seguretat seria massa gran per restaurar-la (pot contenir fins a 20.000 fitxers i 2 GB). Elimina imatges o mitjans que no facis servir i torna-ho a provar.</string>
+    <string name="bak_write_failed">No s\'ha pogut escriure a la carpeta de còpia de seguretat. Torna a triar la carpeta a Configuració ▸ Sistema ▸ Còpia de seguretat i restauració.</string>
+    <string name="bak_unknown_error">Error desconegut</string>
+
+    <!-- Errors de restauració -->
+    <string name="bak_open_failed">No s\'ha pogut obrir el fitxer de còpia de seguretat</string>
+    <string name="bak_missing_manifest">A la còpia de seguretat li falta el manifest</string>
+    <string name="bak_format_too_new">El format de còpia v%1$d és més nou del que admet aquesta aplicació (v%2$d)</string>
+    <string name="bak_no_uri">No s\'ha proporcionat cap URI</string>
+
+    <!-- Títols de notificació -->
+    <string name="bak_task_created">S\'ha creat la còpia de seguretat</string>
+    <string name="bak_task_failed">La còpia de seguretat ha fallat</string>
+    <string name="bak_task_restored">S\'ha restaurat la còpia de seguretat</string>
+    <string name="bak_task_restore_failed">La restauració ha fallat</string>
+    <string name="bak_results_restored">Restaurats</string>
+    <plurals name="bak_items_skipped">
+        <item quantity="one">S\'ha omès %d element</item>
+        <item quantity="many">S\'han omès %d elements</item>
+        <item quantity="other">S\'han omès %d elements</item>
+    </plurals>
+
+    <!-- Elements rebutjats durant la restauració -->
+    <string name="bak_refused_out_of_root">Rebutjat \'%1$s\': no és dins d\'una carpeta restaurable</string>
+    <string name="bak_refused_profiles_unparseable">Perfils d\'emulador rebutjats: no s\'ha pogut analitzar el fitxer</string>
+    <string name="bak_refused_profile">Perfil d\'emulador rebutjat \'%1$s\': %2$s</string>
+</resources>

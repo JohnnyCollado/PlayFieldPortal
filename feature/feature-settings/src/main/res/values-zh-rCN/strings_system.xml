@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared by several Settings screens. -->
+    <string name="sets_on">开</string>
+    <string name="sets_off">关</string>
+    <string name="sets_prompt_back">返回</string>
+    <string name="sets_prompt_enter">进入</string>
+    <string name="sets_prompt_switch">切换</string>
+    <string name="sets_prompt_options">选项</string>
+
+    <!-- Settings ▸ Backup & Restore -->
+    <string name="sets_backup_title">备份与恢复</string>
+    <string name="sets_backup_group_backup">备份</string>
+    <string name="sets_backup_last_backup">上次备份</string>
+    <string name="sets_backup_never">从未</string>
+    <string name="sets_backup_folder">备份文件夹</string>
+    <string name="sets_backup_folder_saving_to">保存到：%1$s（选择即可更改）</string>
+    <string name="sets_backup_folder_not_set">未设置。选择此项即可指定备份的保存位置</string>
+    <string name="sets_backup_now">立即备份</string>
+    <string name="sets_backup_now_help">保存库、设置和游戏记录</string>
+    <string name="sets_backup_choose_folder_first">请先选择备份文件夹</string>
+    <string name="sets_backup_choose_folder_first_error">请先选择备份文件夹。</string>
+    <string name="sets_backup_group_saved">已保存的备份</string>
+    <string name="sets_backup_group_included">包含的内容</string>
+    <string name="sets_backup_included_library">游戏库</string>
+    <string name="sets_backup_included_history">游戏记录</string>
+    <string name="sets_backup_included_categories">自定义类别</string>
+    <string name="sets_backup_included_settings">设置与 API 密钥</string>
+    <string name="sets_backup_included_profiles">模拟器配置文件</string>
+    <string name="sets_backup_rom_files">ROM 文件</string>
+    <string name="sets_backup_not_included">✗（不包含）</string>
+    <string name="sets_backup_group_restore">恢复</string>
+    <string name="sets_backup_restore_from_file">从文件恢复</string>
+    <string name="sets_backup_restore_from_file_help">浏览并选择 .pfpbackup 文件</string>
+    <string name="sets_backup_after_restoring">恢复之后</string>
+    <string name="sets_backup_after_restoring_help">你的文件夹会恢复，但 Android 对它们的访问权限不会恢复。请在各部分（库、音乐、视频、照片）的“根文件夹访问权限”下重新关联每个根文件夹，每个只需一步；重新关联根文件夹会一次性恢复其下的所有内容。</string>
+    <string name="sets_backup_working">正在处理…</string>
+    <string name="sets_backup_error">错误</string>
+    <string name="sets_backup_creating">正在创建备份…</string>
+    <string name="sets_backup_restoring">正在恢复备份…</string>
+    <string name="sets_backup_unknown_error">未知错误</string>
+    <string name="sets_backup_delete_failed">无法删除 %1$s。</string>
+    <string name="sets_backup_menu_restore">恢复</string>
+    <string name="sets_backup_menu_share">分享</string>
+    <string name="sets_backup_menu_delete">删除备份</string>
+    <string name="sets_backup_delete_title">删除备份？</string>
+    <string name="sets_backup_delete_message">“%1$s”将被删除。此操作无法撤消。</string>
+    <string name="sets_backup_delete_confirm">删除</string>
+    <string name="sets_backup_restore_title">恢复备份？</string>
+    <string name="sets_backup_restore_message_named">“%1$s”将替换你当前的库、设置和游戏记录。此操作无法撤消。</string>
+    <string name="sets_backup_restore_message_picked">此备份将替换你当前的库、设置和游戏记录。此操作无法撤消。</string>
+    <string name="sets_backup_restore_confirm">恢复</string>
+    <string name="sets_backup_share_chooser">分享备份</string>
+
+    <!-- Settings ▸ Credits -->
+    <string name="sets_credits_group_xmb">XMB 设计：Sony</string>
+    <string name="sets_credits_xmb_inspired">此启动器的外观和操作感受源自 XMB（XrossMediaBar），即 Sony 为 PlayStation Portable 和 PlayStation 3 打造的界面。十字栏布局、流动的波浪以及导航方式都是对它的致敬。</string>
+    <string name="sets_credits_xmb_trademarks">“XrossMediaBar”、“XMB”、“PSP”和“PlayStation”是 Sony Interactive Entertainment Inc. 的商标。Play Field Portal 是一个独立的非商业粉丝项目，与 Sony 无关联，亦未获其认可或赞助。内置的界面图片来自社区主题“XMB Menu for ES-DE”（见下方致谢），其所有权归各自作者所有。未内置任何 Sony 音频：每个菜单音效均在下方单独致谢。</string>
+    <string name="sets_credits_group_icon">应用图标与标志</string>
+    <string name="sets_credits_icon_designed">Play Field Portal 的应用图标和标志由 johakovi 设计。非常感谢这些赋予启动器独特形象的作品。</string>
+    <string name="sets_credits_label_design">设计</string>
+    <string name="sets_credits_group_artwork">系统与主机图片</string>
+    <string name="sets_credits_artwork_from">此启动器中使用的系统、主机和类别图标来自“XMB Menu for ES-DE”主题，这是一个由社区重现的 PSP XMB。</string>
+    <string name="sets_credits_artwork_rights">这些图片的所有权利归其创作者 Anthony Caccese 所有，其作品基于 InitialDin 的原创作品。我们怀着感激之情在此使用这些图标，其所有权仍归各自作者所有。</string>
+    <string name="sets_credits_label_project">项目</string>
+    <string name="sets_credits_label_authors">作者</string>
+    <string name="sets_credits_label_source">来源</string>
+    <string name="sets_credits_group_buttons">控制器按键图标</string>
+    <string name="sets_credits_buttons_from">屏幕上的所有按键提示（PlayStation、Xbox 和 Nintendo 的功能键、方向键、肩键、扳机键、摇杆和系统键）均取自 Zacksly 的按键图标包，依据知识共享署名 3.0 许可协议使用。</string>
+    <string name="sets_credits_buttons_unmodified">图片未经修改：仅将文件名改为 Android 资源名称，且只内置了启动器实际显示的图标。</string>
+    <string name="sets_credits_label_author">作者</string>
+    <string name="sets_credits_label_website">网站</string>
+    <string name="sets_credits_label_support">支持</string>
+    <string name="sets_credits_label_packs">图标包</string>
+    <string name="sets_credits_label_license">许可协议</string>
+    <string name="sets_credits_group_sounds">菜单音效</string>
+    <string name="sets_credits_sounds_built">内置的菜单音效（导航、返回、确认、错误、启动、通知和开机提示音）基于 Pixabay 上发布的免版税音频制作，并为启动器进行了剪辑、变调、音量调整和格式转换。感谢这些作品的创作者。</string>
+    <string name="sets_credits_sounds_license">Pixabay 内容许可无需署名，但我们仍在此致谢。如果你是这些创作者之一，希望更改署名或移除某个素材，请与我们联系。</string>
+    <string name="sets_credits_group_metadata">游戏图片与元数据</string>
+    <string name="sets_credits_metadata_fetched">封面、3D 包装盒、卡带/光盘照片、主视觉横幅、标志、图标、说明书、视频片段和游戏元数据均应你的请求从第三方服务获取，其所有权归各自所有者所有。</string>
+    <string name="sets_credits_label_primary_scraper">主要抓取来源</string>
+    <string name="sets_credits_value_screenscraper">ScreenScraper：screenscraper.fr，由社区维护的游戏媒体数据库</string>
+    <string name="sets_credits_label_artwork">图片</string>
+    <string name="sets_credits_label_metadata">元数据</string>
+    <string name="sets_credits_group_achievements">成就：Shiba Coins</string>
+    <string name="sets_credits_achievements_from">Shiba Coins 系统的成就数据来自以下服务和项目，其所有权归各自所有者所有。</string>
+    <string name="sets_credits_value_retroachievements">retroachievements.org：由社区制作的复古游戏成就组和解锁数据，通过官方 RetroAchievements Web API 和 api-kotlin 客户端获取</string>
+    <string name="sets_credits_value_steam">Powered by Steam：成就架构和解锁数据通过 Steam Web API 获取，使用你自己的密钥。Steam 和 Steam 标志是 Valve Corporation 的商标。steampowered.com</string>
+    <string name="sets_credits_goldberg_bundles">针对 Steam 模拟运行的 PC 游戏，本地成就追踪内置了 Goldberg Steam Emulator，具体为 gbe_fork：由 Detanup01 及贡献者维护的社区分支，基于 Mr. Goldberg 的原版 Goldberg Emulator。</string>
+    <string name="sets_credits_goldberg_license">该模拟器是依据 GNU 宽通用公共许可证 v3.0（LGPL-3.0）授权的自由软件。Play Field Portal 内置了其未经修改的 steam_api64.dll；完整的对应源代码和完整的许可证文本可通过下方链接获取。</string>
+    <string name="sets_credits_value_gbe">gbe_fork：Detanup01 及贡献者</string>
+    <string name="sets_credits_label_original_project">原始项目</string>
+    <string name="sets_credits_value_goldberg_original">Mr. Goldberg 的 Goldberg Emulator：gitlab.com/Mr_Goldberg/goldberg_emulator</string>
+    <string name="sets_credits_group_support">支持本项目</string>
+    <string name="sets_credits_support_thanks">感谢大家的支持。我制作这个项目，是为了向 PSP 以及同样热爱它的出色社区致敬，因此本项目将永远免费。话虽如此，如果你认可我的工作，并想以其他方式表达心意，可以请我吃个塔可。当然，捐助始终是自愿的，绝不强求。爱你们，祝大家 6 月 15 日快乐。</string>
+    <string name="sets_credits_label_buy_taco">请我吃个塔可</string>
+    <string name="sets_credits_group_notes">备注</string>
+    <string name="sets_credits_notes_text">如果你是权利人，希望更改署名或移除任何素材，请与我们联系，我们会尽快处理。</string>
+    <string name="sets_credits_title">致谢</string>
+    <string name="sets_credits_no_browser">没有可打开网页链接的应用。请在浏览器中访问 %1$s。</string>
+
+    <!-- Settings ▸ Logs -->
+    <string name="sets_logs_title">日志</string>
+    <string name="sets_logs_prompt_share">分享</string>
+    <string name="sets_logs_prompt_open">打开</string>
+    <string name="sets_logs_prompt_clear">清除</string>
+    <string name="sets_logs_clear_title">清除所有日志？</string>
+    <plurals name="sets_logs_clear_message">
+        <item quantity="other">所有 %1$d 个日志文件（%2$s）将被删除。如果你准备报告问题，请先分享日志。清除的日志无法恢复。</item>
+    </plurals>
+    <string name="sets_logs_clear_confirm">清除</string>
+    <string name="sets_logs_group_files">日志文件</string>
+    <string name="sets_logs_empty">还没有日志文件</string>
+    <string name="sets_logs_empty_help">每次启动应用都会生成新日志。选择即可再次检查。</string>
+    <string name="sets_logs_group_manage">管理</string>
+    <string name="sets_logs_clear_row">清除所有日志</string>
+    <string name="sets_logs_clear_row_help">删除所有已保存的日志。本次会话会继续记录到新文件中。</string>
+    <string name="sets_logs_clear_row_none">没有可清除的内容</string>
+    <string name="sets_logs_group_about">关于日志</string>
+    <string name="sets_logs_saved">保存哪些内容</string>
+    <string name="sets_logs_saved_help">仅保留最近的几次会话（最多约 2 MB）。写入前会移除密码、令牌、帐号名和电子邮件地址。</string>
+    <string name="sets_logs_share_file">分享 %1$s</string>
+    <string name="sets_logs_current">当前</string>
+    <string name="sets_logs_open_with">日志打开方式</string>
+    <string name="sets_logs_share_subject">Play Field Portal 日志：%1$s</string>
+    <string name="sets_logs_share_chooser">分享日志文件</string>
+    <string name="sets_logs_no_files">没有文件</string>
+    <plurals name="sets_logs_summary">
+        <item quantity="other">%1$d 个文件 · %2$s</item>
+    </plurals>
+    <plurals name="sets_logs_deleted">
+        <item quantity="other">已删除 %1$d 个文件（%2$s）</item>
+    </plurals>
+    <string name="sets_logs_started_today">开始于今天 %1$s</string>
+    <string name="sets_logs_started_yesterday">开始于昨天 %1$s</string>
+    <string name="sets_logs_started_on">开始于 %1$s %2$s</string>
+
+    <!-- Root folders (shared by Music, Video, Photo) -->
+    <string name="sets_roots_group">根文件夹</string>
+    <string name="sets_scanning">正在扫描…</string>
+    <string name="sets_rescan_help">从所有根文件夹更新媒体库</string>
+    <string name="sets_playback_group">播放</string>
+    <string name="sets_root_kind_music">音乐</string>
+    <string name="sets_root_kind_video">视频</string>
+    <string name="sets_root_kind_photo">照片</string>
+    <string name="sets_root_kind_rom">ROM</string>
+    <string name="sets_root_fallback_music">音乐</string>
+    <string name="sets_root_fallback_video">视频</string>
+    <string name="sets_root_fallback_photo">照片</string>
+    <string name="sets_root_none">未配置%1$s根文件夹</string>
+    <string name="sets_root_none_help">在下方添加文件夹，即可开始管理你的库</string>
+    <string name="sets_root_access_lost">访问权限已丢失，请使用“编辑”重新授权</string>
+    <string name="sets_root_consoles">主机：%1$s</string>
+    <string name="sets_root_kind_root">%1$s根文件夹</string>
+    <string name="sets_label_edit_folder">编辑文件夹</string>
+    <string name="sets_label_remove_folder">移除文件夹</string>
+    <string name="sets_label_options_hint">选项提示</string>
+    <string name="sets_label_show_on_bar">在栏上显示</string>
+    <string name="sets_label_show_in_games">在游戏中显示</string>
+    <string name="sets_label_pin_to_top">置顶</string>
+    <string name="sets_root_edit_short">编辑</string>
+    <string name="sets_root_remove_short">移除</string>
+    <string name="sets_root_remove_title">移除此文件夹？</string>
+    <string name="sets_root_remove_message">PFP 将停止使用“%1$s”，在其中找到的内容将从库中移除。不会从你的存储设备中删除任何文件。</string>
+    <string name="sets_root_remove_confirm">移除</string>
+    <string name="sets_player_builtin">Play Field Portal</string>
+    <string name="sets_player_system_default">系统默认</string>
+
+    <!-- Settings ▸ Music -->
+    <string name="sets_music_title">音乐</string>
+    <string name="sets_music_player_title">默认音乐播放器</string>
+    <string name="sets_music_player_none">此设备上未找到其他音乐播放器。</string>
+    <string name="sets_music_add_root">添加音乐根文件夹</string>
+    <string name="sets_music_add_root_help">授权一个根文件夹（例如 /Music），可添加多个以涵盖不同位置</string>
+    <string name="sets_music_rescan">重新扫描音乐库</string>
+    <string name="sets_music_player">默认音乐播放器</string>
+    <string name="sets_music_player_help">用于打开音乐曲目的应用</string>
+
+    <!-- Settings ▸ Video -->
+    <string name="sets_video_title">视频</string>
+    <string name="sets_video_player_title">默认视频播放器</string>
+    <string name="sets_video_player_none">此设备上未找到外部视频播放器。</string>
+    <string name="sets_video_add_root">添加视频根文件夹</string>
+    <string name="sets_video_add_root_help">授权一个根文件夹（例如 /Movies），可添加多个以涵盖不同位置</string>
+    <string name="sets_video_rescan">重新扫描视频库</string>
+    <string name="sets_video_player">默认视频播放器</string>
+    <string name="sets_video_player_help">由 Play Field Portal 在应用内播放；也可以选择其他应用，或每次询问。</string>
+
+    <!-- Settings ▸ Photo -->
+    <string name="sets_photo_title">照片</string>
+    <string name="sets_photo_add_root">添加照片根文件夹</string>
+    <string name="sets_photo_add_root_help">授权一个根文件夹（例如 /Pictures），可添加多个以涵盖不同位置</string>
+    <string name="sets_photo_rescan">重新扫描照片库</string>
+    <string name="sets_photo_group_maintenance">维护</string>
+    <string name="sets_photo_clear_cache">清除缩略图缓存</string>
+    <string name="sets_photo_clear_cache_help">删除已生成的缩略图。重新扫描时会重新生成。</string>
+    <plurals name="sets_photo_cache_cleared">
+        <item quantity="other">已清除 %1$d 个缓存的缩略图。重新扫描即可重新生成。</item>
+    </plurals>
+
+    <!-- Settings ▸ Interface ▸ Notifications -->
+    <string name="sets_notif_title">通知</string>
+    <string name="sets_notif_record">记录通知</string>
+    <string name="sets_notif_record_help">保留扫描、图片、抓取和成就任务的历史记录。关闭后不再添加新条目，正在运行的任务仍会显示进度。</string>
+    <string name="sets_notif_group_history">历史记录</string>
+    <string name="sets_notif_keep_for">条目保留时长</string>
+    <string name="sets_notif_keep_for_help">下次记录内容时会删除较旧的条目。无论如何，上限均为 200 条，已读条目会优先删除。</string>
+    <string name="sets_notif_never">永不</string>
+    <plurals name="sets_notif_days">
+        <item quantity="other">%1$d 天</item>
+    </plurals>
+    <string name="sets_notif_mark_read">全部标记为已读</string>
+    <string name="sets_notif_mark_read_help">清除状态栏上的未读数</string>
+    <plurals name="sets_notif_unread">
+        <item quantity="other">%1$d 条未读</item>
+    </plurals>
+    <string name="sets_notif_none_unread">没有未读通知</string>
+    <string name="sets_notif_clear_all">全部清除</string>
+    <string name="sets_notif_clear_all_help">清空历史记录。仍在运行的任务不受影响。</string>
+    <plurals name="sets_notif_stored">
+        <item quantity="other">已存储 %1$d 条</item>
+    </plurals>
+
+    <!-- Settings ▸ System ▸ System Update -->
+    <string name="sets_update_title">系统更新</string>
+    <string name="sets_update_group_update">更新</string>
+    <string name="sets_update_installed">已安装版本</string>
+    <string name="sets_update_latest">最新版本</string>
+    <string name="sets_update_check">检查更新</string>
+    <string name="sets_update_checking">正在检查…</string>
+    <string name="sets_update_notifications">更新通知</string>
+    <string name="sets_update_notifications_help">有新版本时在通知中提醒我，每天最多一次</string>
+    <string name="sets_update_group_changelog">更新日志</string>
+    <string name="sets_update_no_releases">尚未载入任何版本</string>
+    <string name="sets_update_no_releases_help">检查更新即可载入更新日志</string>
+    <string name="sets_update_install">下载并安装 %1$s</string>
+    <string name="sets_update_cannot_install">此版本无法从这里安装更新</string>
+    <string name="sets_update_handed_over">请在 Android 安装程序中确认以完成安装</string>
+    <string name="sets_update_downloading">正在下载…</string>
+    <string name="sets_update_install_help">安装任何内容前，Android 都会请你确认</string>
+    <string name="sets_update_no_summary">此版本没有摘要</string>
+    <string name="sets_update_full_notes">完整版本说明</string>
+    <string name="sets_update_full_notes_help">在浏览器中打开 GitHub</string>
+    <string name="sets_edition_full">完整版</string>
+    <string name="sets_edition_lite">精简版</string>
+    <string name="sets_update_installed_label">%1$s · %2$s</string>
+    <string name="sets_update_unknown_version">未知</string>
+    <string name="sets_update_available">%1$s 可用</string>
+    <string name="sets_update_not_checked">尚未检查</string>
+    <string name="sets_update_up_to_date">已是最新版本</string>
+    <string name="sets_update_never_checked">从未检查</string>
+    <string name="sets_update_checked">检查于 %1$s</string>
+    <string name="sets_update_tag_new">新</string>
+    <string name="sets_update_tag_installed">已安装</string>
+    <string name="sets_update_msg_available">有新版本可用。</string>
+    <string name="sets_update_msg_latest">你使用的已是最新版本。</string>
+    <string name="sets_update_msg_offline">无法连接到 GitHub。请稍后重试。</string>
+    <string name="sets_update_msg_invalid">GitHub 返回了意外的响应。请稍后重试。</string>
+    <string name="sets_update_no_apk">版本 %1$s 尚无%2$s下载。请稍后重试。</string>
+    <string name="sets_update_download_failed">无法下载更新。请检查网络连接后重试。</string>
+    <string name="sets_update_not_newer">下载的文件不是此应用的更新版本，因此未安装。</string>
+    <string name="sets_update_no_installer">无法在此设备上打开 Android 安装程序。</string>
+    <string name="sets_update_reminder_installed">已安装版本 %1$s。</string>
+    <string name="sets_update_reminder_available">版本 %1$s 可用。</string>
+
+    <!-- Settings ▸ About -->
+    <string name="sets_about_label_version">版本</string>
+    <string name="sets_about_label_build">版本号</string>
+    <string name="sets_about_label_edition">版本类型</string>
+    <string name="sets_about_label_min_android">最低 Android 版本</string>
+    <string name="sets_about_label_target">目标版本</string>
+    <string name="sets_about_group_open_source">开源软件</string>
+    <string name="sets_about_value_compose">界面框架</string>
+    <string name="sets_about_value_room">本地数据库</string>
+    <string name="sets_about_value_hilt">依赖注入</string>
+    <string name="sets_about_value_ktor">网络客户端</string>
+    <string name="sets_about_value_coil">图片加载</string>
+    <string name="sets_about_value_media3">视频片段与播放</string>
+    <string name="sets_about_value_workmanager">后台任务</string>
+    <string name="sets_about_value_timber">日志记录</string>
+    <string name="sets_about_group_credits">致谢</string>
+    <string name="sets_about_label_art_media">图片与媒体</string>
+    <string name="sets_about_label_metadata">元数据</string>
+    <string name="sets_about_label_inspired">灵感来源</string>
+    <string name="sets_about_label_see_also">另请参阅</string>
+    <string name="sets_about_value_see_also">设置 ▸ 致谢</string>
+    <string name="sets_about_group_legal">法律信息</string>
+    <string name="sets_about_legal_independent">Play Field Portal 是一个独立的粉丝项目，与 Sony Interactive Entertainment 无关联。</string>
+    <string name="sets_about_legal_trademarks">PlayStation、PSP 和 XMB 是 Sony Interactive Entertainment Inc. 的商标。</string>
+    <string name="sets_about_title">关于</string>
+    <string name="sets_about_unknown">未知</string>
+
+    <!-- Artwork orphans -->
+    <string name="sets_orphan_linked">图片已关联，之后的扫描中也会保持关联。</string>
+    <string name="sets_orphan_link_failed">无法关联该文件。请运行“扫描并重新关联”后重试。</string>
+
+    <!-- Settings ▸ Sound: parts resolved outside the screen -->
+    <string name="sets_audio_custom_sound">自定义声音</string>
+    <string name="sets_audio_import_failed">无法导入该声音。请尝试其他文件。</string>
+
+    <!-- Importing a PSP theme (.ptf) -->
+    <string name="sets_ptf_wallpaper_only">已导入“%1$s”：仅壁纸</string>
+    <plurals name="sets_ptf_icons">
+        <item quantity="other">已导入“%1$s”：壁纸和 %2$d 个图标</item>
+    </plurals>
+    <plurals name="sets_ptf_icons_tint">
+        <item quantity="other">已导入“%1$s”：壁纸和 %2$d 个图标，色调匹配度 %3$d%%</item>
+    </plurals>
+    <string name="sets_ptf_cxmb_unsupported">不支持 CXMB（.ctf）主题，仅支持官方 .ptf 主题</string>
+
+    <!-- Connecting services -->
+    <string name="sets_svc_steam_connected">已连接 Steam</string>
+    <string name="sets_svc_steam_resolved">已连接 Steam：已解析“%1$s”</string>
+    <string name="sets_svc_steam_unresolved">密钥已保存，但无法解析“%1$s”。请输入你的 SteamID64。</string>
+    <string name="sets_svc_valid">有效</string>
+    <string name="sets_svc_igdb_invalid">无效。请检查客户端 ID 和密钥</string>
+    <string name="sets_svc_screenscraper_invalid">无效。请检查用户名和密码</string>
+    <plurals name="sets_svc_screenscraper_valid_threads">
+        <item quantity="other">有效：%1$s 个线程</item>
+    </plurals>
+    <plurals name="sets_svc_screenscraper_valid_both">
+        <item quantity="other">有效：%1$s 个线程，每天 %2$s 次请求</item>
+    </plurals>
+    <string name="sets_svc_screenscraper_valid_requests">有效，每天 %1$s 次请求</string>
+
+    <!-- Settings ▸ Controller -->
+    <string name="sets_controller_title">控制器</string>
+    <string name="sets_controller_group_ab">确认和返回</string>
+    <string name="sets_controller_ab_help">控制哪个键用于确认、哪个键用于返回。适用于启动器的所有菜单。</string>
+    <string name="sets_controller_group_xy">选项和排序</string>
+    <string name="sets_controller_xy_help">仅在启动器界面中互换 X 和 Y 的功能。不影响模拟器的操作。</string>
+    <string name="sets_controller_group_type">控制器类型</string>
+    <string name="sets_controller_type_help">更改帮助提示中显示的按键图标和标签。</string>
+    <string name="sets_controller_type">类型</string>
+    <string name="sets_controller_type_sub">影响启动器底部的帮助栏</string>
+    <string name="sets_controller_group_scroll">滚动速度</string>
+    <string name="sets_controller_scroll_help">按住方向时列表的滚动速度。按住越久滚动越快；摇杆推到底时以最快速度滚动。</string>
+    <string name="sets_controller_scroll_sub">适用于按住方向键和摇杆的导航</string>
+    <string name="sets_controller_group_navigation">导航</string>
+    <string name="sets_controller_left_backs_out">按左键返回</string>
+    <string name="sets_controller_left_backs_out_help">按左键可退出文件夹或弹出菜单，仅在左键没有其他功能时生效</string>
+    <string name="sets_controller_group_keyboard">键盘</string>
+    <string name="sets_controller_virtual_keyboard">虚拟键盘</string>
+    <string name="sets_controller_virtual_keyboard_help">使用控制器在 PFP 自带的键盘上输入。关闭此功能或使用触控时，将改为打开系统键盘</string>
+    <string name="sets_controller_group_reset">重置</string>
+    <string name="sets_controller_reset">重置所有控制器设置</string>
+    <string name="sets_controller_reset_help">恢复默认的互换和类型预设</string>
+</resources>

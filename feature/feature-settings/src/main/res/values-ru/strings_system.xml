@@ -1,0 +1,380 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared by several Settings screens. -->
+    <string name="sets_on">Вкл.</string>
+    <string name="sets_off">Выкл.</string>
+    <string name="sets_prompt_back">Назад</string>
+    <string name="sets_prompt_enter">Открыть</string>
+    <string name="sets_prompt_switch">Переключить</string>
+    <string name="sets_prompt_options">Параметры</string>
+
+    <!-- Settings ▸ Backup & Restore -->
+    <string name="sets_backup_title">Резервное копирование</string>
+    <string name="sets_backup_group_backup">Резервная копия</string>
+    <string name="sets_backup_last_backup">Последняя копия</string>
+    <string name="sets_backup_never">Никогда</string>
+    <string name="sets_backup_folder">Папка для копий</string>
+    <string name="sets_backup_folder_saving_to">Сохранение в: %1$s  (выберите, чтобы изменить)</string>
+    <string name="sets_backup_folder_not_set">Не задана — выберите, чтобы указать место для копий</string>
+
+    <!-- Row label: starts a backup immediately. -->
+    <string name="sets_backup_now">Создать копию</string>
+    <string name="sets_backup_now_help">Сохраняет библиотеку, настройки и историю игр</string>
+    <string name="sets_backup_choose_folder_first">Сначала выберите папку для копий</string>
+    <string name="sets_backup_choose_folder_first_error">Сначала выберите папку для копий.</string>
+    <string name="sets_backup_group_saved">Сохранённые копии</string>
+    <string name="sets_backup_group_included">Что входит в копию</string>
+    <string name="sets_backup_included_library">Библиотека игр</string>
+    <string name="sets_backup_included_history">История игр</string>
+    <string name="sets_backup_included_categories">Свои категории</string>
+    <string name="sets_backup_included_settings">Настройки и ключи API</string>
+    <string name="sets_backup_included_profiles">Профили эмуляторов</string>
+    <string name="sets_backup_rom_files">Файлы ROM</string>
+    <string name="sets_backup_not_included">✗  (не входят)</string>
+    <string name="sets_backup_group_restore">Восстановление</string>
+    <string name="sets_backup_restore_from_file">Восстановить из файла</string>
+    <string name="sets_backup_restore_from_file_help">Выберите файл .pfpbackup</string>
+    <string name="sets_backup_after_restoring">После восстановления</string>
+    <string name="sets_backup_after_restoring_help">Папки вернутся, но доступ Android к ним — нет. Привяжите каждую корневую папку заново в «Доступ к папкам» её раздела (Библиотека, Музыка, Видео, Фото) — по одному шагу; повторная привязка восстанавливает всё внутри сразу.</string>
+    <string name="sets_backup_working">Выполняется…</string>
+    <string name="sets_backup_error">Ошибка</string>
+    <string name="sets_backup_creating">Создание копии…</string>
+    <string name="sets_backup_restoring">Восстановление копии…</string>
+    <string name="sets_backup_unknown_error">Неизвестная ошибка</string>
+    <string name="sets_backup_delete_failed">Не удалось удалить %1$s.</string>
+
+    <!-- Context-menu rows for a saved backup. -->
+    <string name="sets_backup_menu_restore">Восстановить</string>
+    <string name="sets_backup_menu_share">Поделиться</string>
+    <string name="sets_backup_menu_delete">Удалить копию</string>
+    <string name="sets_backup_delete_title">Удалить копию?</string>
+    <string name="sets_backup_delete_message">«%1$s» будет удалена. Это действие нельзя отменить.</string>
+    <string name="sets_backup_delete_confirm">Удалить</string>
+    <string name="sets_backup_restore_title">Восстановить копию?</string>
+    <string name="sets_backup_restore_message_named">«%1$s» заменит текущую библиотеку, настройки и историю игр. Это действие нельзя отменить.</string>
+    <string name="sets_backup_restore_message_picked">Эта копия заменит текущую библиотеку, настройки и историю игр. Это действие нельзя отменить.</string>
+    <string name="sets_backup_restore_confirm">Восстановить</string>
+    <string name="sets_backup_share_chooser">Поделиться копией</string>
+
+    <!-- Settings ▸ Credits -->
+    <string name="sets_credits_group_xmb">Дизайн XMB — Sony</string>
+    <string name="sets_credits_xmb_inspired">Внешний вид и поведение этого лаунчера вдохновлены XMB (XrossMediaBar) — интерфейсом, созданным Sony для PlayStation Portable и PlayStation 3. Крестообразная раскладка, плавная волна и модель навигации — дань уважения ему.</string>
+    <string name="sets_credits_xmb_trademarks">«XrossMediaBar», «XMB», «PSP» и «PlayStation» — товарные знаки Sony Interactive Entertainment Inc. Play Field Portal — независимый некоммерческий фанатский проект, не связанный с Sony, не одобренный и не спонсируемый ею. Встроенные элементы интерфейса взяты из темы сообщества «XMB Menu for ES-DE» (см. ниже) и остаются собственностью их авторов. Звуков Sony в приложении нет: авторы каждого звука меню указаны отдельно ниже.</string>
+    <string name="sets_credits_group_icon">Значок и логотип</string>
+    <string name="sets_credits_icon_designed">Значок и логотип Play Field Portal создал johakovi. Огромное спасибо за работу, которая придала лаунчеру его облик.</string>
+    <string name="sets_credits_label_design">Дизайн</string>
+    <string name="sets_credits_group_artwork">Значки систем и консолей</string>
+    <string name="sets_credits_artwork_from">Значки систем, консолей и категорий в этом лаунчере взяты из темы «XMB Menu for ES-DE» — воссоздания XMB PSP силами сообщества.</string>
+    <string name="sets_credits_artwork_rights">Все права на эти изображения принадлежат их создателям — Anthony Caccese, на основе оригинальной работы InitialDin. Значки используются с благодарностью и остаются собственностью их авторов.</string>
+    <string name="sets_credits_label_project">Проект</string>
+    <string name="sets_credits_label_authors">Авторы</string>
+    <string name="sets_credits_label_source">Исходник</string>
+    <string name="sets_credits_group_buttons">Значки кнопок контроллера</string>
+    <string name="sets_credits_buttons_from">Все экранные подсказки кнопок — кнопки PlayStation, Xbox и Nintendo, крестовины, бамперы, триггеры, стики и системные кнопки — взяты из наборов значков Zacksly по лицензии Creative Commons Attribution 3.0.</string>
+    <string name="sets_credits_buttons_unmodified">Изображения не изменены: изменены только имена файлов на имена ресурсов Android, и включены только используемые лаунчером значки.</string>
+    <string name="sets_credits_label_author">Автор</string>
+    <string name="sets_credits_label_website">Сайт</string>
+    <string name="sets_credits_label_support">Поддержка</string>
+    <string name="sets_credits_label_packs">Наборы</string>
+    <string name="sets_credits_label_license">Лицензия</string>
+    <string name="sets_credits_group_sounds">Звуки меню</string>
+    <string name="sets_credits_sounds_built">Встроенные звуки меню — навигация, назад, подтверждение, ошибка, запуск, уведомление и звук загрузки — сделаны из бесплатного аудио с Pixabay и обработаны для лаунчера: обрезаны, изменены по высоте и громкости, конвертированы. Спасибо авторам, чьи работы легли в основу набора.</string>
+    <string name="sets_credits_sounds_license">Лицензия Pixabay Content License не требует указания авторства, но мы указываем его с благодарностью. Если вы один из этих авторов и хотите изменить указание или убрать файл, свяжитесь с нами.</string>
+    <string name="sets_credits_group_metadata">Обложки и метаданные игр</string>
+    <string name="sets_credits_metadata_fetched">Обложки, 3D-коробки, фото картриджей и дисков, баннеры, логотипы, значки, руководства, видеоролики и метаданные игр загружаются по вашему запросу от сторонних поставщиков и остаются собственностью их владельцев.</string>
+    <string name="sets_credits_label_primary_scraper">Основной источник</string>
+    <string name="sets_credits_value_screenscraper">ScreenScraper — screenscraper.fr, база медиа игр, поддерживаемая сообществом</string>
+    <string name="sets_credits_label_artwork">Обложки</string>
+    <string name="sets_credits_label_metadata">Метаданные</string>
+    <string name="sets_credits_group_achievements">Достижения — Shiba Coins</string>
+    <string name="sets_credits_achievements_from">Данные достижений для Shiba Coins поступают от следующих сервисов и проектов и остаются собственностью их владельцев.</string>
+    <string name="sets_credits_value_retroachievements">retroachievements.org — созданные сообществом наборы достижений и данные о разблокировках для ретроигр через официальный RetroAchievements Web API и клиент api-kotlin</string>
+    <string name="sets_credits_value_steam">Powered by Steam — схемы достижений и данные о разблокировках через Steam Web API с вашим собственным ключом. Steam и логотип Steam — товарные знаки Valve Corporation. steampowered.com</string>
+    <string name="sets_credits_goldberg_bundles">Для локального отслеживания достижений в ПК-играх с эмуляцией Steam используется Goldberg Steam Emulator — а именно gbe_fork, форк сообщества, который поддерживают Detanup01 и соавторы, на основе оригинального Goldberg Emulator от Mr. Goldberg.</string>
+    <string name="sets_credits_goldberg_license">Эмулятор — свободное ПО по лицензии GNU Lesser General Public License v3.0 (LGPL-3.0). Play Field Portal включает неизменённую сборку его steam_api64.dll; полный исходный код и текст лицензии доступны по ссылкам ниже.</string>
+    <string name="sets_credits_value_gbe">gbe_fork — Detanup01 и соавторы</string>
+    <string name="sets_credits_label_original_project">Оригинальный проект</string>
+    <string name="sets_credits_value_goldberg_original">Goldberg Emulator от Mr. Goldberg — gitlab.com/Mr_Goldberg/goldberg_emulator</string>
+    <string name="sets_credits_group_support">Поддержать проект</string>
+    <string name="sets_credits_support_thanks">Спасибо всем за поддержку. Я создал это как признание в любви PSP и замечательному сообществу, которое тоже её любит, поэтому проект навсегда останется бесплатным. И всё же, если вам нравится то, что я делаю, и вы хотите выразить это иначе, можете угостить меня тако. Конечно, пожертвования всегда добровольны и никогда не обязательны. Люблю вас всех, и с 15 июня!</string>
+    <string name="sets_credits_label_buy_taco">Угостить тако</string>
+    <string name="sets_credits_group_notes">Примечания</string>
+    <string name="sets_credits_notes_text">Если вы правообладатель и хотите изменить указание авторства или убрать какой-либо материал, свяжитесь с нами — вопрос будет решён быстро.</string>
+    <string name="sets_credits_title">Благодарности</string>
+    <string name="sets_credits_no_browser">Нет приложения для открытия веб-ссылок. Откройте %1$s в браузере.</string>
+
+    <!-- Settings ▸ Logs -->
+    <string name="sets_logs_title">Журналы</string>
+    <string name="sets_logs_prompt_share">Поделиться</string>
+    <string name="sets_logs_prompt_open">Открыть</string>
+    <string name="sets_logs_prompt_clear">Очистить</string>
+    <string name="sets_logs_clear_title">Очистить все журналы?</string>
+    <plurals name="sets_logs_clear_message">
+        <item quantity="one">%1$d файл журнала (%2$s) будет удалён. Если собираетесь сообщить о проблеме, сначала поделитесь журналом. Очищенный журнал не восстановить.</item>
+        <item quantity="few">Все %1$d файла журнала (%2$s) будут удалены. Если собираетесь сообщить о проблеме, сначала поделитесь журналом. Очищенный журнал не восстановить.</item>
+        <item quantity="many">Все %1$d файлов журнала (%2$s) будут удалены. Если собираетесь сообщить о проблеме, сначала поделитесь журналом. Очищенный журнал не восстановить.</item>
+        <item quantity="other">Все %1$d файла журнала (%2$s) будут удалены. Если собираетесь сообщить о проблеме, сначала поделитесь журналом. Очищенный журнал не восстановить.</item>
+    </plurals>
+    <string name="sets_logs_clear_confirm">Очистить</string>
+    <string name="sets_logs_group_files">Файлы журналов</string>
+    <string name="sets_logs_empty">Файлов журналов пока нет</string>
+    <string name="sets_logs_empty_help">Новый журнал начинается при каждом запуске приложения. Выберите, чтобы проверить снова.</string>
+    <string name="sets_logs_group_manage">Управление</string>
+    <string name="sets_logs_clear_row">Очистить все журналы</string>
+    <string name="sets_logs_clear_row_help">Удаляет все сохранённые журналы. Текущий сеанс продолжит запись в новый файл.</string>
+    <string name="sets_logs_clear_row_none">Нечего очищать</string>
+    <string name="sets_logs_group_about">О журналах</string>
+    <string name="sets_logs_saved">Что сохраняется</string>
+    <string name="sets_logs_saved_help">Хранятся только последние сеансы (не более ~2 МБ). Пароли, токены, имена аккаунтов и адреса почты удаляются перед записью.</string>
+    <string name="sets_logs_share_file">Поделиться %1$s</string>
+    <string name="sets_logs_current">ТЕКУЩИЙ</string>
+    <string name="sets_logs_open_with">Открыть журнал в</string>
+    <string name="sets_logs_share_subject">Журнал Play Field Portal — %1$s</string>
+    <string name="sets_logs_share_chooser">Поделиться файлом журнала</string>
+    <string name="sets_logs_no_files">Нет файлов</string>
+    <plurals name="sets_logs_summary">
+        <item quantity="one">%1$d файл · %2$s</item>
+        <item quantity="few">%1$d файла · %2$s</item>
+        <item quantity="many">%1$d файлов · %2$s</item>
+        <item quantity="other">%1$d файла · %2$s</item>
+    </plurals>
+    <plurals name="sets_logs_deleted">
+        <item quantity="one">Удалён %1$d файл (%2$s)</item>
+        <item quantity="few">Удалено %1$d файла (%2$s)</item>
+        <item quantity="many">Удалено %1$d файлов (%2$s)</item>
+        <item quantity="other">Удалено %1$d файла (%2$s)</item>
+    </plurals>
+    <string name="sets_logs_started_today">Начат сегодня, %1$s</string>
+    <string name="sets_logs_started_yesterday">Начат вчера, %1$s</string>
+    <string name="sets_logs_started_on">Начат %1$s, %2$s</string>
+    <string name="sets_roots_group">Корневые папки</string>
+    <string name="sets_scanning">Сканирование…</string>
+    <string name="sets_rescan_help">Обновить библиотеки из всех корневых папок</string>
+    <string name="sets_playback_group">Воспроизведение</string>
+    <string name="sets_root_kind_music">Музыка</string>
+    <string name="sets_root_kind_video">Видео</string>
+    <string name="sets_root_kind_photo">Фото</string>
+    <string name="sets_root_kind_rom">ROM</string>
+    <string name="sets_root_fallback_music">Музыка</string>
+    <string name="sets_root_fallback_video">Видео</string>
+    <string name="sets_root_fallback_photo">Фото</string>
+    <string name="sets_root_none">Корневые папки не настроены (%1$s)</string>
+    <string name="sets_root_none_help">Добавьте папку ниже, чтобы начать управлять библиотекой</string>
+    <string name="sets_root_access_lost">Доступ потерян — нажмите «Изменить», чтобы выдать его снова</string>
+    <string name="sets_root_consoles">Консоли: %1$s</string>
+    <string name="sets_root_kind_root">Корневая папка: %1$s</string>
+    <string name="sets_label_edit_folder">Изменить папку</string>
+    <string name="sets_label_remove_folder">Удалить папку</string>
+    <string name="sets_label_options_hint">Подсказка параметров</string>
+    <string name="sets_label_show_on_bar">Показывать на панели</string>
+    <string name="sets_label_show_in_games">Показывать в играх</string>
+    <string name="sets_label_pin_to_top">Закрепить вверху</string>
+    <string name="sets_root_edit_short">Изменить</string>
+    <string name="sets_root_remove_short">Удалить</string>
+    <string name="sets_root_remove_title">Удалить эту папку?</string>
+    <string name="sets_root_remove_message">PFP перестанет использовать «%1$s», а найденное в ней уйдёт из библиотеки. Файлы на накопителе не удаляются.</string>
+    <string name="sets_root_remove_confirm">Удалить</string>
+
+    <!-- Default-player pickers -->
+    <string name="sets_player_builtin">Play Field Portal</string>
+    <string name="sets_player_system_default">Системный по умолчанию</string>
+
+    <!-- Settings ▸ Music -->
+    <string name="sets_music_title">Музыка</string>
+    <string name="sets_music_player_title">Музыкальный плеер по умолчанию</string>
+    <string name="sets_music_player_none">Других музыкальных плееров на устройстве не найдено.</string>
+    <string name="sets_music_add_root">Добавить папку музыки</string>
+    <string name="sets_music_add_root_help">Дайте доступ к корневой папке (например, /Music) — можно добавить несколько</string>
+    <string name="sets_music_rescan">Пересканировать музыку</string>
+    <string name="sets_music_player">Музыкальный плеер</string>
+    <string name="sets_music_player_help">Приложение для открытия треков</string>
+
+    <!-- Settings ▸ Video -->
+    <string name="sets_video_title">Видео</string>
+    <string name="sets_video_player_title">Видеоплеер по умолчанию</string>
+    <string name="sets_video_player_none">Внешних видеоплееров на устройстве не найдено.</string>
+    <string name="sets_video_add_root">Добавить папку видео</string>
+    <string name="sets_video_add_root_help">Дайте доступ к корневой папке (например, /Movies) — можно добавить несколько</string>
+    <string name="sets_video_rescan">Пересканировать видео</string>
+    <string name="sets_video_player">Видеоплеер</string>
+    <string name="sets_video_player_help">Play Field Portal воспроизводит сам; или выберите приложение / спрашивать каждый раз.</string>
+
+    <!-- Settings ▸ Photo -->
+    <string name="sets_photo_title">Фото</string>
+    <string name="sets_photo_add_root">Добавить папку фото</string>
+    <string name="sets_photo_add_root_help">Дайте доступ к корневой папке (например, /Pictures) — можно добавить несколько</string>
+    <string name="sets_photo_rescan">Пересканировать фото</string>
+    <string name="sets_photo_group_maintenance">Обслуживание</string>
+    <string name="sets_photo_clear_cache">Очистить кеш миниатюр</string>
+    <string name="sets_photo_clear_cache_help">Удалить созданные миниатюры. Пересканирование создаст их заново.</string>
+    <plurals name="sets_photo_cache_cleared">
+        <item quantity="one">Удалена %1$d миниатюра из кеша. Пересканируйте, чтобы создать заново.</item>
+        <item quantity="few">Удалено %1$d миниатюры из кеша. Пересканируйте, чтобы создать заново.</item>
+        <item quantity="many">Удалено %1$d миниатюр из кеша. Пересканируйте, чтобы создать заново.</item>
+        <item quantity="other">Удалено %1$d миниатюры из кеша. Пересканируйте, чтобы создать заново.</item>
+    </plurals>
+
+    <!-- Settings ▸ Interface ▸ Notifications -->
+    <string name="sets_notif_title">Уведомления</string>
+    <string name="sets_notif_record">Записывать уведомления</string>
+    <string name="sets_notif_record_help">Хранить историю сканирований, обложек, загрузки данных и работы с достижениями. Если выключено, новые записи не создаются; идущие задачи по-прежнему показывают ход.</string>
+    <string name="sets_notif_group_history">История</string>
+    <string name="sets_notif_keep_for">Хранить записи</string>
+    <string name="sets_notif_keep_for_help">Старые записи удаляются при следующей новой записи. В любом случае хранится не более 200 записей, прочитанные удаляются первыми.</string>
+    <string name="sets_notif_never">Никогда</string>
+    <plurals name="sets_notif_days">
+        <item quantity="one">%1$d день</item>
+        <item quantity="few">%1$d дня</item>
+        <item quantity="many">%1$d дней</item>
+        <item quantity="other">%1$d дня</item>
+    </plurals>
+    <string name="sets_notif_mark_read">Отметить все прочитанными</string>
+    <string name="sets_notif_mark_read_help">Сбрасывает счётчик непрочитанных в строке состояния</string>
+    <plurals name="sets_notif_unread">
+        <item quantity="one">Непрочитанных: %1$d</item>
+        <item quantity="few">Непрочитанных: %1$d</item>
+        <item quantity="many">Непрочитанных: %1$d</item>
+        <item quantity="other">Непрочитанных: %1$d</item>
+    </plurals>
+    <string name="sets_notif_none_unread">Нет непрочитанных</string>
+    <string name="sets_notif_clear_all">Очистить всё</string>
+    <string name="sets_notif_clear_all_help">Очищает историю. Выполняющиеся задачи не затрагиваются.</string>
+    <plurals name="sets_notif_stored">
+        <item quantity="one">Сохранено: %1$d</item>
+        <item quantity="few">Сохранено: %1$d</item>
+        <item quantity="many">Сохранено: %1$d</item>
+        <item quantity="other">Сохранено: %1$d</item>
+    </plurals>
+
+    <!-- Settings ▸ System ▸ System Update -->
+    <string name="sets_update_title">Обновление системы</string>
+    <string name="sets_update_group_update">Обновление</string>
+    <string name="sets_update_installed">Установленная версия</string>
+    <string name="sets_update_latest">Последняя версия</string>
+    <string name="sets_update_check">Проверить обновления</string>
+    <string name="sets_update_checking">Проверка…</string>
+    <string name="sets_update_notifications">Уведомления об обновлениях</string>
+    <string name="sets_update_notifications_help">Напоминать в уведомлениях о выходе новой версии, не чаще раза в день</string>
+    <string name="sets_update_group_changelog">Список изменений</string>
+    <string name="sets_update_no_releases">Выпуски ещё не загружены</string>
+    <string name="sets_update_no_releases_help">Проверьте обновления, чтобы загрузить список изменений</string>
+    <string name="sets_update_install">Скачать и установить %1$s</string>
+    <string name="sets_update_cannot_install">Эта сборка не может устанавливать обновления отсюда</string>
+    <string name="sets_update_handed_over">Подтвердите в установщике Android, чтобы завершить</string>
+    <string name="sets_update_downloading">Скачивание…</string>
+    <string name="sets_update_install_help">Android попросит подтверждение перед установкой</string>
+    <string name="sets_update_no_summary">Для этой версии нет описания</string>
+    <string name="sets_update_full_notes">Полные примечания к выпуску</string>
+    <string name="sets_update_full_notes_help">Открывает GitHub в браузере</string>
+    <string name="sets_edition_full">Full</string>
+    <string name="sets_edition_lite">Lite</string>
+    <string name="sets_update_installed_label">%1$s · %2$s</string>
+    <string name="sets_update_unknown_version">Неизвестно</string>
+    <string name="sets_update_available">Доступна %1$s</string>
+    <string name="sets_update_not_checked">Ещё не проверено</string>
+    <string name="sets_update_up_to_date">Последняя версия</string>
+    <string name="sets_update_never_checked">Не проверялось</string>
+    <string name="sets_update_checked">Проверено %1$s</string>
+
+    <!-- Small badges on changelog entries. -->
+    <string name="sets_update_tag_new">Новая</string>
+    <string name="sets_update_tag_installed">Установлена</string>
+    <string name="sets_update_msg_available">Доступна новая версия.</string>
+    <string name="sets_update_msg_latest">У вас последняя версия.</string>
+    <string name="sets_update_msg_offline">Не удалось связаться с GitHub. Повторите позже.</string>
+    <string name="sets_update_msg_invalid">GitHub прислал неожиданный ответ. Повторите позже.</string>
+    <string name="sets_update_no_apk">Для версии %1$s ещё нет загрузки %2$s. Повторите позже.</string>
+    <string name="sets_update_download_failed">Не удалось скачать обновление. Проверьте подключение и повторите.</string>
+    <string name="sets_update_not_newer">Загруженный файл — не более новая версия приложения, поэтому он не установлен.</string>
+    <string name="sets_update_no_installer">Не удалось открыть установщик Android на этом устройстве.</string>
+    <string name="sets_update_reminder_installed">Версия %1$s установлена.</string>
+    <string name="sets_update_reminder_available">Доступна версия %1$s.</string>
+
+    <!-- Settings ▸ About -->
+    <string name="sets_about_label_version">Версия</string>
+    <string name="sets_about_label_build">Сборка</string>
+    <string name="sets_about_label_edition">Редакция</string>
+    <string name="sets_about_label_min_android">Мин. Android</string>
+    <string name="sets_about_label_target">Целевая</string>
+    <string name="sets_about_group_open_source">Открытый исходный код</string>
+    <string name="sets_about_value_compose">UI-фреймворк</string>
+    <string name="sets_about_value_room">Локальная база данных</string>
+    <string name="sets_about_value_hilt">Внедрение зависимостей</string>
+    <string name="sets_about_value_ktor">Сетевой клиент</string>
+    <string name="sets_about_value_coil">Загрузка изображений</string>
+    <string name="sets_about_value_media3">Видеоролики и воспроизведение</string>
+    <string name="sets_about_value_workmanager">Фоновые задачи</string>
+    <string name="sets_about_value_timber">Журналирование</string>
+    <string name="sets_about_group_credits">Благодарности</string>
+    <string name="sets_about_label_art_media">Обложки и медиа</string>
+    <string name="sets_about_label_metadata">Метаданные</string>
+    <string name="sets_about_label_inspired">Вдохновлено</string>
+    <string name="sets_about_label_see_also">См. также</string>
+    <string name="sets_about_value_see_also">Настройки ▸ Благодарности</string>
+    <string name="sets_about_group_legal">Правовая информация</string>
+    <string name="sets_about_legal_independent">Play Field Portal — независимый фанатский проект, не связанный с Sony Interactive Entertainment.</string>
+    <string name="sets_about_legal_trademarks">PlayStation, PSP и XMB — товарные знаки Sony Interactive Entertainment Inc.</string>
+    <string name="sets_about_title">О приложении</string>
+    <string name="sets_about_unknown">неизвестно</string>
+    <string name="sets_orphan_linked">Обложка привязана и останется привязанной при будущих сканированиях.</string>
+    <string name="sets_orphan_link_failed">Не удалось привязать файл — запустите «Сканировать и перепривязать» и повторите.</string>
+    <string name="sets_audio_custom_sound">Свой звук</string>
+    <string name="sets_audio_import_failed">Не удалось импортировать этот звук. Попробуйте другой файл.</string>
+    <string name="sets_ptf_wallpaper_only">Импортировано «%1$s» — только обои</string>
+    <plurals name="sets_ptf_icons">
+        <item quantity="one">Импортировано «%1$s» — обои и %2$d значок</item>
+        <item quantity="few">Импортировано «%1$s» — обои и %2$d значка</item>
+        <item quantity="many">Импортировано «%1$s» — обои и %2$d значков</item>
+        <item quantity="other">Импортировано «%1$s» — обои и %2$d значка</item>
+    </plurals>
+    <plurals name="sets_ptf_icons_tint">
+        <item quantity="one">Импортировано «%1$s» — обои и %2$d значок, совпадение оттенка %3$d%%</item>
+        <item quantity="few">Импортировано «%1$s» — обои и %2$d значка, совпадение оттенка %3$d%%</item>
+        <item quantity="many">Импортировано «%1$s» — обои и %2$d значков, совпадение оттенка %3$d%%</item>
+        <item quantity="other">Импортировано «%1$s» — обои и %2$d значка, совпадение оттенка %3$d%%</item>
+    </plurals>
+    <string name="sets_ptf_cxmb_unsupported">Темы CXMB (.ctf) не поддерживаются — только официальные темы .ptf</string>
+    <string name="sets_svc_steam_connected">Steam подключён</string>
+    <string name="sets_svc_steam_resolved">Steam подключён — найден «%1$s»</string>
+    <string name="sets_svc_steam_unresolved">Ключ сохранён, но «%1$s» не найден. Введите свой SteamID64.</string>
+    <string name="sets_svc_valid">Действителен</string>
+    <string name="sets_svc_igdb_invalid">Недействительно — проверьте Client ID и Secret</string>
+    <string name="sets_svc_screenscraper_invalid">Недействительно — проверьте имя пользователя и пароль</string>
+    <plurals name="sets_svc_screenscraper_valid_threads">
+        <item quantity="one">Действителен — %1$s поток</item>
+        <item quantity="few">Действителен — %1$s потока</item>
+        <item quantity="many">Действителен — %1$s потоков</item>
+        <item quantity="other">Действителен — %1$s потока</item>
+    </plurals>
+    <plurals name="sets_svc_screenscraper_valid_both">
+        <item quantity="one">Действителен — %1$s поток, %2$s запросов/день</item>
+        <item quantity="few">Действителен — %1$s потока, %2$s запросов/день</item>
+        <item quantity="many">Действителен — %1$s потоков, %2$s запросов/день</item>
+        <item quantity="other">Действителен — %1$s потока, %2$s запросов/день</item>
+    </plurals>
+    <string name="sets_svc_screenscraper_valid_requests">Действителен, %1$s запросов/день</string>
+
+    <!-- Settings ▸ Controller -->
+    <string name="sets_controller_title">Контроллер</string>
+    <string name="sets_controller_group_ab">Подтверждение и назад</string>
+    <string name="sets_controller_ab_help">Определяет, какая кнопка подтверждает, а какая возвращает назад. Действует во всех меню лаунчера.</string>
+    <string name="sets_controller_group_xy">Параметры и сортировка</string>
+    <string name="sets_controller_xy_help">Меняет действия X и Y местами только в интерфейсе лаунчера. Не влияет на управление в эмуляторах.</string>
+    <string name="sets_controller_group_type">Тип контроллера</string>
+    <string name="sets_controller_type_help">Определяет, какие значки и названия кнопок показываются в подсказках.</string>
+    <string name="sets_controller_type">Тип</string>
+    <string name="sets_controller_type_sub">Влияет на панель подсказок внизу лаунчера</string>
+    <string name="sets_controller_group_scroll">Скорость прокрутки</string>
+    <string name="sets_controller_scroll_help">Как быстро прокручиваются списки при удержании направления. Чем дольше удержание, тем быстрее; полный наклон стика — максимальная скорость.</string>
+    <string name="sets_controller_scroll_sub">Для удержания крестовины и стика</string>
+    <string name="sets_controller_group_navigation">Навигация</string>
+    <string name="sets_controller_left_backs_out">Влево — назад</string>
+    <string name="sets_controller_left_backs_out_help">Нажмите ВЛЕВО, чтобы выйти из папки или панели — только там, где ВЛЕВО больше ничего не делает</string>
+    <string name="sets_controller_group_keyboard">Клавиатура</string>
+    <string name="sets_controller_virtual_keyboard">Виртуальная клавиатура</string>
+    <string name="sets_controller_virtual_keyboard_help">Ввод с контроллера на собственной клавиатуре PFP. Если выключено или вы используете касание, открывается системная клавиатура</string>
+    <string name="sets_controller_group_reset">Сброс</string>
+    <string name="sets_controller_reset">Сбросить все настройки контроллера</string>
+    <string name="sets_controller_reset_help">Восстанавливает стандартные замены и тип</string>
+</resources>

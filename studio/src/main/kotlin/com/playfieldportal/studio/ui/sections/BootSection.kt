@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.Text
+import com.playfieldportal.studio.i18n.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -87,11 +87,11 @@ fun BootSection(
     SectionColumn {
         HeadingWithInfo(
             "Boot sequences",
-            "Whether the boot video and GameBoot play at all is a device setting: ${DeviceHints.BOOT}",
+            "Whether the boot video and Game Boot play at all is a device setting: ${DeviceHints.BOOT}",
         )
         MutedText("Choose the built-in sequence or your own MP4 for each.", 11)
         BootPair(BOOT_KEY, "Boot", state, viewModel, window, onPlayInPreview)
-        BootPair(GAMEBOOT_KEY, "GameBoot", state, viewModel, window, onPlayInPreview)
+        BootPair(GAMEBOOT_KEY, "Game Boot", state, viewModel, window, onPlayInPreview)
     }
 }
 

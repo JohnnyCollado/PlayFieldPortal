@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared by several Settings screens. -->
+    <string name="sets_on">Zap.</string>
+    <string name="sets_off">Vyp.</string>
+    <string name="sets_prompt_back">Zpět</string>
+    <string name="sets_prompt_enter">Otevřít</string>
+    <string name="sets_prompt_switch">Přepnout</string>
+    <string name="sets_prompt_options">Možnosti</string>
+
+    <!-- Settings ▸ Backup & Restore -->
+    <string name="sets_backup_title">Zálohování a obnovení</string>
+    <string name="sets_backup_group_backup">Záloha</string>
+    <string name="sets_backup_last_backup">Poslední záloha</string>
+    <string name="sets_backup_never">Nikdy</string>
+    <string name="sets_backup_folder">Složka záloh</string>
+    <string name="sets_backup_folder_saving_to">Ukládá se do: %1$s  (výběrem změníte)</string>
+    <string name="sets_backup_folder_not_set">Nenastaveno — výběrem zvolíte, kam se zálohy ukládají</string>
+    <string name="sets_backup_now">Zálohovat nyní</string>
+    <string name="sets_backup_now_help">Uloží knihovnu, nastavení a historii hraní</string>
+    <string name="sets_backup_choose_folder_first">Nejprve vyberte složku záloh</string>
+    <string name="sets_backup_choose_folder_first_error">Nejprve vyberte složku záloh.</string>
+    <string name="sets_backup_group_saved">Uložené zálohy</string>
+    <string name="sets_backup_group_included">Co je zahrnuto</string>
+    <string name="sets_backup_included_library">Knihovna her</string>
+    <string name="sets_backup_included_history">Historie hraní</string>
+    <string name="sets_backup_included_categories">Vlastní kategorie</string>
+    <string name="sets_backup_included_settings">Nastavení a klíče API</string>
+    <string name="sets_backup_included_profiles">Profily emulátorů</string>
+    <string name="sets_backup_rom_files">Soubory ROM</string>
+    <string name="sets_backup_not_included">✗  (není zahrnuto)</string>
+    <string name="sets_backup_group_restore">Obnovení</string>
+    <string name="sets_backup_restore_from_file">Obnovit ze souboru</string>
+    <string name="sets_backup_restore_from_file_help">Vyhledejte soubor .pfpbackup</string>
+    <string name="sets_backup_after_restoring">Po obnovení</string>
+    <string name="sets_backup_after_restoring_help">Vaše složky se vrátí, ale přístup Androidu k nim ne. Znovu propojte každý kořen v Přístupu ke kořenům v příslušné sekci (Knihovna, Hudba, Video, Fotky) — vždy jeden krok; znovupropojení kořene obnoví vše pod ním najednou.</string>
+    <string name="sets_backup_working">Probíhá…</string>
+    <string name="sets_backup_error">Chyba</string>
+    <string name="sets_backup_creating">Vytváření zálohy…</string>
+    <string name="sets_backup_restoring">Obnovování zálohy…</string>
+    <string name="sets_backup_unknown_error">Neznámá chyba</string>
+    <string name="sets_backup_delete_failed">%1$s nelze smazat.</string>
+    <string name="sets_backup_menu_restore">Obnovit</string>
+    <string name="sets_backup_menu_share">Sdílet</string>
+    <string name="sets_backup_menu_delete">Smazat zálohu</string>
+    <string name="sets_backup_delete_title">Smazat zálohu?</string>
+    <string name="sets_backup_delete_message">„%1$s“ bude smazána. Tuto akci nelze vrátit zpět.</string>
+    <string name="sets_backup_delete_confirm">Smazat</string>
+    <string name="sets_backup_restore_title">Obnovit zálohu?</string>
+    <string name="sets_backup_restore_message_named">„%1$s“ nahradí vaši aktuální knihovnu, nastavení a historii hraní. Tuto akci nelze vrátit zpět.</string>
+    <string name="sets_backup_restore_message_picked">Tato záloha nahradí vaši aktuální knihovnu, nastavení a historii hraní. Tuto akci nelze vrátit zpět.</string>
+    <string name="sets_backup_restore_confirm">Obnovit</string>
+    <string name="sets_backup_share_chooser">Sdílet zálohu</string>
+
+    <!-- Settings ▸ Credits -->
+    <string name="sets_credits_group_xmb">Design XMB — Sony</string>
+    <string name="sets_credits_xmb_inspired">Vzhled a ovládání tohoto launcheru jsou inspirovány rozhraním XMB (XrossMediaBar), které Sony vytvořilo pro PlayStation Portable a PlayStation 3 — křížové uspořádání, plynoucí vlna i model navigace jsou poctou tomuto rozhraní.</string>
+    <string name="sets_credits_xmb_trademarks">„XrossMediaBar“, „XMB“, „PSP“ a „PlayStation“ jsou ochranné známky společnosti Sony Interactive Entertainment Inc. Play Field Portal je nezávislý, nekomerční fanouškovský projekt — není se Sony spojen, není jí schválen ani sponzorován. Přiložená grafika rozhraní pochází z komunitního motivu „XMB Menu for ES-DE“ (uveden níže) a zůstává majetkem příslušných autorů. Žádný zvuk od Sony není přiložen: každý zvuk nabídky je uveden zvlášť níže.</string>
+    <string name="sets_credits_group_icon">Ikona aplikace a logo</string>
+    <string name="sets_credits_icon_designed">Ikonu a logo aplikace Play Field Portal navrhl johakovi. Velké díky za grafiku, která dává launcheru jeho identitu.</string>
+    <string name="sets_credits_label_design">Design</string>
+    <string name="sets_credits_group_artwork">Grafika systémů a konzolí</string>
+    <string name="sets_credits_artwork_from">Ikony systémů, konzolí a kategorií použité v celém launcheru pocházejí z motivu „XMB Menu for ES-DE“ — komunitní rekreace XMB z PSP.</string>
+    <string name="sets_credits_artwork_rights">Všechna práva k této grafice patří jejím tvůrcům — Anthony Caccese, navazující na původní práci InitialDin. Ikony jsou zde použity s vděčností a zůstávají majetkem příslušných autorů.</string>
+    <string name="sets_credits_label_project">Projekt</string>
+    <string name="sets_credits_label_authors">Autoři</string>
+    <string name="sets_credits_label_source">Zdroj</string>
+    <string name="sets_credits_group_buttons">Ikony tlačítek ovladače</string>
+    <string name="sets_credits_buttons_from">Všechny výzvy tlačítek na obrazovce — tlačítka PlayStation, Xbox a Nintendo, D-pady, bumpery, triggery, páčky a systémová tlačítka — pocházejí z balíčků ikon tlačítek od Zacksly, použitých v rámci licence Creative Commons Attribution 3.0.</string>
+    <string name="sets_credits_buttons_unmodified">Grafika není upravena: změněny byly jen názvy souborů na názvy prostředků Androidu a přiloženy jsou jen ikony, které launcher vykresluje.</string>
+    <string name="sets_credits_label_author">Autor</string>
+    <string name="sets_credits_label_website">Web</string>
+    <string name="sets_credits_label_support">Podpora</string>
+    <string name="sets_credits_label_packs">Balíčky</string>
+    <string name="sets_credits_label_license">Licence</string>
+    <string name="sets_credits_group_sounds">Zvuky nabídky</string>
+    <string name="sets_credits_sounds_built">Přiložené zvuky nabídky — navigace, zpět, potvrzení, chyba, spuštění, oznámení a spouštěcí znělka — vznikly z bezplatného zvuku zveřejněného na Pixabay, upraveného pro launcher: zkráceného, přeladěného, vyrovnaného a převedeného. Děkujeme tvůrcům, z jejichž práce sada vychází.</string>
+    <string name="sets_credits_sounds_license">Licence obsahu Pixabay uvedení autora nevyžaduje; i tak jej zde s díky uvádíme. Pokud jste jedním z těchto tvůrců a chcete změnit uvedení nebo odebrat prvek, ozvěte se prosím.</string>
+    <string name="sets_credits_group_metadata">Grafika a metadata her</string>
+    <string name="sets_credits_metadata_fetched">Obaly, 3D obaly, snímky cartridgí/disků, bannery hero, loga, ikony, manuály, videoukázky a metadata her se stahují na vaši žádost od poskytovatelů třetích stran a zůstávají majetkem příslušných vlastníků.</string>
+    <string name="sets_credits_label_primary_scraper">Hlavní scraper</string>
+    <string name="sets_credits_value_screenscraper">ScreenScraper — screenscraper.fr, komunitní databáze herních médií</string>
+    <string name="sets_credits_label_artwork">Grafika</string>
+    <string name="sets_credits_label_metadata">Metadata</string>
+    <string name="sets_credits_group_achievements">Achievementy — Shiba Coins</string>
+    <string name="sets_credits_achievements_from">Data achievementů pro systém Shiba Coins pocházejí z následujících služeb a projektů a zůstávají majetkem příslušných vlastníků.</string>
+    <string name="sets_credits_value_retroachievements">retroachievements.org — komunitní sady achievementů a data o odemčení pro retro hry, přes oficiální RetroAchievements Web API a klienta api-kotlin</string>
+    <string name="sets_credits_value_steam">Powered by Steam — schémata achievementů a data o odemčení přes Steam Web API s vaším vlastním klíčem. Steam a logo Steam jsou ochranné známky společnosti Valve Corporation. steampowered.com</string>
+    <string name="sets_credits_goldberg_bundles">Místní sledování achievementů pro PC hry s emulací Steamu obsahuje Goldberg Steam Emulator — konkrétně gbe_fork, komunitní fork spravovaný Detanup01 a přispěvateli, navazující na původní Goldberg Emulator od Mr. Goldberga.</string>
+    <string name="sets_credits_goldberg_license">Emulátor je svobodný software licencovaný pod GNU Lesser General Public License v3.0 (LGPL-3.0). Play Field Portal obsahuje neupravené sestavení jeho steam_api64.dll; kompletní odpovídající zdrojový kód a plné znění licence jsou k dispozici na odkazech níže.</string>
+    <string name="sets_credits_value_gbe">gbe_fork — Detanup01 a přispěvatelé</string>
+    <string name="sets_credits_label_original_project">Původní projekt</string>
+    <string name="sets_credits_value_goldberg_original">Goldberg Emulator od Mr. Goldberga — gitlab.com/Mr_Goldberg/goldberg_emulator</string>
+    <string name="sets_credits_group_support">Podpořte projekt</string>
+    <string name="sets_credits_support_thanks">Děkuji vám všem za podporu. Vytvořil jsem to jako milostný dopis PSP a úžasné komunitě, která ji také miluje, takže tento projekt zůstane navždy zdarma. Pokud si přesto mé práce vážíte a chcete to dát najevo jinak, můžete mi koupit taco. Dary jsou samozřejmě vždy dobrovolné a nikdy povinné. Mám vás všechny rád a šťastný 15. červen.</string>
+    <string name="sets_credits_label_buy_taco">Kupte mi taco</string>
+    <string name="sets_credits_group_notes">Poznámky</string>
+    <string name="sets_credits_notes_text">Pokud jste držitelem práv a chcete změnit uvedení autora nebo odebrat jakýkoli prvek, ozvěte se prosím a vše bude neprodleně vyřešeno.</string>
+    <string name="sets_credits_title">Poděkování</string>
+    <string name="sets_credits_no_browser">Žádná aplikace neumí otevřít webové odkazy. Navštivte %1$s v prohlížeči.</string>
+
+    <!-- Settings ▸ Logs -->
+    <string name="sets_logs_title">Protokoly</string>
+    <string name="sets_logs_prompt_share">Sdílet</string>
+    <string name="sets_logs_prompt_open">Otevřít</string>
+    <string name="sets_logs_prompt_clear">Vymazat</string>
+    <string name="sets_logs_clear_title">Vymazat všechny protokoly?</string>
+    <plurals name="sets_logs_clear_message">
+        <item quantity="one">Soubor protokolu (%2$s) bude smazán. Pokud se chystáte nahlásit problém, nejprve protokol sdílejte. Vymazaný protokol nelze obnovit.</item>
+        <item quantity="few">Všechny %1$d soubory protokolů (%2$s) budou smazány. Pokud se chystáte nahlásit problém, nejprve protokol sdílejte. Vymazaný protokol nelze obnovit.</item>
+        <item quantity="many">Všech %1$d souboru protokolů (%2$s) bude smazáno. Pokud se chystáte nahlásit problém, nejprve protokol sdílejte. Vymazaný protokol nelze obnovit.</item>
+        <item quantity="other">Všech %1$d souborů protokolů (%2$s) bude smazáno. Pokud se chystáte nahlásit problém, nejprve protokol sdílejte. Vymazaný protokol nelze obnovit.</item>
+    </plurals>
+    <string name="sets_logs_clear_confirm">Vymazat</string>
+    <string name="sets_logs_group_files">Soubory protokolů</string>
+    <string name="sets_logs_empty">Zatím žádné soubory protokolů</string>
+    <string name="sets_logs_empty_help">Nový protokol začíná s každým spuštěním aplikace. Vyberte pro novou kontrolu.</string>
+    <string name="sets_logs_group_manage">Správa</string>
+    <string name="sets_logs_clear_row">Vymazat všechny protokoly</string>
+    <string name="sets_logs_clear_row_help">Smaže všechny uložené protokoly. Tato relace pokračuje v zápisu do nového souboru.</string>
+    <string name="sets_logs_clear_row_none">Není co vymazat</string>
+    <string name="sets_logs_group_about">O protokolech</string>
+    <string name="sets_logs_saved">Co se ukládá</string>
+    <string name="sets_logs_saved_help">Uchovávají se jen nejnovější relace (nejvýše asi 2 MB). Hesla, tokeny, názvy účtů a e-maily se před zápisem odstraní.</string>
+    <string name="sets_logs_share_file">Sdílet %1$s</string>
+    <string name="sets_logs_current">AKTUÁLNÍ</string>
+    <string name="sets_logs_open_with">Otevřít protokol v</string>
+    <string name="sets_logs_share_subject">Protokol Play Field Portal — %1$s</string>
+    <string name="sets_logs_share_chooser">Sdílet soubor protokolu</string>
+    <string name="sets_logs_no_files">Žádné soubory</string>
+    <plurals name="sets_logs_summary">
+        <item quantity="one">%1$d soubor · %2$s</item>
+        <item quantity="few">%1$d soubory · %2$s</item>
+        <item quantity="many">%1$d souboru · %2$s</item>
+        <item quantity="other">%1$d souborů · %2$s</item>
+    </plurals>
+    <plurals name="sets_logs_deleted">
+        <item quantity="one">Smazán %1$d soubor (%2$s)</item>
+        <item quantity="few">Smazány %1$d soubory (%2$s)</item>
+        <item quantity="many">Smazáno %1$d souboru (%2$s)</item>
+        <item quantity="other">Smazáno %1$d souborů (%2$s)</item>
+    </plurals>
+    <string name="sets_logs_started_today">Zahájeno dnes, %1$s</string>
+    <string name="sets_logs_started_yesterday">Zahájeno včera, %1$s</string>
+    <string name="sets_logs_started_on">Zahájeno %1$s, %2$s</string>
+
+    <!-- Root folders -->
+    <string name="sets_roots_group">Kořenové složky</string>
+    <string name="sets_scanning">Prohledávání…</string>
+    <string name="sets_rescan_help">Aktualizovat knihovny ze všech kořenových složek</string>
+    <string name="sets_playback_group">Přehrávání</string>
+    <string name="sets_root_kind_music">Hudba</string>
+    <string name="sets_root_kind_video">Video</string>
+    <string name="sets_root_kind_photo">Fotky</string>
+    <string name="sets_root_kind_rom">ROM</string>
+    <string name="sets_root_fallback_music">Hudba</string>
+    <string name="sets_root_fallback_video">Videa</string>
+    <string name="sets_root_fallback_photo">Fotky</string>
+    <string name="sets_root_none">Nejsou nastaveny žádné kořeny (%1$s)</string>
+    <string name="sets_root_none_help">Přidejte níže složku a začněte spravovat knihovnu</string>
+    <string name="sets_root_access_lost">Přístup ztracen — pomocí Upravit jej znovu udělte</string>
+    <string name="sets_root_consoles">Konzole: %1$s</string>
+    <string name="sets_root_kind_root">Kořen (%1$s)</string>
+    <string name="sets_label_edit_folder">Upravit složku</string>
+    <string name="sets_label_remove_folder">Odebrat složku</string>
+    <string name="sets_label_options_hint">Nápověda možností</string>
+    <string name="sets_label_show_on_bar">Zobrazit na liště</string>
+    <string name="sets_label_show_in_games">Zobrazit ve hrách</string>
+    <string name="sets_label_pin_to_top">Připnout nahoru</string>
+    <string name="sets_root_edit_short">Upravit</string>
+    <string name="sets_root_remove_short">Odebrat</string>
+    <string name="sets_root_remove_title">Odebrat tuto složku?</string>
+    <string name="sets_root_remove_message">PFP přestane používat „%1$s“ a to, co v ní našel, z knihovny zmizí. Z úložiště nebudou smazány žádné soubory.</string>
+    <string name="sets_root_remove_confirm">Odebrat</string>
+    <string name="sets_player_builtin">Play Field Portal</string>
+    <string name="sets_player_system_default">Výchozí systému</string>
+
+    <!-- Settings ▸ Music -->
+    <string name="sets_music_title">Hudba</string>
+    <string name="sets_music_player_title">Výchozí hudební přehrávač</string>
+    <string name="sets_music_player_none">V tomto zařízení nebyly nalezeny žádné další hudební přehrávače.</string>
+    <string name="sets_music_add_root">Přidat kořen hudby</string>
+    <string name="sets_music_add_root_help">Udělte přístup ke kořenové složce (např. /Music) — přidejte více pro různá umístění</string>
+    <string name="sets_music_rescan">Znovu prohledat hudební knihovnu</string>
+    <string name="sets_music_player">Výchozí hudební přehrávač</string>
+    <string name="sets_music_player_help">Aplikace, která otevírá skladby</string>
+
+    <!-- Settings ▸ Video -->
+    <string name="sets_video_title">Video</string>
+    <string name="sets_video_player_title">Výchozí přehrávač videa</string>
+    <string name="sets_video_player_none">V tomto zařízení nebyly nalezeny žádné externí přehrávače videa.</string>
+    <string name="sets_video_add_root">Přidat kořen videa</string>
+    <string name="sets_video_add_root_help">Udělte přístup ke kořenové složce (např. /Movies) — přidejte více pro různá umístění</string>
+    <string name="sets_video_rescan">Znovu prohledat knihovnu videí</string>
+    <string name="sets_video_player">Výchozí přehrávač videa</string>
+    <string name="sets_video_player_help">Play Field Portal přehrává v aplikaci; nebo vyberte aplikaci / ptát se pokaždé.</string>
+
+    <!-- Settings ▸ Photo -->
+    <string name="sets_photo_title">Fotky</string>
+    <string name="sets_photo_add_root">Přidat kořen fotek</string>
+    <string name="sets_photo_add_root_help">Udělte přístup ke kořenové složce (např. /Pictures) — přidejte více pro různá umístění</string>
+    <string name="sets_photo_rescan">Znovu prohledat knihovnu fotek</string>
+    <string name="sets_photo_group_maintenance">Údržba</string>
+    <string name="sets_photo_clear_cache">Vymazat mezipaměť náhledů</string>
+    <string name="sets_photo_clear_cache_help">Smaže vygenerované náhledy. Nové prohledání je znovu vytvoří.</string>
+    <plurals name="sets_photo_cache_cleared">
+        <item quantity="one">Vymazán %1$d náhled z mezipaměti. Prohledejte znovu pro obnovení.</item>
+        <item quantity="few">Vymazány %1$d náhledy z mezipaměti. Prohledejte znovu pro obnovení.</item>
+        <item quantity="many">Vymazáno %1$d náhledu z mezipaměti. Prohledejte znovu pro obnovení.</item>
+        <item quantity="other">Vymazáno %1$d náhledů z mezipaměti. Prohledejte znovu pro obnovení.</item>
+    </plurals>
+
+    <!-- Settings ▸ Interface ▸ Notifications -->
+    <string name="sets_notif_title">Oznámení</string>
+    <string name="sets_notif_record">Zaznamenávat oznámení</string>
+    <string name="sets_notif_record_help">Uchovávat historii prohledávání, grafiky, stahování a práce s achievementy. Vypnutí zastaví nové záznamy; probíhající úlohy dál zobrazují průběh.</string>
+    <string name="sets_notif_group_history">Historie</string>
+    <string name="sets_notif_keep_for">Uchovávat záznamy</string>
+    <string name="sets_notif_keep_for_help">Starší záznamy se odstraní při dalším zápisu. V každém případě platí limit 200 záznamů a přečtené záznamy jdou první.</string>
+    <string name="sets_notif_never">Nikdy</string>
+    <plurals name="sets_notif_days">
+        <item quantity="one">%1$d den</item>
+        <item quantity="few">%1$d dny</item>
+        <item quantity="many">%1$d dne</item>
+        <item quantity="other">%1$d dní</item>
+    </plurals>
+    <string name="sets_notif_mark_read">Označit vše jako přečtené</string>
+    <string name="sets_notif_mark_read_help">Vynuluje počet nepřečtených na stavové liště</string>
+    <plurals name="sets_notif_unread">
+        <item quantity="one">%1$d nepřečtené</item>
+        <item quantity="few">%1$d nepřečtená</item>
+        <item quantity="many">%1$d nepřečteného</item>
+        <item quantity="other">%1$d nepřečtených</item>
+    </plurals>
+    <string name="sets_notif_none_unread">Žádná nepřečtená</string>
+    <string name="sets_notif_clear_all">Vymazat vše</string>
+    <string name="sets_notif_clear_all_help">Vyprázdní historii. Probíhající úlohy nejsou ovlivněny.</string>
+    <plurals name="sets_notif_stored">
+        <item quantity="one">%1$d uloženo</item>
+        <item quantity="few">%1$d uložena</item>
+        <item quantity="many">%1$d uloženo</item>
+        <item quantity="other">%1$d uloženo</item>
+    </plurals>
+
+    <!-- Settings ▸ System ▸ System Update -->
+    <string name="sets_update_title">Aktualizace systému</string>
+    <string name="sets_update_group_update">Aktualizace</string>
+    <string name="sets_update_installed">Nainstalovaná verze</string>
+    <string name="sets_update_latest">Nejnovější verze</string>
+    <string name="sets_update_check">Zkontrolovat aktualizace</string>
+    <string name="sets_update_checking">Kontrola…</string>
+    <string name="sets_update_notifications">Oznámení o aktualizacích</string>
+    <string name="sets_update_notifications_help">Upozornit v Oznámeních, když vyjde nová verze, nejvýše jednou denně</string>
+    <string name="sets_update_group_changelog">Seznam změn</string>
+    <string name="sets_update_no_releases">Zatím nebyla načtena žádná vydání</string>
+    <string name="sets_update_no_releases_help">Zkontrolujte aktualizace a načtěte seznam změn</string>
+    <string name="sets_update_install">Stáhnout a nainstalovat %1$s</string>
+    <string name="sets_update_cannot_install">Toto sestavení nemůže odsud instalovat aktualizace</string>
+    <string name="sets_update_handed_over">Dokončete potvrzením v instalátoru Androidu</string>
+    <string name="sets_update_downloading">Stahování…</string>
+    <string name="sets_update_install_help">Android vás před instalací požádá o potvrzení</string>
+    <string name="sets_update_no_summary">Pro tuto verzi není souhrn</string>
+    <string name="sets_update_full_notes">Úplné poznámky k vydání</string>
+    <string name="sets_update_full_notes_help">Otevře GitHub v prohlížeči</string>
+    <string name="sets_edition_full">Plná</string>
+    <string name="sets_edition_lite">Lite</string>
+    <string name="sets_update_installed_label">%1$s · %2$s</string>
+    <string name="sets_update_unknown_version">Neznámá</string>
+    <string name="sets_update_available">K dispozici: %1$s</string>
+    <string name="sets_update_not_checked">Zatím nezkontrolováno</string>
+    <string name="sets_update_up_to_date">Aktuální</string>
+    <string name="sets_update_never_checked">Nikdy nezkontrolováno</string>
+    <string name="sets_update_checked">Zkontrolováno %1$s</string>
+    <string name="sets_update_tag_new">Nové</string>
+    <string name="sets_update_tag_installed">Nainstalováno</string>
+    <string name="sets_update_msg_available">Je k dispozici nová verze.</string>
+    <string name="sets_update_msg_latest">Máte nejnovější verzi.</string>
+    <string name="sets_update_msg_offline">Nelze se spojit s GitHubem. Zkuste to později.</string>
+    <string name="sets_update_msg_invalid">GitHub poslal neočekávanou odpověď. Zkuste to později.</string>
+    <string name="sets_update_no_apk">Verze %1$s zatím nemá ke stažení edici %2$s. Zkuste to později.</string>
+    <string name="sets_update_download_failed">Aktualizaci nelze stáhnout. Zkontrolujte připojení a zkuste to znovu.</string>
+    <string name="sets_update_not_newer">Stažený soubor není novější verzí této aplikace, proto nebyl nainstalován.</string>
+    <string name="sets_update_no_installer">Instalátor Androidu nelze v tomto zařízení otevřít.</string>
+    <string name="sets_update_reminder_installed">Verze %1$s je nainstalována.</string>
+    <string name="sets_update_reminder_available">Je k dispozici verze %1$s.</string>
+
+    <!-- Settings ▸ About -->
+    <string name="sets_about_label_version">Verze</string>
+    <string name="sets_about_label_build">Sestavení</string>
+    <string name="sets_about_label_edition">Edice</string>
+    <string name="sets_about_label_min_android">Min. Android</string>
+    <string name="sets_about_label_target">Cíl</string>
+    <string name="sets_about_group_open_source">Open source</string>
+    <string name="sets_about_value_compose">Framework UI</string>
+    <string name="sets_about_value_room">Místní databáze</string>
+    <string name="sets_about_value_hilt">Vkládání závislostí</string>
+    <string name="sets_about_value_ktor">Síťový klient</string>
+    <string name="sets_about_value_coil">Načítání obrázků</string>
+    <string name="sets_about_value_media3">Videoukázky a přehrávání</string>
+    <string name="sets_about_value_workmanager">Úlohy na pozadí</string>
+    <string name="sets_about_value_timber">Protokolování</string>
+    <string name="sets_about_group_credits">Poděkování</string>
+    <string name="sets_about_label_art_media">Grafika a média</string>
+    <string name="sets_about_label_metadata">Metadata</string>
+    <string name="sets_about_label_inspired">Inspirováno</string>
+    <string name="sets_about_label_see_also">Viz také</string>
+    <string name="sets_about_value_see_also">Nastavení ▸ Poděkování</string>
+    <string name="sets_about_group_legal">Právní informace</string>
+    <string name="sets_about_legal_independent">Play Field Portal je nezávislý fanouškovský projekt bez spojení se Sony Interactive Entertainment.</string>
+    <string name="sets_about_legal_trademarks">PlayStation, PSP a XMB jsou ochranné známky společnosti Sony Interactive Entertainment Inc.</string>
+    <string name="sets_about_title">O aplikaci</string>
+    <string name="sets_about_unknown">neznámé</string>
+
+    <!-- Artwork orphans -->
+    <string name="sets_orphan_linked">Grafika propojena — zůstane propojená i při dalších prohledáváních.</string>
+    <string name="sets_orphan_link_failed">Soubor nelze propojit — spusťte Prohledat a znovu propojit a zkuste to znovu.</string>
+
+    <!-- Settings ▸ Sound -->
+    <string name="sets_audio_custom_sound">Vlastní zvuk</string>
+    <string name="sets_audio_import_failed">Zvuk nelze importovat. Zkuste jiný soubor.</string>
+
+    <!-- Importing a PSP theme (.ptf) -->
+    <string name="sets_ptf_wallpaper_only">Importováno „%1$s“ — jen tapeta</string>
+    <plurals name="sets_ptf_icons">
+        <item quantity="one">Importováno „%1$s“ — tapeta a %2$d ikona</item>
+        <item quantity="few">Importováno „%1$s“ — tapeta a %2$d ikony</item>
+        <item quantity="many">Importováno „%1$s“ — tapeta a %2$d ikony</item>
+        <item quantity="other">Importováno „%1$s“ — tapeta a %2$d ikon</item>
+    </plurals>
+    <plurals name="sets_ptf_icons_tint">
+        <item quantity="one">Importováno „%1$s“ — tapeta a %2$d ikona, shoda odstínu %3$d%%</item>
+        <item quantity="few">Importováno „%1$s“ — tapeta a %2$d ikony, shoda odstínu %3$d%%</item>
+        <item quantity="many">Importováno „%1$s“ — tapeta a %2$d ikony, shoda odstínu %3$d%%</item>
+        <item quantity="other">Importováno „%1$s“ — tapeta a %2$d ikon, shoda odstínu %3$d%%</item>
+    </plurals>
+    <string name="sets_ptf_cxmb_unsupported">Motivy CXMB (.ctf) nejsou podporovány — jen oficiální motivy .ptf</string>
+
+    <!-- Connecting services -->
+    <string name="sets_svc_steam_connected">Steam připojen</string>
+    <string name="sets_svc_steam_resolved">Steam připojen — rozpoznáno „%1$s“</string>
+    <string name="sets_svc_steam_unresolved">Klíč uložen, ale „%1$s“ nelze rozpoznat. Zadejte své SteamID64.</string>
+    <string name="sets_svc_valid">Platné</string>
+    <string name="sets_svc_igdb_invalid">Neplatné — zkontrolujte Client ID a Secret</string>
+    <string name="sets_svc_screenscraper_invalid">Neplatné — zkontrolujte uživatelské jméno a heslo</string>
+    <plurals name="sets_svc_screenscraper_valid_threads">
+        <item quantity="one">Platné — %1$s vlákno</item>
+        <item quantity="few">Platné — %1$s vlákna</item>
+        <item quantity="many">Platné — %1$s vlákna</item>
+        <item quantity="other">Platné — %1$s vláken</item>
+    </plurals>
+    <plurals name="sets_svc_screenscraper_valid_both">
+        <item quantity="one">Platné — %1$s vlákno, %2$s požadavků/den</item>
+        <item quantity="few">Platné — %1$s vlákna, %2$s požadavků/den</item>
+        <item quantity="many">Platné — %1$s vlákna, %2$s požadavků/den</item>
+        <item quantity="other">Platné — %1$s vláken, %2$s požadavků/den</item>
+    </plurals>
+    <string name="sets_svc_screenscraper_valid_requests">Platné, %1$s požadavků/den</string>
+
+    <!-- Settings ▸ Controller -->
+    <string name="sets_controller_title">Ovladač</string>
+    <string name="sets_controller_group_ab">Potvrzení a zpět</string>
+    <string name="sets_controller_ab_help">Určuje, které tlačítko potvrzuje a které vrací zpět. Platí globálně pro všechny nabídky launcheru.</string>
+    <string name="sets_controller_group_xy">Možnosti a řazení</string>
+    <string name="sets_controller_xy_help">Prohodí akce X a Y jen v rozhraní launcheru. Neovlivňuje ovládání emulátorů.</string>
+    <string name="sets_controller_group_type">Typ ovladače</string>
+    <string name="sets_controller_type_help">Mění ikony a popisky tlačítek zobrazené v nápovědách.</string>
+    <string name="sets_controller_type">Typ</string>
+    <string name="sets_controller_type_sub">Ovlivňuje lištu nápovědy dole v launcheru</string>
+    <string name="sets_controller_group_scroll">Rychlost posouvání</string>
+    <string name="sets_controller_scroll_help">Jak rychle se seznamy posouvají při držení směru. Delší držení zrychluje; plné vychýlení páčky posouvá nejvyšší rychlostí.</string>
+    <string name="sets_controller_scroll_sub">Platí pro držení D-padu a navigaci páčkou</string>
+    <string name="sets_controller_group_navigation">Navigace</string>
+    <string name="sets_controller_left_backs_out">Doleva = zpět</string>
+    <string name="sets_controller_left_backs_out_help">Stisknutím DOLEVA opustíte složku nebo panel — jen tam, kde DOLEVA nedělá nic jiného</string>
+    <string name="sets_controller_group_keyboard">Klávesnice</string>
+    <string name="sets_controller_virtual_keyboard">Virtuální klávesnice</string>
+    <string name="sets_controller_virtual_keyboard_help">Pište ovladačem na vlastní klávesnici PFP. Když je vypnuto nebo používáte dotyk, otevře se systémová klávesnice</string>
+    <string name="sets_controller_group_reset">Obnovit</string>
+    <string name="sets_controller_reset">Obnovit všechna nastavení ovladače</string>
+    <string name="sets_controller_reset_help">Obnoví výchozí předvolby prohození a typu</string>
+</resources>

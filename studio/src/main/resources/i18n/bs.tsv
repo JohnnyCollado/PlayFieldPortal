@@ -1,0 +1,330 @@
+# Theme Studio in bs. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	Novo
+Open…	Otvori…
+Upgrade folder…	Nadogradi folder…
+Convert .ptf…	Pretvori .ptf…
+Batch convert…	Grupna konverzija…
+Unpack assets…	Raspakuj resurse…
+Undo	Poništi
+Redo	Ponovi
+Export .pfptheme…	Izvezi .pfptheme…
+Import PSP theme ▾	Uvezi PSP temu ▾
+Working…	U toku…
+Open ▾	Otvori ▾
+Open: {0} ▾	Otvori: {0} ▾
+XMB (back to the crossbar)	XMB (nazad na traku)
+Stop {0}	Zaustavi {0}
+Play {0}	Pokreni {0}
+Video only — sound plays on the device	Samo video — zvuk se reprodukuje na uređaju
+This theme uses an older format. Saving upgrades it to the current one.	Ova tema koristi stariji format. Spremanjem se nadograđuje na trenutni.
+See changes	Pogledaj promjene
+Something went wrong	Nešto je pošlo po zlu
+OK	U redu
+Cancel	Otkaži
+Open theme	Otvori temu
+PSP theme to convert	PSP tema za konverziju
+Export theme	Izvezi temu
+Info	Informacije
+Color	Boja
+Background	Pozadina
+Legibility	Čitljivost
+Layout	Raspored
+Icons	Ikone
+Sounds	Zvukovi
+Boot & Game Boot	Boot i Game Boot
+Export check	Provjera izvoza
+Untitled	Bez naslova
+Video	Video
+Image	Slika
+Wave	Talas
+Not set	Nije postavljeno
+Set	Postavljeno
+Preview only	Samo pregled
+None custom	Nema prilagođenih
+{0} custom	Prilagođenih: {0}
+None set	Ništa postavljeno
+{0} set	Postavljeno: {0}
+{0} of 2	{0} od 2
+Ready	Spremno
+Untitled Theme	Tema bez naslova
+App Drawer	Ladica aplikacija
+Settings	Postavke
+App Picker	Odabir aplikacija
+Game Picker	Odabir igara
+Artwork Studio	Studio ilustracija
+Game Detail Screen	Detalji igre
+Achievement Screen	Postignuća
+Per-Game Achievement Screen	Postignuća igre
+Lock Screen	Zaključani ekran
+Boot	Boot
+Game Boot	Game Boot
+In this file	U ovoj datoteci
+Nothing embedded yet	Još ništa ugrađeno
+Theme name	Naziv teme
+Author	Autor
+Short description	Kratki opis
+New theme — not saved yet	Nova tema — još nije spremljena
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	Spremljeno: naziv, autor i opis putuju unutar .pfptheme datoteke. Datum ažuriranja postavlja se pri izvozu.
+Accent color	Boja naglaska
+Auto (from the wallpaper)	Automatski (iz pozadinske slike)
+Custom	Prilagođena
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	Svaka nova pozadina ili video postavlja naglasak. Odaberite boju da zadržite svoju.
+Your accent stays when the wallpaper or video changes.	Vaš naglasak ostaje kad se promijeni pozadina ili video.
+Custom accent	Prilagođeni naglasak
+Icon color	Boja ikona
+Auto (follows the theme)	Automatski (prati temu)
+White	Bijela
+Main text color	Boja glavnog teksta
+Titles and labels: the crossbar, list rows and status strip, and every screen.	Naslovi i oznake: traka, redovi liste, statusna traka i svaki ekran.
+Auto (built-in colors)	Automatski (ugrađene boje)
+Use my exact color	Koristi moju tačnu boju
+Subtext color	Boja podteksta
+Subtitles, sublabels and values.	Podnaslovi, podoznake i vrijednosti.
+Same as main text	Isto kao glavni tekst
+Source	Izvor
+Wave motion	Kretanje talasa
+Video playback	Reprodukcija videa
+Moving	U pokretu
+Moving, dim	U pokretu, prigušeno
+Still	Mirno
+Still, dim	Mirno, prigušeno
+None — live wave background	Nema — živa pozadina s talasom
+Replace…	Zamijeni…
+Re-crop…	Ponovo izreži…
+Clear	Očisti
+Clear video	Očisti video
+Pick frame…	Odaberi kadar…
+The preview always shows a frozen wave; the style plays on the device.	Pregled uvijek prikazuje zaustavljeni talas; stil se reprodukuje na uređaju.
+Lock screen	Zaključani ekran
+None — the theme leaves the device lock screen alone	Nema — tema ne dira zaključani ekran uređaja
+Choose Image…	Odaberi sliku…
+Use Poster	Koristi plakat
+Use Wallpaper	Koristi pozadinu
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	Samo nepomična slika. Uređaj je izrezuje na svoj ekran i postavlja je samo ako korisnik pristane pri primjeni.
+Crop	Izreži
+Zoom	Zum
+Center	Centriraj
+Apply	Primijeni
+Reset	Vrati
+Text	Tekst
+Automatic	Automatski
+None	Ništa
+Drop shadow	Sjena
+Outline	Obris
+Contrast plate	Kontrastna podloga
+Offset shadow (dark)	Pomjerena sjena (tamna)
+Offset shadow (light)	Pomjerena sjena (svijetla)
+Contour dark	Obris tamni
+Contour light	Obris svijetli
+Contour auto	Obris automatski
+Solid unfocused icons	Pune ikone bez fokusa
+Older launchers ignore these and show plain text and icons.	Stariji pokretači to zanemaruju i prikazuju običan tekst i ikone.
+Preview with my layout	Pregled s mojim rasporedom
+Preview only — never saved in the theme. Remembered on this computer.	Samo pregled — nikad se ne sprema u temu. Zapamćeno na ovom računaru.
+Use my layout in the preview	Koristi moj raspored u pregledu
+Scale — {0}	Razmjera — {0}
+Horizontal — {0}	Vodoravno — {0}
+Vertical — {0}	Uspravno — {0}
+Biblically Accurate preview	Pregled vjeran originalu
+Adjust on preview	Prilagodi u pregledu
+All {0}	Sve {0}
+Crossbar {0}	Traka {0}
+Items {0}	Stavke {0}
+Consoles {0}	Konzole {0}
+Physical Media {0}	Fizički mediji {0}
+On screen	Na ekranu
+Customized {0}	Prilagođeno {0}
+Showing {0} of {1}	Prikazano {0} od {1}
+Select a slot to see it at real size, replace it, or export its template.	Odaberite mjesto da ga vidite u stvarnoj veličini, zamijenite ili izvezete njegov šablon.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	Ispustite slikovnu datoteku (png, gif, jpg, bmp, webp) na bilo koje mjesto da zamijenite njegovu ikonu.
+Import icon pack… ▾	Uvezi paket ikona… ▾
+Export templates…	Izvezi šablone…
+Reset all	Vrati sve
+Local file…	Lokalna datoteka…
+From theme…	Iz teme…
+Export template	Izvezi šablon
+Menu sounds	Zvukovi menija
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	Što ostavite prazno, zadržava ugrađeni zvuk. Isječci moraju stati u ograničenje svakog reda.
+Navigation	Navigacija
+Category change	Promjena kategorije
+Options panel	Panel opcija
+Back / cancel	Nazad / otkaži
+Confirm / apply	Potvrdi / primijeni
+Error / invalid	Greška / nevažeće
+Notification	Obavještenje
+Ambience (loops)	Ambijent (u petlji)
+Built-in	Ugrađeno
+Up to {0}	Do {0}
+Choose…	Odaberi…
+▶ Play	▶ Pokreni
+■ Stop	■ Zaustavi
+Boot sequences	Sekvence pokretanja
+Choose the built-in sequence or your own MP4 for each.	Za svaku odaberite ugrađenu sekvencu ili vlastiti MP4.
+The launcher's own {0} sequence.	Vlastita sekvenca {0} pokretača.
+Your own MP4 (H.264).	Vaš vlastiti MP4 (H.264).
+Choose MP4…	Odaberi MP4…
+Play in preview	Pokreni u pregledu
+Use built-in	Koristi ugrađenu
+All media is within limits	Svi mediji su unutar ograničenja
+Opens on older launchers	Otvara se u starijim pokretačima
+Fix the items marked ✕ before exporting.	Ispravite stavke označene s ✕ prije izvoza.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	Pri izvozu se pravi slika pregleda gotove teme, koja se prikazuje kao sličica u galeriji tema pokretača.
+Opened {0}	Otvoreno: {0}
+Exported {0}	Izvezeno: {0}
+Folder of .pfptheme files to upgrade	Folder s .pfptheme datotekama za nadogradnju
+Folder with .ptf files	Folder s .ptf datotekama
+Output folder for .pfptheme files	Izlazni folder za .pfptheme datoteke
+PSP theme to unpack	PSP tema za raspakivanje
+Folder for unpacked assets	Folder za raspakovane resurse
+Converting {0}  ({1}/{2})	Pretvaranje {0}  ({1}/{2})
+This theme was made by a newer version (format v{0}). Parts this version doesn't know are kept when you save.	Ova tema je napravljena u novijoj verziji (format v{0}). Dijelovi koje ova verzija ne poznaje zadržavaju se pri spremanju.
+CXMB theme	CXMB tema
+This file is a CXMB custom firmware theme (.ctf). Those replace PSP system files rather than describing wallpaper and colors, so they can't be converted. Official PSP themes (.ptf) open fine.	Ova datoteka je CXMB tema za prilagođeni firmware (.ctf). Takve teme zamjenjuju PSP sistemske datoteke umjesto da opisuju pozadinu i boje, pa se ne mogu pretvoriti. Zvanične PSP teme (.ptf) otvaraju se bez problema.
+Batch conversion finished	Grupno pretvaranje završeno
+Converted: {0}	Pretvoreno: {0}
+Converted with caveats: {0}	Pretvoreno uz napomene: {0}
+Skipped (CXMB): {0} — {1}	Preskočeno (CXMB): {0} — {1}
+Failed: {0}	Neuspjelo: {0}
+Theme upgrade finished	Nadogradnja tema završena
+Upgraded: {0} (originals kept as .bak)	Nadograđeno: {0} (originali sačuvani kao .bak)
+Already current: {0}	Već ažurno: {0}
+Made by a newer version, left alone: {0}	Iz novije verzije, ostavljeno netaknuto: {0}
+Report: {0}	Izvještaj: {0}
+Background motion	Pokret pozadine
+Still: frame at {0}	Mirna slika: kadar na {0}
+Still: baked into the theme	Mirna slika: ugrađena u temu
+Import wallpaper	Uvezi pozadinu
+Import video	Uvezi video
+Lock screen image	Slika zaključanog ekrana
+(embedded image)	(ugrađena slika)
+Fit	Prilagođavanje
+Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.	Pretrpana pozadina — natpisi bi mogli biti teško čitljivi. Najbolje rade blage slike niskog kontrasta.
+The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, a Still style, or Motion set to Static on the device).	Mirna slika je plakat videa — prikazuje se kad je reprodukcija zaustavljena (ušteda baterije, igra, stil Mirno ili Pokret postavljen na Statično na uređaju).
+The theme offers this image for the device lock screen	Tema nudi ovu sliku za zaključani ekran uređaja
+Output {0}×{1}	Izlaz {0}×{1}
+{0}–{1} recommended, {2} max, {3} MB max	{0}–{1} preporučeno, najviše {2}, najviše {3} MB
+Whether the boot video and Game Boot play at all is a device setting: {0}	Da li će se pokretački video i Game Boot uopšte reproducirati zavisi od postavke uređaja: {0}
+This clip is longer than the cap — the launcher will refuse it.	Ovaj isječak je duži od ograničenja — pokretač će ga odbiti.
+Choose a {0} video	Odaberi video: {0}
+Dark icon color — icons may be hard to see over the wallpaper scrim.	Tamna boja ikona — ikone bi se mogle teško vidjeti preko zatamnjene pozadine.
+Saved in the theme for a later update. The launcher currently shows the color exactly as picked.	Spremljeno u temi za kasnije ažuriranje. Pokretač zasad prikazuje boju tačno kako je odabrana.
+Original	Originalna
+Classic Blue	Klasična plava
+Sunset Orange	Narandžasti zalazak
+Fresh Green	Svježa zelena
+Royal Purple	Kraljevska ljubičasta
+Crimson Red	Grimizna
+Silver	Srebrena
+Sakura Pink	Sakura roza
+Golden Amber	Zlatni ćilibar
+Aqua Teal	Tirkizna
+Midnight Navy	Ponoćna plava
+Charcoal	Ugljena
+Format: schema {0} → {1}	Format: shema {0} → {1}
+Format: new theme → {0}	Format: nova tema → {0}
+Kept	Zadržano
+Added	Dodano
+Repaired	Popravljeno
+Can't recover	Ne može se povratiti
+What saving does	Šta spremanje radi
+Motion has a still poster	Pokret ima mirni plakat
+Motion needs a still wallpaper as its poster - add one or remove the video	Pokretu treba mirna pozadina kao plakat - dodaj je ili ukloni video
+Media outside limits: {0}	Mediji izvan ograničenja: {0}
+This wallpaper is busy behind the labels - pick a text legibility style so they stay readable	Ova pozadina je iza natpisa pretrpana - odaberi stil čitljivosti teksta da ostanu čitljivi
+Text should read clearly on this wallpaper	Tekst bi se na ovoj pozadini trebao dobro čitati
+{0} - launchers from before this format refuse files over 64 MB	{0} - pokretači stariji od ovog formata odbijaju datoteke veće od 64 MB
+Opens on older launchers, which ignore sounds, boot clips, legibility and crop	Otvara se u starijim pokretačima, koji zanemaruju zvukove, pokretačke isječke, čitljivost i izrezivanje
+{0} is over the {1} MB limit for a theme file	{0} prelazi ograničenje od {1} MB za datoteku teme
+Saving upgrades this theme from {0}; {1} part(s) can't be recovered	Spremanje nadograđuje ovu temu iz {0}; dijelova koji se ne mogu povratiti: {1}
+Saving upgrades this theme from {0}	Spremanje nadograđuje ovu temu iz {0}
+an older format	starijeg formata
+Imported from {0}	Uvezeno iz {0}
+Imported from {0} — firmware {1}	Uvezeno iz {0} — firmware {1}
+a PSP theme	PSP teme
+Created {0}	Napravljeno {0}
+On the device these live in {0}.	Na uređaju se nalaze u {0}.
+Scale	Razmjer
+Horizontal	Horizontalno
+Vertical	Vertikalno
+This wallpaper is busy behind the labels — a text style helps them stay readable.	Ova pozadina je iza natpisa pretrpana — stil teksta pomaže da ostanu čitljivi.
+Settings › Interface › Display › Adjust XMB Layout	Postavke › Interfejs › Ekran › Prilagodi raspored XMB-a
+Settings › Interface › Sound	Postavke › Interfejs › Zvuk
+Settings › Interface › Display › Show Boot Sequence / Game Boot	Postavke › Interfejs › Ekran › Prikaži pokretački slijed / Game Boot
+Battery Saver and Thermal Throttle (Settings › Interface › Display) freeze the animated wave on the device.	Ušteda baterije i Termalno ograničenje (Postavke › Interfejs › Ekran) zamrzavaju animirani val na uređaju.
+Pick…	Odaberi…
+Plays on the device	Reproducira se na uređaju
+Length unknown	Dužina nepoznata
+Volumes stay on the device: {0}	Jačina zvuka ostaje na uređaju: {0}
+Couldn't play {0} here — it will play on the device.	{0} se ovdje ne može reproducirati — na uređaju će raditi.
+Choose a sound for {0}	Odaberi zvuk za {0}
+Icon image for {0}	Slika ikone za {0}
+Template for {0}	Šablon za {0}
+Template written to {0}	Šablon spremljen kao {0}
+Template export failed: {0}	Izvoz šablona nije uspio: {0}
+Search {0} slots: battery, PS3, voice…	Pretraži {0} mjesta: baterija, PS3, glas…
+No slot matches. Clear the search or a filter.	Nijedno mjesto ne odgovara. Očisti pretragu ili filter.
+Pack folder…	Folder paketa…
+Icon pack folder	Folder paketa ikona
+Pack .zip…	Paket .zip…
+Icon pack zip	Paket ikona .zip
+Folder for icon templates	Folder za šablone ikona
+Packs are folders or zips of <slot key>.png / .gif, the names the templates use. Multi-frame GIFs animate on the launcher when focused; they must stay within 512px, 120 frames and 10 seconds.	Paketi su folderi ili zip datoteke s <ključ mjesta>.png / .gif, nazivima koje koriste šabloni. GIF-ovi s više kadrova animiraju se u pokretaču kad su u fokusu; moraju ostati unutar 512 px, 120 kadrova i 10 sekundi.
+Icon pack imported	Paket ikona uvezen
+Icon pack refused	Paket ikona odbijen
+{0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	{0}: dodano {1}, zamijenjeno {2}, bez podudaranja {3}, odbijeno {4}
+Icon pack {0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	Paket ikona {0}: dodano {1}, zamijenjeno {2}, bez podudaranja {3}, odbijeno {4}
+{0} - did you mean {1}?	{0} - da li ste mislili {1}?
+{0} - no matching slot	{0} - nema odgovarajućeg mjesta
+{0} error	Greške: {0}
+{0} errors	Greške: {0}
+{0} warning	Upozorenja: {0}
+{0} warnings	Upozorenja: {0}
+{0} of {1} MB	{0} od {1} MB
+{0} of {1} MB - older launchers refuse over 64 MB	{0} od {1} MB - stariji pokretači odbijaju više od 64 MB
+Wallpaper	Pozadina
+Preview	Pregled
+Motion	Pokret
+Ambience	Ambijent
+Other files	Ostale datoteke
+{0} is too large to be a theme file	{0} je prevelik za datoteku teme
+Imported {0}	Uvezeno: {0}
+Imported with a caveat	Uvezeno uz napomenu
+{0} is not a valid .pfptheme bundle	{0} nije ispravan .pfptheme paket
+{0} — {1} icon(s) for parts themes don't customize were left out	{0} — izostavljene ikone za dijelove koje teme ne mijenjaju: {1}
+Motion wallpaper: {0}	Pokretna pozadina: {0}
+Could not keep: {0}	Nije moguće zadržati: {0}
+Parts of the theme not kept	Dijelovi teme nisu zadržani
+Motion wallpaper not kept	Pokretna pozadina nije zadržana
+{0} is not a readable image	{0} nije čitljiva slika
+{0} converted to H.264 for Android ({1})	{0} pretvoreno u H.264 za Android ({1})
+Couldn't read that frame of the video	Taj kadar videa nije moguće pročitati
+The crop does not match this image	Izrezivanje ne odgovara ovoj slici
+Wallpaper: {0} ({1}×{2})	Pozadina: {0} ({1}×{2})
+Added {0} — converted to H.264 for Android ({1})	Dodano {0} — pretvoreno u H.264 za Android ({1})
+Added {0}	Dodano {0}
+Export failed: {0}	Izvoz nije uspio: {0}
+{0} is not a PSP theme file	{0} nije datoteka PSP teme
+Unpack failed: {0}	Raspakivanje nije uspjelo: {0}
+Theme unpacked	Tema raspakovana
+{0} images written to {1} (see report.txt).	Slike ({0}) zapisane u {1} (vidi report.txt).
+{0} images and {1} data files written to {2} (see report.txt).	Slike ({0}) i datoteke s podacima ({1}) zapisane u {2} (vidi report.txt).
+Unpacked {0}: {1} images	Raspakovano {0}: slike {1}
+Templates exported to {0} ({1} icons)	Šabloni izvezeni u {0} (ikone: {1})
+WebM clips can't be checked in the Studio (it reads MP4/H.264 only) — convert the clip to MP4	WebM isječci se ne mogu provjeriti u Studiju (čita samo MP4/H.264) — pretvori isječak u MP4
+That isn't a media slot this import can fill	To nije mjesto za medije koje ovaj uvoz može popuniti
+That file is too large for a theme — {0} MB or less	Ta datoteka je prevelika za temu — najviše {0} MB
+Unsupported video — use an MP4 (H.264)	Nepodržan video — koristi MP4 (H.264)
+{0} video isn't guaranteed to play on Android	Video {0} ne mora raditi na Androidu
+H.264 {0} doesn't play on Android	H.264 {0} ne radi na Androidu
+{0} video doesn't play on Android	Video {0} ne radi na Androidu
+Couldn't convert this video for Android ({0}). Re-encode it as MP4 H.264 and try again.	Video nije moguće pretvoriti za Android ({0}). Ponovo ga kodiraj kao MP4 H.264 i pokušaj opet.
+{0} is not a folder or .zip	{0} nije folder ni .zip
+Pack refused: {0}	Paket odbijen: {0}
+Pack could not be read	Paket nije moguće pročitati
+Pack could not be read: {0}	Paket nije moguće pročitati: {0}
+Pack has more than {0} files	Paket ima više od {0} datoteka
+Not a PSP theme file	Nije datoteka PSP teme
+Corrupt or truncated PTF	Oštećen ili nepotpun PTF
+This theme contains no wallpaper image.	Ova tema ne sadrži sliku pozadine.
+The wallpaper could not be extracted: this theme uses a compression method this importer doesn't recognize. The theme was imported without its wallpaper.	Pozadinu nije moguće izdvojiti: ova tema koristi metodu kompresije koju ovaj uvoznik ne prepoznaje. Tema je uvezena bez pozadine.
+The wallpaper data in this theme is damaged and could not be decoded. The theme was imported without its wallpaper.	Podaci pozadine u ovoj temi su oštećeni i nije ih moguće dekodirati. Tema je uvezena bez pozadine.

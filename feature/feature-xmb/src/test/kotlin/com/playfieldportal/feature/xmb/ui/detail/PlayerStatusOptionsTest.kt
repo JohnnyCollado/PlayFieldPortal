@@ -3,8 +3,10 @@ package com.playfieldportal.feature.xmb.ui.detail
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.sound.MenuSoundPlayer
+import com.playfieldportal.feature.xmb.R
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
@@ -51,18 +53,25 @@ class PlayerStatusOptionsTest {
     @Test
     fun `root options expose sort provider and sync, with values in the value field`() {
         val rows = playerStatusOptionRows(state())
-        assertEquals(listOf("Sort", "Provider", "Update Installed Achievements"), rows.map { it.label })
-        assertEquals(listOf("Newest", "All", null), rows.map { it.value })
+        assertEquals(
+            listOf(
+                UiText.res(R.string.shiba_options_sort),
+                UiText.res(R.string.shiba_options_provider),
+                UiText.res(R.string.shiba_options_update_installed),
+            ),
+            rows.map { it.label },
+        )
+        assertEquals(listOf(UiText.res(R.string.shiba_sort_newest), UiText.res(R.string.shiba_filter_all), null), rows.map { it.value })
         assertEquals(listOf(true, true, false), rows.map { it.opensMenu })
 
         val filtered = playerStatusOptionRows(state(sort = PlayerStatusSort.RAREST, provider = PlayerStatusProviderFilter.STEAM))
-        assertEquals(listOf("Rarest", "Steam", null), filtered.map { it.value })
+        assertEquals(listOf(UiText.res(R.string.shiba_sort_rarest), UiText.raw("Steam"), null), filtered.map { it.value })
     }
 
     @Test
     fun `a sync in flight reads Updating`() {
         val rows = playerStatusOptionRows(state().copy(isSyncing = true))
-        assertEquals("Updating…", rows.last().label)
+        assertEquals(UiText.res(R.string.shiba_options_updating), rows.last().label)
     }
 
     @Test
@@ -71,20 +80,26 @@ class PlayerStatusOptionsTest {
         assertEquals(listOf(false, true), sort.map { it.checked })
 
         val providers = playerStatusOptionRows(state(provider = PlayerStatusProviderFilter.STEAM, group = PlayerStatusOptionGroup.PROVIDER))
-        assertEquals("Steam", providers.first { it.checked }.label)
+        assertEquals(UiText.raw("Steam"), providers.first { it.checked }.label)
         assertEquals(AchievementProvider.STEAM, PlayerStatusProviderFilter.STEAM.provider)
     }
 
     @Test
     fun `options replace page helper actions`() {
-        assertEquals(listOf("Select", "Close"), playerStatusHelperItems(state()).map { it.label })
+        assertEquals(
+            listOf(UiText.res(R.string.shiba_prompt_select), UiText.res(R.string.shiba_prompt_close)),
+            playerStatusHelperItems(state()).map { it.label },
+        )
     }
 
     @Test
     fun `a focused game row offers View Game`() {
         val row = RecentRow("recent", "Coin", "Game", ShibaTier.GOLD, null, 1L, -1.0, AchievementProvider.STEAM, ShibaCoinsTarget.LibraryGame(1L))
         val state = PlayerStatusUiState(recent = listOf(row), focusedId = row.id)
-        assertEquals(listOf("View Game", "Options", "Back"), playerStatusHelperItems(state).map { it.label })
+        assertEquals(
+            listOf(UiText.res(R.string.shiba_prompt_view_game), UiText.res(R.string.shiba_prompt_options), UiText.res(R.string.shiba_prompt_back)),
+            playerStatusHelperItems(state).map { it.label },
+        )
     }
 
     @Test

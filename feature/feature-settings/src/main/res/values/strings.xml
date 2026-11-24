@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      English is the base language. Every string here except those marked translatable="false"
+      must also exist in each values-<language> folder; TranslationCoverageTest enforces that.
+      Apostrophes are backslash-escaped. Em dashes and other punctuation stay as literal UTF-8:
+      this AGP's resource compiler fails on numeric character references.
+    -->
+
+    <!-- Shared by every Settings screen: the scaffold's title. -->
+    <string name="settings_title">Settings</string>
+
+    <!-- Settings ▸ Sound -->
+    <string name="sound_title">Sound</string>
+    <string name="sound_group_master">Master</string>
+    <string name="sound_group_levels">Levels</string>
+    <string name="sound_group_sounds">Sounds</string>
+    <string name="sound_master_volume">Master volume</string>
+    <string name="sound_master_volume_help">Scales every launcher sound. At 0 the launcher is silent.</string>
+    <string name="sound_ambience_help">Loops while you browse. OGG loops seamlessly; MP3 may click.</string>
+    <string name="sound_rejected_title">Couldn\'t use that sound</string>
+    <string name="sound_reset_confirm_title">Reset Sound to Defaults?</string>
+    <string name="sound_reset_confirm_message">Every menu sound returns to the bundled PFP sample, and every level — master included — returns to full. Your ambience track, Boot Video and Game Boot media are not affected.</string>
+    <string name="sound_reset_confirm_action">Reset</string>
+    <string name="sound_reset_row">Reset sound to defaults</string>
+    <string name="sound_reset_row_help">Return every menu sound to the bundled PFP sample and every level to full. Keeps your ambience track.</string>
+
+    <!-- Level rows: one per AudioChannel. -->
+    <string name="sound_channel_navigation">Navigation</string>
+    <string name="sound_channel_back">Back / cancel</string>
+    <string name="sound_channel_confirm">Confirm / apply</string>
+    <string name="sound_channel_error">Error / invalid</string>
+    <string name="sound_channel_notification">Notification</string>
+    <string name="sound_channel_boot">Boot sequence</string>
+    <!-- A feature name: written the same in every language. -->
+    <string name="sound_channel_gameboot" translatable="false">Game Boot</string>
+    <string name="sound_channel_ambience">Ambience</string>
+
+    <!-- Assignment rows: one per assignable UiMediaSlot. -->
+    <string name="sound_slot_navigation">Navigation</string>
+    <string name="sound_slot_back">Back / Cancel</string>
+    <string name="sound_slot_confirm">Confirm / Apply</string>
+    <string name="sound_slot_error">Error / Invalid</string>
+    <string name="sound_slot_notification">Notification</string>
+    <string name="sound_slot_ambience">Ambience Track</string>
+</resources>

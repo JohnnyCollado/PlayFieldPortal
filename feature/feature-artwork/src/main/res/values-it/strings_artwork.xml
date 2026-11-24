@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared -->
+    <string name="art_error_unexpected">Errore imprevisto</string>
+    <string name="art_no_folder_linked">Nessuna cartella immagini collegata</string>
+    <string name="art_paused_message">Immagini in pausa. Ricollega la cartella delle immagini per salvarne di nuove.</string>
+    <string name="art_error_game_not_found">Gioco non trovato</string>
+    <string name="art_error_not_found_any_source">Non trovato in nessuna fonte</string>
+    <string name="art_found_via">Trovato tramite %1$s</string>
+    <string name="art_results_label_updated">Aggiornati</string>
+    <string name="art_results_label_imported">Importati</string>
+
+    <!-- Live scrape progress -->
+    <string name="art_progress_hashing">Calcolo hash della ROM…</string>
+    <string name="art_progress_searching">Ricerca…</string>
+    <string name="art_asset_hero">Hero</string>
+    <string name="art_asset_background">Sfondo</string>
+    <string name="art_asset_logo">Logo</string>
+    <string name="art_asset_box_art">Copertina</string>
+    <string name="art_asset_physical_media">Supporto fisico</string>
+    <string name="art_asset_3d_box">Confezione 3D</string>
+    <string name="art_asset_screenshot">Screenshot</string>
+    <string name="art_asset_manual">Manuale</string>
+    <string name="art_asset_video">Video</string>
+    <string name="art_asset_icon_video">Video icona</string>
+    <string name="art_asset_icon_video_converting">Video icona (conversione)</string>
+    <string name="art_source_storefronts">Negozi digitali</string>
+
+    <!-- Metadata fields -->
+    <string name="art_field_title">Titolo</string>
+    <string name="art_field_description">Descrizione</string>
+    <string name="art_field_developer">Sviluppatore</string>
+    <string name="art_field_publisher">Editore</string>
+    <string name="art_field_year">Anno</string>
+    <string name="art_field_release_date">Data di uscita</string>
+    <string name="art_field_genre">Genere</string>
+    <string name="art_field_age_rating">Classificazione età</string>
+    <string name="art_field_franchise">Franchise</string>
+    <string name="art_field_rating">Valutazione</string>
+
+    <!-- Ways to apply scraped metadata -->
+    <string name="art_policy_replace_all">Sostituisci tutto</string>
+    <string name="art_policy_fill_missing">Solo campi mancanti</string>
+    <string name="art_policy_choose_fields">Scegli campi</string>
+    <string name="art_policy_keep_current">Mantieni attuali</string>
+
+    <!-- Scrape (background task) -->
+    <string name="art_scrape_label_all">Nuovo recupero per tutti i giochi</string>
+    <string name="art_scrape_label_missing">Recupero immagini mancanti</string>
+    <string name="art_scrape_stop_note">Le immagini già scaricate vengono mantenute.</string>
+    <string name="art_scrape_paused_all_title">Nuovo recupero immagini in pausa</string>
+    <string name="art_scrape_paused_title">Recupero immagini in pausa</string>
+    <string name="art_scrape_finished_all_title">Nuovo recupero immagini completato</string>
+    <string name="art_scrape_finished_title">Recupero immagini completato</string>
+    <string name="art_scrape_stopped_title">Recupero immagini interrotto</string>
+    <string name="art_scrape_failed_title">Recupero immagini non riuscito</string>
+    <string name="art_scrape_result">%1$d riusciti, %2$d non riusciti su %3$d</string>
+    <plurals name="art_scrape_stopped_after">
+        <item quantity="one">Interrotto dopo %1$d gioco: le immagini scaricate finora vengono mantenute</item>
+        <item quantity="many">Interrotto dopo %1$d giochi: le immagini scaricate finora vengono mantenute</item>
+        <item quantity="other">Interrotto dopo %1$d giochi: le immagini scaricate finora vengono mantenute</item>
+    </plurals>
+
+    <!-- Relink (background task) -->
+    <string name="art_relink_label">Ricollegamento delle immagini</string>
+    <plurals name="art_relink_label_consoles">
+        <item quantity="one">Ricollegamento delle immagini per %1$d console</item>
+        <item quantity="many">Ricollegamento delle immagini per %1$d console</item>
+        <item quantity="other">Ricollegamento delle immagini per %1$d console</item>
+    </plurals>
+    <string name="art_relink_stop_note">Le immagini già collegate restano collegate.</string>
+    <string name="art_relink_finished_title">Ricollegamento immagini completato</string>
+    <string name="art_relink_stopped_title">Ricollegamento immagini interrotto</string>
+    <string name="art_relink_stopped_note">Le immagini collegate finora vengono mantenute</string>
+    <string name="art_relink_failed_title">Ricollegamento immagini non riuscito</string>
+    <plurals name="art_relink_games_linked">
+        <item quantity="one">%1$d gioco collegato</item>
+        <item quantity="many">%1$d giochi collegati</item>
+        <item quantity="other">%1$d giochi collegati</item>
+    </plurals>
+    <plurals name="art_relink_files">
+        <item quantity="one">%1$d file</item>
+        <item quantity="many">%1$d file</item>
+        <item quantity="other">%1$d file</item>
+    </plurals>
+    <string name="art_relink_result">%1$s su %2$s</string>
+    <string name="art_relink_result_unmatched">%1$s · %2$d senza corrispondenza</string>
+
+    <!-- Export to ES-DE (background task) -->
+    <string name="art_export_label">Esportazione immagini per ES-DE</string>
+    <string name="art_export_stop_note">I file già esportati restano al loro posto.</string>
+    <string name="art_export_error_no_destination">Nessuna cartella di destinazione</string>
+    <string name="art_export_error_access_lost">Accesso alla cartella delle immagini perso</string>
+    <string name="art_export_dest_not_created">Impossibile creare la cartella di destinazione.</string>
+    <plurals name="art_export_files_badge">
+        <item quantity="one">%1$d file</item>
+        <item quantity="many">%1$d file</item>
+        <item quantity="other">%1$d file</item>
+    </plurals>
+    <string name="art_export_failed_title">Esportazione immagini non riuscita</string>
+    <string name="art_export_stopped_title">Esportazione immagini interrotta</string>
+    <string name="art_export_finished_title">Esportazione immagini completata</string>
+    <plurals name="art_export_stopped_note">
+        <item quantity="one">%1$d file esportato prima dell\'interruzione</item>
+        <item quantity="many">%1$d file esportati prima dell\'interruzione</item>
+        <item quantity="other">%1$d file esportati prima dell\'interruzione</item>
+    </plurals>
+    <string name="art_export_result">%1$d copiati, %2$d già presenti, %3$d non riusciti</string>
+
+    <!-- Import (background task and its notification) -->
+    <string name="art_import_plan_not_found">Piano di importazione non trovato</string>
+    <string name="art_import_plan_unreadable">Piano di importazione illeggibile</string>
+    <string name="art_import_label">Importazione immagini: %1$s</string>
+    <string name="art_import_stop_note">Le immagini già importate vengono mantenute.</string>
+    <string name="art_import_failed_title">Importazione immagini non riuscita</string>
+    <string name="art_import_cancelled">Importazione immagini annullata</string>
+    <string name="art_import_done">Immagini importate</string>
+    <plurals name="art_import_needs_review">
+        <item quantity="one">Immagini importate, %1$d elemento da controllare</item>
+        <item quantity="many">Immagini importate, %1$d elementi da controllare</item>
+        <item quantity="other">Immagini importate, %1$d elementi da controllare</item>
+    </plurals>
+    <string name="art_import_headline">%1$s: %2$s</string>
+    <string name="art_import_counts">%1$d importati, %2$d saltati, %3$d non riusciti, %4$d ambigui, %5$d senza corrispondenza.</string>
+    <string name="art_import_results_summary">%1$d importati, %2$d saltati</string>
+
+    <!-- Move artwork into the linked folder (background task) -->
+    <string name="art_move_label">Spostamento delle immagini nella tua cartella</string>
+    <string name="art_move_failed_title">Spostamento immagini non riuscito</string>
+    <string name="art_move_stopped_title">Spostamento immagini interrotto</string>
+    <string name="art_move_finished_title">Spostamento immagini completato</string>
+    <plurals name="art_move_stopped_note">
+        <item quantity="one">%1$d file spostato prima dell\'interruzione</item>
+        <item quantity="many">%1$d file spostati prima dell\'interruzione</item>
+        <item quantity="other">%1$d file spostati prima dell\'interruzione</item>
+    </plurals>
+    <string name="art_move_result">%1$d spostati, %2$d già presenti, %3$d non riusciti</string>
+</resources>

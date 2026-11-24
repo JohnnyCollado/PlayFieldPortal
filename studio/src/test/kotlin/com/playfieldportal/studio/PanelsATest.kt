@@ -214,7 +214,7 @@ class PanelsATest {
     fun `device hints name the real settings paths`() {
         assertEquals("Settings › Interface › Display › Adjust XMB Layout", DeviceHints.ADJUST_LAYOUT)
         assertEquals("Settings › Interface › Sound", DeviceHints.SOUND)
-        assertEquals("Settings › Interface › Display › Show Boot Sequence / GameBoot", DeviceHints.BOOT)
+        assertEquals("Settings › Interface › Display › Show Boot Sequence / Game Boot", DeviceHints.BOOT)
         assertTrue("Battery Saver" in DeviceHints.WAVE_FREEZE && "Thermal Throttle" in DeviceHints.WAVE_FREEZE)
     }
 }

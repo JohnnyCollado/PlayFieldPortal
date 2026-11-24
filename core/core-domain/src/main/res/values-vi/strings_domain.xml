@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shiba rank titles -->
+    <string name="dom_shiba_rank_pup">Cún con</string>
+    <string name="dom_shiba_rank_ruffian">Kẻ ngổ ngáo</string>
+    <string name="dom_shiba_rank_lone_ron_inu">Ron-inu đơn độc</string>
+    <string name="dom_shiba_rank_inu_master">Bậc thầy Inu</string>
+    <string name="dom_shiba_rank_legendary_hachiko">Hachiko huyền thoại</string>
+
+    <!-- App editions -->
+    <!-- Which build of the app is installed: the Full build or the Lite build (without Discord). -->
+    <string name="dom_edition_full">Đầy đủ</string>
+    <string name="dom_edition_lite">Lite</string>
+
+    <!-- Audio channels (volume rows) -->
+    <!-- Name of a launcher sound whose volume the user sets. -->
+    <string name="dom_audio_channel_navigation">Điều hướng</string>
+    <string name="dom_audio_channel_back">Quay lại / Hủy</string>
+    <string name="dom_audio_channel_confirm">Xác nhận / Áp dụng</string>
+    <string name="dom_audio_channel_error">Lỗi / Không hợp lệ</string>
+    <string name="dom_audio_channel_category">Danh mục</string>
+    <string name="dom_audio_channel_options">Tùy chọn</string>
+    <string name="dom_audio_channel_notification">Thông báo</string>
+    <string name="dom_audio_channel_boot">Trình tự khởi động</string>
+    <string name="dom_audio_channel_gameboot">Game Boot</string>
+    <string name="dom_audio_channel_ambience">Nhạc nền</string>
+
+    <!-- Customisable media slots -->
+    <!-- Name of a sound or clip the user can replace with their own file. -->
+    <string name="dom_media_slot_navigation">Điều hướng</string>
+    <string name="dom_media_slot_back">Quay lại / Hủy</string>
+    <string name="dom_media_slot_confirm">Xác nhận / Áp dụng</string>
+    <string name="dom_media_slot_error">Lỗi / Không hợp lệ</string>
+    <string name="dom_media_slot_category">Danh mục</string>
+    <string name="dom_media_slot_options">Tùy chọn</string>
+    <string name="dom_media_slot_notification">Thông báo</string>
+    <string name="dom_media_slot_boot_video">Hoạt ảnh khởi động</string>
+    <string name="dom_media_slot_gameboot_video">Hoạt ảnh Game Boot</string>
+    <string name="dom_media_slot_ambience_audio">Bản nhạc nền</string>
+
+    <!-- Game tile display modes -->
+    <string name="dom_icon_display_icon0">Biểu tượng tùy chỉnh</string>
+    <string name="dom_icon_display_box_art">Ảnh hộp</string>
+    <string name="dom_icon_display_physical_media">Đĩa/băng vật lý</string>
+    <string name="dom_icon_display_box_3d">Ảnh hộp 3D</string>
+
+    <!-- Icon legibility styles -->
+    <!-- How icons separate from the background: a shadow or an outline (contour) in a dark or light colour. -->
+    <string name="dom_icon_legibility_none">Không</string>
+    <string name="dom_icon_legibility_offset_shadow">Bóng lệch (Tối)</string>
+    <string name="dom_icon_legibility_offset_shadow_light">Bóng lệch (Sáng)</string>
+    <string name="dom_icon_legibility_contour_dark">Viền (Tối)</string>
+    <string name="dom_icon_legibility_contour_light">Viền (Sáng)</string>
+    <string name="dom_icon_legibility_contour_auto">Viền (Tự động)</string>
+
+    <!-- Animated image playback -->
+    <!-- How animated artwork plays: everything, only the focused item, or nothing. -->
+    <string name="dom_image_motion_animated">Động</string>
+    <string name="dom_image_motion_reduced">Giảm bớt</string>
+    <string name="dom_image_motion_static">Tĩnh</string>
+
+    <!-- Text legibility styles -->
+    <!-- How text separates from the background behind it. -->
+    <string name="dom_text_legibility_none">Không</string>
+    <string name="dom_text_legibility_shadow">Đổ bóng</string>
+    <string name="dom_text_legibility_outline">Viền chữ</string>
+    <string name="dom_text_legibility_plate">Nền tương phản</string>
+    <string name="dom_text_legibility_auto">Tự động</string>
+
+    <!-- Touch gestures -->
+    <string name="dom_touch_gesture_tap">Chạm</string>
+    <string name="dom_touch_gesture_long_press">Giữ</string>
+    <string name="dom_touch_gesture_swipe_left">Vuốt sang trái</string>
+    <string name="dom_touch_gesture_swipe_right">Vuốt sang phải</string>
+    <string name="dom_touch_gesture_swipe_down">Vuốt xuống</string>
+
+    <!-- UMD slot display modes -->
+    <string name="dom_umd_slot_off">Tắt</string>
+    <string name="dom_umd_slot_inserted">Đã lắp</string>
+    <string name="dom_umd_slot_inserted_and_recent">Đã lắp &amp; gần đây</string>
+
+    <!-- Item list motion styles -->
+    <!-- How the item list animates between rows: the focused row rewinds up behind the icon, or the whole column glides together. -->
+    <string name="dom_list_motion_rewind">Tua lại</string>
+    <string name="dom_list_motion_glide">Lướt</string>
+
+    <string name="dom_confirm_back_standard">Tiêu chuẩn (A = Xác nhận, B = Quay lại)</string>
+    <string name="dom_confirm_back_reversed">Đảo ngược (B = Xác nhận, A = Quay lại)</string>
+
+    <string name="dom_xy_layout_standard">Tiêu chuẩn (Y = Tùy chọn, X = Sắp xếp)</string>
+    <string name="dom_xy_layout_swapped">Hoán đổi (X = Tùy chọn, Y = Sắp xếp)</string>
+
+    <!-- Brand names of controller families. Normally left as is. -->
+    <string name="dom_controller_type_xbox">Xbox</string>
+    <string name="dom_controller_type_nintendo">Nintendo</string>
+    <string name="dom_controller_type_playstation">PlayStation</string>
+
+    <!-- Held-navigation scroll speeds -->
+    <string name="dom_scroll_speed_relaxed">Thong thả</string>
+    <string name="dom_scroll_speed_standard">Tiêu chuẩn</string>
+    <string name="dom_scroll_speed_fast">Nhanh</string>
+
+    <!-- Colour schemes -->
+    <!-- Name of a background colour scheme. 'Original (Monthly)' changes colour with the calendar month. -->
+    <string name="dom_color_scheme_original">Nguyên bản (theo tháng)</string>
+    <string name="dom_color_scheme_classic_blue">Xanh cổ điển</string>
+    <string name="dom_color_scheme_sunset_orange">Cam hoàng hôn</string>
+    <string name="dom_color_scheme_fresh_green">Xanh lá tươi</string>
+    <string name="dom_color_scheme_royal_purple">Tím hoàng gia</string>
+    <string name="dom_color_scheme_crimson_red">Đỏ thẫm</string>
+    <string name="dom_color_scheme_silver">Bạc</string>
+    <string name="dom_color_scheme_sakura_pink">Hồng anh đào</string>
+    <string name="dom_color_scheme_golden_amber">Hổ phách vàng</string>
+    <string name="dom_color_scheme_aqua_teal">Xanh ngọc lam</string>
+    <string name="dom_color_scheme_midnight_navy">Xanh đêm</string>
+    <string name="dom_color_scheme_charcoal">Than chì</string>
+
+    <!-- Controller actions -->
+    <string name="dom_action_navigate_up">Di chuyển lên</string>
+    <string name="dom_action_navigate_down">Di chuyển xuống</string>
+    <string name="dom_action_navigate_left">Di chuyển trái (danh mục trước)</string>
+    <string name="dom_action_navigate_right">Di chuyển phải (danh mục tiếp)</string>
+    <string name="dom_action_select">Chọn / Khởi động</string>
+    <string name="dom_action_back">Quay lại / Đóng</string>
+    <string name="dom_action_open_context_menu">Tùy chọn / Menu ngữ cảnh</string>
+    <string name="dom_action_change_sort">Đổi thứ tự sắp xếp</string>
+    <string name="dom_action_prev_category">Tab trước (Ngăn ứng dụng)</string>
+    <string name="dom_action_next_category">Tab tiếp (Ngăn ứng dụng)</string>
+    <string name="dom_action_home">Start (Thông báo / Xác nhận trong bộ chọn)</string>
+    <string name="dom_action_shift">Shift (Bàn phím)</string>
+    <string name="dom_action_caps_lock">Caps Lock (Bàn phím)</string>
+    <string name="dom_action_category_menu">Menu danh mục</string>
+
+    <string name="dom_key_a">A / Cross</string>
+    <string name="dom_key_b">B / Circle</string>
+    <string name="dom_key_x">X / Square</string>
+    <string name="dom_key_y">Y / Triangle</string>
+    <string name="dom_key_dpad_up">D-Pad lên</string>
+    <string name="dom_key_dpad_down">D-Pad xuống</string>
+    <string name="dom_key_dpad_left">D-Pad trái</string>
+    <string name="dom_key_dpad_right">D-Pad phải</string>
+    <string name="dom_key_dpad_center">D-Pad giữa</string>
+    <string name="dom_key_l1">L1</string>
+    <string name="dom_key_r1">R1</string>
+    <string name="dom_key_l2">L2</string>
+    <string name="dom_key_r2">R2</string>
+    <string name="dom_key_start">Start</string>
+    <string name="dom_key_select">Select</string>
+    <string name="dom_key_enter">Enter</string>
+    <string name="dom_key_back">Back</string>
+    <string name="dom_key_unknown">Phím %1$d</string>
+
+    <!-- Colour naming (ColorNaming): descriptions of a colour and the steps of the colour steppers -->
+    <!-- Colour name in lower case, used inside a longer description such as "Dark blue" or "Red, leaning orange". -->
+    <string name="dom_hue_orange">cam</string>
+    <string name="dom_hue_yellow">vàng</string>
+    <string name="dom_hue_green">xanh lá</string>
+    <string name="dom_hue_teal">xanh mòng két</string>
+    <string name="dom_hue_blue">xanh dương</string>
+    <string name="dom_hue_purple">tím</string>
+    <string name="dom_hue_pink">hồng</string>
+    <string name="dom_hue_red">đỏ</string>
+    <string name="dom_hue_orange_cap">Cam</string>
+    <string name="dom_hue_yellow_cap">Vàng</string>
+    <string name="dom_hue_green_cap">Xanh lá</string>
+    <string name="dom_hue_teal_cap">Xanh mòng két</string>
+    <string name="dom_hue_blue_cap">Xanh dương</string>
+    <string name="dom_hue_purple_cap">Tím</string>
+    <string name="dom_hue_pink_cap">Hồng</string>
+    <string name="dom_hue_red_cap">Đỏ</string>
+    <string name="dom_hue_lean">%1$s, ngả %2$s</string>
+    <string name="dom_hue_lean_cap">%1$s, ngả %2$s</string>
+    <string name="dom_color_dark">Màu %1$s đậm</string>
+    <string name="dom_color_very_dark">Màu %1$s rất đậm</string>
+    <string name="dom_color_muted">Màu %1$s dịu</string>
+    <string name="dom_color_dark_muted">Màu %1$s dịu, đậm</string>
+    <string name="dom_color_very_dark_muted">Màu %1$s dịu, rất đậm</string>
+    <string name="dom_color_grey">Xám (%1$s)</string>
+    <string name="dom_saturation_grey">Xám</string>
+    <string name="dom_saturation_muted">Dịu</string>
+    <string name="dom_saturation_vivid">Tươi</string>
+    <string name="dom_saturation_intense">Rực</string>
+    <string name="dom_brightness_very_dark">Rất tối</string>
+    <string name="dom_brightness_dark">Tối</string>
+    <string name="dom_brightness_medium">Vừa</string>
+    <string name="dom_brightness_bright">Sáng</string>
+    <string name="dom_tint_standard">Tiêu chuẩn</string>
+    <string name="dom_tint_orange">Cam hơn</string>
+    <string name="dom_tint_yellow">Vàng hơn</string>
+    <string name="dom_tint_green">Xanh lá hơn</string>
+    <string name="dom_tint_teal">Xanh mòng két hơn</string>
+    <string name="dom_tint_blue">Xanh dương hơn</string>
+    <string name="dom_tint_purple">Tím hơn</string>
+    <string name="dom_tint_pink">Hồng hơn</string>
+    <string name="dom_tint_red">Đỏ hơn</string>
+    <string name="dom_tint_much_orange">Cam hơn nhiều</string>
+    <string name="dom_tint_much_yellow">Vàng hơn nhiều</string>
+    <string name="dom_tint_much_green">Xanh lá hơn nhiều</string>
+    <string name="dom_tint_much_teal">Xanh mòng két hơn nhiều</string>
+    <string name="dom_tint_much_blue">Xanh dương hơn nhiều</string>
+    <string name="dom_tint_much_purple">Tím hơn nhiều</string>
+    <string name="dom_tint_much_pink">Hồng hơn nhiều</string>
+    <string name="dom_tint_much_red">Đỏ hơn nhiều</string>
+    <string name="dom_tint_cooler">Lạnh hơn</string>
+    <string name="dom_tint_warmer">Ấm hơn</string>
+    <string name="dom_tint_much_cooler">Lạnh hơn nhiều</string>
+    <string name="dom_tint_much_warmer">Ấm hơn nhiều</string>
+    <string name="dom_depth_much_lighter">Nhạt hơn nhiều</string>
+    <string name="dom_depth_lighter">Nhạt hơn</string>
+    <string name="dom_depth_deeper">Đậm hơn</string>
+    <string name="dom_depth_much_deeper">Đậm hơn nhiều</string>
+
+    <string name="dom_limit_motion_unsupported_format">Định dạng không được hỗ trợ — hãy dùng MP4, WebM, GIF hoặc WebP</string>
+    <string name="dom_limit_motion_too_large_resolution">Video quá lớn — tối đa 1080p</string>
+    <string name="dom_limit_motion_too_long">Đoạn clip quá dài — tối đa 60 giây</string>
+    <string name="dom_limit_motion_too_large_bytes">Tệp quá lớn — dưới 60 MB</string>
+    <string name="dom_limit_motion_undecodable">Không đọc được video đó — hãy thử tệp khác</string>
+    <string name="dom_limit_media_unsupported_audio">Định dạng không được hỗ trợ — hãy dùng âm thanh MP3, WAV, OGG hoặc M4A</string>
+    <string name="dom_limit_media_unsupported_video">Định dạng không được hỗ trợ — hãy dùng video MP4 hoặc WebM</string>
+    <string name="dom_limit_media_too_large_sound">Tệp quá lớn</string>
+    <string name="dom_limit_media_too_large_video">Tệp quá lớn — video phải dưới 25 MB</string>
+    <string name="dom_limit_media_undecodable">Không đọc được tệp đó — hãy thử tệp khác</string>
+    <string name="dom_limit_media_no_duration">Không đọc được độ dài của tệp đó — hãy thử tệp khác hoặc chuyển sang MP3/WAV/OGG/M4A</string>
+    <string name="dom_limit_media_too_long">Đoạn clip đó quá dài — tối đa %1$s</string>
+
+    <!-- Error codes: title, why it happened, and what the user can do (docs/dev/notification-error-codes.md) -->
+    <!-- Error code LN-1001: title of the error. -->
+    <string name="dom_error_ln_1001_title">Chưa gán trình giả lập cho nền tảng này</string>
+    <string name="dom_error_ln_1001_why">PlayFieldPortal không biết ứng dụng nào sẽ chạy trò chơi cho nền tảng này.</string>
+    <string name="dom_error_ln_1001_action">Hãy chọn trình giả lập cho nền tảng này trong Cài đặt › Gán trình giả lập.</string>
+    <string name="dom_error_ln_1002_title">Core RetroArch đã chọn chưa được cài</string>
+    <string name="dom_error_ln_1002_why">RetroArch được yêu cầu tải một core không có trên thiết bị này.</string>
+    <string name="dom_error_ln_1002_action">Hãy cài core từ Online Updater của RetroArch, hoặc chọn core khác trong Gán trình giả lập.</string>
+    <string name="dom_error_ln_2001_title">Tệp trò chơi bị thiếu hoặc không đọc được</string>
+    <string name="dom_error_ln_2001_why">Tệp có thể đã bị di chuyển, đổi tên hoặc xóa, hoặc thẻ SD chứa nó đã bị tháo ra.</string>
+    <string name="dom_error_ln_2001_action">Hãy kiểm tra tệp vẫn còn đó, rồi quét lại Memory Card của nó.</string>
+    <string name="dom_error_ln_4001_title">Không tìm thấy trình giả lập</string>
+    <string name="dom_error_ln_4001_why">Trình giả lập được gán cho trò chơi này chưa được cài, hoặc Android không tìm thấy màn hình mà PlayFieldPortal mở.</string>
+    <string name="dom_error_ln_4001_action">Hãy cài trình giả lập, hoặc chọn trình giả lập khác trong Cài đặt › Gán trình giả lập.</string>
+    <string name="dom_error_ln_4002_title">Android không cho phép mở trình giả lập</string>
+    <string name="dom_error_ln_4002_why">Android từ chối quyền để PlayFieldPortal khởi động trình giả lập này.</string>
+    <string name="dom_error_ln_4002_action">Hãy tự mở trình giả lập một lần, rồi thử lại. Nếu vẫn xảy ra, hãy cập nhật trình giả lập.</string>
+    <string name="dom_error_ln_4003_title">Trình giả lập không hiện lên phía trước</string>
+    <string name="dom_error_ln_4003_why">Nhiều khả năng trình giả lập đã đóng ngay khi khởi động, hoặc Android đã dừng nó trước khi trò chơi kịp tải.</string>
+    <string name="dom_error_ln_4003_action">Hãy tự mở trình giả lập một lần để kiểm tra nó khởi động được, và cập nhật nếu có phiên bản mới hơn. Nếu vẫn xảy ra, hãy chọn trình giả lập khác trong Cài đặt › Gán trình giả lập.</string>
+    <string name="dom_error_ln_9001_title">Không thể mở trình giả lập</string>
+    <string name="dom_error_ln_9001_why">Đã xảy ra sự cố không mong muốn khi khởi động trình giả lập.</string>
+    <string name="dom_error_ln_9001_action">Hãy thử lại. Nếu vẫn xảy ra, hãy sao chép chi tiết và báo cáo.</string>
+    <string name="dom_error_sc_1001_title">Chưa đặt thư mục cho Memory Card này</string>
+    <string name="dom_error_sc_1001_why">Memory Card này chưa có nơi nào để quét.</string>
+    <string name="dom_error_sc_1001_action">Hãy chọn thư mục trong Tùy chọn của Memory Card, rồi quét.</string>
+    <string name="dom_error_sc_1002_title">Đang có lượt quét chạy</string>
+    <string name="dom_error_sc_1002_why">Memory Card này đang được quét, nên lượt quét thứ hai đã bị bỏ qua.</string>
+    <string name="dom_error_sc_1002_action">Hãy chờ lượt quét hiện tại hoàn tất. Kết quả sẽ hiện ở đây khi xong.</string>
+    <string name="dom_error_sc_2001_title">Đã mất quyền truy cập thư mục</string>
+    <string name="dom_error_sc_2001_why">PlayFieldPortal đã mất quyền đọc thư mục này.</string>
+    <string name="dom_error_sc_2001_action">Hãy chọn lại thư mục trong Tùy chọn của Memory Card để cấp quyền, rồi quét.</string>
+    <string name="dom_error_sc_2002_title">Thư mục không còn tồn tại</string>
+    <string name="dom_error_sc_2002_why">Thư mục đã bị di chuyển hoặc xóa. Nếu nó nằm trên thẻ SD, có thể thẻ đã bị tháo ra.</string>
+    <string name="dom_error_sc_2002_action">Hãy lắp thẻ SD và quét lại, hoặc chọn thư mục mới trong Tùy chọn của Memory Card.</string>
+    <string name="dom_error_sc_2003_title">Thư mục hệ máy không xác định</string>
+    <string name="dom_error_sc_2003_why">Thư mục này trong thư mục ROM chính không khớp với hệ máy nào mà PlayFieldPortal biết.</string>
+    <string name="dom_error_sc_2003_action">Hãy đổi tên thư mục theo tên hệ máy được hỗ trợ, hoặc chuyển trò chơi của nó vào một thư mục như vậy.</string>
+    <string name="dom_error_sc_2004_title">Không nhận dạng được tệp</string>
+    <string name="dom_error_sc_2004_why">Loại tệp này không phải loại mà trò chơi của nền tảng này dùng.</string>
+    <string name="dom_error_sc_2004_action">Hãy kiểm tra tệp có phải trò chơi cho nền tảng này không. Tệp nén và bản vá được cố ý bỏ qua.</string>
+    <string name="dom_error_sc_9001_title">Quét thất bại ngoài dự kiến</string>
+    <string name="dom_error_sc_9001_why">Đã xảy ra sự cố không mong muốn khi quét.</string>
+    <string name="dom_error_sc_9001_action">Hãy quét lại. Nếu vẫn xảy ra, hãy sao chép chi tiết và báo cáo.</string>
+    <string name="dom_error_ar_1001_title">Thư mục ảnh minh họa không khả dụng</string>
+    <string name="dom_error_ar_1001_why">PFP không truy cập được thư mục ảnh minh họa, nên việc tải ảnh mới đã tạm dừng.</string>
+    <string name="dom_error_ar_1001_action">Hãy liên kết lại thư mục trong Cài đặt › Ảnh minh họa.</string>
+    <string name="dom_error_ar_2001_title">Không thể lưu tệp ảnh minh họa</string>
+    <string name="dom_error_ar_2001_why">Bộ nhớ đã đầy, hoặc không thể ghi vào thư mục ảnh minh họa.</string>
+    <string name="dom_error_ar_2001_action">Hãy giải phóng dung lượng rồi thử lại.</string>
+    <string name="dom_error_ar_2002_title">Không thể sao chép một tệp</string>
+    <string name="dom_error_ar_2002_why">Quá trình sao chép bị lỗi giữa chừng, hoặc không thể ghi vào nơi đích.</string>
+    <string name="dom_error_ar_2002_action">Hãy kiểm tra nơi đích còn dung lượng trống, rồi chạy lại.</string>
+    <string name="dom_error_ar_2003_title">Thư mục hệ máy không xác định trong dữ liệu nhập</string>
+    <string name="dom_error_ar_2003_why">Thư mục này trong dữ liệu nhập không khớp với hệ máy nào mà PlayFieldPortal biết.</string>
+    <string name="dom_error_ar_2003_action">Hãy đổi tên thư mục theo tên hệ máy được hỗ trợ rồi nhập lại.</string>
+    <string name="dom_error_ar_3001_title">Không thể kết nối nguồn ảnh minh họa</string>
+    <string name="dom_error_ar_3001_why">Thiết bị đang ngoại tuyến, hoặc nguồn không phản hồi.</string>
+    <string name="dom_error_ar_3001_action">Hãy kiểm tra kết nối và thử lại sau.</string>
+    <string name="dom_error_ar_3002_title">Nguồn đã từ chối yêu cầu</string>
+    <string name="dom_error_ar_3002_why">Nguồn đang giới hạn yêu cầu, hoặc tài khoản hay khóa mà nó cần đã bị từ chối.</string>
+    <string name="dom_error_ar_3002_action">Hãy chờ một lúc rồi thử lại, hoặc kiểm tra tài khoản của nguồn trong Cài đặt.</string>
+    <string name="dom_error_ar_3003_title">Không tìm thấy kết quả khớp cho trò chơi này</string>
+    <string name="dom_error_ar_3003_why">Nguồn không có mục nào khớp với tiêu đề của trò chơi này.</string>
+    <string name="dom_error_ar_3003_action">Hãy kiểm tra tiêu đề trò chơi, hoặc tự chọn ảnh minh họa trong Artwork Studio.</string>
+    <string name="dom_error_ar_9001_title">Tải xuống thất bại ngoài dự kiến</string>
+    <string name="dom_error_ar_9001_why">Đã xảy ra sự cố không mong muốn khi tải dữ liệu.</string>
+    <string name="dom_error_ar_9001_action">Hãy thử lại. Nếu vẫn xảy ra, hãy sao chép chi tiết và báo cáo.</string>
+    <string name="dom_error_ac_1001_title">Không có bộ thành tựu nào khớp với trò chơi này</string>
+    <string name="dom_error_ac_1001_why">Không dịch vụ nào đã kết nối có thành tựu cho trò chơi có tiêu đề này.</string>
+    <string name="dom_error_ac_1001_action">Hãy tự khớp trò chơi từ trang thành tựu của nó.</string>
+    <string name="dom_error_ac_2001_title">Không thể đọc thư mục thành tựu Windows</string>
+    <string name="dom_error_ac_2001_why">Không thể mở thư mục đã chọn cho thành tựu cục bộ của trò chơi này.</string>
+    <string name="dom_error_ac_2001_action">Hãy chọn lại thư mục của trò chơi từ trang thành tựu của nó.</string>
+    <string name="dom_error_ac_3001_title">Thiết bị đang ngoại tuyến</string>
+    <string name="dom_error_ac_3001_why">Thành tựu không thể cập nhật khi không có kết nối Internet.</string>
+    <string name="dom_error_ac_3001_action">Hãy kết nối Internet. Việc cập nhật sẽ tự chạy lại.</string>
+    <string name="dom_error_ac_3002_title">Phiên đăng nhập đã hết hạn</string>
+    <string name="dom_error_ac_3002_why">Dịch vụ đã kết nối không còn chấp nhận phiên đăng nhập của PlayFieldPortal.</string>
+    <string name="dom_error_ac_3002_action">Hãy kết nối lại dịch vụ trong Cài đặt › Thành tựu.</string>
+    <string name="dom_error_ac_3003_title">Chi tiết trò chơi Steam đang ở chế độ riêng tư</string>
+    <string name="dom_error_ac_3003_why">Steam chỉ chia sẻ thành tựu khi Chi tiết trò chơi của bạn ở chế độ công khai.</string>
+    <string name="dom_error_ac_3003_action">Hãy đặt Chi tiết trò chơi thành Công khai trong cài đặt quyền riêng tư Steam, rồi cập nhật lại.</string>
+    <string name="dom_error_ac_3004_title">Không thể cập nhật trò chơi này</string>
+    <string name="dom_error_ac_3004_why">Dịch vụ không phản hồi cho trò chơi này, hoặc phản hồi bằng lỗi.</string>
+    <string name="dom_error_ac_3004_action">Hãy thử cập nhật lại sau.</string>
+    <string name="dom_error_md_2001_title">Không thể đọc thư mục media</string>
+    <string name="dom_error_md_2001_why">PlayFieldPortal đã mất quyền truy cập thư mục này, hoặc nó không còn tồn tại.</string>
+    <string name="dom_error_md_2001_action">Hãy chọn lại thư mục trong cài đặt media, rồi quét.</string>
+    <string name="dom_error_md_9001_title">Quét media thất bại ngoài dự kiến</string>
+    <string name="dom_error_md_9001_why">Đã xảy ra sự cố không mong muốn khi quét.</string>
+    <string name="dom_error_md_9001_action">Hãy quét lại. Nếu vẫn xảy ra, hãy sao chép chi tiết và báo cáo.</string>
+    <string name="dom_error_bk_1001_title">Khôi phục đã bỏ qua một mục</string>
+    <string name="dom_error_bk_1001_why">Không thể khôi phục mục này một cách an toàn, nên nó được giữ nguyên.</string>
+    <string name="dom_error_bk_1001_action">Không có gì khác bị ảnh hưởng. Hãy tự thiết lập lại mục này nếu cần.</string>
+    <string name="dom_error_bk_2001_title">Không thể ghi tệp sao lưu</string>
+    <string name="dom_error_bk_2001_why">Bộ nhớ đã đầy, hoặc không thể ghi vào thư mục sao lưu.</string>
+    <string name="dom_error_bk_2001_action">Hãy giải phóng dung lượng hoặc chọn vị trí sao lưu khác, rồi thử lại.</string>
+    <string name="dom_error_bk_2002_title">Tệp sao lưu không đọc được hoặc bị hỏng</string>
+    <string name="dom_error_bk_2002_why">Tệp không phải bản sao lưu PlayFieldPortal, hoặc đã bị cắt ngắn.</string>
+    <string name="dom_error_bk_2002_action">Hãy chọn tệp sao lưu khác.</string>
+    <string name="dom_error_sy_9001_title">Đã xảy ra sự cố</string>
+    <string name="dom_error_sy_9001_why">Đã xảy ra sự cố không mong muốn.</string>
+    <string name="dom_error_sy_9001_action">Hãy thử lại. Nếu vẫn xảy ra, hãy sao chép chi tiết và báo cáo.</string>
+</resources>

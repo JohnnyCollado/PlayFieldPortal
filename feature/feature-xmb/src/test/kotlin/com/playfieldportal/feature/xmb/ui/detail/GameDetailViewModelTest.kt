@@ -1,5 +1,8 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.artwork.api.ARTWORK_PAUSED_TEXT
+import com.playfieldportal.feature.xmb.R
 import android.content.Context
 import app.cash.turbine.test
 import com.playfieldportal.core.data.database.dao.PlatformDao
@@ -142,7 +145,7 @@ class GameDetailViewModelTest {
             collectionRepository = mockk(relaxed = true),
             profileRepository = profileRepository,
             launchLadder      = com.playfieldportal.feature.launcher.GameLaunchLadder(
-                profileRepository, memoryCardRepository, platformDao, autoCoreMemory,
+                profileRepository, memoryCardRepository, platformDao, autoCoreMemory, context,
             ),
             intentResolver    = intentResolver,
             artworkRepository = artworkRepository,
@@ -204,7 +207,7 @@ class GameDetailViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify(exactly = 1) { pcGameExporter.exportGame(2L) }
-        assertEquals("Exported Portal 2 to windows/import as Portal 2.pfpgame.", viewModel.uiState.value.actionMessage)
+        assertEquals(UiText.raw("Exported Portal 2 to windows/import as Portal 2.pfpgame."), viewModel.uiState.value.actionMessage)
     }
 
     @After
@@ -518,7 +521,7 @@ class GameDetailViewModelTest {
             com.playfieldportal.feature.launcher.LaunchSource.PER_GAME_OVERRIDE,
             state.resolvedLaunch?.source,
         )
-        assertTrue(state.actionMessage!!.contains("Emulator set to DuckStation"))
+        assertEquals(UiText.res(R.string.det_emulator_set, "DuckStation"), state.actionMessage)
     }
 
     // ── toggleFavorite ────────────────────────────────────────────────────
@@ -995,7 +998,7 @@ class GameDetailViewModelTest {
         viewModel.uiState.test {
             val state = awaitItem()
             assertNotNull(state.launchError)
-            assertTrue(state.launchError!!.contains("ROM file not found"))
+            assertTrue((state.launchError as UiText.Raw).value.contains("ROM file not found"))
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -1024,7 +1027,7 @@ class GameDetailViewModelTest {
         viewModel.uiState.test {
             val state = awaitItem()
             assertNotNull(state.launchError)
-            assertTrue(state.launchError!!.contains("Emulator not installed"))
+            assertTrue((state.launchError as UiText.Raw).value.contains("Emulator not installed"))
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -1054,7 +1057,7 @@ class GameDetailViewModelTest {
         viewModel.uiState.test {
             val state = awaitItem()
             assertNotNull(state.launchError)
-            assertTrue(state.launchError!!.contains("RetroArch core not found"))
+            assertTrue((state.launchError as UiText.Raw).value.contains("RetroArch core not found"))
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -1063,7 +1066,7 @@ class GameDetailViewModelTest {
     fun `dismissLaunchError clears launchError`() = runTest {
         // Play before the page has loaded is a real launch error ("Game is still loading").
         viewModel.launch()
-        assertEquals("Game is still loading", viewModel.uiState.value.launchError)
+        assertEquals(UiText.res(R.string.det_launch_loading), viewModel.uiState.value.launchError)
         viewModel.dismissLaunchError()
 
         viewModel.uiState.test {
@@ -1082,6 +1085,8 @@ class GameDetailViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
         viewModel.launch()
         val error = viewModel.uiState.value.launchError!!
+        assertEquals(UiText.res(R.string.det_launch_file_missing), error)
+        every { context.resources.getString(R.string.det_launch_file_missing) } returns "File not found on the last scan."
 
         viewModel.requestLaunchHelp()
         testDispatcher.scheduler.advanceUntilIdle()
@@ -1090,7 +1095,7 @@ class GameDetailViewModelTest {
             launchDispatcher.requestRecovery(
                 match { it.id == 1L },
                 any(),
-                eq(error),
+                eq("File not found on the last scan."),
             )
         }
     }
@@ -1149,7 +1154,7 @@ class GameDetailViewModelTest {
         viewModel.uiState.test {
             val state = awaitItem()
             assertFalse(state.isFetchingArtwork)
-            assertEquals("Artwork updated", state.artworkMessage)
+            assertEquals(UiText.res(R.string.det_artwork_updated), state.artworkMessage)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -1205,14 +1210,14 @@ class GameDetailViewModelTest {
     @Test
     fun `fetchArtwork shows the scraper's message when nothing is found`() = runTest {
         coEvery { artworkRepository.refetchArtworkForGame(1L, any()) } returns
-            ArtworkFetchResult(1L, "Crash Bandicoot", success = false, errorMessage = "Not found on any source")
+            ArtworkFetchResult(1L, "Crash Bandicoot", success = false, errorMessage = UiText.raw("Not found on any source"))
 
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
         viewModel.fetchArtwork()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals("Not found on any source", viewModel.uiState.value.artworkMessage)
+        assertEquals(UiText.raw("Not found on any source"), viewModel.uiState.value.artworkMessage)
     }
 
     @Test
@@ -1225,8 +1230,7 @@ class GameDetailViewModelTest {
         viewModel.fetchArtwork()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals("Artwork paused. Relink your artwork folder to save new art.",
-            viewModel.uiState.value.artworkMessage)
+        assertEquals(ARTWORK_PAUSED_TEXT, viewModel.uiState.value.artworkMessage)
     }
 
     @Test
@@ -1241,7 +1245,7 @@ class GameDetailViewModelTest {
 
         val state = viewModel.uiState.value
         assertFalse(state.isFetchingArtwork)
-        assertEquals("Already fetching artwork for this game", state.artworkMessage)
+        assertEquals(UiText.res(R.string.det_artwork_already_fetching), state.artworkMessage)
     }
 
     @Test
@@ -1259,9 +1263,7 @@ class GameDetailViewModelTest {
 
     @Test
     fun `the Fetch Artwork option is labelled for what it does`() {
-        assertEquals("Fetch Artwork", DetailAction.FETCH_ARTWORK.label)
-        assertEquals("Fetch Artwork", DetailAction.FETCH_ARTWORK.dynamicLabel(refreshing = false))
-        assertEquals("Fetching Artwork…", DetailAction.FETCH_ARTWORK.dynamicLabel(refreshing = true))
+        assertEquals(R.string.det_action_fetch_artwork, DetailAction.FETCH_ARTWORK.labelRes)
     }
 
     // ── Metadata presets — Current vs Incoming (C16 task 3.2) ─────────────
@@ -1303,7 +1305,8 @@ class GameDetailViewModelTest {
         // Non-destructive by default: only the empty Developer would be written.
         assertEquals(MetadataApplyPolicy.FILL_MISSING_ONLY, preview.policy)
         assertEquals(setOf(MetadataField.DEVELOPER), preview.willWrite)
-        assertEquals(preview.applyIndex, preview.focus)
+        // The page opens at its top, on the first field row, not scrolled down to Apply.
+        assertEquals(0, preview.focus)
         coVerify(exactly = 0) { artworkRepository.applyMetadata(any(), any(), any(), any()) }
     }
 
@@ -1349,6 +1352,7 @@ class GameDetailViewModelTest {
         assertNull(viewModel.uiState.value.actionMessage)
 
         // Nothing typed yet, so Apply has nothing to write and never reaches the writer.
+        focusMetadataApply()
         viewModel.handleGamepadAction(GamepadAction.SELECT)
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -1387,7 +1391,7 @@ class GameDetailViewModelTest {
                 any(), any(),
             )
         }
-        assertEquals("Updated 1 field set by hand", viewModel.uiState.value.actionMessage)
+        assertEquals(UiText.plural(R.plurals.det_meta_updated_by_hand, 1), viewModel.uiState.value.actionMessage)
     }
 
     @Test
@@ -1408,7 +1412,7 @@ class GameDetailViewModelTest {
         assertNull(preview.effective[MetadataField.DEVELOPER])
         assertFalse(MetadataField.DEVELOPER in preview.overridden)
         assertEquals("", preview.manualText[MetadataField.DEVELOPER])
-        assertEquals("Reverted Developer to the scraped value", viewModel.uiState.value.actionMessage)
+        assertEquals(UiText.res(R.string.det_meta_reverted, UiText.res(MetadataField.DEVELOPER.labelRes)), viewModel.uiState.value.actionMessage)
         coVerify { artworkRepository.clearMetadataOverride(1L, MetadataField.DEVELOPER) }
     }
 
@@ -1450,7 +1454,8 @@ class GameDetailViewModelTest {
 
         viewModel.handleGamepadAction(GamepadAction.NAVIGATE_LEFT)   // Fill Missing Only → Replace All
         assertEquals(MetadataApplyPolicy.REPLACE_ALL, viewModel.uiState.value.metadataPreview?.policy)
-        viewModel.handleGamepadAction(GamepadAction.SELECT)          // focus starts on Apply
+        focusMetadataApply()
+        viewModel.handleGamepadAction(GamepadAction.SELECT)          // Apply
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify {
@@ -1461,7 +1466,10 @@ class GameDetailViewModelTest {
         }
         coVerify(atLeast = 2) { gameRepository.getById(1L) }
         assertNull(viewModel.uiState.value.metadataPreview)
-        assertEquals("Updated 2 fields from ScreenScraper", viewModel.uiState.value.actionMessage)
+        assertEquals(
+            UiText.plural(R.plurals.det_meta_updated_from, 2, 2, "ScreenScraper"),
+            viewModel.uiState.value.actionMessage,
+        )
     }
 
     @Test
@@ -1473,7 +1481,7 @@ class GameDetailViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertNull(viewModel.uiState.value.metadataPreview)
-        assertEquals("Kept current metadata", viewModel.uiState.value.actionMessage)
+        assertEquals(UiText.res(R.string.det_meta_kept_current), viewModel.uiState.value.actionMessage)
         coVerify(exactly = 0) { artworkRepository.applyMetadata(any(), any(), any(), any()) }
     }
 
@@ -1483,10 +1491,14 @@ class GameDetailViewModelTest {
 
         // Retrieval is asynchronous: the overlay opens before it has any row, so the cursor can
         // only be anywhere once the rows have been handed to the engine.
+        // The cursor lands on the first row, at the top of the page.
         assertTrue(GameDetailKeys.METADATA_APPLY in viewModel.focusableNodeKeys())
-        assertEquals(GameDetailKeys.METADATA_APPLY, viewModel.uiState.value.navFocusKey)
+        assertEquals(
+            GameDetailKeys.metadataField(MetadataField.DESCRIPTION.name),
+            viewModel.uiState.value.navFocusKey,
+        )
 
-        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_UP)
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
 
         assertEquals(
             GameDetailKeys.metadataField(MetadataField.DEVELOPER.name),
@@ -1497,6 +1509,7 @@ class GameDetailViewModelTest {
     @Test
     fun `switching source re-ticks its changes and toggling a row chooses fields`() = runTest {
         openLoadedPreview()
+        focusMetadataApply()
 
         viewModel.handleGamepadAction(GamepadAction.NEXT_CATEGORY)   // ScreenScraper → TheGamesDB
         var preview = viewModel.uiState.value.metadataPreview!!
@@ -1511,6 +1524,14 @@ class GameDetailViewModelTest {
         assertEquals(MetadataApplyPolicy.CHOOSE_FIELDS, preview.policy)
         assertTrue(preview.chosen.isEmpty())
         assertTrue(preview.willWrite.isEmpty())
+    }
+
+    /** Down from the first field row to Apply, the last stop on the page. */
+    private fun focusMetadataApply() {
+        repeat(viewModel.uiState.value.metadataPreview!!.applyIndex) {
+            viewModel.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
+        }
+        assertEquals(viewModel.uiState.value.metadataPreview!!.applyIndex, viewModel.uiState.value.metadataPreview!!.focus)
     }
 
     // ── Navigation (unified engine) ───────────────────────────────────────
@@ -1708,7 +1729,7 @@ class GameDetailViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertFalse(viewModel.uiState.value.isFetchingArtwork)
-        assertEquals("Artwork updated", viewModel.uiState.value.artworkMessage)
+        assertEquals(UiText.res(R.string.det_artwork_updated), viewModel.uiState.value.artworkMessage)
     }
 
     @Test
@@ -2060,7 +2081,8 @@ class GameDetailViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(listOf("GOG"), picker.unavailableStores)
-        assertEquals("GOG didn't answer, so this list is Steam's alone. Try again later for GOG.", storefrontOtherStoresNote(picker))
+        // det_store_note_unreachable reads "GOG didn't answer, so this list is Steam's alone. Try again later for GOG."
+        assertEquals(UiText.res(R.string.det_store_note_unreachable, "GOG", "Steam"), storefrontOtherStoresNote(picker))
     }
 
     @Test
@@ -2248,6 +2270,95 @@ class GameDetailViewModelTest {
         verify(exactly = 1) { menuSound.play(back, any()) }
         // Still on the page — Back closed the overlay, not the screen.
         assertFalse(viewModel.uiState.value.closed)
+    }
+
+    private fun installDuckStation() {
+        every { profileRepository.getInstalledProfiles() } returns listOf(
+            com.playfieldportal.core.domain.model.EmulatorProfile(
+                id                   = "duckstation",
+                name                 = "DuckStation",
+                packageName          = "com.github.stenzek.duckstation",
+                intentType           = com.playfieldportal.core.domain.model.IntentType.ACTION_VIEW,
+                supportedPlatformIds = listOf(fakeGame.platformId),
+            ),
+        )
+    }
+
+    @Test
+    fun `Back on Choose Emulator opened from Options returns to Options on the Emulator row`() = runTest {
+        installDuckStation()
+        loadedAndLaidOut()
+        viewModel.openOptions()
+        viewModel.activateAction(DetailAction.EMULATOR)
+        assertTrue(viewModel.uiState.value.showEmulatorPicker)
+
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+
+        val s = viewModel.uiState.value
+        assertFalse(s.showEmulatorPicker)
+        assertTrue("Options stays up", s.showOptions)
+        assertEquals(DetailMenu.ROOT, s.optionsMenu)
+        assertEquals(DetailAction.EMULATOR, s.visibleActions[s.optionsIndex])
+        assertFalse(s.closed)
+    }
+
+    @Test
+    fun `Back on Choose Emulator opened from the page closes it`() = runTest {
+        installDuckStation()
+        loadedAndLaidOut()
+        viewModel.requestChangeEmulator()
+        assertTrue(viewModel.uiState.value.showEmulatorPicker)
+
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+
+        val s = viewModel.uiState.value
+        assertFalse(s.showEmulatorPicker)
+        assertFalse(s.showOptions)
+        assertFalse(s.closed)
+    }
+
+    @Test
+    fun `Back on Add to Card returns to Options on the Add to Card row`() = runTest {
+        loadedAndLaidOut()
+        viewModel.openOptions()
+        viewModel.activateAction(DetailAction.COLLECTIONS)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.collectionPicker.visible)
+
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+
+        val s = viewModel.uiState.value
+        assertFalse(s.collectionPicker.visible)
+        assertTrue("Options stays up", s.showOptions)
+        assertEquals(DetailMenu.ROOT, s.optionsMenu)
+        assertEquals(DetailAction.COLLECTIONS, s.visibleActions[s.optionsIndex])
+    }
+
+    @Test
+    fun `a tap outside Add to Card closes the whole menu`() = runTest {
+        loadedAndLaidOut()
+        viewModel.openOptions()
+        viewModel.activateAction(DetailAction.COLLECTIONS)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.dismissCollectionPicker()
+
+        val s = viewModel.uiState.value
+        assertFalse(s.collectionPicker.visible)
+        assertFalse(s.showOptions)
+    }
+
+    @Test
+    fun `stepping from Options into Choose Emulator plays the step cue`() = runTest {
+        installDuckStation()
+        loadedAndLaidOut()
+        viewModel.openOptions()
+        verify(exactly = 1) { menuSound.play(select, any()) }
+
+        viewModel.activateAction(DetailAction.EMULATOR)
+
+        // The panel stays up and only its list changes, so the step is heard like any sub-list's.
+        verify(exactly = 2) { menuSound.play(select, any()) }
     }
 
     @Test

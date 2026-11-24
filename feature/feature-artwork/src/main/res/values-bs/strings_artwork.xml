@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared -->
+    <string name="art_error_unexpected">Neočekivana greška</string>
+    <string name="art_no_folder_linked">Nije povezan folder s grafikama</string>
+    <string name="art_paused_message">Grafike su pauzirane. Ponovo povežite folder s grafikama kako biste čuvali nove.</string>
+    <string name="art_error_game_not_found">Igra nije pronađena</string>
+    <string name="art_error_not_found_any_source">Nije pronađeno ni u jednom izvoru</string>
+    <string name="art_found_via">Pronađeno putem: %1$s</string>
+    <string name="art_results_label_updated">Ažurirano</string>
+    <string name="art_results_label_imported">Uvezeno</string>
+
+    <!-- Live scrape progress -->
+    <string name="art_progress_hashing">Izračun hasha ROM-a…</string>
+    <string name="art_progress_searching">Pretraživanje…</string>
+    <string name="art_asset_hero">Hero</string>
+    <string name="art_asset_background">Pozadina</string>
+    <string name="art_asset_logo">Logotip</string>
+    <string name="art_asset_box_art">Omot</string>
+    <string name="art_asset_physical_media">Fizički medij</string>
+    <string name="art_asset_3d_box">3D kutija</string>
+    <string name="art_asset_screenshot">Snimak ekrana</string>
+    <string name="art_asset_manual">Priručnik</string>
+    <string name="art_asset_video">Videozapis</string>
+    <string name="art_asset_icon_video">Video ikone</string>
+    <string name="art_asset_icon_video_converting">Video ikone (pretvaranje)</string>
+    <string name="art_source_storefronts">Trgovine</string>
+
+    <!-- Metadata fields -->
+    <string name="art_field_title">Naslov</string>
+    <string name="art_field_description">Opis</string>
+    <string name="art_field_developer">Razvojni tim</string>
+    <string name="art_field_publisher">Izdavač</string>
+    <string name="art_field_year">Godina</string>
+    <string name="art_field_release_date">Datum izlaska</string>
+    <string name="art_field_genre">Žanr</string>
+    <string name="art_field_age_rating">Dobna oznaka</string>
+    <string name="art_field_franchise">Serijal</string>
+    <string name="art_field_rating">Ocjena</string>
+
+    <!-- Ways to apply scraped metadata -->
+    <string name="art_policy_replace_all">Zamijeni sve</string>
+    <string name="art_policy_fill_missing">Popuni samo nedostajuće</string>
+    <string name="art_policy_choose_fields">Odaberi polja</string>
+    <string name="art_policy_keep_current">Zadrži trenutno</string>
+
+    <!-- Scrape (background task) -->
+    <string name="art_scrape_label_all">Ponovno preuzimanje podataka za sve igre</string>
+    <string name="art_scrape_label_missing">Preuzimanje nedostajućih grafika</string>
+    <string name="art_scrape_stop_note">Već preuzete grafike ostaju sačuvane.</string>
+    <string name="art_scrape_paused_all_title">Ponovno preuzimanje grafika pauzirano</string>
+    <string name="art_scrape_paused_title">Preuzimanje grafika pauzirano</string>
+    <string name="art_scrape_finished_all_title">Ponovno preuzimanje grafika završeno</string>
+    <string name="art_scrape_finished_title">Preuzimanje grafika završeno</string>
+    <string name="art_scrape_stopped_title">Preuzimanje grafika zaustavljeno</string>
+    <string name="art_scrape_failed_title">Preuzimanje grafika nije uspjelo</string>
+    <string name="art_scrape_result">Uspjelo: %1$d, nije uspjelo: %2$d, od ukupno %3$d</string>
+    <plurals name="art_scrape_stopped_after">
+        <item quantity="one">Zaustavljeno nakon %1$d igre — dosad preuzete grafike ostaju sačuvane</item>
+        <item quantity="few">Zaustavljeno nakon %1$d igre — dosad preuzete grafike ostaju sačuvane</item>
+        <item quantity="other">Zaustavljeno nakon %1$d igara — dosad preuzete grafike ostaju sačuvane</item>
+    </plurals>
+
+    <!-- Relink (background task) -->
+    <string name="art_relink_label">Ponovno povezivanje grafika</string>
+    <plurals name="art_relink_label_consoles">
+        <item quantity="one">Ponovno povezivanje grafika za %1$d konzolu</item>
+        <item quantity="few">Ponovno povezivanje grafika za %1$d konzole</item>
+        <item quantity="other">Ponovno povezivanje grafika za %1$d konzola</item>
+    </plurals>
+    <string name="art_relink_stop_note">Već povezane grafike ostaju povezane.</string>
+    <string name="art_relink_finished_title">Ponovno povezivanje grafika završeno</string>
+    <string name="art_relink_stopped_title">Ponovno povezivanje grafika zaustavljeno</string>
+    <string name="art_relink_stopped_note">Dosad povezane grafike ostaju sačuvane</string>
+    <string name="art_relink_failed_title">Ponovno povezivanje grafika nije uspjelo</string>
+    <plurals name="art_relink_games_linked">
+        <item quantity="one">%1$d igra povezana</item>
+        <item quantity="few">%1$d igre povezane</item>
+        <item quantity="other">%1$d igara povezano</item>
+    </plurals>
+    <plurals name="art_relink_files">
+        <item quantity="one">%1$d datoteke</item>
+        <item quantity="few">%1$d datoteke</item>
+        <item quantity="other">%1$d datoteka</item>
+    </plurals>
+    <string name="art_relink_result">%1$s od %2$s</string>
+    <string name="art_relink_result_unmatched">%1$s · nepovezano: %2$d</string>
+
+    <!-- Export to ES-DE (background task) -->
+    <string name="art_export_label">Izvoz grafika za ES-DE</string>
+    <string name="art_export_stop_note">Već izvezene datoteke ostaju na mjestu.</string>
+    <string name="art_export_error_no_destination">Nema odredišnog foldera</string>
+    <string name="art_export_error_access_lost">Pristup folderu s grafikama je izgubljen</string>
+    <string name="art_export_dest_not_created">Odredišni folder nije bilo moguće stvoriti.</string>
+    <plurals name="art_export_files_badge">
+        <item quantity="one">%1$d datoteka</item>
+        <item quantity="few">%1$d datoteke</item>
+        <item quantity="other">%1$d datoteka</item>
+    </plurals>
+    <string name="art_export_failed_title">Izvoz grafika nije uspio</string>
+    <string name="art_export_stopped_title">Izvoz grafika zaustavljen</string>
+    <string name="art_export_finished_title">Izvoz grafika završen</string>
+    <plurals name="art_export_stopped_note">
+        <item quantity="one">Prije toga izvezena je %1$d datoteka</item>
+        <item quantity="few">Prije toga izvezene su %1$d datoteke</item>
+        <item quantity="other">Prije toga izvezeno je %1$d datoteka</item>
+    </plurals>
+    <string name="art_export_result">Kopirano: %1$d, već postoji: %2$d, nije uspjelo: %3$d</string>
+
+    <!-- Import (background task and its notification) -->
+    <string name="art_import_plan_not_found">Plan uvoza nije pronađen</string>
+    <string name="art_import_plan_unreadable">Plan uvoza nije čitljiv</string>
+    <string name="art_import_label">Uvoz grafika — %1$s</string>
+    <string name="art_import_stop_note">Već uvezene grafike ostaju sačuvane.</string>
+    <string name="art_import_failed_title">Uvoz grafika nije uspio</string>
+    <string name="art_import_cancelled">Uvoz grafika otkazan</string>
+    <string name="art_import_done">Grafike uvezene</string>
+    <plurals name="art_import_needs_review">
+        <item quantity="one">Grafike uvezene, %1$d stavku treba pregledati</item>
+        <item quantity="few">Grafike uvezene, %1$d stavke treba pregledati</item>
+        <item quantity="other">Grafike uvezene, %1$d stavki treba pregledati</item>
+    </plurals>
+    <string name="art_import_headline">%1$s: %2$s</string>
+    <string name="art_import_counts">Uvezeno: %1$d, preskočeno: %2$d, nije uspjelo: %3$d, nejasno: %4$d, nepovezano: %5$d.</string>
+    <string name="art_import_results_summary">Uvezeno: %1$d, preskočeno: %2$d</string>
+
+    <!-- Move artwork into the linked folder (background task) -->
+    <string name="art_move_label">Premještanje grafika u vaš folder</string>
+    <string name="art_move_failed_title">Premještanje grafika nije uspjelo</string>
+    <string name="art_move_stopped_title">Premještanje grafika zaustavljeno</string>
+    <string name="art_move_finished_title">Premještanje grafika završeno</string>
+    <plurals name="art_move_stopped_note">
+        <item quantity="one">Prije toga premještena je %1$d datoteka</item>
+        <item quantity="few">Prije toga premještene su %1$d datoteke</item>
+        <item quantity="other">Prije toga premješteno je %1$d datoteka</item>
+    </plurals>
+    <string name="art_move_result">Premješteno: %1$d, već postoji: %2$d, nije uspjelo: %3$d</string>
+</resources>

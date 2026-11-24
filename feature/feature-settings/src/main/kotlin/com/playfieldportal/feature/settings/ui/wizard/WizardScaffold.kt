@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -37,6 +38,7 @@ import com.playfieldportal.core.ui.components.ControllerPrompt
 import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.feature.settings.ui.LocalSettingsCursorVisible
 import com.playfieldportal.feature.settings.ui.LocalSettingsScrollStateRegistrar
 import com.playfieldportal.feature.settings.ui.SettingsScaffold
@@ -74,6 +76,8 @@ fun WizardScaffold(
     /** 1-based page number for the badge circle (①…⑨); null hides the badge. */
     stepNumber: Int?,
     title: String,
+    /** How many pages this run will show; with [stepNumber] the header reads "Step N of M". */
+    stepCount: Int? = null,
     /** Centered task heading, e.g. "Choose your ROM folders." */
     heading: String,
     /** Centered constraint/hint line under the heading, e.g. "Add one or more root folders." */
@@ -87,7 +91,7 @@ fun WizardScaffold(
     /** RB: advance without changing anything. Null (Finish) hides the Skip prompt and ignores RB. */
     onSkip: (() -> Unit)? = null,
     /** The Ⓐ prompt's label — "Enter", or "Change" on a page whose rows cycle values. */
-    confirmLabel: String = "Enter",
+    confirmLabel: String = stringResource(R.string.setup_prompt_enter),
     /** The page [content] currently shows. Changing it returns the page to the top. */
     contentKey: Any? = null,
     modifier: Modifier = Modifier,
@@ -119,7 +123,7 @@ fun WizardScaffold(
         },
         // The wave reads through — the wizard sits on a light scrim, not the dark settings one.
         lightScrim = true,
-        header = { WizardHeader(stepNumber, title) },
+        header = { WizardHeader(stepNumber, stepCount, title) },
         footer = {
             // A hidden controller cursor means touch is driving: tappable pills replace the glyphs.
             if (LocalSettingsCursorVisible.current) {
@@ -157,7 +161,7 @@ fun WizardScaffold(
 }
 
 @Composable
-private fun WizardHeader(stepNumber: Int?, title: String) {
+private fun WizardHeader(stepNumber: Int?, stepCount: Int?, title: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -170,12 +174,21 @@ private fun WizardHeader(stepNumber: Int?, title: String) {
             WizardStepBadge(stepNumber)
             Spacer(Modifier.width(14.dp))
         }
-        Text(
-            text = title,
-            color = themedText(Color.White),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-        )
+        Column {
+            Text(
+                text = title,
+                color = themedText(Color.White),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+            )
+            if (stepNumber != null && stepCount != null) {
+                Text(
+                    text = stringResource(R.string.tidy_wizard_step_of, stepNumber, stepCount),
+                    color = themedText(Color.White).copy(alpha = 0.75f),
+                    fontSize = 12.sp,
+                )
+            }
+        }
     }
 }
 
@@ -241,11 +254,11 @@ private fun WizardTouchFooter(backEnabled: Boolean, onBack: () -> Unit, onSkip: 
         verticalAlignment = Alignment.CenterVertically,
     ) {
         XmbHeaderPill(
-            label = "Back",
+            label = stringResource(R.string.setup_prompt_back),
             onClick = { if (backEnabled) onBack() },
             modifier = Modifier.alpha(if (backEnabled) 1f else 0.4f),
         )
-        if (onSkip != null) XmbHeaderPill(label = "Skip", onClick = onSkip)
+        if (onSkip != null) XmbHeaderPill(label = stringResource(R.string.setup_prompt_skip), onClick = onSkip)
     }
 }
 
@@ -272,7 +285,7 @@ private fun WizardFooter(backEnabled: Boolean, showSkip: Boolean, confirmLabel: 
             )
             ControllerPrompt(
                 action = GamepadAction.BACK,
-                label = "Back",
+                label = stringResource(R.string.setup_prompt_back),
                 labelColor = WizardBackRed.copy(alpha = if (backEnabled) 1f else 0.35f),
                 labelStyle = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold),
                 glyphSize = 16.dp,
@@ -282,7 +295,7 @@ private fun WizardFooter(backEnabled: Boolean, showSkip: Boolean, confirmLabel: 
             if (showSkip) {
                 ControllerPrompt(
                     action = GamepadAction.NEXT_CATEGORY,
-                    label = "Skip",
+                    label = stringResource(R.string.setup_prompt_skip),
                     labelColor = themedSubText(Color.White.copy(alpha = 0.88f)),
                     labelStyle = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold),
                     glyphSize = 16.dp,

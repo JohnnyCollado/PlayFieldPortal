@@ -17,6 +17,7 @@ import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NotificationDetail
 import com.playfieldportal.core.domain.model.PfpErrorCode
 import com.playfieldportal.core.domain.model.TaskKind
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.library.scanner.MusicScanResult
 import com.playfieldportal.feature.library.scanner.MusicScanner
 import com.playfieldportal.feature.library.scanner.PhotoScanResult
@@ -24,6 +25,8 @@ import com.playfieldportal.feature.library.scanner.PhotoScanner
 import com.playfieldportal.feature.library.scanner.RescanApplicationScope
 import com.playfieldportal.feature.library.scanner.VideoScanResult
 import com.playfieldportal.feature.library.scanner.VideoScanner
+import com.playfieldportal.feature.settings.R
+import com.playfieldportal.feature.library.R as LibraryR
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -104,13 +107,13 @@ class WizardMediaScanRunner @Inject constructor(
      * on an automatic pass, skipped without a word while the kind is retried a few times on its
      * own; once those retries run out it is scanned anyway, so a folder that is really gone is
      * still reported. A scan the user asked for ([force]) is never silent: it reports
-     * [NOT_READY_MESSAGE] on [taskId] instead. "Permission lost" stays for a grant that is gone.
+     * [notReadyMessage] on [taskId] instead. "Permission lost" stays for a grant that is gone.
      */
     private suspend fun readyToScan(kind: MediaRootKind, treeUri: String, force: Boolean, taskId: String, name: String): Boolean {
         val access = folderAccess.of(treeUri)
         if (access != FolderAccess.NOT_READY) return true
         if (force) {
-            tasks.fail(taskId, NOT_READY_MESSAGE, title = "$name scan failed")
+            tasks.fail(taskId, notReadyMessage(), title = context.getString(R.string.setup_media_scan_failed_title, name))
             return false
         }
         val attempt = notReadyRetries.merge(kind, 1, Int::plus) ?: 1
@@ -195,7 +198,7 @@ class WizardMediaScanRunner @Inject constructor(
         force: Boolean = true,
         onProgress: (String) -> Unit = {},
     ): String {
-        if (mediaRootRepository.getAll(kind).isEmpty()) return "Add a root folder first."
+        if (mediaRootRepository.getAll(kind).isEmpty()) return context.getString(R.string.setup_media_add_root_first)
         return scanMutexes.getValue(kind).withLock { scan(kind, force, onProgress) }
     }
 
@@ -241,7 +244,10 @@ class WizardMediaScanRunner @Inject constructor(
         }
         // A pass that skipped nothing ends the quiet retries, so the next boot gets a fresh set.
         if (notReadyRetries[kind] == retriesBefore) notReadyRetries.remove(kind)
-        return failure ?: "Found " + total + " " + kind.noun(total) + " across " + roots.size + " root(s)."
+        return failure ?: UiText.res(
+            R.string.setup_media_found,
+            kind.countText(total), UiText.plural(R.plurals.setup_media_roots, roots.size),
+        ).resolve(context)
     }
 
     /** What one library's scan produced: item count, or the message if it failed. */
@@ -301,7 +307,7 @@ class WizardMediaScanRunner @Inject constructor(
         val taskId = "music_scan_" + target.id
         val report = progressFor(force)
         if (!readyToScan(MediaRootKind.MUSIC, target.treeUri, force, taskId, target.displayName)) {
-            return Outcome(target.trackCount, NOT_READY_MESSAGE.takeIf { force })
+            return Outcome(target.trackCount, notReadyMessage().takeIf { force })
         }
         var outcome = Outcome(target.trackCount, null)
         return stoppable(taskId, target.displayName, report, fallback = { outcome }) {
@@ -313,7 +319,7 @@ class WizardMediaScanRunner @Inject constructor(
             knownSignature = if (force) null else target.scanSignature,
         ).collect { result ->
             when (result) {
-                is MusicScanResult.Progress -> onProgress(result.tracksFound.toString() + " tracks")
+                is MusicScanResult.Progress -> onProgress(countText(MediaRootKind.MUSIC, result.tracksFound))
                 // Only ever reached on an automatic pass (a forced scan sends no known
                 // signature, so the scanner cannot short-circuit). Nothing happened —
                 // nothing to say.
@@ -328,19 +334,20 @@ class WizardMediaScanRunner @Inject constructor(
                     outcome = Outcome(result.tracks.size, null)
                     report?.complete(
                         taskId,
-                        result.tracks.size.toString() + " tracks",
+                        countText(MediaRootKind.MUSIC, result.tracks.size),
                         NotificationAction.OpenCategory("music"),
-                        title = target.displayName + " scan finished",
+                        title = context.getString(R.string.setup_media_scan_finished_title, target.displayName),
                     )
                 }
                 is MusicScanResult.Error -> {
-                    outcome = Outcome(0, result.message)
+                    val message = result.message.resolve(context)
+                    outcome = Outcome(0, message)
                     // Always surfaced, automatic or not: "Permission lost, re-select
                     // folder." is the one message a silent library needs to show.
                     tasks.fail(
-                        taskId, result.message,
-                        detail = mediaFailureNotes(result.message),
-                        title = target.displayName + " scan failed",
+                        taskId, message,
+                        detail = mediaFailureNotes(result.message, message),
+                        title = context.getString(R.string.setup_media_scan_failed_title, target.displayName),
                     )
                 }
             }
@@ -357,7 +364,7 @@ class WizardMediaScanRunner @Inject constructor(
         val taskId = "photo_scan_" + target.id
         val report = progressFor(force)
         if (!readyToScan(MediaRootKind.PHOTO, target.treeUri, force, taskId, target.displayName)) {
-            return Outcome(target.photoCount, NOT_READY_MESSAGE.takeIf { force })
+            return Outcome(target.photoCount, notReadyMessage().takeIf { force })
         }
         var outcome = Outcome(target.photoCount, null)
         return stoppable(taskId, target.displayName, report, fallback = { outcome }) {
@@ -368,7 +375,7 @@ class WizardMediaScanRunner @Inject constructor(
             knownSignature = if (force) null else target.scanSignature,
         ).collect { result ->
             when (result) {
-                is PhotoScanResult.Progress -> onProgress(result.photosFound.toString() + " photos")
+                is PhotoScanResult.Progress -> onProgress(countText(MediaRootKind.PHOTO, result.photosFound))
                 // Only ever reached on an automatic pass (a forced scan sends no known
                 // signature, so the scanner cannot short-circuit). Nothing happened —
                 // nothing to say.
@@ -383,19 +390,20 @@ class WizardMediaScanRunner @Inject constructor(
                     outcome = Outcome(result.photos.size, null)
                     report?.complete(
                         taskId,
-                        result.photos.size.toString() + " photos",
+                        countText(MediaRootKind.PHOTO, result.photos.size),
                         NotificationAction.OpenCategory("photos"),
-                        title = target.displayName + " scan finished",
+                        title = context.getString(R.string.setup_media_scan_finished_title, target.displayName),
                     )
                 }
                 is PhotoScanResult.Error -> {
-                    outcome = Outcome(0, result.message)
+                    val message = result.message.resolve(context)
+                    outcome = Outcome(0, message)
                     // Always surfaced, automatic or not: "Permission lost, re-select
                     // folder." is the one message a silent library needs to show.
                     tasks.fail(
-                        taskId, result.message,
-                        detail = mediaFailureNotes(result.message),
-                        title = target.displayName + " scan failed",
+                        taskId, message,
+                        detail = mediaFailureNotes(result.message, message),
+                        title = context.getString(R.string.setup_media_scan_failed_title, target.displayName),
                     )
                 }
             }
@@ -412,7 +420,7 @@ class WizardMediaScanRunner @Inject constructor(
         val taskId = "video_scan_" + target.id
         val report = progressFor(force)
         if (!readyToScan(MediaRootKind.VIDEO, target.treeUri, force, taskId, target.displayName)) {
-            return Outcome(target.videoCount, NOT_READY_MESSAGE.takeIf { force })
+            return Outcome(target.videoCount, notReadyMessage().takeIf { force })
         }
         var outcome = Outcome(target.videoCount, null)
         return stoppable(taskId, target.displayName, report, fallback = { outcome }) {
@@ -423,7 +431,7 @@ class WizardMediaScanRunner @Inject constructor(
             knownSignature = if (force) null else target.scanSignature,
         ).collect { result ->
             when (result) {
-                is VideoScanResult.Progress -> onProgress(result.videosFound.toString() + " videos")
+                is VideoScanResult.Progress -> onProgress(countText(MediaRootKind.VIDEO, result.videosFound))
                 // Only ever reached on an automatic pass (a forced scan sends no known
                 // signature, so the scanner cannot short-circuit). Nothing happened —
                 // nothing to say.
@@ -438,19 +446,20 @@ class WizardMediaScanRunner @Inject constructor(
                     outcome = Outcome(result.videos.size, null)
                     report?.complete(
                         taskId,
-                        result.videos.size.toString() + " videos",
+                        countText(MediaRootKind.VIDEO, result.videos.size),
                         NotificationAction.OpenCategory("videos"),
-                        title = target.displayName + " scan finished",
+                        title = context.getString(R.string.setup_media_scan_finished_title, target.displayName),
                     )
                 }
                 is VideoScanResult.Error -> {
-                    outcome = Outcome(0, result.message)
+                    val message = result.message.resolve(context)
+                    outcome = Outcome(0, message)
                     // Always surfaced, automatic or not: "Permission lost, re-select
                     // folder." is the one message a silent library needs to show.
                     tasks.fail(
-                        taskId, result.message,
-                        detail = mediaFailureNotes(result.message),
-                        title = target.displayName + " scan failed",
+                        taskId, message,
+                        detail = mediaFailureNotes(result.message, message),
+                        title = context.getString(R.string.setup_media_scan_failed_title, target.displayName),
                     )
                 }
             }
@@ -472,8 +481,8 @@ class WizardMediaScanRunner @Inject constructor(
         body: suspend () -> Outcome,
     ): Outcome = coroutineScope {
         val child = async {
-            report?.startStoppable(taskId, "Scanning $name", TaskKind.SCAN,
-                stopNote = "The folder is scanned again next time.")
+            report?.startStoppable(taskId, context.getString(R.string.setup_media_scanning_title, name), TaskKind.SCAN,
+                stopNote = context.getString(R.string.setup_media_stop_note))
             body()
         }
         try {
@@ -481,15 +490,18 @@ class WizardMediaScanRunner @Inject constructor(
         } catch (e: CancellationException) {
             // The whole pass being shut down is not a stop: let it go.
             if (!isActive) throw e
-            tasks.settleCancelled(taskId, "Stopped before it finished", title = "$name scan stopped")
+            tasks.settleCancelled(
+                taskId, context.getString(R.string.setup_media_stopped),
+                title = context.getString(R.string.setup_media_scan_stopped_title, name),
+            )
             fallback()
         }
     }
 
     /** A media folder that could not be read, as a note with its code. */
-    private fun mediaFailureNotes(message: String?): NotificationDetail {
-        val m = message?.lowercase().orEmpty()
-        val code = if ("permission" in m || "access" in m || "lost" in m || "not found" in m || "select" in m) {
+    private fun mediaFailureNotes(error: UiText, message: String): NotificationDetail {
+        // Classified by WHICH text the scanner chose, not its wording, so any language works.
+        val code = if (error == UiText.res(LibraryR.string.scan_error_permission_lost)) {
             PfpErrorCode.MD_2001
         } else {
             PfpErrorCode.MD_9001
@@ -497,11 +509,18 @@ class WizardMediaScanRunner @Inject constructor(
         return NotificationDetail.notes(code, summary = message)
     }
 
-    private fun MediaRootKind.noun(count: Int): String = when (this) {
-        MediaRootKind.MUSIC -> if (count == 1) "track" else "tracks"
-        MediaRootKind.PHOTO -> if (count == 1) "photo" else "photos"
-        MediaRootKind.VIDEO -> if (count == 1) "video" else "videos"
-    }
+    private fun MediaRootKind.countText(count: Int): UiText = UiText.plural(
+        when (this) {
+            MediaRootKind.MUSIC -> R.plurals.setup_media_tracks
+            MediaRootKind.PHOTO -> R.plurals.setup_media_photos
+            MediaRootKind.VIDEO -> R.plurals.setup_media_videos
+        },
+        count,
+    )
+
+    private fun countText(kind: MediaRootKind, count: Int): String = kind.countText(count).resolve(context)
+
+    private fun notReadyMessage(): String = context.getString(R.string.setup_media_not_ready)
 
     private fun displayName(treeUri: String, fallback: String): String =
         runCatching { DocumentFile.fromTreeUri(context, Uri.parse(treeUri))?.name }.getOrNull()
@@ -513,6 +532,5 @@ class WizardMediaScanRunner @Inject constructor(
         /** Quiet retries for a folder whose storage is not ready, about a minute in all. */
         const val NOT_READY_RETRIES = 6
         const val NOT_READY_RETRY_MS = 10_000L
-        const val NOT_READY_MESSAGE = "This folder's storage isn't ready yet. Try again in a moment."
     }
 }

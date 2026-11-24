@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Wizard chrome -->
+    <string name="setup_title">Начальная настройка</string>
+    <string name="setup_prompt_enter">Открыть</string>
+    <string name="setup_prompt_change">Изменить</string>
+    <string name="setup_prompt_back">Назад</string>
+    <string name="setup_prompt_skip">Пропустить</string>
+    <string name="setup_row_edit">Изменить</string>
+    <string name="setup_row_remove">Удалить</string>
+    <string name="setup_message_dismiss_hint">Выберите, чтобы закрыть, — или подтвердите на этой строке</string>
+    <string name="setup_step_welcome">Приветствие</string>
+    <string name="setup_step_controller">Контроллер</string>
+    <string name="setup_step_rom_roots">Папки ROM</string>
+    <string name="setup_step_music">Музыка</string>
+    <string name="setup_step_video">Видео</string>
+    <string name="setup_step_photo">Фото</string>
+    <string name="setup_step_artwork">Обложки</string>
+    <string name="setup_step_services">Онлайн-сервисы</string>
+    <string name="setup_step_achievements">Сервисы достижений</string>
+    <string name="setup_step_local_achievements">Локальные достижения</string>
+    <string name="setup_step_retroarch">RetroArch</string>
+    <string name="setup_step_emulators">Эмуляторы</string>
+    <string name="setup_step_windows">Игры Windows</string>
+    <string name="setup_step_hints">Подсказки и касания</string>
+    <string name="setup_step_home_app">Главный экран</string>
+    <string name="setup_step_finish">Готово</string>
+
+    <!-- Page headings -->
+    <string name="setup_heading_welcome">Добро пожаловать в Play Field Portal.</string>
+    <string name="setup_heading_controller">Выберите контроллер.</string>
+    <string name="setup_heading_rom_roots">Выберите папки ROM.</string>
+    <string name="setup_heading_music">Выберите папки с музыкой.</string>
+    <string name="setup_heading_video">Выберите папки с видео.</string>
+    <string name="setup_heading_photo">Выберите папки с фото.</string>
+    <string name="setup_heading_artwork">Выберите папку обложек.</string>
+    <string name="setup_heading_services">Подключите источники обложек.</string>
+    <string name="setup_heading_achievements">Подключите сервисы достижений.</string>
+    <string name="setup_heading_local_achievements">Привяжите папки данных эмуляторов.</string>
+    <string name="setup_heading_retroarch">Привяжите папку ядер RetroArch.</string>
+    <string name="setup_heading_emulators">Проверьте эмуляторы.</string>
+    <string name="setup_heading_windows">Настройте игры Windows.</string>
+    <string name="setup_heading_hints">Выберите, как лаунчер будет помогать.</string>
+    <string name="setup_heading_home_app">Сделайте Play Field Portal главным экраном.</string>
+    <string name="setup_heading_finish">Всё готово!</string>
+
+    <!-- Page hints (the line under a heading) -->
+    <string name="setup_hint_welcome">Большинство шагов необязательны. Нужно только выбрать папку обложек.</string>
+    <string name="setup_hint_controller">Задаёт значки кнопок и кнопку подтверждения, чтобы все подсказки дальше совпадали с вашим геймпадом.</string>
+    <string name="setup_hint_rom_roots">Добавьте одну или несколько папок ROM — игры каждой консоли лежат в подпапке внутри них.</string>
+    <string name="setup_hint_media_roots">Добавьте несколько корневых папок, чтобы охватить внутреннюю память и SD-карту.</string>
+    <string name="setup_hint_artwork">Обязательно. Обложки хранятся здесь, вне приложения, и переживут переустановку.</string>
+    <string name="setup_hint_services">Всё необязательно и бесплатно. SteamGridDB, TheGamesDB, IGDB и ScreenScraper загружают обложки и метаданные игр.</string>
+    <string name="setup_hint_achievements">RetroAchievements и Steam отслеживают достижения как Shiba Coins.</string>
+    <string name="setup_hint_local_achievements">Трофеи и достижения, которые эмуляторы сохраняют на устройстве. Один доступ на эмулятор привязывает все игры.</string>
+    <string name="setup_hint_retroarch">Лаунчер будет знать, какие ядра у вас есть, и предлагать только их.</string>
+    <string name="setup_hint_emulators">Эмулятор по умолчанию для каждой консоли, выбранный из установленных. Измените, если что-то не так.</string>
+    <string name="setup_hint_windows">Установлен эмулятор Windows — выберите, где лежат ваши игры для ПК.</string>
+    <string name="setup_hint_hints">Подсказки кнопок появляются при паузе и исчезают при любом нажатии.</string>
+    <string name="setup_hint_home_app">Кнопка «Домой» будет возвращать сюда, а не в стандартный лаунчер.</string>
+    <string name="setup_hint_finish">Всё это можно изменить в любой момент в настройках.</string>
+
+    <!-- Continue row (bottom of every page) -->
+    <string name="setup_continue">Продолжить</string>
+    <string name="setup_continue_next">Далее: %1$s</string>
+    <string name="setup_continue_blocked">Сначала выберите папку</string>
+
+    <!-- Welcome page -->
+    <string name="setup_welcome_intro">Эта быстрая настройка укажет лаунчеру ваши папки с медиа и подключит онлайн-сервисы для обложек и достижений.</string>
+    <string name="setup_welcome_start">Начать</string>
+    <string name="setup_welcome_start_sub">Сначала выберите контроллер</string>
+    <string name="setup_welcome_skip">Пропустить настройку</string>
+    <string name="setup_welcome_skip_sub">Сразу в лаунчер — мастер настройки можно запустить в любой момент из «Настройки ▸ Система»</string>
+    <string name="setup_root_access_lost">Доступ потерян — нажмите ✎, чтобы выдать его снова</string>
+
+    <!-- ROM roots page -->
+    <string name="setup_rom_empty">Папок ROM пока нет. Добавьте папку с играми консолей — по подпапке на консоль, сканирование автоматическое.</string>
+    <string name="setup_rom_add">Добавить папку ROM</string>
+    <string name="setup_rom_add_sub">Дайте доступ к папке ROM с подпапкой для каждой консоли</string>
+    <string name="setup_rom_rescan">Пересканировать папки ROM</string>
+    <string name="setup_rom_rescan_sub">Определить консоли и просканировать их игры</string>
+    <string name="setup_rom_root_linked">Привязана — папки консолей читаются отсюда</string>
+    <string name="setup_rom_create_folders">Создать стандартные папки</string>
+    <string name="setup_rom_create_folders_sub">По подпапке на консоль для ваших игр</string>
+
+    <!-- Music roots page -->
+    <string name="setup_music_empty">Папок с музыкой пока нет. Добавьте папку с музыкой — несколько корневых папок могут охватить внутреннюю память и SD-карту.</string>
+    <string name="setup_music_add">Добавить папку музыки</string>
+    <string name="setup_music_add_sub">Дайте доступ к корневой папке (например, /Music) — можно добавить несколько</string>
+    <string name="setup_music_root_linked">Здесь хранится музыка</string>
+    <string name="setup_music_rescan">Пересканировать музыку</string>
+
+    <!-- Video roots page -->
+    <string name="setup_video_empty">Папок с видео пока нет. Добавьте папку с видео — несколько корневых папок могут охватить внутреннюю память и SD-карту.</string>
+    <string name="setup_video_add">Добавить папку видео</string>
+    <string name="setup_video_add_sub">Дайте доступ к корневой папке (например, /Videos) — можно добавить несколько</string>
+    <string name="setup_video_root_linked">Здесь хранятся видео</string>
+    <string name="setup_video_rescan">Пересканировать видео</string>
+
+    <!-- Photo roots page -->
+    <string name="setup_photo_empty">Папок с фото пока нет. Добавьте папку с фото — несколько корневых папок могут охватить внутреннюю память и SD-карту.</string>
+    <string name="setup_photo_add">Добавить папку фото</string>
+    <string name="setup_photo_add_sub">Дайте доступ к корневой папке (например, /Photos) — можно добавить несколько</string>
+    <string name="setup_photo_root_linked">Здесь хранятся фото</string>
+    <string name="setup_photo_rescan">Пересканировать фото</string>
+    <string name="setup_media_rescan_sub">Обновить библиотеки из всех корневых папок</string>
+
+    <!-- Artwork page -->
+    <string name="setup_artwork_empty">Выберите папку с правом записи. Лаунчер сам создаст в ней библиотеку обложек — игры получают обложки по мере добавления.</string>
+    <string name="setup_artwork_unavailable">Недоступно. Привяжите заново, чтобы снова получать обложки</string>
+    <string name="setup_artwork_folder_sub">Библиотека обложек — нажмите ✎, чтобы выбрать другую папку</string>
+    <string name="setup_artwork_choose">Выбрать папку обложек</string>
+    <string name="setup_artwork_choose_sub">В одной папке хранится библиотека обложек</string>
+    <string name="setup_artwork_import_title">Импортировать обложки сейчас?</string>
+    <string name="setup_artwork_import_sub_one">Скопировать %1$s из import/ этой папки в библиотеку</string>
+    <plurals name="setup_artwork_import_sub_many">
+        <item quantity="one">Скопировать %1$d папку-источник из import/ в библиотеку</item>
+        <item quantity="few">Скопировать %1$d папки-источника из import/ в библиотеку</item>
+        <item quantity="many">Скопировать %1$d папок-источников из import/ в библиотеку</item>
+        <item quantity="other">Скопировать %1$d папки-источника из import/ в библиотеку</item>
+    </plurals>
+    <string name="setup_artwork_import_row">Импорт обложек</string>
+    <string name="setup_artwork_import_none_sub">Пока нечего импортировать — добавьте папку медиа другого лаунчера в import/</string>
+
+    <!-- Online services page -->
+    <string name="setup_services_intro">Все аккаунты необязательны и бесплатны. SteamGridDB, TheGamesDB, IGDB и ScreenScraper загружают обложки и метаданные для вашей библиотеки.</string>
+    <string name="setup_field_api_key">Ключ API</string>
+    <string name="setup_field_api_key_saved">Ключ API (сохранён)</string>
+    <string name="setup_field_web_api_key">Ключ Web API</string>
+    <string name="setup_field_web_api_key_saved">Ключ Web API (сохранён)</string>
+    <string name="setup_field_client_id">Client ID</string>
+    <string name="setup_field_client_id_saved">Client ID (сохранён)</string>
+    <string name="setup_field_client_secret">Client Secret</string>
+    <string name="setup_field_client_secret_saved">Client Secret (сохранён)</string>
+    <string name="setup_field_username">Имя пользователя</string>
+    <string name="setup_field_username_saved">Имя пользователя (сохранено)</string>
+    <string name="setup_field_password">Пароль</string>
+    <string name="setup_field_password_saved">Пароль (сохранён)</string>
+    <string name="setup_field_steam_id">SteamID64 или имя профиля</string>
+    <string name="setup_field_steam_id_saved">SteamID64 или имя профиля (сохранено)</string>
+    <string name="setup_placeholder_tap_to_replace">Выберите, чтобы заменить</string>
+    <string name="setup_placeholder_secret_saved">••••••••  (выберите, чтобы заменить)</string>
+    <string name="setup_placeholder_sgdb_key">Вставьте ключ SteamGridDB</string>
+    <string name="setup_placeholder_tgdb_key">Вставьте ключ TheGamesDB</string>
+    <string name="setup_placeholder_twitch_client_id">Twitch Client ID</string>
+    <string name="setup_placeholder_twitch_client_secret">Twitch Client Secret</string>
+    <string name="setup_placeholder_ss_username">Имя пользователя ScreenScraper</string>
+    <string name="setup_placeholder_ss_password">Пароль ScreenScraper</string>
+    <string name="setup_placeholder_ra_username">Ваше имя пользователя RA</string>
+    <string name="setup_placeholder_ra_key">Вставьте ключ RA Web API</string>
+    <string name="setup_placeholder_steam_id">7656119… или имя из адреса профиля</string>
+    <string name="setup_placeholder_steam_key">Вставьте ключ Steam Web API</string>
+    <string name="setup_connect_sgdb">Подключить SteamGridDB</string>
+    <string name="setup_connect_tgdb">Подключить TheGamesDB</string>
+    <string name="setup_connect_igdb">Подключить IGDB</string>
+    <string name="setup_connect_ss">Подключить ScreenScraper</string>
+    <string name="setup_connect_ra">Подключить RetroAchievements</string>
+    <string name="setup_connect_steam">Подключить Steam</string>
+    <string name="setup_test_credentials">Проверить данные</string>
+    <string name="setup_test_account">Проверить аккаунт</string>
+    <string name="setup_connected_as">Вы вошли как</string>
+
+    <!-- Achievement services page -->
+    <string name="setup_achievements_intro">Необязательно и бесплатно. RetroAchievements и Steam отслеживают достижения как Shiba Coins.</string>
+
+    <!-- Controller page -->
+    <string name="setup_controller_type">Тип контроллера</string>
+    <string name="setup_controller_type_sub">Меняет значки кнопок во всех подсказках</string>
+    <string name="setup_controller_ab_swap">Поменять подтверждение и назад</string>
+    <string name="setup_controller_xy_swap">Поменять параметры и сортировку</string>
+    <string name="setup_controller_xy_swap_sub">Только меню лаунчера — управление в эмуляторах не меняется</string>
+    <string name="setup_on">Вкл.</string>
+    <string name="setup_off">Выкл.</string>
+    <string name="setup_controller_summary">%1$s · подтверждение: %2$s</string>
+
+    <!-- Name of a PlayStation face button. -->
+    <string name="setup_button_circle">Круг</string>
+
+    <!-- Name of a PlayStation face button. -->
+    <string name="setup_button_cross">Крест</string>
+    <string name="setup_confirm_swap_off">Выкл. — %1$s подтверждает, %2$s — назад</string>
+    <string name="setup_confirm_swap_on">Вкл. — %1$s подтверждает, %2$s — назад</string>
+
+    <!-- Local achievements page -->
+    <string name="setup_local_vita_header">PS Vita · Vita3K</string>
+    <string name="setup_local_vita_set">Указать папку данных Vita3K</string>
+    <string name="setup_local_vita_set_sub">Дайте доступ к папке ux0 (или к папке, в которой она лежит)</string>
+    <string name="setup_local_vita_folder_sub">Папка данных Vita3K — нажмите ✎, чтобы выбрать другую</string>
+    <string name="setup_local_ps3_header">PS3 · ARMSX3</string>
+    <string name="setup_local_ps3_set">Указать папку данных ARMSX3</string>
+    <string name="setup_local_ps3_set_sub">Дайте доступ к PS3/config/dev_hdd0 — или к любой папке выше или ниже</string>
+    <string name="setup_local_ps3_folder_sub">Папка данных ARMSX3 — нажмите ✎, чтобы выбрать другую</string>
+    <string name="setup_local_x360_header">Xbox 360 · X360 Mobile</string>
+    <string name="setup_local_x360_set">Указать папку данных X360 Mobile</string>
+    <string name="setup_local_x360_set_sub">Выберите X360 Mobile в боковом меню окна выбора папки и разрешите доступ</string>
+    <string name="setup_local_x360_folder_sub">Папка данных X360 Mobile — нажмите ✎, чтобы выбрать другую</string>
+    <string name="setup_local_xendroid_header">Xbox 360 · XenDroid</string>
+    <string name="setup_local_xendroid_set">Указать папку данных XenDroid</string>
+    <string name="setup_local_xendroid_set_sub">Дайте доступ к Android/data/xendroid.compose — или к любой папке выше или ниже</string>
+    <string name="setup_local_xendroid_folder_sub">Папка данных XenDroid — нажмите ✎, чтобы выбрать другую</string>
+
+    <!-- RetroArch page -->
+    <string name="setup_retroarch_cores_folder">Папка ядер</string>
+    <plurals name="setup_retroarch_cores_detected">
+        <item quantity="one">Найдено %1$d ядро</item>
+        <item quantity="few">Найдено %1$d ядра</item>
+        <item quantity="many">Найдено %1$d ядер</item>
+        <item quantity="other">Найдено %1$d ядра</item>
+    </plurals>
+    <string name="setup_retroarch_linked">Привязано</string>
+    <string name="setup_retroarch_relink">Привязать заново</string>
+    <string name="setup_retroarch_relink_sub">Выбрать папку RetroArch снова</string>
+    <string name="setup_retroarch_recheck">Проверить ядра</string>
+    <string name="setup_retroarch_recheck_sub">После установки новых ядер</string>
+    <string name="setup_retroarch_unlink">Отвязать RetroArch</string>
+    <string name="setup_retroarch_unlink_sub">Снова предлагать все ядра из списка</string>
+    <string name="setup_retroarch_intro">RetroArch установлен. Привяжите его папку, чтобы при запуске игр предлагались только ваши ядра — иначе показываются все ядра из списка (без проверки).</string>
+    <string name="setup_retroarch_link">Привязать папку RetroArch</string>
+    <string name="setup_retroarch_link_sub">Выберите дерево документов com.retroarch</string>
+
+    <!-- Emulators page -->
+    <string name="setup_emulators_empty">Консолей с играми пока нет. После сканирования папок ROM здесь появится каждая консоль с её эмулятором — изменить его можно в любой момент в «Настройки ▸ Эмуляторы».</string>
+    <string name="setup_emulators_none">Нет</string>
+
+    <!-- Windows games page -->
+    <string name="setup_windows_intro">Выберите папку, в которой у каждой игры своя подпапка. PFP просканирует её в поисках игр Windows и ничего в ней не изменит.</string>
+    <string name="setup_windows_detected">Обнаружен</string>
+    <string name="setup_windows_set">Указать папку игр Windows</string>
+    <string name="setup_windows_change">Сменить папку игр Windows</string>
+    <string name="setup_windows_set_sub">Дайте доступ к папке, куда установлены игры</string>
+
+    <!-- Hints and touch page -->
+    <string name="setup_hints_enabled">Подсказки кнопок</string>
+    <string name="setup_hints_enabled_sub">Подсказка в простое на XMB, в настройках и на экранах медиа</string>
+    <string name="setup_hints_delay">Задержка подсказок</string>
+    <string name="setup_hints_delay_sub">Через сколько секунд бездействия показывать подсказки (1–5)</string>
+    <plurals name="setup_hints_delay_seconds">
+        <item quantity="one">%1$d секунда</item>
+        <item quantity="few">%1$d секунды</item>
+        <item quantity="many">%1$d секунд</item>
+        <item quantity="other">%1$d секунды</item>
+    </plurals>
+    <string name="setup_hints_delay_fraction">%1$s секунды</string>
+    <string name="setup_hints_touch">Сенсорная кнопка</string>
+    <string name="setup_hints_touch_sub">Экранная кнопка меню приложений — «Авто» показывает её после касания экрана</string>
+    <string name="setup_touch_auto">Авто</string>
+    <string name="setup_touch_always_show">Всегда показывать</string>
+    <string name="setup_touch_always_hide">Всегда скрывать</string>
+    <string name="setup_hints_summary_on">Вкл. · %1$s</string>
+
+    <!-- Home app page -->
+    <string name="setup_home_intro">Android попросит выбрать и подтвердить приложение главного экрана. Вернуться можно в любой момент в настройках Android «Приложения по умолчанию».</string>
+    <string name="setup_home_current">Текущий главный экран</string>
+    <string name="setup_home_set">Сделать главным экраном</string>
+    <string name="setup_home_set_sub">Открывает выбор главного экрана Android</string>
+    <string name="setup_home_is_pfp">Play Field Portal</string>
+    <string name="setup_home_not_pfp">Не Play Field Portal</string>
+
+    <!-- Finish page -->
+    <string name="setup_finish_nothing">Пока ничего не настроено — любые папки и сервисы можно добавить позже в настройках.</string>
+    <string name="setup_finish_summary">Сводка</string>
+    <string name="setup_summary_controller">Контроллер</string>
+    <string name="setup_summary_rom">Библиотека ROM</string>
+    <string name="setup_summary_music">Музыка</string>
+    <string name="setup_summary_video">Видео</string>
+    <string name="setup_summary_photo">Фото</string>
+    <string name="setup_summary_artwork">Библиотека обложек</string>
+    <string name="setup_summary_vita">Папка данных Vita</string>
+    <string name="setup_summary_ps3">Папка данных PS3</string>
+    <string name="setup_summary_x360">Папка данных X360 Mobile</string>
+    <string name="setup_summary_xendroid">Папка данных XenDroid</string>
+    <string name="setup_summary_windows">Игры Windows</string>
+    <string name="setup_summary_hints">Подсказки кнопок</string>
+    <string name="setup_summary_home">Главный экран</string>
+    <string name="setup_not_set">Не задано</string>
+    <string name="setup_connected">Подключено</string>
+    <string name="setup_retroarch_not_linked">Не привязано</string>
+    <plurals name="setup_retroarch_cores_count">
+        <item quantity="one">%1$d ядро</item>
+        <item quantity="few">%1$d ядра</item>
+        <item quantity="many">%1$d ядер</item>
+        <item quantity="other">%1$d ядра</item>
+    </plurals>
+    <string name="setup_roots_more">%1$s и ещё %2$d</string>
+    <string name="setup_finish_xmb_header">Макет XMB</string>
+    <string name="setup_finish_autofit">Автоподбор макета XMB (пропорции PSP) — можно изменить в настройках</string>
+    <string name="setup_finish_open_lm">Открыть менеджер библиотеки</string>
+    <string name="setup_finish_open_lm_sub">Добавить консоли и просканировать только что заданные папки ROM</string>
+    <string name="setup_finish_go_library">Перейти в библиотеку</string>
+    <string name="setup_finish_go_library_sub">Сразу ко всем играм</string>
+
+    <!-- Button that closes the wizard. -->
+    <string name="setup_finish_done">Готово</string>
+    <string name="setup_finish_done_sub">Перейти в лаунчер</string>
+    <string name="setup_status_testing">Проверка…</string>
+    <plurals name="setup_msg_rom_folders_created">
+        <item quantity="one">Создана %1$d папка консоли. Скопируйте игры в соответствующие папки.</item>
+        <item quantity="few">Создано %1$d папки консолей. Скопируйте игры в соответствующие папки.</item>
+        <item quantity="many">Создано %1$d папок консолей. Скопируйте игры в соответствующие папки.</item>
+        <item quantity="other">Создано %1$d папки консолей. Скопируйте игры в соответствующие папки.</item>
+    </plurals>
+    <plurals name="setup_msg_rom_folders_created_existing">
+        <item quantity="one">Создана %1$d папка консоли (уже было: %2$d). Скопируйте игры в соответствующие папки.</item>
+        <item quantity="few">Создано %1$d папки консолей (уже было: %2$d). Скопируйте игры в соответствующие папки.</item>
+        <item quantity="many">Создано %1$d папок консолей (уже было: %2$d). Скопируйте игры в соответствующие папки.</item>
+        <item quantity="other">Создано %1$d папки консолей (уже было: %2$d). Скопируйте игры в соответствующие папки.</item>
+    </plurals>
+    <string name="setup_msg_artwork_failed">Не удалось создать библиотеку обложек в этой папке. Выберите папку с правом записи.</string>
+    <string name="setup_msg_artwork_reconnected">Существующая библиотека обложек подключена снова.</string>
+    <string name="setup_msg_artwork_created">Библиотека обложек создана.</string>
+    <plurals name="setup_msg_artwork_games_linked">
+        <item quantity="one">Привязана %1$d игра по файлам, уже лежащим в папке.</item>
+        <item quantity="few">Привязано %1$d игры по файлам, уже лежащим в папке.</item>
+        <item quantity="many">Привязано %1$d игр по файлам, уже лежащим в папке.</item>
+        <item quantity="other">Привязано %1$d игры по файлам, уже лежащим в папке.</item>
+    </plurals>
+    <string name="setup_msg_artwork_import_hint">Поместите медиа других лаунчеров в её папку import/, чтобы собрать их здесь.</string>
+    <string name="setup_msg_import_none_yet">Пока нечего импортировать — поместите файлы в папку import/ внутри папки обложек.</string>
+    <string name="setup_msg_import_unreadable">Не удалось прочитать этот источник импорта.</string>
+    <string name="setup_msg_import_empty">Нечего импортировать — всё уже на месте.</string>
+    <string name="setup_msg_import_started">Импорт «%1$s» — ход виден в уведомлениях, подробности — в «Настройки ▸ Импорт обложек».</string>
+    <string name="setup_msg_retroarch_linked">RetroArch привязан — установленные ядра теперь предлагаются в разделе «Эмуляторы».</string>
+    <string name="setup_msg_retroarch_rechecked">Ядра RetroArch проверены.</string>
+    <string name="setup_msg_retroarch_unlinked">RetroArch отвязан — ядра RetroArch не будут предлагаться, пока вы не привяжете его снова.</string>
+    <string name="setup_msg_vita_set">Папка данных Vita3K задана. Установленные игры можно просканировать с карты памяти PS Vita в менеджере библиотеки.</string>
+    <string name="setup_msg_vita_released">Папка данных Vita3K отвязана — файлы на диске не тронуты.</string>
+    <string name="setup_msg_ps3_set">Папка данных PS3 задана. Запустите автосопоставление в «Настройки ▸ Достижения ▸ Обновить достижения», чтобы привязать трофеи PS3.</string>
+    <string name="setup_msg_ps3_released">Папка данных PS3 отвязана — файлы на диске не тронуты.</string>
+    <string name="setup_msg_x360_set">Папка данных %1$s задана. Запустите автосопоставление в «Настройки ▸ Достижения ▸ Обновить достижения», чтобы привязать достижения Xbox 360.</string>
+    <string name="setup_msg_x360_released">Папка данных %1$s отвязана — файлы на диске не тронуты.</string>
+    <string name="setup_msg_sgdb_connected">SteamGridDB подключён</string>
+    <string name="setup_msg_tgdb_connected">TheGamesDB подключён</string>
+    <string name="setup_msg_igdb_connected">IGDB подключён</string>
+    <string name="setup_msg_ss_connected">ScreenScraper подключён</string>
+    <string name="setup_msg_ra_connected">RetroAchievements подключён</string>
+    <string name="setup_rom_scan_no_root">Сначала добавьте папку ROM в «Настройки ▸ Библиотека ▸ Менеджер библиотеки».</string>
+    <string name="setup_rom_scan_none">Просканировано: %1$s (%2$s); новых ROM не найдено. Скопируйте игры в папки соответствующих систем и повторите.</string>
+    <string name="setup_rom_scan_loaded">Загружено: %1$s, %2$s (%3$s).</string>
+    <string name="setup_rom_scan_systems_new">%1$s (%2$s)</string>
+    <plurals name="setup_rom_scan_folders">
+        <item quantity="one">%1$d папка</item>
+        <item quantity="few">%1$d папки</item>
+        <item quantity="many">%1$d папок</item>
+        <item quantity="other">%1$d папки</item>
+    </plurals>
+    <plurals name="setup_rom_scan_systems">
+        <item quantity="one">%1$d система</item>
+        <item quantity="few">%1$d системы</item>
+        <item quantity="many">%1$d систем</item>
+        <item quantity="other">%1$d системы</item>
+    </plurals>
+    <plurals name="setup_rom_scan_new_consoles">
+        <item quantity="one">%1$d новая консоль</item>
+        <item quantity="few">%1$d новые консоли</item>
+        <item quantity="many">%1$d новых консолей</item>
+        <item quantity="other">%1$d новой консоли</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roms">
+        <item quantity="one">%1$d ROM</item>
+        <item quantity="few">%1$d ROM</item>
+        <item quantity="many">%1$d ROM</item>
+        <item quantity="other">%1$d ROM</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roots">
+        <item quantity="one">%1$d папка ROM</item>
+        <item quantity="few">%1$d папки ROM</item>
+        <item quantity="many">%1$d папок ROM</item>
+        <item quantity="other">%1$d папки ROM</item>
+    </plurals>
+    <plurals name="setup_rom_scan_skipped">
+        <item quantity="one">Пропущена %1$d папка (библиотека не читается).</item>
+        <item quantity="few">Пропущено %1$d папки (библиотека не читается).</item>
+        <item quantity="many">Пропущено %1$d папок (библиотека не читается).</item>
+        <item quantity="other">Пропущено %1$d папки (библиотека не читается).</item>
+    </plurals>
+    <string name="setup_media_add_root_first">Сначала добавьте корневую папку.</string>
+    <string name="setup_media_not_ready">Накопитель этой папки ещё не готов. Повторите чуть позже.</string>
+    <string name="setup_media_scan_failed_title">%1$s: ошибка сканирования</string>
+    <string name="setup_media_scan_finished_title">%1$s: сканирование завершено</string>
+    <string name="setup_media_scan_stopped_title">%1$s: сканирование остановлено</string>
+    <string name="setup_media_scanning_title">Сканирование: %1$s</string>
+    <string name="setup_media_stop_note">В следующий раз папка будет просканирована снова.</string>
+    <string name="setup_media_stopped">Остановлено до завершения</string>
+    <plurals name="setup_media_tracks">
+        <item quantity="one">%1$d трек</item>
+        <item quantity="few">%1$d трека</item>
+        <item quantity="many">%1$d треков</item>
+        <item quantity="other">%1$d трека</item>
+    </plurals>
+    <plurals name="setup_media_photos">
+        <item quantity="one">%1$d фото</item>
+        <item quantity="few">%1$d фото</item>
+        <item quantity="many">%1$d фото</item>
+        <item quantity="other">%1$d фото</item>
+    </plurals>
+    <plurals name="setup_media_videos">
+        <item quantity="one">%1$d видео</item>
+        <item quantity="few">%1$d видео</item>
+        <item quantity="many">%1$d видео</item>
+        <item quantity="other">%1$d видео</item>
+    </plurals>
+    <plurals name="setup_media_roots">
+        <item quantity="one">%1$d корневая папка</item>
+        <item quantity="few">%1$d корневые папки</item>
+        <item quantity="many">%1$d корневых папок</item>
+        <item quantity="other">%1$d корневой папки</item>
+    </plurals>
+    <string name="setup_media_found">Найдено: %1$s (%2$s).</string>
+</resources>

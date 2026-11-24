@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import com.playfieldportal.feature.settings.R
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -32,8 +33,8 @@ class CreditsViewModel @Inject constructor(
             Timber.w(e, "No app can open %s", url)
             tasks.report(
                 id = TRAY_ID,
-                label = "Credits",
-                message = "No app can open web links. Visit $url in a browser.",
+                label = context.getString(R.string.sets_credits_title),
+                message = context.getString(R.string.sets_credits_no_browser, url),
                 severity = NotificationSeverity.WARNING,
                 action = NotificationAction.OpenSettingsScreen("settings_credits"),
             )

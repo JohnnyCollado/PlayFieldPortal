@@ -1,17 +1,29 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.domain.model.UiMediaSlot
+import com.playfieldportal.core.domain.text.UiText
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 /**
  * Picking a saved theme asks before anything changes. The question also carries what applying it
  * would replace (the user's own media and icons that would hide the theme's) and switch on (Boot /
  * GameBoot for the theme's clips), so one answer covers everything.
  */
+@RunWith(RobolectricTestRunner::class)
 class ThemeApplyConfirmationTest {
+
+    private val context = ApplicationProvider.getApplicationContext<Context>()
+
+    private fun UiText.text(): String = resolve(context)
+
+    private fun List<UiText>.texts(): List<String> = map { it.text() }
 
     private fun confirm(
         themeMedia: Set<String> = emptySet(),
@@ -36,11 +48,11 @@ class ThemeApplyConfirmationTest {
     @Test
     fun `a theme that changes nothing of yours is a plain Apply or Cancel`() {
         val c = confirm(themeMedia = setOf("boot_video", "sound_scroll"), userMedia = setOf(UiMediaSlot.SOUND_BACK))
-        assertEquals("Apply \"Midgar\"?", c.title)
-        assertEquals("This changes the launcher's colors, icons and background.", c.message)
-        assertEquals("Apply", c.applyLabel)
-        assertEquals("Cancel", c.cancelLabel)
-        assertEquals(emptyList<String>(), c.options)
+        assertEquals("Apply \"Midgar\"?", c.title.text())
+        assertEquals("This changes the launcher's colors, icons and background.", c.message.text())
+        assertEquals("Apply", c.applyLabel.text())
+        assertEquals("Cancel", c.cancelLabel.text())
+        assertEquals(emptyList<String>(), c.options.texts())
         assertFalse(c.hasChoices)
     }
 
@@ -51,11 +63,11 @@ class ThemeApplyConfirmationTest {
             userMedia = setOf(UiMediaSlot.BOOT_VIDEO, UiMediaSlot.SOUND_SCROLL, UiMediaSlot.SOUND_ERROR),
         )
         assertEquals(listOf(UiMediaSlot.SOUND_SCROLL, UiMediaSlot.BOOT_VIDEO), c.replace)
-        assertEquals(listOf("Use the Theme's", "Keep Mine"), c.options)
-        assertEquals("Apply", c.applyLabel)
-        assertTrue(c.message.startsWith("This changes the launcher's colors, icons and background."), c.message)
-        assertTrue(c.message.contains("Boot Video") && c.message.contains("Navigation sound"), c.message)
-        assertFalse(c.message.contains("Error"), "a slot the theme does not supply is never touched")
+        assertEquals(listOf("Use the Theme's", "Keep Mine"), c.options.texts())
+        assertEquals("Apply", c.applyLabel.text())
+        assertTrue(c.message.text().startsWith("This changes the launcher's colors, icons and background."), c.message.text())
+        assertTrue(c.message.text().contains("Boot Video") && c.message.text().contains("Navigation sound"), c.message.text())
+        assertFalse(c.message.text().contains("Error"), "a slot the theme does not supply is never touched")
     }
 
     @Test
@@ -65,9 +77,9 @@ class ThemeApplyConfirmationTest {
             userIcons = setOf("sysicon_psx", "catbar_games", "catbar_music"),
         )
         assertEquals(listOf("catbar_games", "sysicon_psx"), c.replaceIcons)
-        assertTrue(c.message.contains("Games") && c.message.contains("PlayStation"), c.message)
-        assertFalse(c.message.contains("Music"), "an icon the theme does not supply is never touched")
-        assertEquals(listOf("Use the Theme's", "Keep Mine"), c.options)
+        assertTrue(c.message.text().contains("Games") && c.message.text().contains("PlayStation"), c.message.text())
+        assertFalse(c.message.text().contains("Music"), "an icon the theme does not supply is never touched")
+        assertEquals(listOf("Use the Theme's", "Keep Mine"), c.options.texts())
     }
 
     @Test
@@ -75,8 +87,8 @@ class ThemeApplyConfirmationTest {
         val c = confirm(themeMedia = setOf("gameboot_video", "boot_video"), gameBootOn = false, bootOn = false)
         assertTrue(c.turnOnGameBoot && c.turnOnBoot)
         assertTrue(c.replace.isEmpty())
-        assertEquals(listOf("Turn On", "Leave Off"), c.options)
-        assertTrue(c.message.contains("GameBoot is off") && c.message.contains("Boot Sequence is off"), c.message)
+        assertEquals(listOf("Turn On", "Leave Off"), c.options.texts())
+        assertTrue(c.message.text().contains("Game Boot is off") && c.message.text().contains("Boot Sequence is off"), c.message.text())
     }
 
     @Test
@@ -90,7 +102,7 @@ class ThemeApplyConfirmationTest {
         assertTrue(c.offersLockScreen)
         // It changes the device, not the launcher: the apply question itself stays plain.
         assertFalse(c.hasChoices)
-        assertTrue(c.message.contains("lock screen"), c.message)
+        assertTrue(c.message.text().contains("lock screen"), c.message.text())
         assertFalse(confirm().offersLockScreen)
     }
 
@@ -100,7 +112,7 @@ class ThemeApplyConfirmationTest {
         assertEquals(listOf(UiMediaSlot.GAMEBOOT_VIDEO), c.replace)
         assertTrue(c.turnOnGameBoot)
         // One answer: "Use the Theme's" both replaces and switches on.
-        assertEquals(listOf("Use the Theme's", "Keep Mine"), c.options)
+        assertEquals(listOf("Use the Theme's", "Keep Mine"), c.options.texts())
         assertEquals(0, ThemeApplyConfirmation.USE_THEMES)
     }
 }

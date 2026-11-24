@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui
 
+import com.playfieldportal.core.ui.components.focusGlow
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -245,7 +246,14 @@ private fun XMBCategoryItem(
                     if (lifted) {
                         val side = iconSize.toPx()
                         drawMoveOutline(
-                            icon = Rect(center.x - side / 2f, center.y - side / 2f, center.x + side / 2f, center.y + side / 2f),
+                            // The icon's own box (the animated size, in this box's pixels), so the
+                            // frame follows the selected grow; 4dp off it keeps the frame inside the
+                            // 82dp box, clear of the label below and a slot's width from the
+                            // neighbouring icons.
+                            frame = moveIconFrame(
+                                Rect(center.x - side / 2f, center.y - side / 2f, center.x + side / 2f, center.y + side / 2f),
+                                pad = 4.dp.toPx(),
+                            ),
                             corner = 8.dp,
                             horizontal = true,
                         )
@@ -261,11 +269,15 @@ private fun XMBCategoryItem(
                     (com.playfieldportal.core.ui.motion.LocalMotionAllowed.current && iconAnimatingAllowed),
             ) {
             // All category icons resolve through the shared core-ui catalog (catbar_* column
-            // glyphs and sysicon_* console art) — selection is conveyed by size and alpha (no halo).
+            // glyphs and sysicon_* console art) — selection is conveyed by size, alpha and the focus glow.
             CategoryIconGlyph(
                 iconKey = category.iconKey,
                 contentDescription = category.name,
-                modifier = Modifier.size(iconSize),
+                modifier = Modifier
+                    .size(iconSize)
+                    // The focus glow, in this icon's own shape. Not while it is being moved. Every
+                    // category has its glow ready, so the newly focused one glows at once.
+                    .focusGlow(active = isSelected && !lifted, key = category.id to category.iconKey, prepare = true),
                 categoryId = category.id,
             )
             }

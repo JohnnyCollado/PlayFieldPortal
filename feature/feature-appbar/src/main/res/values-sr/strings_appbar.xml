@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Slice H2: feature-appbar (App Drawer) -->
+    <!-- App context menu: group headings -->
+    <string name="apps_menu_group_library">Библиотека</string>
+    <string name="apps_menu_group_arrange">Распоред</string>
+    <string name="apps_menu_group_manage">Управљање</string>
+
+    <!-- App context menu: rows -->
+    <string name="apps_menu_launch">Покрени</string>
+    <string name="apps_menu_edit_details">Измени детаље апликације</string>
+    <string name="apps_menu_mark_game">Означи као игру</string>
+    <string name="apps_menu_unmark_game">Уклони ознаку игре</string>
+    <string name="apps_menu_favorite">Омиљено</string>
+    <!-- "Card" is a user-made shelf of games and apps in the launcher -->
+    <string name="apps_menu_add_to_card">Додај на картицу</string>
+    <string name="apps_menu_pin_to_top">Закачи на врх</string>
+    <string name="apps_menu_move">Премести</string>
+    <string name="apps_menu_move_to_category">Премести у категорију</string>
+    <string name="apps_menu_add_to_category">Додај у категорију</string>
+    <string name="apps_menu_remove_from_category">Уклони из категорије</string>
+    <string name="apps_menu_rename_shortcut">Преименуј пречицу</string>
+    <!-- %1$s is the name of the category the app is shown in -->
+    <string name="apps_menu_hide_from">Сакриј из: %1$s</string>
+    <string name="apps_menu_hide_everywhere">Сакриј свуда</string>
+    <string name="apps_menu_app_info">Информације о апликацији</string>
+    <!-- Menu row and the confirm button of the uninstall dialog -->
+    <string name="apps_menu_uninstall">Деинсталирај</string>
+    <!-- State shown beside a toggle row (Favorite, Mark as Game, Pin to Top) -->
+    <string name="apps_value_on">Укључено</string>
+    <string name="apps_value_off">Искључено</string>
+
+    <!-- Uninstall confirmation. %1$s is the app name -->
+    <string name="apps_uninstall_title">Деинсталирати %1$s?</string>
+    <string name="apps_uninstall_message">Ово уклања %1$s са уређаја. Android ће затражити потврду.</string>
+
+    <!-- Category tabs and header title -->
+    <string name="apps_filter_all">Све апликације</string>
+    <string name="apps_filter_games">Игре</string>
+    <string name="apps_filter_emulators">Емулатори</string>
+    <string name="apps_filter_recent">Недавно коришћене</string>
+
+    <!-- Header search -->
+    <string name="apps_search_placeholder">Претражи…</string>
+    <string name="apps_search_button">Претражи</string>
+
+    <!-- Empty states -->
+    <string name="apps_empty_no_match">Ниједна апликација не одговара претрази</string>
+    <string name="apps_empty_no_games">Није пронађена ниједна игра</string>
+    <string name="apps_empty_no_emulators">Није инсталиран ниједан емулатор</string>
+    <string name="apps_empty_usage_access">Потребан је приступ подацима о коришћењу</string>
+    <string name="apps_empty_no_recent">Још нема недавно коришћених апликација</string>
+    <string name="apps_empty_no_apps">Нема инсталираних апликација</string>
+    <string name="apps_hint_try_search">Покушајте са другим појмом за претрагу</string>
+    <string name="apps_hint_games">Овде се приказују апликације означене као игре у Play продавници</string>
+    <string name="apps_hint_emulators">Инсталирајте RetroArch, PPSSPP или неки други емулатор</string>
+    <string name="apps_hint_usage_access">Дозволите приступ како би PFP могао да сортира апликације по последњем коришћењу</string>
+    <!-- Button that opens Android's Usage Access settings -->
+    <string name="apps_open_usage_access">Отвори приступ коришћењу</string>
+
+    <!-- Controller hint bar: short labels beside a button glyph -->
+    <string name="apps_hint_prev">Претх.</string>
+    <string name="apps_hint_next">След.</string>
+    <string name="apps_hint_back">Назад</string>
+    <string name="apps_hint_launch">Покрени</string>
+    <string name="apps_hint_options">Опције</string>
+    <string name="apps_hint_search">Претражи</string>
+    <string name="apps_drawer_title">Фиока апликација</string>
+    <string name="apps_drawer_subtitle">Апликације на овом уређају</string>
+</resources>

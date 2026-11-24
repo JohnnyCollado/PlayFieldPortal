@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Initial Setup wizard -->
+    <string name="setup_title">初期設定</string>
+    <string name="setup_prompt_enter">決定</string>
+    <string name="setup_prompt_change">変更</string>
+    <string name="setup_prompt_back">戻る</string>
+    <string name="setup_prompt_skip">スキップ</string>
+    <string name="setup_row_edit">編集</string>
+    <string name="setup_row_remove">削除</string>
+    <string name="setup_message_dismiss_hint">選択して閉じるか、この行で決定</string>
+    <!-- Page names -->
+    <string name="setup_step_welcome">ようこそ</string>
+    <string name="setup_step_controller">コントローラ</string>
+    <string name="setup_step_rom_roots">ROM フォルダ</string>
+    <string name="setup_step_music">音楽</string>
+    <string name="setup_step_video">ビデオ</string>
+    <string name="setup_step_photo">写真</string>
+    <string name="setup_step_artwork">アートワーク</string>
+    <string name="setup_step_services">オンラインサービス</string>
+    <string name="setup_step_achievements">実績サービス</string>
+    <string name="setup_step_local_achievements">ローカル実績</string>
+    <string name="setup_step_retroarch">RetroArch</string>
+    <string name="setup_step_emulators">エミュレーター</string>
+    <string name="setup_step_windows">Windows ゲーム</string>
+    <string name="setup_step_hints">ヒントとタッチ</string>
+    <string name="setup_step_home_app">ホームアプリ</string>
+    <string name="setup_step_finish">完了</string>
+    <!-- Page headings -->
+    <string name="setup_heading_welcome">Play Field Portal へようこそ。</string>
+    <string name="setup_heading_controller">コントローラを選択してください。</string>
+    <string name="setup_heading_rom_roots">ROM フォルダを選択してください。</string>
+    <string name="setup_heading_music">音楽フォルダを選択してください。</string>
+    <string name="setup_heading_video">ビデオフォルダを選択してください。</string>
+    <string name="setup_heading_photo">写真フォルダを選択してください。</string>
+    <string name="setup_heading_artwork">アートワークフォルダを選択してください。</string>
+    <string name="setup_heading_services">アートワークのソースを接続します。</string>
+    <string name="setup_heading_achievements">実績サービスを接続します。</string>
+    <string name="setup_heading_local_achievements">エミュレーターのデータフォルダをリンクします。</string>
+    <string name="setup_heading_retroarch">RetroArch のコアフォルダをリンクします。</string>
+    <string name="setup_heading_emulators">エミュレーターを確認してください。</string>
+    <string name="setup_heading_windows">Windows ゲームを設定します。</string>
+    <string name="setup_heading_hints">ランチャーのサポート方法を選択してください。</string>
+    <string name="setup_heading_home_app">Play Field Portal をホーム画面にします。</string>
+    <string name="setup_heading_finish">準備が完了しました！</string>
+    <!-- Page hints -->
+    <string name="setup_hint_welcome">ほとんどの手順は省略可能です。アートワークフォルダの選択は必要です。</string>
+    <string name="setup_hint_controller">ボタンアイコンと決定ボタンを設定し、これ以降の表示をお使いのコントローラに合わせます。</string>
+    <string name="setup_hint_rom_roots">ROM フォルダを 1 つ以上追加してください。各ゲーム機のゲームはその中のサブフォルダに置きます。</string>
+    <string name="setup_hint_media_roots">複数のルートを追加すると、内部ストレージと SD カードの両方を対象にできます。</string>
+    <string name="setup_hint_artwork">必須です。アートはアプリの外に保存されるため、再インストールしても残ります。</string>
+    <string name="setup_hint_services">すべて任意で無料です。SteamGridDB、TheGamesDB、IGDB、ScreenScraper がゲームのアートワークとメタデータを取得します。</string>
+    <string name="setup_hint_achievements">RetroAchievements と Steam の実績を Shiba Coins としてトラッキングします。</string>
+    <string name="setup_hint_local_achievements">エミュレーターがこのデバイスに保存するトロフィーと実績です。エミュレーターごとに 1 回許可すれば、すべてのタイトルがリンクされます。</string>
+    <string name="setup_hint_retroarch">インストール済みのコアをランチャーが正確に把握し、それだけを候補に表示します。</string>
+    <string name="setup_hint_emulators">各ゲーム機のデフォルトを、インストール済みのものから選んでいます。おかしいものがあれば変更してください。</string>
+    <string name="setup_hint_windows">Windows エミュレーターがインストールされています。PC ゲームの場所を選択してください。</string>
+    <string name="setup_hint_hints">ボタンのヒントは操作を止めると表示され、何か押すとすぐに消えます。</string>
+    <string name="setup_hint_home_app">ホームボタンを押すと、標準のランチャーではなくここに戻るようになります。</string>
+    <string name="setup_hint_finish">以下の内容はすべて、設定でいつでも変更できます。</string>
+    <!-- Continue row -->
+    <string name="setup_continue">続ける</string>
+    <string name="setup_continue_next">次へ: %1$s</string>
+    <string name="setup_continue_blocked">先にフォルダを選択してください</string>
+    <!-- Welcome page -->
+    <string name="setup_welcome_intro">この簡単な設定では、ランチャーにメディアフォルダを指定し、アートワークと実績に使うオンラインサービスに接続します。</string>
+    <string name="setup_welcome_start">始める</string>
+    <string name="setup_welcome_start_sub">まずコントローラを選択します</string>
+    <string name="setup_welcome_skip">設定をスキップ</string>
+    <string name="setup_welcome_skip_sub">すぐにランチャーへ進みます。セットアップウィザードは設定 ▸ システムからいつでも実行できます</string>
+    <!-- Folder rows -->
+    <string name="setup_root_access_lost">アクセスが失われました。✎ でもう一度アクセスを許可してください</string>
+    <!-- ROM roots page -->
+    <string name="setup_rom_empty">ROM フォルダはまだありません。ゲーム機のゲームがあるフォルダを追加してください。ゲーム機ごとのサブフォルダが自動的にスキャンされます。</string>
+    <string name="setup_rom_add">ROM フォルダを追加</string>
+    <string name="setup_rom_add_sub">ゲーム機ごとのサブフォルダを含む ROM フォルダを許可します</string>
+    <string name="setup_rom_rescan">ROM フォルダを再スキャン</string>
+    <string name="setup_rom_rescan_sub">ゲーム機を自動検出し、ゲームをスキャンします</string>
+    <string name="setup_rom_root_linked">リンク済み — ゲーム機のフォルダはここから読み込まれます</string>
+    <string name="setup_rom_create_folders">標準フォルダを作成</string>
+    <string name="setup_rom_create_folders_sub">ゲーム機ごとにゲーム用のサブフォルダを作成します</string>
+    <!-- Music roots page -->
+    <string name="setup_music_empty">音楽ルートはまだありません。音楽があるフォルダを追加してください。複数のルートで内部ストレージと SD カードの両方を対象にできます。</string>
+    <string name="setup_music_add">音楽ルートを追加</string>
+    <string name="setup_music_add_sub">ルートフォルダ（例: /Music）を許可します。複数追加して複数の場所を対象にできます</string>
+    <string name="setup_music_root_linked">音楽ライブラリはここにあります</string>
+    <string name="setup_music_rescan">音楽ライブラリを再スキャン</string>
+    <!-- Video roots page -->
+    <string name="setup_video_empty">ビデオルートはまだありません。ビデオがあるフォルダを追加してください。複数のルートで内部ストレージと SD カードの両方を対象にできます。</string>
+    <string name="setup_video_add">ビデオルートを追加</string>
+    <string name="setup_video_add_sub">ルートフォルダ（例: /Videos）を許可します。複数追加して複数の場所を対象にできます</string>
+    <string name="setup_video_root_linked">ビデオライブラリはここにあります</string>
+    <string name="setup_video_rescan">ビデオライブラリを再スキャン</string>
+    <!-- Photo roots page -->
+    <string name="setup_photo_empty">写真ルートはまだありません。写真があるフォルダを追加してください。複数のルートで内部ストレージと SD カードの両方を対象にできます。</string>
+    <string name="setup_photo_add">写真ルートを追加</string>
+    <string name="setup_photo_add_sub">ルートフォルダ（例: /Photos）を許可します。複数追加して複数の場所を対象にできます</string>
+    <string name="setup_photo_root_linked">写真ライブラリはここにあります</string>
+    <string name="setup_photo_rescan">写真ライブラリを再スキャン</string>
+    <string name="setup_media_rescan_sub">すべてのルートフォルダからライブラリを更新します</string>
+    <!-- Artwork page -->
+    <string name="setup_artwork_empty">書き込み可能なフォルダを選択してください。ランチャーがその中にアートワークライブラリを自動的に作成し、ゲームを追加するたびにアートが付きます。</string>
+    <string name="setup_artwork_unavailable">利用できません。リンクし直すと新しいアートワークの取得を再開します</string>
+    <string name="setup_artwork_folder_sub">アートワークライブラリ。✎ で別のフォルダを選択できます</string>
+    <string name="setup_artwork_choose">アートワークフォルダを選択</string>
+    <string name="setup_artwork_choose_sub">1 つのフォルダにアートワークライブラリを置きます</string>
+    <string name="setup_artwork_import_title">今すぐアートワークをインポートしますか？</string>
+    <string name="setup_artwork_import_sub_one">フォルダの import/ から %1$s をライブラリにコピーします</string>
+    <plurals name="setup_artwork_import_sub_many">
+        <item quantity="other">フォルダの import/ から %1$d 個のソースフォルダをライブラリにコピーします</item>
+    </plurals>
+    <string name="setup_artwork_import_row">アートワークのインポート</string>
+    <string name="setup_artwork_import_none_sub">インポートするものはまだありません。import/ にランチャーのメディアフォルダを追加してください</string>
+    <!-- Online services page -->
+    <string name="setup_services_intro">すべてのアカウントは任意で無料です。SteamGridDB、TheGamesDB、IGDB、ScreenScraper がライブラリのゲームのアートワークとメタデータを取得します。</string>
+    <string name="setup_field_api_key">API キー</string>
+    <string name="setup_field_api_key_saved">API キー（保存済み）</string>
+    <string name="setup_field_web_api_key">Web API キー</string>
+    <string name="setup_field_web_api_key_saved">Web API キー（保存済み）</string>
+    <string name="setup_field_client_id">クライアント ID</string>
+    <string name="setup_field_client_id_saved">クライアント ID（保存済み）</string>
+    <string name="setup_field_client_secret">クライアントシークレット</string>
+    <string name="setup_field_client_secret_saved">クライアントシークレット（保存済み）</string>
+    <string name="setup_field_username">ユーザー名</string>
+    <string name="setup_field_username_saved">ユーザー名（保存済み）</string>
+    <string name="setup_field_password">パスワード</string>
+    <string name="setup_field_password_saved">パスワード（保存済み）</string>
+    <string name="setup_field_steam_id">SteamID64 またはカスタム URL 名</string>
+    <string name="setup_field_steam_id_saved">SteamID64 またはカスタム URL 名（保存済み）</string>
+    <string name="setup_placeholder_tap_to_replace">選択して置き換え</string>
+    <string name="setup_placeholder_secret_saved">•••••••• （選択して置き換え）</string>
+    <string name="setup_placeholder_sgdb_key">SteamGridDB のキーを貼り付け</string>
+    <string name="setup_placeholder_tgdb_key">TheGamesDB のキーを貼り付け</string>
+    <string name="setup_placeholder_twitch_client_id">Twitch クライアント ID</string>
+    <string name="setup_placeholder_twitch_client_secret">Twitch クライアントシークレット</string>
+    <string name="setup_placeholder_ss_username">ScreenScraper のユーザー名</string>
+    <string name="setup_placeholder_ss_password">ScreenScraper のパスワード</string>
+    <string name="setup_placeholder_ra_username">RA のユーザー名</string>
+    <string name="setup_placeholder_ra_key">RA の Web API キーを貼り付け</string>
+    <string name="setup_placeholder_steam_id">7656119… またはカスタム URL 名</string>
+    <string name="setup_placeholder_steam_key">Steam の Web API キーを貼り付け</string>
+    <string name="setup_connect_sgdb">SteamGridDB に接続</string>
+    <string name="setup_connect_tgdb">TheGamesDB に接続</string>
+    <string name="setup_connect_igdb">IGDB に接続</string>
+    <string name="setup_connect_ss">ScreenScraper に接続</string>
+    <string name="setup_connect_ra">RetroAchievements に接続</string>
+    <string name="setup_connect_steam">Steam に接続</string>
+    <string name="setup_test_credentials">認証情報をテスト</string>
+    <string name="setup_test_account">アカウントをテスト</string>
+    <string name="setup_connected_as">接続中のアカウント</string>
+    <!-- Achievement services page -->
+    <string name="setup_achievements_intro">任意で無料です。RetroAchievements と Steam の実績を Shiba Coins としてトラッキングします。</string>
+    <!-- Controller page -->
+    <string name="setup_controller_type">コントローラの種類</string>
+    <string name="setup_controller_type_sub">すべての表示のボタンアイコンを変更します</string>
+    <string name="setup_controller_ab_swap">決定と戻るを入れ替え</string>
+    <string name="setup_controller_xy_swap">オプションと並べ替えを入れ替え</string>
+    <string name="setup_controller_xy_swap_sub">ランチャーのメニューのみ。エミュレーターの操作は変わりません</string>
+    <string name="setup_on">オン</string>
+    <string name="setup_off">オフ</string>
+    <string name="setup_controller_summary">%1$s · %2$s で決定</string>
+    <string name="setup_button_circle">○</string>
+    <string name="setup_button_cross">×</string>
+    <string name="setup_confirm_swap_off">オフ — %1$s で決定、%2$s で戻る</string>
+    <string name="setup_confirm_swap_on">オン — %1$s で決定、%2$s で戻る</string>
+    <!-- Local achievements page -->
+    <string name="setup_local_vita_header">PS Vita · Vita3K</string>
+    <string name="setup_local_vita_set">Vita3K のデータフォルダを設定</string>
+    <string name="setup_local_vita_set_sub">ux0 フォルダ（またはそれを含むフォルダ）を許可します</string>
+    <string name="setup_local_vita_folder_sub">Vita3K のデータフォルダ。✎ で別のフォルダを選択できます</string>
+    <string name="setup_local_ps3_header">PS3 · ARMSX3</string>
+    <string name="setup_local_ps3_set">ARMSX3 のデータフォルダを設定</string>
+    <string name="setup_local_ps3_set_sub">PS3/config/dev_hdd0、またはその上位・下位のフォルダを許可します</string>
+    <string name="setup_local_ps3_folder_sub">ARMSX3 のデータフォルダ。✎ で別のフォルダを選択できます</string>
+    <string name="setup_local_x360_header">Xbox 360 · X360 Mobile</string>
+    <string name="setup_local_x360_set">X360 Mobile のデータフォルダを設定</string>
+    <string name="setup_local_x360_set_sub">フォルダ選択画面のサイドメニューで X360 Mobile を選び、アクセスを許可してください</string>
+    <string name="setup_local_x360_folder_sub">X360 Mobile のデータフォルダ。✎ で別のフォルダを選択できます</string>
+    <string name="setup_local_xendroid_header">Xbox 360 · XenDroid</string>
+    <string name="setup_local_xendroid_set">XenDroid のデータフォルダを設定</string>
+    <string name="setup_local_xendroid_set_sub">Android/data/xendroid.compose、またはその上位・下位のフォルダを許可します</string>
+    <string name="setup_local_xendroid_folder_sub">XenDroid のデータフォルダ。✎ で別のフォルダを選択できます</string>
+    <!-- RetroArch page -->
+    <string name="setup_retroarch_cores_folder">コアフォルダ</string>
+    <plurals name="setup_retroarch_cores_detected">
+        <item quantity="other">%1$d 個のコアを検出</item>
+    </plurals>
+    <string name="setup_retroarch_linked">リンク済み</string>
+    <string name="setup_retroarch_relink">フォルダをリンクし直す</string>
+    <string name="setup_retroarch_relink_sub">RetroArch のフォルダをもう一度選択します</string>
+    <string name="setup_retroarch_recheck">コアを再確認</string>
+    <string name="setup_retroarch_recheck_sub">新しいコアをインストールした後に</string>
+    <string name="setup_retroarch_unlink">RetroArch のリンクを解除</string>
+    <string name="setup_retroarch_unlink_sub">厳選されたすべてのコアを候補に表示する状態に戻します</string>
+    <string name="setup_retroarch_intro">RetroArch がインストールされています。フォルダをリンクすると、ゲームの起動時に実際にあるコアだけが候補に表示されます。リンクしない場合は、厳選されたすべてのコアが表示されます（未確認）。</string>
+    <string name="setup_retroarch_link">RetroArch のフォルダをリンク</string>
+    <string name="setup_retroarch_link_sub">com.retroarch のドキュメントツリーを選択します</string>
+    <!-- Emulators page -->
+    <string name="setup_emulators_empty">ゲームのあるゲーム機はまだありません。ROM フォルダをスキャンすると、各ゲーム機と起動するエミュレーターがここに表示されます。設定 ▸ エミュレーターでいつでも変更できます。</string>
+    <string name="setup_emulators_none">なし</string>
+    <!-- Windows games page -->
+    <string name="setup_windows_intro">ゲームごとのサブフォルダを含むフォルダを選択してください。PFP はそこから Windows ゲームをスキャンします。中身は変更されません。</string>
+    <string name="setup_windows_detected">検出済み</string>
+    <string name="setup_windows_set">Windows ゲームフォルダを設定</string>
+    <string name="setup_windows_change">Windows ゲームフォルダを変更</string>
+    <string name="setup_windows_set_sub">ゲームがインストールされているフォルダを許可します</string>
+    <!-- Hints and touch page -->
+    <string name="setup_hints_enabled">ボタンのヒント</string>
+    <string name="setup_hints_enabled_sub">XMB、設定、メディア画面に表示される待機中のヒント</string>
+    <string name="setup_hints_delay">ヒントの表示までの時間</string>
+    <string name="setup_hints_delay_sub">操作を止めてからヒントが表示されるまでの時間（1～5 秒）</string>
+    <plurals name="setup_hints_delay_seconds">
+        <item quantity="other">%1$d 秒</item>
+    </plurals>
+    <string name="setup_hints_delay_fraction">%1$s 秒</string>
+    <string name="setup_hints_touch">タッチボタン</string>
+    <string name="setup_hints_touch_sub">画面上のアプリドロワーボタン。「自動」では画面に触れた後に表示されます</string>
+    <string name="setup_touch_auto">自動</string>
+    <string name="setup_touch_always_show">常に表示</string>
+    <string name="setup_touch_always_hide">常に非表示</string>
+    <string name="setup_hints_summary_on">オン · %1$s</string>
+    <!-- Home app page -->
+    <string name="setup_home_intro">Android でホームアプリの選択と確認を求められます。Android の「デフォルトのアプリ」設定でいつでも元に戻せます。</string>
+    <string name="setup_home_current">現在のホームアプリ</string>
+    <string name="setup_home_set">ホームアプリに設定</string>
+    <string name="setup_home_set_sub">Android のホームアプリ選択画面を開きます</string>
+    <string name="setup_home_is_pfp">Play Field Portal</string>
+    <string name="setup_home_not_pfp">Play Field Portal 以外</string>
+    <!-- Finish page -->
+    <string name="setup_finish_nothing">まだ何も設定されていません。フォルダやサービスは設定からいつでも追加できます。</string>
+    <string name="setup_finish_summary">概要</string>
+    <string name="setup_summary_controller">コントローラ</string>
+    <string name="setup_summary_rom">ROM ライブラリ</string>
+    <string name="setup_summary_music">音楽</string>
+    <string name="setup_summary_video">ビデオ</string>
+    <string name="setup_summary_photo">写真</string>
+    <string name="setup_summary_artwork">アートワークライブラリ</string>
+    <string name="setup_summary_vita">Vita のデータフォルダ</string>
+    <string name="setup_summary_ps3">PS3 のデータフォルダ</string>
+    <string name="setup_summary_x360">X360 Mobile のデータフォルダ</string>
+    <string name="setup_summary_xendroid">XenDroid のデータフォルダ</string>
+    <string name="setup_summary_windows">Windows ゲーム</string>
+    <string name="setup_summary_hints">ボタンのヒント</string>
+    <string name="setup_summary_home">ホームアプリ</string>
+    <string name="setup_not_set">未設定</string>
+    <string name="setup_connected">接続済み</string>
+    <string name="setup_retroarch_not_linked">未リンク</string>
+    <plurals name="setup_retroarch_cores_count">
+        <item quantity="other">%1$d 個のコア</item>
+    </plurals>
+    <string name="setup_roots_more">%1$s 他 %2$d 件</string>
+    <string name="setup_finish_xmb_header">XMB レイアウト</string>
+    <string name="setup_finish_autofit">XMB レイアウトを自動調整（PSP の比率）。設定でいつでも変更できます</string>
+    <string name="setup_finish_open_lm">ライブラリマネージャーを開く</string>
+    <string name="setup_finish_open_lm_sub">ゲーム機を追加し、設定した ROM フォルダをスキャンします</string>
+    <string name="setup_finish_go_library">ライブラリへ移動</string>
+    <string name="setup_finish_go_library_sub">すべてのゲームへ直接移動します</string>
+    <string name="setup_finish_done">完了</string>
+    <string name="setup_finish_done_sub">ランチャーへ進みます</string>
+    <!-- Messages -->
+    <string name="setup_status_testing">テスト中…</string>
+    <plurals name="setup_msg_rom_folders_created">
+        <item quantity="other">ゲーム機のフォルダを %1$d 個作成しました。対応するフォルダにゲームをコピーしてください。</item>
+    </plurals>
+    <plurals name="setup_msg_rom_folders_created_existing">
+        <item quantity="other">ゲーム機のフォルダを %1$d 個作成しました（%2$d 個は既存）。対応するフォルダにゲームをコピーしてください。</item>
+    </plurals>
+    <string name="setup_msg_artwork_failed">そのフォルダにアートワークライブラリを作成できませんでした。書き込み可能なフォルダを選択してください。</string>
+    <string name="setup_msg_artwork_reconnected">既存のアートワークライブラリに再接続しました。</string>
+    <string name="setup_msg_artwork_created">アートワークライブラリを作成しました。</string>
+    <plurals name="setup_msg_artwork_games_linked">
+        <item quantity="other">フォルダ内の既存ファイルから %1$d 本のゲームをリンクしました。</item>
+    </plurals>
+    <string name="setup_msg_artwork_import_hint">他のランチャーのメディアを import/ フォルダに置くと、ここに集約できます。</string>
+    <string name="setup_msg_import_none_yet">インポートするものはまだありません。アートワークフォルダの import/ ディレクトリにファイルを置いてください。</string>
+    <string name="setup_msg_import_unreadable">そのインポート元を読み込めませんでした。</string>
+    <string name="setup_msg_import_empty">インポートするものはありません。すべてすでに存在します。</string>
+    <string name="setup_msg_import_started">「%1$s」をインポートしています。進行状況は通知に、詳細は設定 ▸ アートワークのインポートに表示されます。</string>
+    <string name="setup_msg_retroarch_linked">RetroArch をリンクしました。インストール済みのコアがエミュレーターに表示されます。</string>
+    <string name="setup_msg_retroarch_rechecked">RetroArch のコアを再確認しました。</string>
+    <string name="setup_msg_retroarch_unlinked">RetroArch のリンクを解除しました。再度リンクするまで、RetroArch のコアは候補に表示されません。</string>
+    <string name="setup_msg_vita_set">Vita3K のデータフォルダを設定しました。インストール済みのタイトルは、ライブラリマネージャーの PS Vita メモリーカードからスキャンできます。</string>
+    <string name="setup_msg_vita_released">Vita3K のデータフォルダを解除しました。ディスク上のファイルは変更されていません。</string>
+    <string name="setup_msg_ps3_set">PS3 のデータフォルダを設定しました。PS3 のトロフィーをリンクするには、設定 ▸ 実績 ▸ 実績を更新で自動照合を実行してください。</string>
+    <string name="setup_msg_ps3_released">PS3 のデータフォルダを解除しました。ディスク上のファイルは変更されていません。</string>
+    <string name="setup_msg_x360_set">%1$s のデータフォルダを設定しました。Xbox 360 の実績をリンクするには、設定 ▸ 実績 ▸ 実績を更新で自動照合を実行してください。</string>
+    <string name="setup_msg_x360_released">%1$s のデータフォルダを解除しました。ディスク上のファイルは変更されていません。</string>
+    <string name="setup_msg_sgdb_connected">SteamGridDB に接続しました</string>
+    <string name="setup_msg_tgdb_connected">TheGamesDB に接続しました</string>
+    <string name="setup_msg_igdb_connected">IGDB に接続しました</string>
+    <string name="setup_msg_ss_connected">ScreenScraper に接続しました</string>
+    <string name="setup_msg_ra_connected">RetroAchievements に接続しました</string>
+    <!-- ROM root scan report -->
+    <string name="setup_rom_scan_no_root">先に設定 ▸ ライブラリ ▸ ライブラリマネージャーで ROM フォルダを追加してください。</string>
+    <string name="setup_rom_scan_none">%2$s 内の %1$s をスキャンしましたが、新しい ROM は見つかりませんでした。対応するシステムフォルダにゲームをコピーして、もう一度お試しください。</string>
+    <string name="setup_rom_scan_loaded">%3$s から %1$s、%2$s を読み込みました。</string>
+    <string name="setup_rom_scan_systems_new">%1$s（%2$s）</string>
+    <plurals name="setup_rom_scan_folders">
+        <item quantity="other">%1$d 個のフォルダ</item>
+    </plurals>
+    <plurals name="setup_rom_scan_systems">
+        <item quantity="other">%1$d システム</item>
+    </plurals>
+    <plurals name="setup_rom_scan_new_consoles">
+        <item quantity="other">新しいゲーム機 %1$d 台</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roms">
+        <item quantity="other">%1$d 個の ROM</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roots">
+        <item quantity="other">%1$d 個の ROM フォルダ</item>
+    </plurals>
+    <plurals name="setup_rom_scan_skipped">
+        <item quantity="other">%1$d 個のフォルダをスキップしました（ライブラリを読み込めません）。</item>
+    </plurals>
+    <!-- Media library scans -->
+    <string name="setup_media_add_root_first">先にルートフォルダを追加してください。</string>
+    <string name="setup_media_not_ready">このフォルダのストレージはまだ準備ができていません。しばらくしてから、もう一度お試しください。</string>
+    <string name="setup_media_scan_failed_title">%1$s のスキャンに失敗しました</string>
+    <string name="setup_media_scan_finished_title">%1$s のスキャンが完了しました</string>
+    <string name="setup_media_scan_stopped_title">%1$s のスキャンを停止しました</string>
+    <string name="setup_media_scanning_title">%1$s をスキャン中</string>
+    <string name="setup_media_stop_note">フォルダは次回もう一度スキャンされます。</string>
+    <string name="setup_media_stopped">完了前に停止しました</string>
+    <plurals name="setup_media_tracks">
+        <item quantity="other">%1$d 曲</item>
+    </plurals>
+    <plurals name="setup_media_photos">
+        <item quantity="other">%1$d 枚の写真</item>
+    </plurals>
+    <plurals name="setup_media_videos">
+        <item quantity="other">%1$d 本のビデオ</item>
+    </plurals>
+    <plurals name="setup_media_roots">
+        <item quantity="other">%1$d 個のルート</item>
+    </plurals>
+    <string name="setup_media_found">%2$s で %1$s が見つかりました。</string>
+</resources>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">动态</string>
+    <string name="motion_summary">自行运动的内容有多少。</string>
+    <string name="motion_detail_animated">全部运动</string>
+    <string name="motion_detail_reduced">仅所选项</string>
+    <string name="motion_detail_static">不自行运动</string>
+    <string name="motion_sub_animated">所有能动的内容都会动：封面、图标、壁纸、背景和光晕。最耗电。</string>
+    <string name="motion_sub_reduced">只有所选项会动：它的封面、视频片段和光晕。背景继续运动。</string>
+    <string name="motion_sub_static">没有内容自行运动。浏览菜单时菜单仍会滑动。</string>
+    <string name="motion_holds_background">当“动态”为“静态”时保持静止。</string>
+    <string name="motion_holds_glow">当“动态”为“静态”时保持静止。</string>
+</resources>

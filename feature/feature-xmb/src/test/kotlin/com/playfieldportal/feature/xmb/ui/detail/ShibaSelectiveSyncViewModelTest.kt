@@ -11,8 +11,10 @@ import com.playfieldportal.core.domain.achievement.LibraryStanding
 import com.playfieldportal.core.domain.achievement.TrackedIdentityStatus
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.xmb.viewmodel.ShibaLibraryMode
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -78,8 +80,8 @@ class ShibaSelectiveSyncViewModelTest {
         )
 
         val rows = vm.uiState.value.rows.associateBy { it.title }
-        assertTrue(rows.getValue("Half-Life 2").platformLabel.endsWith("Not installed"))
-        assertFalse(rows.getValue("Chrono Trigger").platformLabel.contains("Not installed"))
+        assertEquals(UiText.res(R.string.shiba_platform_not_installed, "Steam"), rows.getValue("Half-Life 2").platformLabel)
+        assertEquals(UiText.raw("Super Nintendo"), rows.getValue("Chrono Trigger").platformLabel)
         assertTrue(rows.getValue("Half-Life 2").isTracked)
     }
 
@@ -93,7 +95,7 @@ class ShibaSelectiveSyncViewModelTest {
 
         // Rows carry the pinned "Search online" action row at position 0; only games are asserted here.
         val row = vm.uiState.value.rows.single { it.id != SEARCH_ONLINE_ROW_ID }
-        assertEquals("Awaiting sync", row.reason)
+        assertEquals(UiText.res(R.string.shiba_library_awaiting_sync), row.reason)
         assertTrue(row.awaitingSync)
         assertEquals(ShibaCoinsTarget.LibraryGame(5L), row.coinsTarget)
     }
@@ -119,7 +121,7 @@ class ShibaSelectiveSyncViewModelTest {
         coVerify(exactly = 1) { achievements.refreshGameIfStale(5L) }
         coVerify(exactly = 0) { achievements.syncGameById(any()) }
         assertTrue(vm.uiState.value.canSync)
-        assertTrue(vm.uiState.value.optionRows.any { it.label == "Update Achievements" })
+        assertTrue(vm.uiState.value.optionRows.any { it.label == UiText.res(R.string.shiba_coins_options_update) })
     }
 
     @Test

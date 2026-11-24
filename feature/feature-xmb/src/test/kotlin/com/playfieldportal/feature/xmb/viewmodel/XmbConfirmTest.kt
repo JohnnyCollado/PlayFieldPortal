@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.CategoryType
@@ -9,42 +10,47 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * The words and weight of each XMB confirm. The copy carries the reassurance the old two-row menus
  * only half said: what stays safe (the file, the games), and what does not come back.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class XmbConfirmTest {
 
     @Test
     fun `remove from library names the game, keeps the file and says a scan can bring it back`() {
-        val copy = xmbConfirmCopy(XmbConfirm.RemoveGame(gameId = 7, title = "Parasite Eve II"))
+        val copy = xmbConfirmCopy(XmbConfirm.RemoveGame(gameId = 7, title = UiText.raw("Parasite Eve II")))
 
-        assertTrue(copy.title.contains("Parasite Eve II"))
-        assertTrue(copy.title.contains("Library"))
-        assertTrue(copy.message.contains("not deleted"))
-        assertTrue(copy.message.contains("scan adds it back"))
-        assertEquals("Remove", copy.confirmLabel)
+        assertTrue(copy.title.en().contains("Parasite Eve II"))
+        assertTrue(copy.title.en().contains("Library"))
+        assertTrue(copy.message.en().contains("not deleted"))
+        assertTrue(copy.message.en().contains("scan adds it back"))
+        assertEquals("Remove", copy.confirmLabel.en())
         assertTrue(copy.destructive)
     }
 
     @Test
     fun `a missing game is removed permanently, with no way to put it back`() {
-        val copy = xmbConfirmCopy(XmbConfirm.RemoveMissing(gameId = 7, title = "Ape Escape"))
+        val copy = xmbConfirmCopy(XmbConfirm.RemoveMissing(gameId = 7, title = UiText.raw("Ape Escape")))
 
-        assertTrue(copy.title.contains("Permanently remove"))
-        assertTrue(copy.title.contains("Ape Escape"))
-        assertEquals("Remove permanently", copy.confirmLabel)
+        assertTrue(copy.title.en().contains("Permanently remove"))
+        assertTrue(copy.title.en().contains("Ape Escape"))
+        assertEquals("Remove permanently", copy.confirmLabel.en())
         assertTrue(copy.destructive)
     }
 
     @Test
     fun `deleting a custom card says its games stay in the library`() {
-        val copy = xmbConfirmCopy(XmbConfirm.DeleteCard(collectionId = 3, title = "RPGs"))
+        val copy = xmbConfirmCopy(XmbConfirm.DeleteCard(collectionId = 3, title = UiText.raw("RPGs")))
 
-        assertTrue(copy.title.contains("RPGs"))
-        assertTrue(copy.message.contains("games stay in your library"))
-        assertEquals("Delete Custom Card", copy.confirmLabel)
+        assertTrue(copy.title.en().contains("RPGs"))
+        assertTrue(copy.message.en().contains("games stay in your library"))
+        assertEquals("Delete Custom Card", copy.confirmLabel.en())
         assertTrue(copy.destructive)
     }
 
@@ -53,14 +59,14 @@ class XmbConfirmTest {
         val copy = xmbConfirmCopy(
             XmbConfirm.RemoveFromCategory(
                 gameId = 7, categoryId = "gaming", categoryName = "Gaming",
-                title = "Ape Escape", cardNames = listOf("Favourites", "Co-op"),
+                title = UiText.raw("Ape Escape"), cardNames = listOf("Favourites", "Co-op"),
             ),
         )
 
-        assertTrue(copy.title.contains("Gaming"))
-        assertTrue(copy.message.contains("Ape Escape"))
-        assertTrue(copy.message.contains("Favourites, Co-op"))
-        assertEquals("Remove", copy.confirmLabel)
+        assertTrue(copy.title.en().contains("Gaming"))
+        assertTrue(copy.message.en().contains("Ape Escape"))
+        assertTrue(copy.message.en().contains("Favourites, Co-op"))
+        assertEquals("Remove", copy.confirmLabel.en())
         // Reversible-ish removal with its own prompt (AD-12): opens on Cancel, but not red.
         assertFalse(copy.destructive)
     }
@@ -69,12 +75,12 @@ class XmbConfirmTest {
 
     @Test
     fun `removing an Android game keeps the app installed`() {
-        val copy = xmbConfirmCopy(XmbConfirm.RemoveAndroidGame(gameId = 4, title = "Genshin"))
+        val copy = xmbConfirmCopy(XmbConfirm.RemoveAndroidGame(gameId = 4, title = UiText.raw("Genshin")))
 
-        assertTrue(copy.title.contains("Genshin"))
-        assertTrue(copy.title.contains("Library"))
-        assertTrue(copy.message.contains("stays installed"))
-        assertEquals("Remove", copy.confirmLabel)
+        assertTrue(copy.title.en().contains("Genshin"))
+        assertTrue(copy.title.en().contains("Library"))
+        assertTrue(copy.message.en().contains("stays installed"))
+        assertEquals("Remove", copy.confirmLabel.en())
         assertTrue(copy.destructive)
     }
 
@@ -82,71 +88,71 @@ class XmbConfirmTest {
     // were told about files and scans they do not have.
     @Test
     fun `removing an app row says the app stays installed and mentions no file or scan`() {
-        val copy = xmbConfirmCopy(XmbConfirm.RemoveAppRow(gameId = 7, title = "Chrome"))
+        val copy = xmbConfirmCopy(XmbConfirm.RemoveAppRow(gameId = 7, title = UiText.raw("Chrome")))
 
-        assertTrue(copy.message.contains("stays installed"))
-        assertFalse(copy.message.contains("file"))
-        assertFalse(copy.message.contains("scan"))
-        assertEquals("Remove", copy.confirmLabel)
+        assertTrue(copy.message.en().contains("stays installed"))
+        assertFalse(copy.message.en().contains("file"))
+        assertFalse(copy.message.en().contains("scan"))
+        assertEquals("Remove", copy.confirmLabel.en())
     }
 
     @Test
     fun `removing the Android card says its apps stay installed, not that ROM files stay`() {
-        val copy = xmbConfirmCopy(XmbConfirm.RemoveCard(platformId = "android", title = "Android"))
+        val copy = xmbConfirmCopy(XmbConfirm.RemoveCard(platformId = "android", title = UiText.raw("Android")))
 
-        assertTrue(copy.message.contains("apps stay installed"))
-        assertFalse(copy.message.contains("ROM"))
-        assertFalse(copy.message.contains("scan"))
+        assertTrue(copy.message.en().contains("apps stay installed"))
+        assertFalse(copy.message.en().contains("ROM"))
+        assertFalse(copy.message.en().contains("scan"))
     }
 
     @Test
     fun `the app row's Remove from Library confirms as an app row`() {
-        val menu = XMBContextMenu(title = "Chrome", items = emptyList(), gameId = 4L)
-        assertEquals(XmbConfirm.RemoveAppRow(4L, "Chrome"), confirmFor(menu, "remove_app_row"))
+        val menu = XMBContextMenu(title = UiText.raw("Chrome"), items = emptyList(), gameId = 4L)
+        assertEquals(XmbConfirm.RemoveAppRow(4L, UiText.raw("Chrome")), confirmFor(menu, "remove_app_row"))
     }
 
     @Test
     fun `removing a console card says its games leave but the ROM files stay on disk`() {
-        val copy = xmbConfirmCopy(XmbConfirm.RemoveCard(platformId = "psp", title = "PSP"))
+        val copy = xmbConfirmCopy(XmbConfirm.RemoveCard(platformId = "psp", title = UiText.raw("PSP")))
 
-        assertTrue(copy.title.contains("PSP"))
-        assertTrue(copy.message.contains("games leave your library"))
-        assertTrue(copy.message.contains("ROM files stay on disk"))
-        assertEquals("Remove Card", copy.confirmLabel)
+        assertTrue(copy.title.en().contains("PSP"))
+        assertTrue(copy.message.en().contains("games leave your library"))
+        assertTrue(copy.message.en().contains("ROM files stay on disk"))
+        assertEquals("Remove Card", copy.confirmLabel.en())
         assertTrue(copy.destructive)
     }
 
     @Test
     fun `removing a track, video or photo keeps the file and says a scan can bring it back`() {
         val copies = listOf(
-            xmbConfirmCopy(XmbConfirm.RemoveTrack(trackId = "t1", title = "Song")),
-            xmbConfirmCopy(XmbConfirm.RemoveVideo(videoId = "v1", title = "Clip")),
-            xmbConfirmCopy(XmbConfirm.RemovePhoto(photoId = "p1", title = "Beach")),
+            xmbConfirmCopy(XmbConfirm.RemoveTrack(trackId = "t1", title = UiText.raw("Song"))),
+            xmbConfirmCopy(XmbConfirm.RemoveVideo(videoId = "v1", title = UiText.raw("Clip"))),
+            xmbConfirmCopy(XmbConfirm.RemovePhoto(photoId = "p1", title = UiText.raw("Beach"))),
         )
 
         copies.forEach { copy ->
-            assertTrue(copy.title.contains("Library"))
-            assertTrue(copy.message.contains("not deleted"))
-            assertTrue(copy.message.contains("scan adds it back"))
-            assertEquals("Remove", copy.confirmLabel)
+            assertTrue(copy.title.en().contains("Library"))
+            assertTrue(copy.message.en().contains("not deleted"))
+            assertTrue(copy.message.en().contains("scan adds it back"))
+            assertEquals("Remove", copy.confirmLabel.en())
             assertTrue(copy.destructive)
         }
-        assertTrue(xmbConfirmCopy(XmbConfirm.RemoveTrack("t1", "Song")).title.contains("Song"))
-        assertTrue(xmbConfirmCopy(XmbConfirm.RemoveVideo("v1", "Clip")).title.contains("Clip"))
-        assertTrue(xmbConfirmCopy(XmbConfirm.RemovePhoto("p1", "Beach")).title.contains("Beach"))
+        assertTrue(xmbConfirmCopy(XmbConfirm.RemoveTrack("t1", UiText.raw("Song"))).title.en().contains("Song"))
+        assertTrue(xmbConfirmCopy(XmbConfirm.RemoveVideo("v1", UiText.raw("Clip"))).title.en().contains("Clip"))
+        assertTrue(xmbConfirmCopy(XmbConfirm.RemovePhoto("p1", UiText.raw("Beach"))).title.en().contains("Beach"))
     }
 
     @Test
     fun `deleting a playlist says its items stay in the library`() {
-        val music = xmbConfirmCopy(XmbConfirm.DeleteMusicPlaylist(playlistId = 2, title = "Road trip"))
-        val video = xmbConfirmCopy(XmbConfirm.DeleteVideoPlaylist(playlistId = 3, title = "Watch later"))
+        val music = xmbConfirmCopy(XmbConfirm.DeleteMusicPlaylist(playlistId = 2, title = UiText.raw("Road trip")))
+        val video = xmbConfirmCopy(XmbConfirm.DeleteVideoPlaylist(playlistId = 3, title = UiText.raw("Watch later")))
 
-        assertTrue(music.title.contains("Road trip"))
-        assertTrue(music.message.contains("tracks stay in your library"))
-        assertTrue(video.title.contains("Watch later"))
-        assertTrue(video.message.contains("videos stay in your library"))
+        assertTrue(music.title.en().contains("Road trip"))
+        assertTrue(music.message.en().contains("tracks stay in your library"))
+        assertTrue(video.title.en().contains("Watch later"))
+        assertTrue(video.message.en().contains("videos stay in your library"))
         listOf(music, video).forEach {
-            assertEquals("Delete Playlist", it.confirmLabel)
+            assertEquals("Delete Playlist", it.confirmLabel.en())
             assertTrue(it.destructive)
         }
     }
@@ -155,9 +161,9 @@ class XmbConfirmTest {
     fun `clearing all notifications leaves running tasks alone`() {
         val copy = xmbConfirmCopy(XmbConfirm.ClearNotifications)
 
-        assertTrue(copy.title.contains("notifications"))
-        assertTrue(copy.message.contains("Running tasks"))
-        assertEquals("Clear All", copy.confirmLabel)
+        assertTrue(copy.title.en().contains("notifications"))
+        assertTrue(copy.message.en().contains("Running tasks"))
+        assertEquals("Clear All", copy.confirmLabel.en())
         assertTrue(copy.destructive)
     }
 
@@ -199,70 +205,70 @@ class XmbConfirmTest {
         )
 
         val romConfirms = assertEveryDestructiveRowConfirms(
-            XMBContextMenu(rom.title, gameItems(rom), gameId = 1L),
+            XMBContextMenu(UiText.raw(rom.title), gameItems(rom), gameId = 1L),
         )
         val androidConfirms = assertEveryDestructiveRowConfirms(
-            XMBContextMenu(android.title, gameItems(android), gameId = 2L, packageName = android.packageName),
+            XMBContextMenu(UiText.raw(android.title), gameItems(android), gameId = 2L, packageName = android.packageName),
         )
         val missingConfirms = assertEveryDestructiveRowConfirms(
-            XMBContextMenu(rom.title, gameItems(rom, inMissingBucket = true), gameId = 1L),
+            XMBContextMenu(UiText.raw(rom.title), gameItems(rom, inMissingBucket = true), gameId = 1L),
         )
 
-        assertEquals(XmbConfirm.RemoveGame(1L, "Crisis Core"), romConfirms["remove_game"])
-        assertEquals(XmbConfirm.RemoveAndroidGame(2L, "Genshin"), androidConfirms["remove_app"])
-        assertEquals(XmbConfirm.RemoveMissing(1L, "Crisis Core"), missingConfirms["remove_missing"])
+        assertEquals(XmbConfirm.RemoveGame(1L, UiText.raw("Crisis Core")), romConfirms["remove_game"])
+        assertEquals(XmbConfirm.RemoveAndroidGame(2L, UiText.raw("Genshin")), androidConfirms["remove_app"])
+        assertEquals(XmbConfirm.RemoveMissing(1L, UiText.raw("Crisis Core")), missingConfirms["remove_missing"])
     }
 
     @Test
     fun `Remove Card on a console card confirms and names the card`() {
         val menu = XMBContextMenu(
-            title = "PSP",
-            items = platformCardMenuItems("psp", pinned = false, iconDisplayLabel = "Default"),
+            title = UiText.raw("PSP"),
+            items = platformCardMenuItems("psp", pinned = false, iconDisplayLabel = UiText.raw("Default")),
             platformId = "psp",
         )
 
         val confirms = assertEveryDestructiveRowConfirms(menu)
 
-        assertEquals(XmbConfirm.RemoveCard("psp", "PSP"), confirms["remove"])
+        assertEquals(XmbConfirm.RemoveCard("psp", UiText.raw("PSP")), confirms["remove"])
     }
 
     @Test
     fun `Delete Custom Card confirms`() {
         val menu = XMBContextMenu(
-            title = "RPGs",
-            items = customCardMenuItems(pinned = false, canMoveToCategory = true, sortValue = "Custom", canMove = false, byTouch = true),
+            title = UiText.raw("RPGs"),
+            items = customCardMenuItems(pinned = false, canMoveToCategory = true, sortValue = UiText.raw("Custom"), canMove = false, byTouch = true),
             collectionRowId = 3L,
         )
 
         val confirms = assertEveryDestructiveRowConfirms(menu)
 
-        assertEquals(XmbConfirm.DeleteCard(3L, "RPGs"), confirms["delete_collection"])
+        assertEquals(XmbConfirm.DeleteCard(3L, UiText.raw("RPGs")), confirms["delete_collection"])
     }
 
     @Test
     fun `the media rows that remove or delete confirm`() {
-        fun row(id: String) = XMBContextMenuItem(id, id, isDestructive = true)
+        fun row(id: String) = XMBContextMenuItem(id, UiText.raw(id), isDestructive = true)
 
         assertEquals(
-            XmbConfirm.RemoveTrack("t1", "Song"),
-            confirmFor(XMBContextMenu("Song", listOf(row("remove_track")), musicTrackId = "t1"), "remove_track"),
+            XmbConfirm.RemoveTrack("t1", UiText.raw("Song")),
+            confirmFor(XMBContextMenu(UiText.raw("Song"), listOf(row("remove_track")), musicTrackId = "t1"), "remove_track"),
         )
         assertEquals(
-            XmbConfirm.RemoveVideo("v1", "Clip"),
-            confirmFor(XMBContextMenu("Clip", listOf(row("video_remove")), videoFileId = "v1"), "video_remove"),
+            XmbConfirm.RemoveVideo("v1", UiText.raw("Clip")),
+            confirmFor(XMBContextMenu(UiText.raw("Clip"), listOf(row("video_remove")), videoFileId = "v1"), "video_remove"),
         )
         assertEquals(
-            XmbConfirm.RemovePhoto("p1", "Beach"),
-            confirmFor(XMBContextMenu("Beach", listOf(row("photo_remove")), photoFileId = "p1"), "photo_remove"),
+            XmbConfirm.RemovePhoto("p1", UiText.raw("Beach")),
+            confirmFor(XMBContextMenu(UiText.raw("Beach"), listOf(row("photo_remove")), photoFileId = "p1"), "photo_remove"),
         )
         assertEquals(
-            XmbConfirm.DeleteMusicPlaylist(2L, "Road trip"),
-            confirmFor(XMBContextMenu("Road trip", listOf(row("delete_playlist")), playlistId = 2L), "delete_playlist"),
+            XmbConfirm.DeleteMusicPlaylist(2L, UiText.raw("Road trip")),
+            confirmFor(XMBContextMenu(UiText.raw("Road trip"), listOf(row("delete_playlist")), playlistId = 2L), "delete_playlist"),
         )
         assertEquals(
-            XmbConfirm.DeleteVideoPlaylist(3L, "Watch later"),
+            XmbConfirm.DeleteVideoPlaylist(3L, UiText.raw("Watch later")),
             confirmFor(
-                XMBContextMenu("Watch later", listOf(row("delete_video_playlist")), videoPlaylistId = 3L),
+                XMBContextMenu(UiText.raw("Watch later"), listOf(row("delete_video_playlist")), videoPlaylistId = 3L),
                 "delete_video_playlist",
             ),
         )
@@ -271,11 +277,11 @@ class XmbConfirmTest {
     @Test
     fun `Clear All in the notification menu confirms, Mark All Read and Clear Read do not`() {
         val menu = XMBContextMenu(
-            title = "Notifications",
+            title = UiText.raw("Notifications"),
             items = listOf(
-                XMBContextMenuItem(NotificationMenuIds.MARK_ALL_READ, "Mark All Read"),
-                XMBContextMenuItem(NotificationMenuIds.CLEAR_READ, "Clear Read"),
-                XMBContextMenuItem(NotificationMenuIds.CLEAR_ALL, "Clear All", isDestructive = true),
+                XMBContextMenuItem(NotificationMenuIds.MARK_ALL_READ, UiText.raw("Mark All Read")),
+                XMBContextMenuItem(NotificationMenuIds.CLEAR_READ, UiText.raw("Clear Read")),
+                XMBContextMenuItem(NotificationMenuIds.CLEAR_ALL, UiText.raw("Clear All"), isDestructive = true),
             ),
             notificationListMenu = true,
         )
@@ -288,8 +294,8 @@ class XmbConfirmTest {
     @Test
     fun `an app's Remove from Category is not mistaken for Remove Card`() {
         val menu = XMBContextMenu(
-            title = "Chrome",
-            items = listOf(XMBContextMenuItem("remove", "Remove From Category")),
+            title = UiText.raw("Chrome"),
+            items = listOf(XMBContextMenuItem("remove", UiText.raw("Remove From Category"))),
             packageName = "com.android.chrome",
             categoryContext = "apps",
         )
@@ -300,17 +306,17 @@ class XmbConfirmTest {
     @Test
     fun `uninstalling an app confirms, naming the app, and opens on a red Uninstall`() {
         val menu = XMBContextMenu(
-            title = "Chrome",
-            items = listOf(XMBContextMenuItem("app_uninstall", "Uninstall", isDestructive = true)),
+            title = UiText.raw("Chrome"),
+            items = listOf(XMBContextMenuItem("app_uninstall", UiText.raw("Uninstall"), isDestructive = true)),
             packageName = "com.android.chrome",
             categoryContext = "apps",
         )
 
         val confirm = confirmFor(menu, "app_uninstall")
-        assertEquals(XmbConfirm.Uninstall("com.android.chrome", "Chrome"), confirm)
+        assertEquals(XmbConfirm.Uninstall("com.android.chrome", UiText.raw("Chrome")), confirm)
         val copy = xmbConfirmCopy(confirm!!)
-        assertTrue(copy.title.contains("Chrome"))
-        assertEquals("Uninstall", copy.confirmLabel)
+        assertTrue(copy.title.en().contains("Chrome"))
+        assertEquals("Uninstall", copy.confirmLabel.en())
         assertTrue(copy.destructive)
         assertNull(confirmFor(menu, "app_info"))
     }

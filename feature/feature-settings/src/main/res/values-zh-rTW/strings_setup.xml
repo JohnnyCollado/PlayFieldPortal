@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Wizard chrome -->
+    <string name="setup_title">初始設定</string>
+    <string name="setup_prompt_enter">進入</string>
+    <string name="setup_prompt_change">變更</string>
+    <string name="setup_prompt_back">返回</string>
+    <string name="setup_prompt_skip">略過</string>
+    <string name="setup_row_edit">編輯</string>
+    <string name="setup_row_remove">移除</string>
+    <string name="setup_message_dismiss_hint">選取即可關閉，或在這一列按確認</string>
+
+    <!-- Page names, used as "Next: ..." on the previous page -->
+    <string name="setup_step_welcome">歡迎</string>
+    <string name="setup_step_controller">控制器</string>
+    <string name="setup_step_rom_roots">ROM 資料夾</string>
+    <string name="setup_step_music">音樂</string>
+    <string name="setup_step_video">影片</string>
+    <string name="setup_step_photo">相片</string>
+    <string name="setup_step_artwork">圖片</string>
+    <string name="setup_step_services">線上服務</string>
+    <string name="setup_step_achievements">成就服務</string>
+    <string name="setup_step_local_achievements">本機成就</string>
+    <string name="setup_step_retroarch">RetroArch</string>
+    <string name="setup_step_emulators">模擬器</string>
+    <string name="setup_step_windows">Windows 遊戲</string>
+    <string name="setup_step_hints">提示與觸控</string>
+    <string name="setup_step_home_app">主畫面應用程式</string>
+    <string name="setup_step_finish">完成</string>
+
+    <!-- Page headings -->
+    <string name="setup_heading_welcome">歡迎使用 Play Field Portal。</string>
+    <string name="setup_heading_controller">選擇你的控制器。</string>
+    <string name="setup_heading_rom_roots">選擇你的 ROM 資料夾。</string>
+    <string name="setup_heading_music">選擇你的音樂資料夾。</string>
+    <string name="setup_heading_video">選擇你的影片資料夾。</string>
+    <string name="setup_heading_photo">選擇你的相片資料夾。</string>
+    <string name="setup_heading_artwork">選擇你的圖片資料夾。</string>
+    <string name="setup_heading_services">連結你的圖片來源。</string>
+    <string name="setup_heading_achievements">連結你的成就服務。</string>
+    <string name="setup_heading_local_achievements">連結你的模擬器資料資料夾。</string>
+    <string name="setup_heading_retroarch">連結 RetroArch 的核心資料夾。</string>
+    <string name="setup_heading_emulators">檢查你的模擬器。</string>
+    <string name="setup_heading_windows">設定 Windows 遊戲。</string>
+    <string name="setup_heading_hints">選擇啟動器協助你的方式。</string>
+    <string name="setup_heading_home_app">將 Play Field Portal 設為你的主畫面。</string>
+    <string name="setup_heading_finish">一切就緒！</string>
+
+    <!-- Page hints (the line under a heading) -->
+    <string name="setup_hint_welcome">大部分步驟都是選用的。你需要選擇一個圖片資料夾。</string>
+    <string name="setup_hint_controller">設定按鈕圖示以及用來確認的按鈕，讓之後的每個提示都與你的控制器相符。</string>
+    <string name="setup_hint_rom_roots">新增一或多個 ROM 資料夾，每部主機的遊戲都放在其中的子資料夾內。</string>
+    <string name="setup_hint_media_roots">新增多個根目錄，即可涵蓋內部儲存空間和 SD 卡。</string>
+    <string name="setup_hint_artwork">必要。你的圖片存放在應用程式外部，因此重新安裝後仍會保留。</string>
+    <string name="setup_hint_services">全部為選用且免費。SteamGridDB、TheGamesDB、IGDB 和 ScreenScraper 會抓取遊戲圖片和中繼資料。</string>
+    <string name="setup_hint_achievements">RetroAchievements 和 Steam 會以 Shiba Coins 的形式追蹤成就。</string>
+    <string name="setup_hint_local_achievements">模擬器儲存在這部裝置上的獎盃和成就。每個模擬器只要授權一次，即可連結所有遊戲。</string>
+    <string name="setup_hint_retroarch">讓啟動器確切知道你有哪些核心，只提供這些核心供選擇。</string>
+    <string name="setup_hint_emulators">每部主機的預設模擬器，從已安裝的應用程式中挑選。如有不對，請加以變更。</string>
+    <string name="setup_hint_windows">已安裝 Windows 模擬器，請選擇你的 PC 遊戲存放位置。</string>
+    <string name="setup_hint_hints">停下操作時會淡入按鈕提示，按下任何按鈕就會立即消失。</string>
+    <string name="setup_hint_home_app">之後按下主畫面按鈕就會回到這裡，而不是原本的啟動器。</string>
+    <string name="setup_hint_finish">以下所有項目都可以隨時在「設定」中調整。</string>
+
+    <!-- Continue row (bottom of every page) -->
+    <string name="setup_continue">繼續</string>
+    <string name="setup_continue_next">下一步：%1$s</string>
+    <string name="setup_continue_blocked">請先選擇資料夾</string>
+
+    <!-- Welcome page -->
+    <string name="setup_welcome_intro">這個快速設定會讓啟動器指向你的媒體資料夾，並連結用於圖片和成就的線上服務。</string>
+    <string name="setup_welcome_start">開始使用</string>
+    <string name="setup_welcome_start_sub">先選擇你的控制器</string>
+    <string name="setup_welcome_skip">略過設定</string>
+    <string name="setup_welcome_skip_sub">直接前往啟動器。你可以隨時從「設定 ▸ 系統」執行設定精靈</string>
+
+    <!-- Folder rows shared by the ROM, Music, Video and Photo pages -->
+    <string name="setup_root_access_lost">已失去存取權，請使用 ✎ 重新授予存取權</string>
+
+    <!-- ROM roots page -->
+    <string name="setup_rom_empty">尚無 ROM 資料夾。請新增存放主機遊戲的資料夾，每部主機一個子資料夾，會自動掃描。</string>
+    <string name="setup_rom_add">新增 ROM 資料夾</string>
+    <string name="setup_rom_add_sub">授予 ROM 資料夾的存取權，每部主機一個子資料夾</string>
+    <string name="setup_rom_rescan">重新掃描 ROM 資料夾</string>
+    <string name="setup_rom_rescan_sub">自動偵測主機並掃描其遊戲</string>
+    <string name="setup_rom_root_linked">已連結：從這裡讀取主機資料夾</string>
+    <string name="setup_rom_create_folders">建立標準資料夾</string>
+    <string name="setup_rom_create_folders_sub">每部主機一個子資料夾，依你的遊戲命名</string>
+
+    <!-- Music roots page -->
+    <string name="setup_music_empty">尚無音樂根目錄。請新增存放音樂的資料夾，多個根目錄可涵蓋內部儲存空間和 SD 卡。</string>
+    <string name="setup_music_add">新增音樂根目錄</string>
+    <string name="setup_music_add_sub">授予根目錄資料夾（例如 /Music）的存取權；可新增多個以涵蓋不同位置</string>
+    <string name="setup_music_root_linked">音樂庫存放於此</string>
+    <string name="setup_music_rescan">重新掃描音樂庫</string>
+
+    <!-- Video roots page -->
+    <string name="setup_video_empty">尚無影片根目錄。請新增存放影片的資料夾，多個根目錄可涵蓋內部儲存空間和 SD 卡。</string>
+    <string name="setup_video_add">新增影片根目錄</string>
+    <string name="setup_video_add_sub">授予根目錄資料夾（例如 /Videos）的存取權；可新增多個以涵蓋不同位置</string>
+    <string name="setup_video_root_linked">影片庫存放於此</string>
+    <string name="setup_video_rescan">重新掃描影片庫</string>
+
+    <!-- Photo roots page -->
+    <string name="setup_photo_empty">尚無相片根目錄。請新增存放相片的資料夾，多個根目錄可涵蓋內部儲存空間和 SD 卡。</string>
+    <string name="setup_photo_add">新增相片根目錄</string>
+    <string name="setup_photo_add_sub">授予根目錄資料夾（例如 /Photos）的存取權；可新增多個以涵蓋不同位置</string>
+    <string name="setup_photo_root_linked">相片庫存放於此</string>
+    <string name="setup_photo_rescan">重新掃描相片庫</string>
+    <string name="setup_media_rescan_sub">從每個根目錄資料夾更新媒體庫</string>
+
+    <!-- Artwork page -->
+    <string name="setup_artwork_empty">請選擇可寫入的資料夾。啟動器會自動在其中建立圖片庫，遊戲新增時就會取得圖片。</string>
+    <string name="setup_artwork_unavailable">無法使用。請重新連結以繼續取得新圖片</string>
+    <string name="setup_artwork_folder_sub">圖片庫：使用 ✎ 選擇其他資料夾</string>
+    <string name="setup_artwork_choose">選擇圖片資料夾</string>
+    <string name="setup_artwork_choose_sub">一個資料夾存放圖片庫</string>
+    <string name="setup_artwork_import_title">要立即匯入圖片嗎？</string>
+    <string name="setup_artwork_import_sub_one">將 %1$s 從資料夾的 import/ 複製到圖片庫</string>
+    <plurals name="setup_artwork_import_sub_many">
+        <item quantity="other">將 %1$d 個來源資料夾從資料夾的 import/ 複製到圖片庫</item>
+    </plurals>
+    <string name="setup_artwork_import_row">圖片匯入</string>
+    <string name="setup_artwork_import_none_sub">目前沒有可匯入的內容。請將啟動器的媒體資料夾新增至 import/ 下</string>
+
+    <!-- Online services page -->
+    <string name="setup_services_intro">所有帳戶都是選用且免費的。SteamGridDB、TheGamesDB、IGDB 和 ScreenScraper 會為你的收藏庫抓取遊戲圖片和中繼資料。</string>
+    <string name="setup_field_api_key">API 金鑰</string>
+    <string name="setup_field_api_key_saved">API 金鑰（已儲存）</string>
+    <string name="setup_field_web_api_key">Web API 金鑰</string>
+    <string name="setup_field_web_api_key_saved">Web API 金鑰（已儲存）</string>
+    <string name="setup_field_client_id">用戶端 ID</string>
+    <string name="setup_field_client_id_saved">用戶端 ID（已儲存）</string>
+    <string name="setup_field_client_secret">用戶端密鑰</string>
+    <string name="setup_field_client_secret_saved">用戶端密鑰（已儲存）</string>
+    <string name="setup_field_username">使用者名稱</string>
+    <string name="setup_field_username_saved">使用者名稱（已儲存）</string>
+    <string name="setup_field_password">密碼</string>
+    <string name="setup_field_password_saved">密碼（已儲存）</string>
+    <string name="setup_field_steam_id">SteamID64 或自訂名稱</string>
+    <string name="setup_field_steam_id_saved">SteamID64 或自訂名稱（已儲存）</string>
+    <string name="setup_placeholder_tap_to_replace">選取即可取代</string>
+    <string name="setup_placeholder_secret_saved">••••••••（選取即可取代）</string>
+    <string name="setup_placeholder_sgdb_key">貼上你的 SteamGridDB 金鑰</string>
+    <string name="setup_placeholder_tgdb_key">貼上你的 TheGamesDB 金鑰</string>
+    <string name="setup_placeholder_twitch_client_id">Twitch 用戶端 ID</string>
+    <string name="setup_placeholder_twitch_client_secret">Twitch 用戶端密鑰</string>
+    <string name="setup_placeholder_ss_username">ScreenScraper 使用者名稱</string>
+    <string name="setup_placeholder_ss_password">ScreenScraper 密碼</string>
+    <string name="setup_placeholder_ra_username">你的 RA 使用者名稱</string>
+    <string name="setup_placeholder_ra_key">貼上你的 RA Web API 金鑰</string>
+    <string name="setup_placeholder_steam_id">7656119… 或你的自訂網址名稱</string>
+    <string name="setup_placeholder_steam_key">貼上你的 Steam Web API 金鑰</string>
+    <string name="setup_connect_sgdb">連結 SteamGridDB</string>
+    <string name="setup_connect_tgdb">連結 TheGamesDB</string>
+    <string name="setup_connect_igdb">連結 IGDB</string>
+    <string name="setup_connect_ss">連結 ScreenScraper</string>
+    <string name="setup_connect_ra">連結 RetroAchievements</string>
+    <string name="setup_connect_steam">連結 Steam</string>
+    <string name="setup_test_credentials">測試憑證</string>
+    <string name="setup_test_account">測試帳戶</string>
+    <string name="setup_connected_as">已連結的帳戶</string>
+
+    <!-- Achievement services page -->
+    <string name="setup_achievements_intro">選用且免費。RetroAchievements 和 Steam 會以 Shiba Coins 的形式追蹤成就。</string>
+
+    <!-- Controller page -->
+    <string name="setup_controller_type">控制器類型</string>
+    <string name="setup_controller_type_sub">變更每個提示中的按鈕圖示</string>
+    <string name="setup_controller_ab_swap">對調確認與返回</string>
+    <string name="setup_controller_xy_swap">對調選項與排序</string>
+    <string name="setup_controller_xy_swap_sub">僅限啟動器選單，不影響模擬器的控制</string>
+    <string name="setup_on">開啟</string>
+    <string name="setup_off">關閉</string>
+    <string name="setup_controller_summary">%1$s · %2$s 確認</string>
+    <string name="setup_button_circle">圓圈</string>
+    <string name="setup_button_cross">叉</string>
+    <string name="setup_confirm_swap_off">關閉：%1$s 確認，%2$s 返回</string>
+    <string name="setup_confirm_swap_on">開啟：%1$s 確認，%2$s 返回</string>
+
+    <!-- Local achievements page -->
+    <string name="setup_local_vita_header">PS Vita · Vita3K</string>
+    <string name="setup_local_vita_set">設定 Vita3K 資料資料夾</string>
+    <string name="setup_local_vita_set_sub">授予 ux0 資料夾（或包含它的資料夾）的存取權</string>
+    <string name="setup_local_vita_folder_sub">Vita3K 資料資料夾：使用 ✎ 選擇其他資料夾</string>
+    <string name="setup_local_ps3_header">PS3 · ARMSX3</string>
+    <string name="setup_local_ps3_set">設定 ARMSX3 資料資料夾</string>
+    <string name="setup_local_ps3_set_sub">授予 PS3/config/dev_hdd0 或其上下層任一資料夾的存取權</string>
+    <string name="setup_local_ps3_folder_sub">ARMSX3 資料資料夾：使用 ✎ 選擇其他資料夾</string>
+    <string name="setup_local_x360_header">Xbox 360 · X360 Mobile</string>
+    <string name="setup_local_x360_set">設定 X360 Mobile 資料資料夾</string>
+    <string name="setup_local_x360_set_sub">在資料夾選擇器的側邊選單中選擇 X360 Mobile，然後允許存取</string>
+    <string name="setup_local_x360_folder_sub">X360 Mobile 資料資料夾：使用 ✎ 選擇其他資料夾</string>
+    <string name="setup_local_xendroid_header">Xbox 360 · XenDroid</string>
+    <string name="setup_local_xendroid_set">設定 XenDroid 資料資料夾</string>
+    <string name="setup_local_xendroid_set_sub">授予 Android/data/xendroid.compose 或其上下層任一資料夾的存取權</string>
+    <string name="setup_local_xendroid_folder_sub">XenDroid 資料資料夾：使用 ✎ 選擇其他資料夾</string>
+
+    <!-- RetroArch page -->
+    <string name="setup_retroarch_cores_folder">核心資料夾</string>
+    <plurals name="setup_retroarch_cores_detected">
+        <item quantity="other">偵測到 %1$d 個核心</item>
+    </plurals>
+    <string name="setup_retroarch_linked">已連結</string>
+    <string name="setup_retroarch_relink">重新連結資料夾</string>
+    <string name="setup_retroarch_relink_sub">重新選擇 RetroArch 的資料夾</string>
+    <string name="setup_retroarch_recheck">重新檢查核心</string>
+    <string name="setup_retroarch_recheck_sub">安裝新核心後使用</string>
+    <string name="setup_retroarch_unlink">取消連結 RetroArch</string>
+    <string name="setup_retroarch_unlink_sub">改回提供所有精選核心</string>
+    <string name="setup_retroarch_intro">已安裝 RetroArch。連結其資料夾後，啟動遊戲時只會提供你實際擁有的核心；否則會顯示所有精選核心（未經驗證）。</string>
+    <string name="setup_retroarch_link">連結 RetroArch 資料夾</string>
+    <string name="setup_retroarch_link_sub">選擇 com.retroarch 文件樹狀結構</string>
+
+    <!-- Emulators page -->
+    <string name="setup_emulators_empty">目前沒有任何含有遊戲的主機。掃描 ROM 資料夾後，每部主機都會連同要啟動的模擬器顯示在這裡；你可以隨時在「設定 ▸ 模擬器」中變更。</string>
+    <string name="setup_emulators_none">無</string>
+
+    <!-- Windows games page -->
+    <string name="setup_windows_intro">請選擇每款遊戲各有一個子資料夾的資料夾。PFP 會掃描其中的 Windows 遊戲，不會變更其中的任何內容。</string>
+    <string name="setup_windows_detected">已偵測到</string>
+    <string name="setup_windows_set">設定 Windows 遊戲資料夾</string>
+    <string name="setup_windows_change">變更 Windows 遊戲資料夾</string>
+    <string name="setup_windows_set_sub">授予遊戲安裝資料夾的存取權</string>
+
+    <!-- Hints and touch page -->
+    <string name="setup_hints_enabled">按鈕提示</string>
+    <string name="setup_hints_enabled_sub">在 XMB、設定和媒體畫面上閒置時顯示的提示標籤</string>
+    <string name="setup_hints_delay">提示延遲</string>
+    <string name="setup_hints_delay_sub">停下操作多久後顯示提示（1–5 秒）</string>
+    <plurals name="setup_hints_delay_seconds">
+        <item quantity="other">%1$d 秒</item>
+    </plurals>
+    <string name="setup_hints_delay_fraction">%1$s 秒</string>
+    <string name="setup_hints_touch">觸控按鈕</string>
+    <string name="setup_hints_touch_sub">螢幕上的應用程式匣按鈕。「自動」會在你觸碰螢幕後顯示它</string>
+    <string name="setup_touch_auto">自動</string>
+    <string name="setup_touch_always_show">一律顯示</string>
+    <string name="setup_touch_always_hide">一律隱藏</string>
+    <string name="setup_hints_summary_on">開啟 · %1$s</string>
+
+    <!-- Home app page -->
+    <string name="setup_home_intro">Android 會請你選擇主畫面應用程式並加以確認。你隨時可以在 Android 的「預設應用程式」設定中切換回來。</string>
+    <string name="setup_home_current">目前的主畫面應用程式</string>
+    <string name="setup_home_set">設為主畫面應用程式</string>
+    <string name="setup_home_set_sub">開啟 Android 的主畫面應用程式選擇器</string>
+    <string name="setup_home_is_pfp">Play Field Portal</string>
+    <string name="setup_home_not_pfp">不是 Play Field Portal</string>
+
+    <!-- Finish page -->
+    <string name="setup_finish_nothing">目前尚未設定任何項目。所有資料夾和服務都可以隨時從「設定」新增。</string>
+    <string name="setup_finish_summary">摘要</string>
+    <string name="setup_summary_controller">控制器</string>
+    <string name="setup_summary_rom">ROM 收藏庫</string>
+    <string name="setup_summary_music">音樂</string>
+    <string name="setup_summary_video">影片</string>
+    <string name="setup_summary_photo">相片</string>
+    <string name="setup_summary_artwork">圖片庫</string>
+    <string name="setup_summary_vita">Vita 資料資料夾</string>
+    <string name="setup_summary_ps3">PS3 資料資料夾</string>
+    <string name="setup_summary_x360">X360 Mobile 資料資料夾</string>
+    <string name="setup_summary_xendroid">XenDroid 資料資料夾</string>
+    <string name="setup_summary_windows">Windows 遊戲</string>
+    <string name="setup_summary_hints">按鈕提示</string>
+    <string name="setup_summary_home">主畫面應用程式</string>
+    <string name="setup_not_set">未設定</string>
+    <string name="setup_connected">已連結</string>
+    <string name="setup_retroarch_not_linked">未連結</string>
+    <plurals name="setup_retroarch_cores_count">
+        <item quantity="other">%1$d 個核心</item>
+    </plurals>
+    <string name="setup_roots_more">%1$s 等另外 %2$d 個</string>
+    <string name="setup_finish_xmb_header">XMB 版面配置</string>
+    <string name="setup_finish_autofit">自動調整 XMB 版面配置（PSP 比例），可隨時在「設定」中變更</string>
+    <string name="setup_finish_open_lm">開啟收藏庫管理員</string>
+    <string name="setup_finish_open_lm_sub">新增主機並掃描你剛設定的 ROM 資料夾</string>
+    <string name="setup_finish_go_library">前往你的收藏庫</string>
+    <string name="setup_finish_go_library_sub">直接跳至「所有遊戲」</string>
+    <string name="setup_finish_done">完成</string>
+    <string name="setup_finish_done_sub">前往啟動器</string>
+
+    <!-- Messages the wizard shows or sends to the notification tray -->
+    <string name="setup_status_testing">正在測試…</string>
+    <plurals name="setup_msg_rom_folders_created">
+        <item quantity="other">已建立 %1$d 個主機資料夾。請將遊戲複製到對應的資料夾中。</item>
+    </plurals>
+    <plurals name="setup_msg_rom_folders_created_existing">
+        <item quantity="other">已建立 %1$d 個主機資料夾（%2$d 個已存在）。請將遊戲複製到對應的資料夾中。</item>
+    </plurals>
+    <string name="setup_msg_artwork_failed">無法在該資料夾中建立圖片庫。請選擇可寫入的資料夾。</string>
+    <string name="setup_msg_artwork_reconnected">已重新連結現有的圖片庫。</string>
+    <string name="setup_msg_artwork_created">已建立圖片庫。</string>
+    <plurals name="setup_msg_artwork_games_linked">
+        <item quantity="other">已從資料夾中現有的檔案連結 %1$d 款遊戲。</item>
+    </plurals>
+    <string name="setup_msg_artwork_import_hint">將其他啟動器的媒體放在其 import/ 資料夾下，即可彙整到這裡。</string>
+    <string name="setup_msg_import_none_yet">目前沒有可匯入的內容。請將檔案放在圖片資料夾的 import/ 目錄下。</string>
+    <string name="setup_msg_import_unreadable">無法讀取該匯入來源。</string>
+    <string name="setup_msg_import_empty">沒有可匯入的內容，所有項目都已存在。</string>
+    <string name="setup_msg_import_started">正在匯入「%1$s」。進度會顯示在通知中，詳細資料會出現在「設定 ▸ 圖片匯入」。</string>
+    <string name="setup_msg_retroarch_linked">已連結 RetroArch。「模擬器」中現在會提供已安裝的核心。</string>
+    <string name="setup_msg_retroarch_rechecked">已重新檢查 RetroArch 核心。</string>
+    <string name="setup_msg_retroarch_unlinked">已移除 RetroArch 連結。在你重新連結之前，不會提供任何 RetroArch 核心。</string>
+    <string name="setup_msg_vita_set">已設定 Vita3K 資料資料夾。可在收藏庫管理員中從 PS Vita 記憶卡掃描已安裝的遊戲。</string>
+    <string name="setup_msg_vita_released">已釋放 Vita3K 資料資料夾，磁碟上的檔案未受影響。</string>
+    <string name="setup_msg_ps3_set">已設定 PS3 資料資料夾。請在「設定 ▸ 成就 ▸ 更新成就」中執行自動配對，以連結 PS3 獎盃。</string>
+    <string name="setup_msg_ps3_released">已釋放 PS3 資料資料夾，磁碟上的檔案未受影響。</string>
+    <string name="setup_msg_x360_set">已設定 %1$s 資料資料夾。請在「設定 ▸ 成就 ▸ 更新成就」中執行自動配對，以連結 Xbox 360 成就。</string>
+    <string name="setup_msg_x360_released">已釋放 %1$s 資料資料夾，磁碟上的檔案未受影響。</string>
+    <string name="setup_msg_sgdb_connected">已連結 SteamGridDB</string>
+    <string name="setup_msg_tgdb_connected">已連結 TheGamesDB</string>
+    <string name="setup_msg_igdb_connected">已連結 IGDB</string>
+    <string name="setup_msg_ss_connected">已連結 ScreenScraper</string>
+    <string name="setup_msg_ra_connected">已連結 RetroAchievements</string>
+
+    <!-- ROM root scan report (also shown by Library Manager) -->
+    <string name="setup_rom_scan_no_root">請先在「設定 ▸ 收藏庫 ▸ 收藏庫管理員」中新增 ROM 資料夾。</string>
+    <string name="setup_rom_scan_none">已掃描 %2$s中的 %1$s，未找到新的 ROM。請將遊戲複製到對應的系統資料夾後再試一次。</string>
+    <string name="setup_rom_scan_loaded">已從 %3$s載入 %1$s、%2$s。</string>
+    <string name="setup_rom_scan_systems_new">%1$s（%2$s）</string>
+    <plurals name="setup_rom_scan_folders">
+        <item quantity="other">%1$d 個資料夾</item>
+    </plurals>
+    <plurals name="setup_rom_scan_systems">
+        <item quantity="other">%1$d 個系統</item>
+    </plurals>
+    <plurals name="setup_rom_scan_new_consoles">
+        <item quantity="other">%1$d 部新主機</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roms">
+        <item quantity="other">%1$d 個 ROM</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roots">
+        <item quantity="other">%1$d 個 ROM 資料夾</item>
+    </plurals>
+    <plurals name="setup_rom_scan_skipped">
+        <item quantity="other">已略過 %1$d 個資料夾（無法讀取收藏庫）。</item>
+    </plurals>
+
+    <!-- Media library scans started by the wizard and Settings -->
+    <string name="setup_media_add_root_first">請先新增根目錄資料夾。</string>
+    <string name="setup_media_not_ready">這個資料夾的儲存空間尚未就緒。請稍後再試。</string>
+    <string name="setup_media_scan_failed_title">%1$s掃描失敗</string>
+    <string name="setup_media_scan_finished_title">%1$s掃描完成</string>
+    <string name="setup_media_scan_stopped_title">%1$s掃描已停止</string>
+    <string name="setup_media_scanning_title">正在掃描%1$s</string>
+    <string name="setup_media_stop_note">下次會重新掃描這個資料夾。</string>
+    <string name="setup_media_stopped">未完成即停止</string>
+    <plurals name="setup_media_tracks">
+        <item quantity="other">%1$d 首曲目</item>
+    </plurals>
+    <plurals name="setup_media_photos">
+        <item quantity="other">%1$d 張相片</item>
+    </plurals>
+    <plurals name="setup_media_videos">
+        <item quantity="other">%1$d 部影片</item>
+    </plurals>
+    <plurals name="setup_media_roots">
+        <item quantity="other">%1$d 個根目錄</item>
+    </plurals>
+    <string name="setup_media_found">在 %2$s中找到 %1$s。</string>
+</resources>

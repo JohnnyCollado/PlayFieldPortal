@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Localization slice H1: theme package (.xmbtheme) import errors -->
+    <!-- theme.json is the name of a file inside the theme archive; keep it as is -->
+    <string name="thm_error_manifest_missing">У архиви недостаје обавезна датотека theme.json</string>
+    <!-- %1$s is the technical parse error; theme.json is a file name -->
+    <string name="thm_error_manifest_invalid">Неважећа датотека theme.json: %1$s</string>
+    <!-- %1$s is the theme id taken from the file. Keep the quoted characters as written -->
+    <string name="thm_error_id_invalid">Неважећи ID теме „%1$s“ — користите слова, бројеве, „.“, „_“ или „-“ (највише 64)</string>
+    <!-- %1$s is a field name in theme.json (wave_color, accent_color or text_color; do not translate), %2$s is the value found -->
+    <string name="thm_error_color_invalid">Неважеће: %1$s „%2$s“ — очекује се #RRGGBB или #AARRGGBB</string>
+</resources>

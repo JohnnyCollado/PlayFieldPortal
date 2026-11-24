@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">Kretanje</string>
+    <string name="motion_summary">Koliko se toga kreće samo od sebe.</string>
+    <string name="motion_detail_animated">Sve se kreće</string>
+    <string name="motion_detail_reduced">Samo odabrano</string>
+    <string name="motion_detail_static">Ništa samo od sebe</string>
+    <string name="motion_sub_animated">Kreće se sve što može: ilustracije, ikone, pozadinske slike, pozadina i sjaj. Troši najviše baterije.</string>
+    <string name="motion_sub_reduced">Kreće se samo odabrana stavka: njena ilustracija, video isječak i sjaj. Pozadina se i dalje kreće.</string>
+    <string name="motion_sub_static">Ništa se ne kreće samo od sebe. Meniji i dalje klize dok se krećete kroz njih.</string>
+    <string name="motion_holds_background">Zaustavljeno dok je „Kretanje” postavljeno na „Statično”.</string>
+    <string name="motion_holds_glow">Mirno dok je „Kretanje” postavljeno na „Statično”.</string>
+</resources>

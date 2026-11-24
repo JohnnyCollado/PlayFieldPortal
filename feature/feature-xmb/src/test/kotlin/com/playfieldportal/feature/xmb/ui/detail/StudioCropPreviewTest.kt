@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
 import com.playfieldportal.feature.artwork.store.ArtworkKind
+import com.playfieldportal.feature.xmb.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -99,18 +100,18 @@ class StudioCropPreviewTest {
                 assertNull("$kind previews nothing, so it needs no caption", caption)
             } else {
                 assertNotNull("$kind previews, so it needs a caption", caption)
-                assertTrue("$kind caption must not be blank", caption!!.isNotBlank())
+                assertTrue("$kind caption must be a string resource", caption!! != 0)
             }
         }
     }
 
     @Test
     fun `captions name the tile the preview stands for`() {
-        assertEquals("XMB tile", cropPreviewCaptionFor(ArtworkKind.ICON))
-        assertEquals("Box Art tile", cropPreviewCaptionFor(ArtworkKind.BOX_ART))
-        assertEquals("3D Box tile", cropPreviewCaptionFor(ArtworkKind.BOX_3D))
-        assertEquals("Phys. Media tile", cropPreviewCaptionFor(ArtworkKind.PHYSICAL_MEDIA))
-        assertEquals("XMB icon animation", cropPreviewCaptionFor(ArtworkKind.ICON1))
-        assertEquals("Media strip", cropPreviewCaptionFor(ArtworkKind.VIDEO))
+        assertEquals(R.string.det_crop_caption_tile, cropPreviewCaptionFor(ArtworkKind.ICON))
+        assertEquals(R.string.det_crop_caption_box_art, cropPreviewCaptionFor(ArtworkKind.BOX_ART))
+        assertEquals(R.string.det_crop_caption_box_3d, cropPreviewCaptionFor(ArtworkKind.BOX_3D))
+        assertEquals(R.string.det_crop_caption_phys_media, cropPreviewCaptionFor(ArtworkKind.PHYSICAL_MEDIA))
+        assertEquals(R.string.det_crop_caption_icon_anim, cropPreviewCaptionFor(ArtworkKind.ICON1))
+        assertEquals(R.string.det_crop_caption_media_strip, cropPreviewCaptionFor(ArtworkKind.VIDEO))
     }
 }

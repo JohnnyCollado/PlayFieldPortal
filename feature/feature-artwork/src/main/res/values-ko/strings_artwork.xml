@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared -->
+    <string name="art_error_unexpected">예기치 않은 오류</string>
+    <string name="art_no_folder_linked">연결된 아트워크 폴더가 없습니다</string>
+    <string name="art_paused_message">아트워크가 일시 중지되었습니다. 새 아트를 저장하려면 아트워크 폴더를 다시 연결하세요.</string>
+    <string name="art_error_game_not_found">게임을 찾을 수 없습니다</string>
+    <string name="art_error_not_found_any_source">어느 소스에서도 찾을 수 없습니다</string>
+    <string name="art_found_via">%1$s에서 찾음</string>
+    <string name="art_results_label_updated">업데이트됨</string>
+    <string name="art_results_label_imported">가져옴</string>
+    <string name="art_progress_hashing">ROM 해시 계산 중…</string>
+    <string name="art_progress_searching">검색 중…</string>
+    <string name="art_asset_hero">히어로</string>
+    <string name="art_asset_background">배경</string>
+    <string name="art_asset_logo">로고</string>
+    <string name="art_asset_box_art">박스 아트</string>
+    <string name="art_asset_physical_media">실물 미디어</string>
+    <string name="art_asset_3d_box">3D 박스</string>
+    <string name="art_asset_screenshot">스크린샷</string>
+    <string name="art_asset_manual">설명서</string>
+    <string name="art_asset_video">동영상</string>
+    <string name="art_asset_icon_video">아이콘 동영상</string>
+    <string name="art_asset_icon_video_converting">아이콘 동영상(변환 중)</string>
+    <string name="art_source_storefronts">스토어</string>
+    <!-- Metadata fields (labels in the metadata preview and editor) -->
+    <string name="art_field_title">제목</string>
+    <string name="art_field_description">설명</string>
+    <string name="art_field_developer">개발사</string>
+    <string name="art_field_publisher">배급사</string>
+    <string name="art_field_year">연도</string>
+    <string name="art_field_release_date">출시일</string>
+    <string name="art_field_genre">장르</string>
+    <string name="art_field_age_rating">연령 등급</string>
+    <string name="art_field_franchise">프랜차이즈</string>
+    <string name="art_field_rating">평점</string>
+    <!-- Ways to apply scraped metadata (button labels) -->
+    <string name="art_policy_replace_all">모두 교체</string>
+    <string name="art_policy_fill_missing">빈 항목만 채우기</string>
+    <string name="art_policy_choose_fields">항목 선택</string>
+    <string name="art_policy_keep_current">현재 상태 유지</string>
+    <!-- Scrape (background task) -->
+    <string name="art_scrape_label_all">모든 게임 다시 스크랩 중</string>
+    <string name="art_scrape_label_missing">누락된 아트워크 스크랩 중</string>
+    <string name="art_scrape_stop_note">이미 가져온 아트워크는 유지됩니다.</string>
+    <string name="art_scrape_paused_all_title">아트워크 다시 스크랩 일시 중지됨</string>
+    <string name="art_scrape_paused_title">아트워크 스크랩 일시 중지됨</string>
+    <string name="art_scrape_finished_all_title">아트워크 다시 스크랩 완료</string>
+    <string name="art_scrape_finished_title">아트워크 스크랩 완료</string>
+    <string name="art_scrape_stopped_title">아트워크 스크랩 중지됨</string>
+    <string name="art_scrape_failed_title">아트워크 스크랩 실패</string>
+    <string name="art_scrape_result">%3$d개 중 %1$d개 성공, %2$d개 실패</string>
+    <plurals name="art_scrape_stopped_after">
+        <item quantity="other">게임 %1$d개 처리 후 중지됨 — 지금까지 가져온 아트워크는 유지됩니다</item>
+    </plurals>
+    <!-- Relink (background task) -->
+    <string name="art_relink_label">아트워크 다시 연결 중</string>
+    <plurals name="art_relink_label_consoles">
+        <item quantity="other">콘솔 %1$d개의 아트워크 다시 연결 중</item>
+    </plurals>
+    <string name="art_relink_stop_note">이미 연결된 아트워크는 그대로 유지됩니다.</string>
+    <string name="art_relink_finished_title">아트워크 다시 연결 완료</string>
+    <string name="art_relink_stopped_title">아트워크 다시 연결 중지됨</string>
+    <string name="art_relink_stopped_note">지금까지 연결된 아트워크는 유지됩니다</string>
+    <string name="art_relink_failed_title">아트워크 다시 연결 실패</string>
+    <plurals name="art_relink_games_linked">
+        <item quantity="other">게임 %1$d개 연결됨</item>
+    </plurals>
+    <plurals name="art_relink_files">
+        <item quantity="other">파일 %1$d개</item>
+    </plurals>
+    <string name="art_relink_result">%2$s 중 %1$s</string>
+    <string name="art_relink_result_unmatched">%1$s · %2$d개 일치 항목 없음</string>
+    <!-- Export to ES-DE (background task) -->
+    <string name="art_export_label">ES-DE용 아트워크 내보내는 중</string>
+    <string name="art_export_stop_note">이미 내보낸 파일은 그대로 유지됩니다.</string>
+    <string name="art_export_error_no_destination">대상 폴더가 없습니다</string>
+    <string name="art_export_error_access_lost">아트워크 폴더 접근 권한이 사라졌습니다</string>
+    <string name="art_export_dest_not_created">대상 폴더를 만들 수 없습니다.</string>
+    <plurals name="art_export_files_badge">
+        <item quantity="other">파일 %1$d개</item>
+    </plurals>
+    <string name="art_export_failed_title">아트워크 내보내기 실패</string>
+    <string name="art_export_stopped_title">아트워크 내보내기 중지됨</string>
+    <string name="art_export_finished_title">아트워크 내보내기 완료</string>
+    <plurals name="art_export_stopped_note">
+        <item quantity="other">파일 %1$d개를 먼저 내보냄</item>
+    </plurals>
+    <string name="art_export_result">%1$d개 복사됨, %2$d개 이미 있음, %3$d개 실패</string>
+    <!-- Import (background task and its notification) -->
+    <string name="art_import_plan_not_found">가져오기 계획을 찾을 수 없습니다</string>
+    <string name="art_import_plan_unreadable">가져오기 계획을 읽을 수 없습니다</string>
+    <string name="art_import_label">아트워크 가져오는 중 — %1$s</string>
+    <string name="art_import_stop_note">이미 가져온 아트워크는 유지됩니다.</string>
+    <string name="art_import_failed_title">아트워크 가져오기 실패</string>
+    <string name="art_import_cancelled">아트워크 가져오기 취소됨</string>
+    <string name="art_import_done">아트워크 가져옴</string>
+    <plurals name="art_import_needs_review">
+        <item quantity="other">아트워크를 가져왔습니다. 항목 %1$d개를 검토해야 합니다</item>
+    </plurals>
+    <string name="art_import_headline">%1$s: %2$s</string>
+    <string name="art_import_counts">%1$d개 가져옴, %2$d개 건너뜀, %3$d개 실패, %4$d개 모호함, %5$d개 일치 항목 없음.</string>
+    <string name="art_import_results_summary">%1$d개 가져옴, %2$d개 건너뜀</string>
+    <!-- Move artwork into the linked folder (background task) -->
+    <string name="art_move_label">아트워크를 폴더로 이동하는 중</string>
+    <string name="art_move_failed_title">아트워크 이동 실패</string>
+    <string name="art_move_stopped_title">아트워크 이동 중지됨</string>
+    <string name="art_move_finished_title">아트워크 이동 완료</string>
+    <plurals name="art_move_stopped_note">
+        <item quantity="other">파일 %1$d개를 먼저 이동함</item>
+    </plurals>
+    <string name="art_move_result">%1$d개 이동됨, %2$d개 이미 있음, %3$d개 실패</string>
+</resources>

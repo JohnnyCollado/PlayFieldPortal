@@ -10,7 +10,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import com.playfieldportal.studio.i18n.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,7 +34,7 @@ enum class StudioSection(val id: String, val label: String) {
     LAYOUT("layout", "Layout"),
     ICONS("icons", "Icons"),
     SOUNDS("sounds", "Sounds"),
-    BOOT("boot", "Boot & GameBoot"),
+    BOOT("boot", "Boot & Game Boot"),
     EXPORT_CHECK("export", "Export check"),
     ;
 

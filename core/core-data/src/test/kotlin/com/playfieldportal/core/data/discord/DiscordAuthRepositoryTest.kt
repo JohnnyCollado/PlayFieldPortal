@@ -1,11 +1,13 @@
 package com.playfieldportal.core.data.discord
 
+import com.playfieldportal.core.data.R
 import com.playfieldportal.core.data.network.NetworkMonitor
 import com.playfieldportal.core.domain.discord.DeviceAuthChallenge
 import com.playfieldportal.core.domain.discord.DeviceLoginState
 import com.playfieldportal.core.domain.discord.DeviceTokens
 import com.playfieldportal.core.domain.discord.DiscordSession
 import com.playfieldportal.core.domain.discord.DiscordSessionActivator
+import com.playfieldportal.core.domain.text.UiText
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -110,7 +112,7 @@ class DiscordAuthRepositoryTest {
 
         assertEquals(DeviceLoginState.Requesting, states.first())
         val error = assertIs<DeviceLoginState.Error>(states.last())
-        assertEquals("boom", error.message)
+        assertEquals(UiText.raw("boom"), error.message)
     }
 
     @Test
@@ -119,7 +121,8 @@ class DiscordAuthRepositoryTest {
 
         val states = repo(client, monitor = onlineMonitor(online = false)).loginWithDeviceQr().toList()
 
-        assertIs<DeviceLoginState.Error>(states.last())
+        val error = assertIs<DeviceLoginState.Error>(states.last())
+        assertEquals(UiText.res(R.string.data_discord_offline), error.message)
         coVerify(exactly = 0) { client.requestDeviceCode(any()) }
     }
 

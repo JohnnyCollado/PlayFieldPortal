@@ -5,6 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.playfieldportal.feature.xmb.R
 
 /**
  * The budget table and the codec chip: the two bits of the visualizer work that are plain data and
@@ -57,10 +58,10 @@ class VisualizerBudgetTest {
 
     @Test
     fun `labels are the ones the strip prints`() {
-        assertEquals("Off", VisualizerIds.labelFor(VisualizerIds.OFF))
-        assertEquals("Portal", VisualizerIds.labelFor(VisualizerIds.PORTAL))
-        assertEquals("Ripple", VisualizerIds.labelFor(VisualizerIds.RIPPLE))
-        assertEquals("Off", VisualizerIds.labelFor("nonsense"))
+        assertEquals(R.string.xmbu_visualizer_off, VisualizerIds.labelRes(VisualizerIds.OFF))
+        assertEquals(R.string.xmbu_visualizer_portal, VisualizerIds.labelRes(VisualizerIds.PORTAL))
+        assertEquals(R.string.xmbu_visualizer_ripple, VisualizerIds.labelRes(VisualizerIds.RIPPLE))
+        assertEquals(R.string.xmbu_visualizer_off, VisualizerIds.labelRes("nonsense"))
     }
 
     // ── Codec chip ────────────────────────────────────────────────────────────

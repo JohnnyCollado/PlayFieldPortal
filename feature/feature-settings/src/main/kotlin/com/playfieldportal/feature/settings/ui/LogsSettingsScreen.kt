@@ -1,5 +1,9 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.settings.R
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import com.playfieldportal.core.ui.components.PfpModalSpec
 import android.content.Context
 import android.content.Intent
@@ -75,17 +79,17 @@ fun LogsSettingsScreen(
     val shareTarget = shareFocusedLog ?: focusedLog
     val footerItems = when {
         shareFocusedLog != null -> listOf(
-            ControllerPromptItem(GamepadAction.SELECT, "Share"),
-            ControllerPromptItem(GamepadAction.BACK, "Back"),
+            ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.sets_logs_prompt_share)),
+            ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.sets_prompt_back)),
         )
         focusedLog != null -> listOf(
-            ControllerPromptItem(GamepadAction.SELECT, "Open"),
-            ControllerPromptItem(MediaRowShortcuts.northFace(state.xyLayout), "Share"),
-            ControllerPromptItem(GamepadAction.BACK, "Back"),
+            ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.sets_logs_prompt_open)),
+            ControllerPromptItem(MediaRowShortcuts.northFace(state.xyLayout), stringResource(R.string.sets_logs_prompt_share)),
+            ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.sets_prompt_back)),
         )
         clearFocused && state.logFiles.isNotEmpty() -> listOf(
-            ControllerPromptItem(GamepadAction.SELECT, "Clear"),
-            ControllerPromptItem(GamepadAction.BACK, "Back"),
+            ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.sets_logs_prompt_clear)),
+            ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.sets_prompt_back)),
         )
         else -> SettingsDefaultHelperItems
     }
@@ -98,11 +102,9 @@ fun LogsSettingsScreen(
         if (state.confirmClearVisible) {
             PfpModalSpec.Confirm(
                 key = "clear_logs",
-                title = "Clear All Logs?",
-                message = "${if (logCount == 1) "The log file" else "All $logCount log files"} " +
-                    "(${state.totalSize}) will be deleted. If you're " +
-                    "about to report a problem, share the log first. A cleared log can't be recovered.",
-                confirmLabel = "Clear",
+                title = stringResource(R.string.sets_logs_clear_title),
+                message = pluralStringResource(R.plurals.sets_logs_clear_message, logCount, logCount, state.totalSize),
+                confirmLabel = stringResource(R.string.sets_logs_clear_confirm),
                 destructive = true,
                 onConfirm = viewModel::confirmClear,
                 onCancel = viewModel::dismissClear,
@@ -113,8 +115,8 @@ fun LogsSettingsScreen(
     )
 
     SettingsScaffold(
-        title = "Settings",
-        subtitle = "Logs",
+        title = stringResource(R.string.settings_title),
+        subtitle = stringResource(R.string.sets_logs_title),
         onBack = onBack,
         modifier = modifier,
         helperFooterItems = footerItems,
@@ -146,12 +148,12 @@ fun LogsSettingsScreen(
             // would lose the screen's first focus to Clear All Logs, the only action present.
             if (!state.loaded) return@Column
 
-            SettingsGroup("Log files")
+            SettingsGroup(stringResource(R.string.sets_logs_group_files))
 
             if (state.logFiles.isEmpty()) {
                 SettingsRow(
-                    label = "No log files yet",
-                    sublabel = "A new log starts with every app launch. Select to check again.",
+                    label = stringResource(R.string.sets_logs_empty),
+                    sublabel = stringResource(R.string.sets_logs_empty_help),
                     focusKey = "logs_empty",
                     onClick = { viewModel.refresh() },
                 )
@@ -172,19 +174,19 @@ fun LogsSettingsScreen(
                 )
             }
 
-            SettingsGroup("Manage")
+            SettingsGroup(stringResource(R.string.sets_logs_group_manage))
 
             val hasLogs = state.logFiles.isNotEmpty()
             SettingsRow(
-                label = "Clear all logs",
+                label = stringResource(R.string.sets_logs_clear_row),
                 sublabel = if (hasLogs) {
-                    "Deletes every saved log. This session keeps logging into a fresh file."
+                    stringResource(R.string.sets_logs_clear_row_help)
                 } else {
-                    "Nothing to clear"
+                    stringResource(R.string.sets_logs_clear_row_none)
                 },
                 focusKey = "logs_clear",
                 trailing = if (hasLogs) {
-                    { LogsValueText(state.totalSummary) }
+                    { LogsValueText(state.totalSummary.asString()) }
                 } else {
                     null
                 },
@@ -194,12 +196,11 @@ fun LogsSettingsScreen(
                 onClick = { viewModel.requestClear() },
             )
 
-            SettingsGroup("About logs")
+            SettingsGroup(stringResource(R.string.sets_logs_group_about))
 
             SettingsRow(
-                label = "What gets saved",
-                sublabel = "Only the most recent sessions are kept (about 2 MB at most). Passwords, " +
-                    "tokens, account names and emails are removed before anything is written.",
+                label = stringResource(R.string.sets_logs_saved),
+                sublabel = stringResource(R.string.sets_logs_saved_help),
                 focusKey = "logs_about",
             )
         }
@@ -220,9 +221,10 @@ private fun LogFileRow(
     onRowFocusChanged: (Boolean) -> Unit,
     onShareFocusChanged: (Boolean) -> Unit,
 ) {
+    val shareLabel = stringResource(R.string.sets_logs_share_file, file.name)
     SettingsRow(
         label = file.name,
-        sublabel = file.startedLabel,
+        sublabel = file.startedLabel?.asString(),
         focusKey = "logs_file_${file.name}",
         labelTrailing = if (file.isCurrent) {
             { CurrentSessionTag() }
@@ -232,7 +234,7 @@ private fun LogFileRow(
         trailing = { LogsValueText(file.size) },
         actions = listOf(
             SettingsRowAction(
-                label = "Share ${file.name}",
+                label = shareLabel,
                 onClick = onShare,
                 // The same treatment as the Sound screen's Preview action.
                 actionFocusBackgroundColor = lerp(SettingsAccent, Color.Black, 0.50f),
@@ -240,7 +242,7 @@ private fun LogFileRow(
             ) {
                 Icon(
                     Icons.Default.Share,
-                    contentDescription = "Share ${file.name}",
+                    contentDescription = shareLabel,
                     tint = SettingsAccent,
                     modifier = Modifier
                         .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
@@ -256,7 +258,7 @@ private fun LogFileRow(
 @Composable
 private fun CurrentSessionTag() {
     Text(
-        text = "CURRENT",
+        text = stringResource(R.string.sets_logs_current),
         color = Color.White,
         fontSize = 10.sp,
         fontWeight = FontWeight.Bold,
@@ -295,7 +297,7 @@ private fun openLogExternally(context: Context, fileName: String) {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(
-            Intent.createChooser(intent, "Open log with")
+            Intent.createChooser(intent, context.getString(R.string.sets_logs_open_with))
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
     }.onFailure { Timber.w(it, "Could not open log file externally") }
@@ -309,11 +311,11 @@ private fun shareLogFile(context: Context, fileName: String) {
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_STREAM, uri)
-            putExtra(Intent.EXTRA_SUBJECT, "Play Field Portal log — $fileName")
+            putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.sets_logs_share_subject, fileName))
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(
-            Intent.createChooser(intent, "Share log file")
+            Intent.createChooser(intent, context.getString(R.string.sets_logs_share_chooser))
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
     }.onFailure { Timber.w(it, "Could not share log file") }

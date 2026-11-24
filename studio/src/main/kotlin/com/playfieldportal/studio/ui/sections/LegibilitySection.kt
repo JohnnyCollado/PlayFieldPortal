@@ -3,7 +3,7 @@ package com.playfieldportal.studio.ui.sections
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
+import com.playfieldportal.studio.i18n.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
@@ -33,9 +33,9 @@ val LEGIBILITY_ICON_CHOICES: List<Pair<String, String>> = listOf(
 @Composable
 fun LegibilitySection(state: StudioState, viewModel: StudioViewModel) {
     val legibility = state.legibility
-    // A theme that says nothing behaves as Automatic text and plain icons.
+    // A theme that says nothing behaves as Automatic text and the launcher's default icons (dark offset shadow).
     val textStyle = legibility?.text ?: "auto"
-    val iconStyle = legibility?.icon ?: "none"
+    val iconStyle = legibility?.icon ?: "offset_shadow"
     SectionColumn {
         SectionHeading("Text")
         ChoiceChips(LEGIBILITY_TEXT_CHOICES, textStyle) { if (it != textStyle) viewModel.setTextLegibility(it) }

@@ -1,8 +1,12 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import com.playfieldportal.core.domain.model.TouchGesture
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.components.TouchPromptItem
 import com.playfieldportal.core.ui.sound.MenuSound
+import com.playfieldportal.feature.xmb.R
 
 // ── Installed-app picker: pure logic ──────────────────────────────────────────
 //
@@ -84,10 +88,9 @@ internal fun appPickerSound(before: AppPickerState?, after: AppPickerState?): Me
 }
 
 /** The removal confirmation's question: apps leave a custom card, or the library they were picked into. */
-internal fun removalQuestion(target: AppPickerTarget, count: Int): String {
-    val place = if (target is AppPickerTarget.CardApps) "card" else "library"
-    return "Remove $count app(s) from this $place?"
-}
+internal fun removalQuestion(target: AppPickerTarget, count: Int): UiText =
+    if (target is AppPickerTarget.CardApps) UiText.plural(R.plurals.xmbm_picker_remove_from_card, count)
+    else UiText.plural(R.plurals.xmbm_picker_remove_from_library, count)
 
 // ── Touch mode ────────────────────────────────────────────────────────────────
 //
@@ -96,8 +99,10 @@ internal fun removalQuestion(target: AppPickerTarget, count: Int): String {
 // the grid binds.
 
 /** The touch footer. Empty while the removal panel is up — its Cancel / Remove buttons say it all. */
+@Composable
 internal fun appPickerTouchPrompts(confirmingRemovals: Boolean): List<TouchPromptItem> =
-    if (confirmingRemovals) emptyList() else listOf(TouchPromptItem(TouchGesture.TAP, "Toggle"))
+    if (confirmingRemovals) emptyList()
+    else listOf(TouchPromptItem(TouchGesture.TAP, stringResource(R.string.xmbm_picker_touch_toggle)))
 
 /** Whether the header carries the Search / Done pills: touch mode, and no modal over the grid. */
 internal fun showAppPickerTouchPills(state: AppPickerState, showTouchControls: Boolean): Boolean =

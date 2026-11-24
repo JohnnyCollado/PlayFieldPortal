@@ -1,0 +1,330 @@
+# Theme Studio in cs. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	Nový
+Open…	Otevřít…
+Upgrade folder…	Aktualizovat složku…
+Convert .ptf…	Převést .ptf…
+Batch convert…	Hromadný převod…
+Unpack assets…	Rozbalit zdroje…
+Undo	Zpět
+Redo	Znovu
+Export .pfptheme…	Exportovat .pfptheme…
+Import PSP theme ▾	Importovat motiv PSP ▾
+Working…	Pracuje se…
+Open ▾	Otevřít ▾
+Open: {0} ▾	Otevřít: {0} ▾
+XMB (back to the crossbar)	XMB (zpět na lištu)
+Stop {0}	Zastavit {0}
+Play {0}	Přehrát {0}
+Video only — sound plays on the device	Jen video — zvuk se přehrává v zařízení
+This theme uses an older format. Saving upgrades it to the current one.	Tento motiv používá starší formát. Uložením se převede na aktuální.
+See changes	Zobrazit změny
+Something went wrong	Něco se pokazilo
+OK	OK
+Cancel	Zrušit
+Open theme	Otevřít motiv
+PSP theme to convert	Motiv PSP k převodu
+Export theme	Exportovat motiv
+Info	Informace
+Color	Barva
+Background	Pozadí
+Legibility	Čitelnost
+Layout	Rozložení
+Icons	Ikony
+Sounds	Zvuky
+Boot & Game Boot	Boot a Game Boot
+Export check	Kontrola exportu
+Untitled	Bez názvu
+Video	Video
+Image	Obrázek
+Wave	Vlna
+Not set	Nenastaveno
+Set	Nastaveno
+Preview only	Jen náhled
+None custom	Žádné vlastní
+{0} custom	Vlastní: {0}
+None set	Nic nenastaveno
+{0} set	Nastaveno: {0}
+{0} of 2	{0} ze 2
+Ready	Připraveno
+Untitled Theme	Motiv bez názvu
+App Drawer	Zásuvka aplikací
+Settings	Nastavení
+App Picker	Výběr aplikací
+Game Picker	Výběr her
+Artwork Studio	Studio obrázků
+Game Detail Screen	Podrobnosti hry
+Achievement Screen	Úspěchy
+Per-Game Achievement Screen	Úspěchy hry
+Lock Screen	Zamykací obrazovka
+Boot	Boot
+Game Boot	Game Boot
+In this file	V tomto souboru
+Nothing embedded yet	Zatím nic vloženo
+Theme name	Název motivu
+Author	Autor
+Short description	Krátký popis
+New theme — not saved yet	Nový motiv — zatím neuložen
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	Uloženo: název, autor a popis jsou součástí souboru .pfptheme. Datum aktualizace se nastaví při exportu.
+Accent color	Barva zvýraznění
+Auto (from the wallpaper)	Automaticky (z tapety)
+Custom	Vlastní
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	Každá nová tapeta nebo video nastaví zvýraznění. Vyberte barvu, chcete-li si ponechat svou.
+Your accent stays when the wallpaper or video changes.	Vaše zvýraznění zůstane, když se změní tapeta nebo video.
+Custom accent	Vlastní zvýraznění
+Icon color	Barva ikon
+Auto (follows the theme)	Automaticky (podle motivu)
+White	Bílá
+Main text color	Barva hlavního textu
+Titles and labels: the crossbar, list rows and status strip, and every screen.	Nadpisy a popisky: lišta, řádky seznamů, stavový pruh a každá obrazovka.
+Auto (built-in colors)	Automaticky (vestavěné barvy)
+Use my exact color	Použít mou přesnou barvu
+Subtext color	Barva vedlejšího textu
+Subtitles, sublabels and values.	Podtitulky, vedlejší popisky a hodnoty.
+Same as main text	Stejná jako hlavní text
+Source	Zdroj
+Wave motion	Pohyb vlny
+Video playback	Přehrávání videa
+Moving	Pohyblivé
+Moving, dim	Pohyblivé, ztlumené
+Still	Nehybné
+Still, dim	Nehybné, ztlumené
+None — live wave background	Žádný — živé pozadí s vlnou
+Replace…	Nahradit…
+Re-crop…	Znovu oříznout…
+Clear	Vymazat
+Clear video	Vymazat video
+Pick frame…	Vybrat snímek…
+The preview always shows a frozen wave; the style plays on the device.	Náhled vždy ukazuje zastavenou vlnu; styl se přehrává v zařízení.
+Lock screen	Zamykací obrazovka
+None — the theme leaves the device lock screen alone	Žádná — motiv ponechá zamykací obrazovku zařízení beze změny
+Choose Image…	Vybrat obrázek…
+Use Poster	Použít plakát
+Use Wallpaper	Použít tapetu
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	Jen statický obrázek. Zařízení jej ořízne na svou obrazovku a nastaví jen tehdy, když uživatel při použití souhlasí.
+Crop	Oříznout
+Zoom	Přiblížení
+Center	Vystředit
+Apply	Použít
+Reset	Obnovit
+Text	Text
+Automatic	Automaticky
+None	Žádné
+Drop shadow	Stín
+Outline	Obrys
+Contrast plate	Kontrastní podklad
+Offset shadow (dark)	Posunutý stín (tmavý)
+Offset shadow (light)	Posunutý stín (světlý)
+Contour dark	Obrys tmavý
+Contour light	Obrys světlý
+Contour auto	Obrys automatický
+Solid unfocused icons	Plné nevybrané ikony
+Older launchers ignore these and show plain text and icons.	Starší launchery to ignorují a zobrazí obyčejný text a ikony.
+Preview with my layout	Náhled s mým rozložením
+Preview only — never saved in the theme. Remembered on this computer.	Jen náhled — nikdy se neukládá do motivu. Zapamatováno v tomto počítači.
+Use my layout in the preview	Použít mé rozložení v náhledu
+Scale — {0}	Měřítko — {0}
+Horizontal — {0}	Vodorovně — {0}
+Vertical — {0}	Svisle — {0}
+Biblically Accurate preview	Náhled věrný originálu
+Adjust on preview	Upravit v náhledu
+All {0}	Vše {0}
+Crossbar {0}	Lišta {0}
+Items {0}	Položky {0}
+Consoles {0}	Konzole {0}
+Physical Media {0}	Fyzická média {0}
+On screen	Na obrazovce
+Customized {0}	Upravené {0}
+Showing {0} of {1}	Zobrazeno {0} z {1}
+Select a slot to see it at real size, replace it, or export its template.	Vyberte pozici, abyste ji viděli ve skutečné velikosti, nahradili ji nebo exportovali její šablonu.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	Přetáhněte soubor obrázku (png, gif, jpg, bmp, webp) na libovolnou pozici a nahraďte její ikonu.
+Import icon pack… ▾	Importovat balíček ikon… ▾
+Export templates…	Exportovat šablony…
+Reset all	Obnovit vše
+Local file…	Místní soubor…
+From theme…	Z motivu…
+Export template	Exportovat šablonu
+Menu sounds	Zvuky nabídky
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	Co necháte prázdné, ponechá vestavěný zvuk. Klipy se musí vejít do limitu daného řádku.
+Navigation	Navigace
+Category change	Změna kategorie
+Options panel	Panel možností
+Back / cancel	Zpět / zrušit
+Confirm / apply	Potvrdit / použít
+Error / invalid	Chyba / neplatné
+Notification	Oznámení
+Ambience (loops)	Atmosféra (smyčka)
+Built-in	Vestavěný
+Up to {0}	Až {0}
+Choose…	Vybrat…
+▶ Play	▶ Přehrát
+■ Stop	■ Zastavit
+Boot sequences	Spouštěcí sekvence
+Choose the built-in sequence or your own MP4 for each.	Pro každou vyberte vestavěnou sekvenci, nebo vlastní MP4.
+The launcher's own {0} sequence.	Vlastní sekvence {0} launcheru.
+Your own MP4 (H.264).	Vaše vlastní MP4 (H.264).
+Choose MP4…	Vybrat MP4…
+Play in preview	Přehrát v náhledu
+Use built-in	Použít vestavěnou
+All media is within limits	Všechna média jsou v limitech
+Opens on older launchers	Otevře se ve starších launcherech
+Fix the items marked ✕ before exporting.	Před exportem opravte položky označené ✕.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	Při exportu se vytvoří náhledový obrázek hotového motivu, který se zobrazí jako miniatura v galerii motivů launcheru.
+Opened {0}	Otevřeno: {0}
+Exported {0}	Exportováno: {0}
+Folder of .pfptheme files to upgrade	Složka souborů .pfptheme k aktualizaci
+Folder with .ptf files	Složka se soubory .ptf
+Output folder for .pfptheme files	Cílová složka pro soubory .pfptheme
+PSP theme to unpack	Motiv PSP k rozbalení
+Folder for unpacked assets	Složka pro rozbalené prostředky
+Converting {0}  ({1}/{2})	Převádí se {0}  ({1}/{2})
+This theme was made by a newer version (format v{0}). Parts this version doesn't know are kept when you save.	Tento motiv byl vytvořen v novější verzi (formát v{0}). Části, které tato verze nezná, se při uložení zachovají.
+CXMB theme	Motiv CXMB
+This file is a CXMB custom firmware theme (.ctf). Those replace PSP system files rather than describing wallpaper and colors, so they can't be converted. Official PSP themes (.ptf) open fine.	Tento soubor je motiv CXMB pro vlastní firmware (.ctf). Takové motivy nahrazují systémové soubory PSP místo popisu pozadí a barev, a proto je nelze převést. Oficiální motivy PSP (.ptf) se otevřou bez problémů.
+Batch conversion finished	Hromadný převod dokončen
+Converted: {0}	Převedeno: {0}
+Converted with caveats: {0}	Převedeno s výhradami: {0}
+Skipped (CXMB): {0} — {1}	Přeskočeno (CXMB): {0} — {1}
+Failed: {0}	Selhalo: {0}
+Theme upgrade finished	Aktualizace motivů dokončena
+Upgraded: {0} (originals kept as .bak)	Aktualizováno: {0} (originály zachovány jako .bak)
+Already current: {0}	Již aktuální: {0}
+Made by a newer version, left alone: {0}	Z novější verze, ponecháno beze změny: {0}
+Report: {0}	Zpráva: {0}
+Background motion	Pohyb pozadí
+Still: frame at {0}	Statický snímek: snímek v {0}
+Still: baked into the theme	Statický snímek: uložený v motivu
+Import wallpaper	Importovat pozadí
+Import video	Importovat video
+Lock screen image	Obrázek zamykací obrazovky
+(embedded image)	(vložený obrázek)
+Fit	Přizpůsobení
+Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.	Rušné pozadí — popisky mohou být špatně čitelné. Nejlépe fungují jemné obrázky s nízkým kontrastem.
+The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, a Still style, or Motion set to Static on the device).	Statický snímek je plakát videa — zobrazí se, kdykoli je přehrávání zastavené (úspora baterie, hra, styl Statický nebo Pohyb nastavený na Statický v zařízení).
+The theme offers this image for the device lock screen	Motiv nabízí tento obrázek pro zamykací obrazovku zařízení
+Output {0}×{1}	Výstup {0}×{1}
+{0}–{1} recommended, {2} max, {3} MB max	{0}–{1} doporučeno, max. {2}, max. {3} MB
+Whether the boot video and Game Boot play at all is a device setting: {0}	Zda se úvodní video a Game Boot vůbec přehrají, je nastavení zařízení: {0}
+This clip is longer than the cap — the launcher will refuse it.	Tento klip je delší než limit — launcher ho odmítne.
+Choose a {0} video	Vybrat video {0}
+Dark icon color — icons may be hard to see over the wallpaper scrim.	Tmavá barva ikon — ikony mohou být nad ztmaveným pozadím špatně vidět.
+Saved in the theme for a later update. The launcher currently shows the color exactly as picked.	Uloženo v motivu pro pozdější aktualizaci. Launcher zatím zobrazuje barvu přesně tak, jak byla vybrána.
+Original	Původní
+Classic Blue	Klasická modrá
+Sunset Orange	Západ slunce
+Fresh Green	Svěží zelená
+Royal Purple	Královská fialová
+Crimson Red	Karmínová
+Silver	Stříbrná
+Sakura Pink	Sakurová růžová
+Golden Amber	Zlatý jantar
+Aqua Teal	Akvamarínová
+Midnight Navy	Půlnoční modrá
+Charcoal	Antracitová
+Format: schema {0} → {1}	Formát: schéma {0} → {1}
+Format: new theme → {0}	Formát: nový motiv → {0}
+Kept	Zachováno
+Added	Přidáno
+Repaired	Opraveno
+Can't recover	Nelze obnovit
+What saving does	Co uložení udělá
+Motion has a still poster	Pohyb má statický plakát
+Motion needs a still wallpaper as its poster - add one or remove the video	Pohyb potřebuje jako plakát statické pozadí - přidejte ho, nebo odeberte video
+Media outside limits: {0}	Média mimo limity: {0}
+This wallpaper is busy behind the labels - pick a text legibility style so they stay readable	Toto pozadí je za popisky rušné - vyberte styl čitelnosti textu, aby zůstaly čitelné
+Text should read clearly on this wallpaper	Text by měl být na tomto pozadí dobře čitelný
+{0} - launchers from before this format refuse files over 64 MB	{0} - launchery starší než tento formát odmítají soubory nad 64 MB
+Opens on older launchers, which ignore sounds, boot clips, legibility and crop	Otevře se ve starších launcherech, které ignorují zvuky, úvodní klipy, čitelnost a oříznutí
+{0} is over the {1} MB limit for a theme file	{0} překračuje limit {1} MB pro soubor motivu
+Saving upgrades this theme from {0}; {1} part(s) can't be recovered	Uložení aktualizuje tento motiv z {0}; části, které nelze obnovit: {1}
+Saving upgrades this theme from {0}	Uložení aktualizuje tento motiv z {0}
+an older format	staršího formátu
+Imported from {0}	Importováno z {0}
+Imported from {0} — firmware {1}	Importováno z {0} — firmware {1}
+a PSP theme	motivu PSP
+Created {0}	Vytvořeno {0}
+On the device these live in {0}.	V zařízení je najdete v {0}.
+Scale	Měřítko
+Horizontal	Vodorovně
+Vertical	Svisle
+This wallpaper is busy behind the labels — a text style helps them stay readable.	Toto pozadí je za popisky rušné — styl textu pomůže udržet je čitelné.
+Settings › Interface › Display › Adjust XMB Layout	Nastavení › Rozhraní › Displej › Upravit rozložení XMB
+Settings › Interface › Sound	Nastavení › Rozhraní › Zvuk
+Settings › Interface › Display › Show Boot Sequence / Game Boot	Nastavení › Rozhraní › Displej › Zobrazit úvodní sekvenci / Game Boot
+Battery Saver and Thermal Throttle (Settings › Interface › Display) freeze the animated wave on the device.	Úspora baterie a Tepelné omezení (Nastavení › Rozhraní › Displej) zmrazí animovanou vlnu v zařízení.
+Pick…	Vybrat…
+Plays on the device	Přehrává se v zařízení
+Length unknown	Délka neznámá
+Volumes stay on the device: {0}	Hlasitost se nastavuje v zařízení: {0}
+Couldn't play {0} here — it will play on the device.	{0} tady nelze přehrát — v zařízení se přehraje.
+Choose a sound for {0}	Vybrat zvuk pro {0}
+Icon image for {0}	Obrázek ikony pro {0}
+Template for {0}	Šablona pro {0}
+Template written to {0}	Šablona uložena jako {0}
+Template export failed: {0}	Export šablony selhal: {0}
+Search {0} slots: battery, PS3, voice…	Hledat mezi {0} pozicemi: baterie, PS3, hlas…
+No slot matches. Clear the search or a filter.	Žádná pozice neodpovídá. Vymažte hledání nebo filtr.
+Pack folder…	Složka balíčku…
+Icon pack folder	Složka balíčku ikon
+Pack .zip…	Balíček .zip…
+Icon pack zip	Balíček ikon .zip
+Folder for icon templates	Složka pro šablony ikon
+Packs are folders or zips of <slot key>.png / .gif, the names the templates use. Multi-frame GIFs animate on the launcher when focused; they must stay within 512px, 120 frames and 10 seconds.	Balíčky jsou složky nebo zipy se soubory <klíč pozice>.png / .gif, tedy názvy, které používají šablony. Vícesnímkové GIFy se v launcheru animují, když jsou vybrané; musí se vejít do 512 px, 120 snímků a 10 sekund.
+Icon pack imported	Balíček ikon importován
+Icon pack refused	Balíček ikon odmítnut
+{0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	{0}: přidáno {1}, nahrazeno {2}, bez shody {3}, odmítnuto {4}
+Icon pack {0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	Balíček ikon {0}: přidáno {1}, nahrazeno {2}, bez shody {3}, odmítnuto {4}
+{0} - did you mean {1}?	{0} - mysleli jste {1}?
+{0} - no matching slot	{0} - žádná odpovídající pozice
+{0} error	Chyby: {0}
+{0} errors	Chyby: {0}
+{0} warning	Upozornění: {0}
+{0} warnings	Upozornění: {0}
+{0} of {1} MB	{0} z {1} MB
+{0} of {1} MB - older launchers refuse over 64 MB	{0} z {1} MB - starší launchery odmítají nad 64 MB
+Wallpaper	Pozadí
+Preview	Náhled
+Motion	Pohyb
+Ambience	Atmosféra
+Other files	Ostatní soubory
+{0} is too large to be a theme file	{0} je příliš velký na soubor motivu
+Imported {0}	Importováno: {0}
+Imported with a caveat	Importováno s výhradou
+{0} is not a valid .pfptheme bundle	{0} není platný balíček .pfptheme
+{0} — {1} icon(s) for parts themes don't customize were left out	{0} — vynechané ikony částí, které motivy nemění: {1}
+Motion wallpaper: {0}	Pohyblivé pozadí: {0}
+Could not keep: {0}	Nelze zachovat: {0}
+Parts of the theme not kept	Části motivu nezachovány
+Motion wallpaper not kept	Pohyblivé pozadí nezachováno
+{0} is not a readable image	{0} není čitelný obrázek
+{0} converted to H.264 for Android ({1})	{0} převedeno do H.264 pro Android ({1})
+Couldn't read that frame of the video	Tento snímek videa se nepodařilo načíst
+The crop does not match this image	Oříznutí neodpovídá tomuto obrázku
+Wallpaper: {0} ({1}×{2})	Pozadí: {0} ({1}×{2})
+Added {0} — converted to H.264 for Android ({1})	Přidáno {0} — převedeno do H.264 pro Android ({1})
+Added {0}	Přidáno {0}
+Export failed: {0}	Export selhal: {0}
+{0} is not a PSP theme file	{0} není soubor motivu PSP
+Unpack failed: {0}	Rozbalení selhalo: {0}
+Theme unpacked	Motiv rozbalen
+{0} images written to {1} (see report.txt).	Obrázky ({0}) zapsány do {1} (viz report.txt).
+{0} images and {1} data files written to {2} (see report.txt).	Obrázky ({0}) a datové soubory ({1}) zapsány do {2} (viz report.txt).
+Unpacked {0}: {1} images	Rozbaleno {0}: obrázky {1}
+Templates exported to {0} ({1} icons)	Šablony exportovány do {0} (ikony: {1})
+WebM clips can't be checked in the Studio (it reads MP4/H.264 only) — convert the clip to MP4	Klipy WebM nelze ve Studiu zkontrolovat (čte jen MP4/H.264) — převeďte klip do MP4
+That isn't a media slot this import can fill	Toto není pozice pro média, kterou tento import umí vyplnit
+That file is too large for a theme — {0} MB or less	Soubor je pro motiv příliš velký — nejvýše {0} MB
+Unsupported video — use an MP4 (H.264)	Nepodporované video — použijte MP4 (H.264)
+{0} video isn't guaranteed to play on Android	Video {0} nemusí na Androidu fungovat
+H.264 {0} doesn't play on Android	H.264 {0} se na Androidu nepřehraje
+{0} video doesn't play on Android	Video {0} se na Androidu nepřehraje
+Couldn't convert this video for Android ({0}). Re-encode it as MP4 H.264 and try again.	Video se nepodařilo převést pro Android ({0}). Překódujte ho jako MP4 H.264 a zkuste to znovu.
+{0} is not a folder or .zip	{0} není složka ani .zip
+Pack refused: {0}	Balíček odmítnut: {0}
+Pack could not be read	Balíček nelze přečíst
+Pack could not be read: {0}	Balíček nelze přečíst: {0}
+Pack has more than {0} files	Balíček má více než {0} souborů
+Not a PSP theme file	Není to soubor motivu PSP
+Corrupt or truncated PTF	Poškozený nebo neúplný PTF
+This theme contains no wallpaper image.	Tento motiv neobsahuje obrázek pozadí.
+The wallpaper could not be extracted: this theme uses a compression method this importer doesn't recognize. The theme was imported without its wallpaper.	Pozadí nelze extrahovat: tento motiv používá kompresi, kterou tento import nezná. Motiv byl importován bez pozadí.
+The wallpaper data in this theme is damaged and could not be decoded. The theme was imported without its wallpaper.	Data pozadí v tomto motivu jsou poškozená a nelze je dekódovat. Motiv byl importován bez pozadí.

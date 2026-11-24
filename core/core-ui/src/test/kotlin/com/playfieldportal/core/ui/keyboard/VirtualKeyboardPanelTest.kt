@@ -78,6 +78,9 @@ class VirtualKeyboardPanelTest {
     }
 
     @Test fun `the prompt bar lists the eight prompts, L2 Shift and R3 Caps after Cursor, START as Done before Close`() {
+        var prompts: List<ControllerPromptItem> = emptyList()
+        composeRule.setContent { prompts = virtualKeyboardPrompts() }
+        composeRule.waitForIdle()
         assertEquals(
             listOf(
                 ControllerPromptItem(GamepadAction.SELECT, "Type"),
@@ -89,7 +92,7 @@ class VirtualKeyboardPanelTest {
                 ControllerPromptItem(GamepadAction.HOME, "Done"),
                 ControllerPromptItem(GamepadAction.BACK, "Close"),
             ),
-            VirtualKeyboardPrompts,
+            prompts,
         )
     }
 }

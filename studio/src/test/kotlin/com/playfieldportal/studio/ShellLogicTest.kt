@@ -47,7 +47,7 @@ class ShellLogicTest {
             StudioSection.entries.map { it.id },
         )
         assertEquals(StudioSection.entries.size, StudioSection.entries.map { it.id }.toSet().size)
-        assertEquals("Boot & GameBoot", StudioSection.BOOT.label)
+        assertEquals("Boot & Game Boot", StudioSection.BOOT.label)
         assertEquals("Export check", StudioSection.EXPORT_CHECK.label)
     }
 

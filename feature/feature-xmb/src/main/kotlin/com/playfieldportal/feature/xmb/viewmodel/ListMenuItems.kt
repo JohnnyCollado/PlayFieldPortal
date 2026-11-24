@@ -1,6 +1,8 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
 import com.playfieldportal.core.domain.model.PfpNotification
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.xmb.R
 
 /**
  * The XMB's list-level menus (the ones that act on a list or an account rather than on a row), from
@@ -15,13 +17,14 @@ import com.playfieldportal.core.domain.model.PfpNotification
  * fresh rows when they finish.
  */
 internal fun notificationListMenuItems(history: List<PfpNotification>): List<XMBContextMenuItem> = buildList {
-    if (history.any { !it.isRead }) add(XMBContextMenuItem(NotificationMenuIds.MARK_ALL_READ, "Mark All Read"))
-    if (history.any { it.isRead }) add(XMBContextMenuItem(NotificationMenuIds.CLEAR_READ, "Clear Read"))
-    if (history.isNotEmpty()) add(XMBContextMenuItem(NotificationMenuIds.CLEAR_ALL, "Clear All", isDestructive = true))
+    if (history.any { !it.isRead }) add(XMBContextMenuItem(NotificationMenuIds.MARK_ALL_READ, UiText.res(R.string.xmbm_notifmenu_mark_all_read)))
+    if (history.any { it.isRead }) add(XMBContextMenuItem(NotificationMenuIds.CLEAR_READ, UiText.res(R.string.xmbm_notifmenu_clear_read)))
+    if (history.isNotEmpty()) add(XMBContextMenuItem(NotificationMenuIds.CLEAR_ALL, UiText.res(R.string.xmbm_notifmenu_clear_all), isDestructive = true))
 }
 
 /** The connected-account menu is titled with the account's name, "Account" when the row has none. */
-internal fun socialAccountMenuTitle(rowTitle: String?): String = rowTitle?.takeIf { it.isNotBlank() } ?: "Account"
+internal fun socialAccountMenuTitle(rowTitle: UiText?): UiText =
+    rowTitle?.takeUnless { it is UiText.Raw && it.value.isBlank() } ?: UiText.res(R.string.xmbm_social_account)
 
 internal const val BROWSER_SORT_MENU_ID = "music_browser_sort"
 private const val BROWSER_SORT_MODE_PREFIX = "music_browser_sort_"
@@ -33,13 +36,13 @@ private const val BROWSER_SORT_MODE_PREFIX = "music_browser_sort_"
  */
 internal fun browserListMenuItems(
     resumeTrack: String?,
-    sortLabel: String?,
+    sortLabel: UiText?,
     view: MusicBrowserView?,
 ): List<XMBContextMenuItem> = buildList {
     // Resume first: it is the reason to open this menu mid-song, and without it a player dismissed
     // with B can only be recovered by finding and re-picking the track.
-    resumeTrack?.let { add(XMBContextMenuItem("music_browser_resume", "Resume", value = it)) }
-    sortLabel?.let { add(XMBContextMenuItem(BROWSER_SORT_MENU_ID, "Sort", value = it, opensMenu = true)) }
+    resumeTrack?.let { add(XMBContextMenuItem("music_browser_resume", UiText.res(R.string.xmbm_resume), value = UiText.raw(it))) }
+    sortLabel?.let { add(XMBContextMenuItem(BROWSER_SORT_MENU_ID, UiText.res(R.string.xmbm_sort), value = it, opensMenu = true)) }
     addAll(browserImportMenuItems(view))
 }
 

@@ -20,7 +20,7 @@ import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
+import com.playfieldportal.core.ui.components.PfpBusyRing
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,11 +29,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.R
 import com.playfieldportal.core.ui.components.PfpCheckMark
 import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.theme.themedSubText
@@ -114,14 +116,15 @@ fun LocalSteamConvertPanel(
         ) {
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
-                    "Install achievement tracking?",
+                    stringResource(R.string.core_steam_convert_title),
                     color = themedText(TextPrimary),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    if (selectedCount > 0) "$selectedCount of ${rows.size}" else "${rows.size} found",
+                    if (selectedCount > 0) stringResource(R.string.core_steam_convert_selected_count, selectedCount, rows.size)
+                    else stringResource(R.string.core_steam_convert_found_count, rows.size),
                     color = themedSubText(TextMuted),
                     fontSize = 12.sp,
                 )
@@ -129,7 +132,7 @@ fun LocalSteamConvertPanel(
 
             if (!showTouchControls) {
                 Text(
-                    "Up/Down  Rows  •  Select  Toggle  •  △  All/None  •  Start  Install  •  B  Cancel",
+                    stringResource(R.string.core_steam_convert_hints),
                     color = themedSubText(TextMuted.copy(alpha = 0.55f)),
                     fontSize = 10.sp,
                 )
@@ -156,8 +159,8 @@ fun LocalSteamConvertPanel(
 
             if (loading) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CircularProgressIndicator(color = focusEdge, modifier = Modifier.size(14.dp))
-                    Text("Reading each game's achievement list from Steam…", color = TextMuted, fontSize = 11.sp)
+                    PfpBusyRing(size = 14.dp, color = focusEdge)
+                    Text(stringResource(R.string.core_steam_convert_loading), color = TextMuted, fontSize = 11.sp)
                 }
             }
 
@@ -167,11 +170,11 @@ fun LocalSteamConvertPanel(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (canConfirm) XmbHeaderPill(label = "Install ($selectedCount)", onClick = onConfirm)
-                    XmbHeaderPill(label = if (selectedCount > 0) "None" else "All", onClick = onSelectAllNone)
+                    if (canConfirm) XmbHeaderPill(label = stringResource(R.string.core_steam_convert_install, selectedCount), onClick = onConfirm)
+                    XmbHeaderPill(label = stringResource(if (selectedCount > 0) R.string.core_steam_convert_none else R.string.core_steam_convert_all), onClick = onSelectAllNone)
                     Spacer(Modifier.weight(1f))
-                    XmbHeaderPill(label = "Skip & Sync", onClick = onSkip)
-                    XmbHeaderPill(label = "Cancel", onClick = onCancel)
+                    XmbHeaderPill(label = stringResource(R.string.core_steam_convert_skip_sync), onClick = onSkip)
+                    XmbHeaderPill(label = stringResource(R.string.core_cancel), onClick = onCancel)
                 }
             }
         }
@@ -196,16 +199,13 @@ private fun WriteNotice() {
         verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         Text(
-            "Into each checked game's folder PFP writes achievements.json, stats.json and " +
-                "configs.user.ini, creates a saves folder, and renames steam_api64.dll to " +
-                "steam_api64_o.dll so the bundled emulator can load through it.",
+            stringResource(R.string.core_steam_convert_write_notice),
             color = themedText(TextPrimary),
             fontSize = 11.sp,
             lineHeight = 16.sp,
         )
         Text(
-            "Back up the save files of any game you already played before converting it — the " +
-                "emulator will start reading from the new save location.",
+            stringResource(R.string.core_steam_convert_backup_warning),
             color = WarningAmber,
             fontSize = 11.sp,
             lineHeight = 16.sp,

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">الحركة</string>
+    <string name="motion_summary">مقدار ما يتحرك من تلقاء نفسه.</string>
+    <string name="motion_detail_animated">كل شيء يتحرك</string>
+    <string name="motion_detail_reduced">المحدد فقط</string>
+    <string name="motion_detail_static">لا شيء من تلقاء نفسه</string>
+    <string name="motion_sub_animated">كل ما يمكن أن يتحرك يتحرك: الصور الفنية والأيقونات والخلفيات والخلفية والتوهج. يستهلك أكبر قدر من البطارية.</string>
+    <string name="motion_sub_reduced">يتحرك العنصر المحدد فقط: صورته الفنية ومقطع الفيديو وتوهجه. تستمر الخلفية في الحركة.</string>
+    <string name="motion_sub_static">لا شيء يتحرك من تلقاء نفسه. تستمر القوائم في الانزلاق عند التنقل فيها.</string>
+    <string name="motion_holds_background">متوقف ما دام «الحركة» مضبوطًا على «ثابتة».</string>
+    <string name="motion_holds_glow">ثابت ما دام «الحركة» مضبوطًا على «ثابتة».</string>
+</resources>

@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Music playback notification -->
+    <string name="xmbu_music_channel_name">Muziek afspelen</string>
+    <string name="xmbu_music_channel_description">Bediening voor wat er nu speelt</string>
+    <string name="xmbu_music_notif_previous">Vorige</string>
+    <string name="xmbu_music_notif_play_pause">Afspelen/pauzeren</string>
+    <string name="xmbu_music_notif_next">Volgende</string>
+    <string name="xmbu_music_notif_stop">Stoppen</string>
+    <string name="xmbu_ptt_hold">"🎙  HOUD VAST"</string>
+    <!-- Tray notification when a custom boot / Game Boot video cannot play -->
+    <string name="xmbu_clipfail_boot_label">Opstartreeks</string>
+    <string name="xmbu_clipfail_gameboot_label">Game Boot</string>
+    <string name="xmbu_clipfail_boot_message">Je opstartvideo kon op dit apparaat niet worden afgespeeld, dus is de ingebouwde reeks afgespeeld. Exporteer het thema opnieuw vanuit de Theme Studio (die converteert de video), of kies een andere clip in de weergave-instellingen.</string>
+    <string name="xmbu_clipfail_gameboot_message">Je Game Boot-video kon op dit apparaat niet worden afgespeeld, dus is de ingebouwde reeks afgespeeld. Exporteer het thema opnieuw vanuit de Theme Studio (die converteert de video), of kies een andere clip in de weergave-instellingen.</string>
+    <!-- Common words -->
+    <string name="xmbu_common_options">Opties</string>
+    <string name="xmbu_common_back">Terug</string>
+    <string name="xmbu_common_cancel">Annuleren</string>
+    <string name="xmbu_common_done">Klaar</string>
+    <string name="xmbu_common_close">Sluiten</string>
+    <string name="xmbu_common_reset">Terugzetten</string>
+    <string name="xmbu_common_remove">Verwijderen</string>
+    <string name="xmbu_common_open">Openen</string>
+    <string name="xmbu_common_toggle">Wisselen</string>
+    <string name="xmbu_common_search">Zoeken</string>
+    <string name="xmbu_common_artwork">Artwork</string>
+    <string name="xmbu_common_edit_title">Titel bewerken</string>
+    <string name="xmbu_common_add_to_card">Toevoegen aan kaart</string>
+    <string name="xmbu_common_on">Aan</string>
+    <string name="xmbu_common_off">Uit</string>
+    <string name="xmbu_common_move">Verplaatsen</string>
+    <string name="xmbu_common_navigate">Navigeren</string>
+    <string name="xmbu_common_play">Afspelen</string>
+    <string name="xmbu_common_pause">Pauzeren</string>
+    <string name="xmbu_common_prev_next">Vorige / volgende</string>
+    <string name="xmbu_common_seek">Spoelen</string>
+    <string name="xmbu_common_confirm">Bevestigen</string>
+    <string name="xmbu_common_close_search">Zoeken sluiten</string>
+    <string name="xmbu_common_ellipsis_search">Zoeken…</string>
+    <!-- App Detail: Options menu rows -->
+    <string name="xmbu_app_opt_favorite">Favoriet</string>
+    <string name="xmbu_app_opt_app_info">App-info</string>
+    <string name="xmbu_app_opt_hide">Overal verbergen</string>
+    <string name="xmbu_app_opt_change_icon">Pictogram wijzigen</string>
+    <string name="xmbu_app_opt_change_background">Achtergrond wijzigen</string>
+    <string name="xmbu_app_opt_reset_artwork">Alle artwork terugzetten</string>
+    <!-- App Detail: artwork kind names -->
+    <string name="xmbu_app_art_type_icon">Spelpictogram</string>
+    <string name="xmbu_app_art_type_hero">Herobanner</string>
+    <string name="xmbu_app_art_type_background">Achtergrond</string>
+    <!-- App Detail: artwork picker messages -->
+    <string name="xmbu_app_art_no_api_key">SteamGridDB-API-sleutel niet ingesteld — voeg er een toe in de artworkinstellingen</string>
+    <string name="xmbu_app_art_search_failed">Zoeken mislukt: %1$s</string>
+    <string name="xmbu_app_art_no_results">Geen resultaten voor \"%1$s\" op SteamGridDB</string>
+    <string name="xmbu_app_art_load_failed">Artwork laden mislukt: %1$s</string>
+    <string name="xmbu_app_art_none_found">Geen art voor %1$s gevonden op SteamGridDB</string>
+    <string name="xmbu_app_art_download_failed">Kan %1$s niet downloaden</string>
+    <string name="xmbu_app_art_import_failed">Kan %1$s niet importeren</string>
+    <string name="xmbu_app_art_updated">%1$s bijgewerkt</string>
+    <string name="xmbu_app_art_reset">%1$s teruggezet</string>
+    <string name="xmbu_app_art_all_reset">Alle artwork teruggezet</string>
+    <string name="xmbu_app_no_launchable_package">Deze app heeft geen pakket dat kan worden gestart</string>
+    <string name="xmbu_common_launch">Starten</string>
+    <!-- App Detail screen -->
+    <string name="xmbu_app_breadcrumb_apps">Apps</string>
+    <string name="xmbu_app_breadcrumb_android_app">Android-app</string>
+    <string name="xmbu_app_edit_artwork_description">Artwork bewerken</string>
+    <string name="xmbu_app_no_icon">Geen pictogram</string>
+    <string name="xmbu_app_art_change">%1$s wijzigen</string>
+    <string name="xmbu_app_art_saving">Opslaan…</string>
+    <string name="xmbu_app_art_pick_local">Lokaal bestand kiezen</string>
+    <string name="xmbu_app_art_restore_icon">Oorspronkelijk pictogram herstellen</string>
+    <string name="xmbu_app_art_remove_custom">Eigen art verwijderen</string>
+    <string name="xmbu_app_art_picker_hint">"◄ ►  Bladeren   A  Kiezen   B  Terug"</string>
+    <string name="xmbu_app_reset_title">Alle artwork terugzetten?</string>
+    <string name="xmbu_app_reset_message">Het eigen pictogram en de eigen achtergrond voor %1$s worden verwijderd en het eigen pictogram van de app komt terug.</string>
+    <!-- Add to Card (collection) picker panel -->
+    <string name="xmbu_collection_picker_new_row">"＋  Nieuwe eigen geheugenkaart"</string>
+    <string name="xmbu_collection_new_title">Nieuwe eigen geheugenkaart</string>
+    <string name="xmbu_collection_new_placeholder">bijv. RPG\'s, Nu aan het spelen</string>
+    <string name="xmbu_collection_new_create">Maken</string>
+    <string name="xmbu_common_sort">Sorteren</string>
+    <string name="xmbu_common_notifications">Meldingen</string>
+    <!-- App picker -->
+    <string name="xmbu_app_picker_empty">Geen geïnstalleerde apps</string>
+    <string name="xmbu_app_picker_no_match">Geen geïnstalleerde apps gevonden voor \"%1$s\"</string>
+    <string name="xmbu_app_picker_choose">Kiezen</string>
+    <!-- Arrange mode bars -->
+    <string name="xmbu_arrange_place">Plaatsen</string>
+    <string name="xmbu_arrange_mark">Markeren</string>
+    <string name="xmbu_arrange_move_left">Naar links</string>
+    <string name="xmbu_arrange_move_right">Naar rechts</string>
+    <string name="xmbu_arrange_move_up">Omhoog</string>
+    <string name="xmbu_arrange_move_down">Omlaag</string>
+    <!-- Color Scheme picker overlay -->
+    <string name="xmbu_color_scheme_title">Kleurenschema</string>
+    <string name="xmbu_color_scheme_tint">Tint</string>
+    <string name="xmbu_color_scheme_depth">Diepte</string>
+    <string name="xmbu_color_scheme_contrast_top">"%1$s Tekst bovenaan  %2$s"</string>
+    <string name="xmbu_color_scheme_contrast_bottom">"%1$s Tekst onderaan  %2$s"</string>
+    <string name="xmbu_color_scheme_custom_title">Eigen kleur</string>
+    <!-- Customize XMB Icons overlay -->
+    <string name="xmbu_icons_title">XMB-pictogrammen aanpassen</string>
+    <string name="xmbu_icons_source_user">Jouw keuze</string>
+    <string name="xmbu_icons_source_theme">Uit thema</string>
+    <string name="xmbu_icons_source_default">Standaard</string>
+    <string name="xmbu_icons_source_with_column">%1$s · kolom %2$s</string>
+    <string name="xmbu_icons_column">Kolom</string>
+    <string name="xmbu_icons_tab">Tabblad</string>
+    <string name="xmbu_icons_pick">Kiezen</string>
+    <string name="xmbu_icons_reset_all">Alles terugzetten</string>
+    <string name="xmbu_icons_save_as_theme">Opslaan als thema</string>
+    <string name="xmbu_icons_save_as_theme_button">Opslaan als thema…</string>
+    <!-- Search box -->
+    <string name="xmbu_game_search_placeholder">Spellen zoeken…</string>
+    <!-- Game picker -->
+    <string name="xmbu_picker_in_this_category">In deze categorie</string>
+    <string name="xmbu_picker_in_category">In %1$s</string>
+    <string name="xmbu_picker_custom_cards">Eigen geheugenkaarten</string>
+    <string name="xmbu_picker_no_changes">Geen wijzigingen</string>
+    <string name="xmbu_picker_menu_view">Weergave</string>
+    <string name="xmbu_picker_menu_select_all">Alles selecteren</string>
+    <string name="xmbu_picker_open_toggle">Openen / wisselen</string>
+    <string name="xmbu_picker_no_games">Nog geen spellen in je bibliotheek</string>
+    <string name="xmbu_picker_add_games">Spellen toevoegen</string>
+    <string name="xmbu_picker_view_mode">Weergave: %1$s</string>
+    <string name="xmbu_picker_removing_prefix">"Verwijderen · "</string>
+    <string name="xmbu_picker_search_placeholder">Deze plank doorzoeken…</string>
+    <string name="xmbu_picker_shelves">Planken</string>
+    <string name="xmbu_picker_shelf">Plank</string>
+    <!-- Music browser -->
+    <string name="xmbu_music_breadcrumb_playlists">"Muziek  ›  Afspeellijsten"</string>
+    <string name="xmbu_music_breadcrumb_music">Muziek</string>
+    <string name="xmbu_music_breadcrumb_all_tracks">Alle nummers</string>
+    <string name="xmbu_music_resume">Hervatten: %1$s</string>
+    <!-- Music player -->
+    <string name="xmbu_music_now_playing">Nu aan het spelen</string>
+    <string name="xmbu_music_nothing_playing">Er speelt niets</string>
+    <string name="xmbu_music_visualizer">Visualisatie</string>
+    <!-- Media transport buttons -->
+    <string name="xmbu_media_previous_track">Vorig nummer</string>
+    <string name="xmbu_media_next_track">Volgend nummer</string>
+    <string name="xmbu_media_previous_video">Vorige video</string>
+    <string name="xmbu_media_next_video">Volgende video</string>
+    <string name="xmbu_media_back_10">10 seconden terug</string>
+    <string name="xmbu_media_forward_10">10 seconden vooruit</string>
+    <string name="xmbu_media_playing">Speelt af</string>
+    <string name="xmbu_media_paused">Gepauzeerd</string>
+    <!-- Music track picker -->
+    <string name="xmbu_track_picker_title">Toevoegen aan %1$s</string>
+    <string name="xmbu_track_picker_add">Toevoegen</string>
+    <string name="xmbu_track_picker_empty">Geen nummers meer om toe te voegen — elk gescand nummer staat al in deze afspeellijst.</string>
+    <!-- Notification panel -->
+    <string name="xmbu_notif_options_description">Meldingsopties</string>
+    <string name="xmbu_notif_task_stopping">%1$s — Stoppen…</string>
+    <string name="xmbu_notif_task_detail">%1$s — %2$s</string>
+    <string name="xmbu_notif_kind_scan">Scan</string>
+    <string name="xmbu_notif_kind_metadata">Metadata</string>
+    <string name="xmbu_notif_kind_achievements">Prestaties</string>
+    <string name="xmbu_notif_kind_system">Systeem</string>
+    <string name="xmbu_notif_kind_download">Download</string>
+    <string name="xmbu_notif_kind_feed">Feed</string>
+    <string name="xmbu_notif_action_go_to_game">Naar spel</string>
+    <string name="xmbu_notif_action_open_card">Geheugenkaart openen</string>
+    <string name="xmbu_notif_action_open_settings">Instellingen openen</string>
+    <string name="xmbu_notif_action_open_category">Categorie openen</string>
+    <string name="xmbu_notif_action_review">Nakijken</string>
+    <string name="xmbu_time_just_now">Zojuist</string>
+    <string name="xmbu_share_theme">Thema delen</string>
+    <string name="xmbu_move_position">Verplaatsen · %1$d van %2$d</string>
+    <string name="xmbu_common_later">Later</string>
+    <!-- XMB shell dialogs -->
+    <string name="xmbu_shell_rename_shortcut">Snelkoppeling hernoemen</string>
+    <string name="xmbu_shell_playlist_name">Naam van afspeellijst</string>
+    <string name="xmbu_shell_theme_name">Naam van thema</string>
+    <string name="xmbu_shell_source_theme">Uit het toegepaste thema</string>
+    <string name="xmbu_shell_source_device">Van je apparaat</string>
+    <string name="xmbu_shell_source_device_detail">PNG of GIF</string>
+    <string name="xmbu_shell_continue">Doorgaan</string>
+    <string name="xmbu_shell_shortcut_title">Snelkoppeling toevoegen?</string>
+    <string name="xmbu_shell_shortcut_message">Een app vroeg om een snelkoppeling \"%1$s\" toe te voegen die %2$s opent. Voeg hem alleen toe als je deze snelkoppeling net zelf hebt gemaakt.</string>
+    <string name="xmbu_shell_shortcut_add">Toevoegen</string>
+    <string name="xmbu_shell_shortcut_ignore">Negeren</string>
+    <string name="xmbu_shell_windows_title">Rond je Windows-bibliotheek af</string>
+    <string name="xmbu_shell_windows_message">Er is een pc-spel toegevoegd, maar de bibliotheek Windows-spellen heeft nog geen map. Stel die in via Bibliotheekbeheer zodat spelmappen en prestaties kunnen worden gescand.</string>
+    <string name="xmbu_shell_windows_set_up">Instellen</string>
+    <string name="xmbu_shell_import_position">%1$d van %2$d</string>
+    <string name="xmbu_shell_open_playlist">Afspeellijst openen</string>
+    <string name="xmbu_shell_stop">Stoppen</string>
+    <string name="xmbu_shell_keep_running">Laten doorgaan</string>
+    <!-- Launch recovery dialog -->
+    <string name="xmbu_recovery_retry">Opnieuw proberen</string>
+    <string name="xmbu_recovery_change_emulator">Emulator wijzigen</string>
+    <string name="xmbu_recovery_change_default">Standaard per systeem wijzigen</string>
+    <string name="xmbu_recovery_copy_diagnostics">Diagnose kopiëren</string>
+    <string name="xmbu_recovery_title">Kan %1$s niet starten</string>
+    <string name="xmbu_recovery_select">Selecteren</string>
+    <string name="xmbu_recovery_dismiss">Sluiten</string>
+    <!-- Artwork folder prompts -->
+    <string name="xmbu_artfolder_unavailable_title">Artworkmap niet beschikbaar</string>
+    <string name="xmbu_artfolder_unavailable_message">PFP kan %1$s niet bereiken. Nieuwe artwork is gepauzeerd tot je de map opnieuw koppelt. Art die je al hebt, blijft zichtbaar.</string>
+    <string name="xmbu_artfolder_relink">Map opnieuw koppelen</string>
+    <string name="xmbu_artfolder_not_now">Niet nu</string>
+    <string name="xmbu_artfolder_move_title">Verplaats je artwork naar een eigen map</string>
+    <string name="xmbu_artfolder_choose">Artworkmap kiezen</string>
+    <string name="xmbu_artfolder_choose_title">Kies een artworkmap</string>
+    <string name="xmbu_artfolder_choose_message">Nieuwe artwork wordt opgeslagen in een map van jezelf. Kies er een en PFP slaat de art daar op.</string>
+    <string name="xmbu_artfolder_foreign_title">Deze map bevat een andere artworkbibliotheek</string>
+    <string name="xmbu_artfolder_use_library">Deze bibliotheek gebruiken</string>
+    <string name="xmbu_artfolder_choose_another">Andere map kiezen</string>
+    <!-- Status strip -->
+    <string name="xmbu_status_controller_connected">Controller verbonden</string>
+    <string name="xmbu_status_battery">Batterij</string>
+    <string name="xmbu_status_battery_charging">Batterij, wordt opgeladen</string>
+    <string name="xmbu_status_battery_plugged">Batterij, aangesloten</string>
+    <!-- Adjust XMB Layout overlay -->
+    <string name="xmbu_layout_title">XMB-indeling aanpassen</string>
+    <string name="xmbu_layout_readout">"Schaal %1$sx    Horizontaal %2$d%%    Verticaal %3$d%%"</string>
+    <string name="xmbu_layout_scale">Schaal</string>
+    <string name="xmbu_layout_horizontal">Horizontaal</string>
+    <string name="xmbu_layout_vertical">Verticaal</string>
+    <string name="xmbu_layout_sliders">Schuifregelaars</string>
+    <string name="xmbu_layout_hide_sliders">Schuifregelaars verbergen</string>
+    <string name="xmbu_layout_save">Opslaan</string>
+    <!-- Theme icon picker -->
+    <string name="xmbu_icon_grid_use">Dit pictogram gebruiken</string>
+    <string name="xmbu_status_cellular_signal">Mobiel signaal</string>
+    <!-- Notification panel section headers -->
+    <string name="xmbu_notif_header_running">BEZIG</string>
+    <string name="xmbu_notif_header_earlier">EERDER</string>
+    <string name="xmbu_notif_empty">Geen meldingen</string>
+    <!-- Video player -->
+    <string name="xmbu_video_fit">Passend</string>
+    <string name="xmbu_video_zoom">Zoomen</string>
+    <string name="xmbu_video_fill">Vullen</string>
+    <string name="xmbu_video_speed">Afspeelsnelheid</string>
+    <string name="xmbu_video_subtitles">Ondertiteling</string>
+    <string name="xmbu_video_audio_track">Audiotrack</string>
+    <string name="xmbu_video_screen_mode">Schermmodus</string>
+    <string name="xmbu_video_none">Geen</string>
+    <string name="xmbu_video_default">Standaard</string>
+    <string name="xmbu_video_track">Track</string>
+    <string name="xmbu_video_err_not_found">Video niet gevonden.</string>
+    <string name="xmbu_video_err_permission">Geen toestemming voor dit bestand.</string>
+    <string name="xmbu_video_err_decode">Deze video kan op dit apparaat niet worden gedecodeerd.</string>
+    <string name="xmbu_video_err_unable">Kan deze video niet afspelen.</string>
+    <string name="xmbu_video_go_back">Teruggaan</string>
+    <string name="xmbu_video_status">%1$s× · %2$s</string>
+    <!-- Photo viewer -->
+    <string name="xmbu_photo_rotate_left">Linksom draaien</string>
+    <string name="xmbu_photo_rotate_right">Rechtsom draaien</string>
+    <string name="xmbu_photo_zoom_in">Inzoomen</string>
+    <string name="xmbu_photo_zoom_out">Uitzoomen</string>
+    <string name="xmbu_photo_reset_zoom">Zoom terugzetten</string>
+    <string name="xmbu_photo_set_wallpaper">Instellen als launcherachtergrond</string>
+    <string name="xmbu_photo_set_lock_screen">Instellen als vergrendelscherm</string>
+    <string name="xmbu_photo_view_info">Informatie bekijken</string>
+    <string name="xmbu_photo_show_location">Bestandslocatie tonen</string>
+    <string name="xmbu_photo_remove">Verwijderen uit bibliotheek</string>
+    <string name="xmbu_photo_group_view">Weergave</string>
+    <string name="xmbu_photo_group_manage">Beheren</string>
+    <string name="xmbu_photo_in_folder">In: %1$s</string>
+    <string name="xmbu_photo_wallpaper_unreadable">Kan achtergrond niet instellen — de afbeelding kon niet worden gelezen</string>
+    <string name="xmbu_photo_wallpaper_applied">Achtergrond toegepast</string>
+    <string name="xmbu_photo_unreadable">Die foto kan niet worden gelezen</string>
+    <string name="xmbu_photo_lock_screen_set">Vergrendelscherm ingesteld</string>
+    <string name="xmbu_photo_hide_controls">Bediening verbergen</string>
+    <string name="xmbu_photo_show_controls">Bediening tonen</string>
+    <string name="xmbu_photo_wallpaper_title">Instellen als launcherachtergrond?</string>
+    <string name="xmbu_photo_wallpaper_note">Dit vervangt de XMB-golfachtergrond.</string>
+    <string name="xmbu_photo_apply">Toepassen</string>
+    <string name="xmbu_photo_applying">Toepassen…</string>
+    <string name="xmbu_photo_remove_message">\"%1$s\" wordt uit deze bibliotheek verwijderd. De foto op de schijf wordt niet verwijderd.</string>
+    <string name="xmbu_photo_lock_message">\"%1$s\" wordt de afbeelding op het vergrendelscherm van het apparaat, bijgesneden om op het scherm te passen.</string>
+    <string name="xmbu_photo_set">Instellen</string>
+    <string name="xmbu_photo_info_resolution">Resolutie: %1$s</string>
+    <string name="xmbu_photo_info_taken">Gemaakt: %1$s</string>
+    <string name="xmbu_photo_info_modified">Gewijzigd: %1$s</string>
+    <string name="xmbu_photo_info_size">Grootte: %1$s</string>
+    <string name="xmbu_photo_info_type">Type: %1$s</string>
+    <string name="xmbu_photo_info_location">Locatie: %1$s</string>
+    <string name="xmbu_photo_info_file">Bestand: %1$s</string>
+    <!-- Music visualizer picker -->
+    <string name="xmbu_visualizer_portal">Portaal</string>
+    <string name="xmbu_visualizer_ripple">Rimpeling</string>
+    <string name="xmbu_visualizer_off">Uit</string>
+    <string name="xmbu_visualizer_off_tile">UIT</string>
+    <plurals name="xmbu_app_picker_selected">
+        <item quantity="one">%d geselecteerd</item>
+        <item quantity="other">%d geselecteerd</item>
+    </plurals>
+    <plurals name="xmbu_arrange_marked">
+        <item quantity="one">%d gemarkeerd</item>
+        <item quantity="other">%d gemarkeerd</item>
+    </plurals>
+    <plurals name="xmbu_picker_to_add">
+        <item quantity="one">%d toe te voegen</item>
+        <item quantity="other">%d toe te voegen</item>
+    </plurals>
+    <plurals name="xmbu_picker_to_remove">
+        <item quantity="one">%d te verwijderen</item>
+        <item quantity="other">%d te verwijderen</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_games">
+        <item quantity="one">%1$d spel · %2$d aangevinkt</item>
+        <item quantity="other">%1$d spellen · %2$d aangevinkt</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_cards">
+        <item quantity="one">%d kaart · als je er een kiest, wordt hij hierheen verplaatst</item>
+        <item quantity="other">%d kaarten · als je er een kiest, wordt hij hierheen verplaatst</item>
+    </plurals>
+    <plurals name="xmbu_picker_card_games">
+        <item quantity="one">%d spel</item>
+        <item quantity="other">%d spellen</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_add_count">
+        <item quantity="one">%d toevoegen</item>
+        <item quantity="other">%d toevoegen</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_selected">
+        <item quantity="one">%d geselecteerd</item>
+        <item quantity="other">%d geselecteerd</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_add_tracks">
+        <item quantity="one">%d nummer toevoegen</item>
+        <item quantity="other">%d nummers toevoegen</item>
+    </plurals>
+    <plurals name="xmbu_time_minutes_ago">
+        <item quantity="one">%d minuut geleden</item>
+        <item quantity="other">%d minuten geleden</item>
+    </plurals>
+    <plurals name="xmbu_time_hours_ago">
+        <item quantity="one">%d uur geleden</item>
+        <item quantity="other">%d uur geleden</item>
+    </plurals>
+    <plurals name="xmbu_artfolder_move_message">
+        <item quantity="one">%d afbeelding staat in de app en gaat verloren als je de app verwijdert. Kies een map en PFP verplaatst hem daarheen.</item>
+        <item quantity="other">%d afbeeldingen staan in de app en gaan verloren als je de app verwijdert. Kies een map en PFP verplaatst ze daarheen.</item>
+    </plurals>
+    <plurals name="xmbu_artfolder_foreign_message">
+        <item quantity="one">%1$s is ingericht door een andere installatie (%2$d bestand). Gebruik hem en PFP koppelt je spellen opnieuw aan de art daarin, of kies een andere map.</item>
+        <item quantity="other">%1$s is ingericht door een andere installatie (%2$d bestanden). Gebruik hem en PFP koppelt je spellen opnieuw aan de art daarin, of kies een andere map.</item>
+    </plurals>
+    <plurals name="xmbu_status_notifications_unread">
+        <item quantity="one">Meldingen, %d ongelezen</item>
+        <item quantity="other">Meldingen, %d ongelezen</item>
+    </plurals>
+</resources>

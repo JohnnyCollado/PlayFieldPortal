@@ -1,0 +1,406 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Localization slice C2: the remaining Settings screens (Backup, Controller, Credits, About, Logs, Music, Video, Photo, Notifications, System Update, shared rows and modals). -->
+
+    <!-- Shared by several Settings screens. -->
+    <string name="sets_on">مفعّل</string>
+    <string name="sets_off">متوقف</string>
+    <string name="sets_prompt_back">رجوع</string>
+    <string name="sets_prompt_enter">دخول</string>
+    <string name="sets_prompt_switch">تبديل</string>
+    <string name="sets_prompt_options">الخيارات</string>
+
+    <!-- Settings ▸ Backup & Restore -->
+    <string name="sets_backup_title">النسخ الاحتياطي والاستعادة</string>
+    <string name="sets_backup_group_backup">النسخ الاحتياطي</string>
+    <string name="sets_backup_last_backup">آخر نسخة احتياطية</string>
+    <string name="sets_backup_never">أبدًا</string>
+    <string name="sets_backup_folder">مجلد النسخ الاحتياطي</string>
+    <string name="sets_backup_folder_saving_to">الحفظ في: %1$s  (حدّد للتغيير)</string>
+    <string name="sets_backup_folder_not_set">غير معيّن — حدّد لاختيار مكان حفظ النسخ الاحتياطية</string>
+    <string name="sets_backup_now">النسخ الاحتياطي الآن</string>
+    <string name="sets_backup_now_help">يحفظ المكتبة والإعدادات وسجل اللعب</string>
+    <string name="sets_backup_choose_folder_first">اختر مجلدًا للنسخ الاحتياطي أولاً</string>
+    <string name="sets_backup_choose_folder_first_error">اختر مجلدًا للنسخ الاحتياطي أولاً.</string>
+    <string name="sets_backup_group_saved">النسخ الاحتياطية المحفوظة</string>
+    <string name="sets_backup_group_included">ما يتم تضمينه</string>
+    <string name="sets_backup_included_library">مكتبة الألعاب</string>
+    <string name="sets_backup_included_history">سجل اللعب</string>
+    <string name="sets_backup_included_categories">الفئات المخصصة</string>
+    <string name="sets_backup_included_settings">الإعدادات ومفاتيح API</string>
+    <string name="sets_backup_included_profiles">ملفات تعريف المحاكيات</string>
+    <string name="sets_backup_rom_files">ملفات ROM</string>
+    <string name="sets_backup_not_included">✗  (غير مضمّنة)</string>
+    <string name="sets_backup_group_restore">الاستعادة</string>
+    <string name="sets_backup_restore_from_file">الاستعادة من ملف</string>
+    <string name="sets_backup_restore_from_file_help">تصفّح للوصول إلى ملف .pfpbackup</string>
+    <string name="sets_backup_after_restoring">بعد الاستعادة</string>
+    <string name="sets_backup_after_restoring_help">تعود مجلداتك، لكن إذن Android للوصول إليها لا يعود. أعِد ربط كل مجلد جذر من «الوصول إلى الجذر» في قسمه (المكتبة، الموسيقى، الفيديو، الصور) — بخطوة واحدة لكل منها؛ وإعادة ربط الجذر تستعيد كل ما بداخله دفعة واحدة.</string>
+    <string name="sets_backup_working">جارٍ العمل…</string>
+    <string name="sets_backup_error">خطأ</string>
+    <string name="sets_backup_creating">جارٍ إنشاء النسخة الاحتياطية…</string>
+    <string name="sets_backup_restoring">جارٍ استعادة النسخة الاحتياطية…</string>
+    <string name="sets_backup_unknown_error">خطأ غير معروف</string>
+    <string name="sets_backup_delete_failed">تعذّر حذف %1$s.</string>
+    <string name="sets_backup_menu_restore">استعادة</string>
+    <string name="sets_backup_menu_share">مشاركة</string>
+    <string name="sets_backup_menu_delete">حذف النسخة الاحتياطية</string>
+    <string name="sets_backup_delete_title">هل تريد حذف النسخة الاحتياطية؟</string>
+    <string name="sets_backup_delete_message">سيتم حذف \"%1$s\". لا يمكن التراجع عن ذلك.</string>
+    <string name="sets_backup_delete_confirm">حذف</string>
+    <string name="sets_backup_restore_title">هل تريد استعادة النسخة الاحتياطية؟</string>
+    <string name="sets_backup_restore_message_named">سيحل \"%1$s\" محل مكتبتك وإعداداتك وسجل لعبك الحاليين. لا يمكن التراجع عن ذلك.</string>
+    <string name="sets_backup_restore_message_picked">ستحل هذه النسخة الاحتياطية محل مكتبتك وإعداداتك وسجل لعبك الحاليين. لا يمكن التراجع عن ذلك.</string>
+    <string name="sets_backup_restore_confirm">استعادة</string>
+    <string name="sets_backup_share_chooser">مشاركة النسخة الاحتياطية</string>
+
+    <!-- Settings ▸ Credits -->
+    <string name="sets_credits_group_xmb">تصميم XMB — Sony</string>
+    <string name="sets_credits_xmb_inspired">مظهر هذا المشغّل وأسلوبه مستوحيان من XMB (XrossMediaBar)، الواجهة التي ابتكرتها Sony لـ PlayStation Portable وPlayStation 3 — فتخطيط الشريط المتقاطع والموجة المتدفقة ونموذج التنقل كلها تحية لها.</string>
+    <string name="sets_credits_xmb_trademarks">تُعد \"XrossMediaBar\" و\"XMB\" و\"PSP\" و\"PlayStation\" علامات تجارية لشركة Sony Interactive Entertainment Inc. Play Field Portal مشروع مستقل وغير تجاري من المعجبين — غير تابع لـ Sony ولا معتمد أو مموّل منها. الصور الفنية المرفقة للواجهة مأخوذة من سمة المجتمع \"XMB Menu for ES-DE\" (المذكورة أدناه) وتبقى ملكًا لمؤلفيها. لا توجد أي أصوات من Sony مرفقة: كل صوت في القائمة مذكور مصدره بشكل منفصل أدناه.</string>
+    <string name="sets_credits_group_icon">أيقونة التطبيق والشعار</string>
+    <string name="sets_credits_icon_designed">صمّم johakovi أيقونة تطبيق Play Field Portal وشعاره. شكرًا جزيلاً على العمل الفني الذي يمنح المشغّل هويته.</string>
+    <string name="sets_credits_label_design">التصميم</string>
+    <string name="sets_credits_group_artwork">الصور الفنية للأنظمة وأجهزة الألعاب</string>
+    <string name="sets_credits_artwork_from">أيقونات الأنظمة وأجهزة الألعاب والفئات المستخدمة في هذا المشغّل مأخوذة من سمة \"XMB Menu for ES-DE\" — وهي إعادة إنشاء مجتمعية لـ XMB في PSP.</string>
+    <string name="sets_credits_artwork_rights">جميع حقوق هذه الصور الفنية لمبدعيها — Anthony Caccese، بناءً على العمل الأصلي لـ InitialDin. تُستخدم الأيقونات هنا بامتنان وتبقى ملكًا لمؤلفيها.</string>
+    <string name="sets_credits_label_project">المشروع</string>
+    <string name="sets_credits_label_authors">المؤلفون</string>
+    <string name="sets_credits_label_source">المصدر</string>
+    <string name="sets_credits_group_buttons">أيقونات أزرار وحدة التحكم</string>
+    <string name="sets_credits_buttons_from">كل تعليمات الأزرار على الشاشة — أزرار PlayStation وXbox وNintendo، ولوحات الاتجاهات، والأزرار الكتفية، والزنادات، وعصي التحكم، وأزرار النظام — مأخوذة من حزم أيقونات الأزرار الخاصة بـ Zacksly، وتُستخدم بموجب ترخيص Creative Commons Attribution 3.0.</string>
+    <string name="sets_credits_buttons_unmodified">الصور الفنية غير معدّلة: تم تغيير أسماء الملفات فقط إلى أسماء موارد Android، ولم تُرفق إلا الأيقونات التي يعرضها المشغّل.</string>
+    <string name="sets_credits_label_author">المؤلف</string>
+    <string name="sets_credits_label_website">الموقع الإلكتروني</string>
+    <string name="sets_credits_label_support">الدعم</string>
+    <string name="sets_credits_label_packs">الحزم</string>
+    <string name="sets_credits_label_license">الترخيص</string>
+    <string name="sets_credits_group_sounds">أصوات القائمة</string>
+    <string name="sets_credits_sounds_built">أصوات القائمة المرفقة — التنقل والرجوع والتأكيد والخطأ والتشغيل والإشعار ونغمة الإقلاع — مبنية من مقاطع صوتية خالية من حقوق الاستخدام منشورة على Pixabay، ومعدّلة للمشغّل: مقصوصة ومعدّلة الطبقة والمستوى ومحوّلة. شكرًا للمبدعين الذين بُنيت المجموعة من أعمالهم.</string>
+    <string name="sets_credits_sounds_license">لا يشترط ترخيص محتوى Pixabay ذكر المصدر؛ لكنه مذكور هنا مع الشكر على أي حال. إذا كنت أحد هؤلاء المبدعين وتريد تغيير الإشارة أو إزالة أحد الملفات، يُرجى التواصل.</string>
+    <string name="sets_credits_group_metadata">الصور الفنية والبيانات الوصفية للألعاب</string>
+    <string name="sets_credits_metadata_fetched">تُجلب صور العلب والعلب ثلاثية الأبعاد وصور الخراطيش/الأقراص واللافتات الرئيسية والشعارات والأيقونات والأدلة ومقاطع الفيديو والبيانات الوصفية للألعاب بناءً على طلبك من مزوّدين خارجيين، وتبقى ملكًا لأصحابها.</string>
+    <string name="sets_credits_label_primary_scraper">مصدر الجلب الأساسي</string>
+    <string name="sets_credits_value_screenscraper">ScreenScraper — screenscraper.fr، قاعدة بيانات وسائط ألعاب يديرها المجتمع</string>
+    <string name="sets_credits_label_artwork">الصور الفنية</string>
+    <string name="sets_credits_label_metadata">البيانات الوصفية</string>
+    <string name="sets_credits_group_achievements">الإنجازات — Shiba Coins</string>
+    <string name="sets_credits_achievements_from">تأتي بيانات الإنجازات لنظام Shiba Coins من الخدمات والمشاريع التالية، وتبقى ملكًا لأصحابها.</string>
+    <string name="sets_credits_value_retroachievements">retroachievements.org — مجموعات إنجازات وبيانات فتح يصنعها المجتمع للألعاب القديمة، عبر RetroAchievements Web API الرسمي وعميل api-kotlin</string>
+    <string name="sets_credits_value_steam">Powered by Steam — مخططات الإنجازات وبيانات الفتح عبر Steam Web API، باستخدام مفتاحك الخاص. Steam وشعار Steam علامتان تجاريتان لشركة Valve Corporation. steampowered.com</string>
+    <string name="sets_credits_goldberg_bundles">يتضمن التتبّع المحلي للإنجازات في ألعاب PC المحاكية لـ Steam محاكي Goldberg Steam Emulator — وتحديدًا gbe_fork، النسخة المجتمعية التي يديرها Detanup01 والمساهمون، المبنية على Goldberg Emulator الأصلي من Mr. Goldberg.</string>
+    <string name="sets_credits_goldberg_license">المحاكي برنامج حر مرخّص بموجب GNU Lesser General Public License v3.0 (LGPL-3.0). يتضمن Play Field Portal إصدارًا غير معدّل من steam_api64.dll الخاص به؛ والشيفرة المصدرية المقابلة كاملة ونص الترخيص الكامل متاحان في الروابط أدناه.</string>
+    <string name="sets_credits_value_gbe">gbe_fork — Detanup01 والمساهمون</string>
+    <string name="sets_credits_label_original_project">المشروع الأصلي</string>
+    <string name="sets_credits_value_goldberg_original">Goldberg Emulator من Mr. Goldberg — gitlab.com/Mr_Goldberg/goldberg_emulator</string>
+    <string name="sets_credits_group_support">ادعم المشروع</string>
+    <string name="sets_credits_support_thanks">شكرًا لكم جميعًا على دعمكم. أنشأت هذا كرسالة حب إلى PSP والمجتمع الرائع الذي يحبه أيضًا، لذا سيبقى هذا المشروع مجانيًا إلى الأبد. ومع ذلك، إن كنت تقدّر ما أفعله وتودّ التعبير عن ذلك بطريقة أخرى، يمكنك أن تشتري لي تاكو. وبالطبع، التبرعات اختيارية دائمًا وليست مطلوبة أبدًا. أحبكم جميعًا، وسعيد 15 يونيو.</string>
+    <string name="sets_credits_label_buy_taco">اشترِ لي تاكو</string>
+    <string name="sets_credits_group_notes">ملاحظات</string>
+    <string name="sets_credits_notes_text">إذا كنت صاحب حقوق وتريد تغيير الإشارة إلى المصدر أو إزالة أي ملف، يُرجى التواصل وستتم معالجة الأمر سريعًا.</string>
+    <string name="sets_credits_title">الشكر والتقدير</string>
+    <string name="sets_credits_no_browser">لا يوجد تطبيق يمكنه فتح روابط الويب. زُر %1$s في متصفح.</string>
+
+    <!-- Settings ▸ Logs -->
+    <string name="sets_logs_title">السجلات</string>
+    <string name="sets_logs_prompt_share">مشاركة</string>
+    <string name="sets_logs_prompt_open">فتح</string>
+    <string name="sets_logs_prompt_clear">مسح</string>
+    <string name="sets_logs_clear_title">هل تريد مسح كل السجلات؟</string>
+    <plurals name="sets_logs_clear_message">
+        <item quantity="zero">لا توجد ملفات سجل لحذفها (%2$s).</item>
+        <item quantity="one">سيتم حذف ملف السجل (%2$s). إذا كنت على وشك الإبلاغ عن مشكلة، فشارك السجل أولاً. لا يمكن استرداد السجل بعد مسحه.</item>
+        <item quantity="two">سيتم حذف ملفَي السجل (%2$s). إذا كنت على وشك الإبلاغ عن مشكلة، فشارك السجل أولاً. لا يمكن استرداد السجل بعد مسحه.</item>
+        <item quantity="few">سيتم حذف كل ملفات السجل الـ %1$d (%2$s). إذا كنت على وشك الإبلاغ عن مشكلة، فشارك السجل أولاً. لا يمكن استرداد السجل بعد مسحه.</item>
+        <item quantity="many">سيتم حذف كل ملفات السجل الـ %1$d (%2$s). إذا كنت على وشك الإبلاغ عن مشكلة، فشارك السجل أولاً. لا يمكن استرداد السجل بعد مسحه.</item>
+        <item quantity="other">سيتم حذف كل ملفات السجل الـ %1$d (%2$s). إذا كنت على وشك الإبلاغ عن مشكلة، فشارك السجل أولاً. لا يمكن استرداد السجل بعد مسحه.</item>
+    </plurals>
+    <string name="sets_logs_clear_confirm">مسح</string>
+    <string name="sets_logs_group_files">ملفات السجل</string>
+    <string name="sets_logs_empty">لا توجد ملفات سجل بعد</string>
+    <string name="sets_logs_empty_help">يبدأ سجل جديد مع كل تشغيل للتطبيق. حدّد للتحقق مجددًا.</string>
+    <string name="sets_logs_group_manage">الإدارة</string>
+    <string name="sets_logs_clear_row">مسح كل السجلات</string>
+    <string name="sets_logs_clear_row_help">يحذف كل سجل محفوظ. تستمر هذه الجلسة في التسجيل في ملف جديد.</string>
+    <string name="sets_logs_clear_row_none">لا شيء لمسحه</string>
+    <string name="sets_logs_group_about">حول السجلات</string>
+    <string name="sets_logs_saved">ما يتم حفظه</string>
+    <string name="sets_logs_saved_help">يتم الاحتفاظ بأحدث الجلسات فقط (حوالي 2 MB كحد أقصى). تُزال كلمات المرور والرموز المميزة وأسماء الحسابات وعناوين البريد الإلكتروني قبل كتابة أي شيء.</string>
+    <string name="sets_logs_share_file">مشاركة %1$s</string>
+    <string name="sets_logs_current">الحالي</string>
+    <string name="sets_logs_open_with">فتح السجل باستخدام</string>
+    <string name="sets_logs_share_subject">سجل Play Field Portal — %1$s</string>
+    <string name="sets_logs_share_chooser">مشاركة ملف السجل</string>
+    <string name="sets_logs_no_files">لا توجد ملفات</string>
+    <plurals name="sets_logs_summary">
+        <item quantity="zero">%1$d ملف · %2$s</item>
+        <item quantity="one">ملف واحد · %2$s</item>
+        <item quantity="two">ملفان · %2$s</item>
+        <item quantity="few">%1$d ملفات · %2$s</item>
+        <item quantity="many">%1$d ملفًا · %2$s</item>
+        <item quantity="other">%1$d ملف · %2$s</item>
+    </plurals>
+    <plurals name="sets_logs_deleted">
+        <item quantity="zero">لم يُحذف أي ملف (%2$s)</item>
+        <item quantity="one">تم حذف ملف واحد (%2$s)</item>
+        <item quantity="two">تم حذف ملفين (%2$s)</item>
+        <item quantity="few">تم حذف %1$d ملفات (%2$s)</item>
+        <item quantity="many">تم حذف %1$d ملفًا (%2$s)</item>
+        <item quantity="other">تم حذف %1$d ملف (%2$s)</item>
+    </plurals>
+    <string name="sets_logs_started_today">بدأ اليوم، %1$s</string>
+    <string name="sets_logs_started_yesterday">بدأ أمس، %1$s</string>
+    <string name="sets_logs_started_on">بدأ %1$s، %2$s</string>
+
+    <!-- Root folders (shared by Music, Video, Photo) -->
+    <string name="sets_roots_group">المجلدات الجذر</string>
+    <string name="sets_scanning">جارٍ الفحص…</string>
+    <string name="sets_rescan_help">تحديث المكتبات من كل مجلد جذر</string>
+    <string name="sets_playback_group">التشغيل</string>
+    <string name="sets_root_kind_music">الموسيقى</string>
+    <string name="sets_root_kind_video">الفيديو</string>
+    <string name="sets_root_kind_photo">الصور</string>
+    <string name="sets_root_kind_rom">ROM</string>
+    <string name="sets_root_fallback_music">الموسيقى</string>
+    <string name="sets_root_fallback_video">الفيديو</string>
+    <string name="sets_root_fallback_photo">الصور</string>
+    <string name="sets_root_none">لم يتم ضبط مجلدات جذر لـ %1$s</string>
+    <string name="sets_root_none_help">أضِف مجلدًا أدناه لبدء إدارة مكتبتك</string>
+    <string name="sets_root_access_lost">فُقد الوصول — استخدم «تعديل» لمنح الإذن مجددًا</string>
+    <string name="sets_root_consoles">أجهزة الألعاب: %1$s</string>
+    <string name="sets_root_kind_root">جذر %1$s</string>
+    <string name="sets_label_edit_folder">تعديل المجلد</string>
+    <string name="sets_label_remove_folder">إزالة المجلد</string>
+    <string name="sets_label_options_hint">تلميح الخيارات</string>
+    <string name="sets_label_show_on_bar">إظهار في الشريط</string>
+    <string name="sets_label_show_in_games">إظهار في الألعاب</string>
+    <string name="sets_label_pin_to_top">تثبيت في الأعلى</string>
+    <string name="sets_root_edit_short">تعديل</string>
+    <string name="sets_root_remove_short">إزالة</string>
+    <string name="sets_root_remove_title">هل تريد إزالة هذا المجلد؟</string>
+    <string name="sets_root_remove_message">سيتوقف PFP عن استخدام \"%1$s\"، وسيخرج ما وجده فيه من المكتبة. لن تُحذف أي ملفات من وحدة التخزين.</string>
+    <string name="sets_root_remove_confirm">إزالة</string>
+    <string name="sets_player_builtin">Play Field Portal</string>
+    <string name="sets_player_system_default">افتراضي النظام</string>
+
+    <!-- Settings ▸ Music -->
+    <string name="sets_music_title">الموسيقى</string>
+    <string name="sets_music_player_title">مشغّل الموسيقى الافتراضي</string>
+    <string name="sets_music_player_none">لم يتم العثور على مشغّلات موسيقى أخرى على هذا الجهاز.</string>
+    <string name="sets_music_add_root">إضافة مجلد موسيقى جذر</string>
+    <string name="sets_music_add_root_help">امنح الإذن لمجلد جذر (مثل /Music) — أضِف عدة مجلدات لتشمل مواقع مختلفة</string>
+    <string name="sets_music_rescan">إعادة فحص مكتبة الموسيقى</string>
+    <string name="sets_music_player">مشغّل الموسيقى الافتراضي</string>
+    <string name="sets_music_player_help">التطبيق الذي يفتح المقاطع الموسيقية</string>
+
+    <!-- Settings ▸ Video -->
+    <string name="sets_video_title">الفيديو</string>
+    <string name="sets_video_player_title">مشغّل الفيديو الافتراضي</string>
+    <string name="sets_video_player_none">لم يتم العثور على مشغّلات فيديو خارجية على هذا الجهاز.</string>
+    <string name="sets_video_add_root">إضافة مجلد فيديو جذر</string>
+    <string name="sets_video_add_root_help">امنح الإذن لمجلد جذر (مثل /Movies) — أضِف عدة مجلدات لتشمل مواقع مختلفة</string>
+    <string name="sets_video_rescan">إعادة فحص مكتبة الفيديو</string>
+    <string name="sets_video_player">مشغّل الفيديو الافتراضي</string>
+    <string name="sets_video_player_help">يشغّل Play Field Portal الفيديو داخل التطبيق؛ أو اختر تطبيقًا / أو اطلب السؤال في كل مرة.</string>
+
+    <!-- Settings ▸ Photo -->
+    <string name="sets_photo_title">الصور</string>
+    <string name="sets_photo_add_root">إضافة مجلد صور جذر</string>
+    <string name="sets_photo_add_root_help">امنح الإذن لمجلد جذر (مثل /Pictures) — أضِف عدة مجلدات لتشمل مواقع مختلفة</string>
+    <string name="sets_photo_rescan">إعادة فحص مكتبة الصور</string>
+    <string name="sets_photo_group_maintenance">الصيانة</string>
+    <string name="sets_photo_clear_cache">مسح ذاكرة الصور المصغّرة المؤقتة</string>
+    <string name="sets_photo_clear_cache_help">حذف الصور المصغّرة المُنشأة. تعيد إعادة الفحص إنشاءها.</string>
+    <plurals name="sets_photo_cache_cleared">
+        <item quantity="zero">لا توجد صور مصغّرة مخزّنة لمسحها.</item>
+        <item quantity="one">تم مسح صورة مصغّرة واحدة مخزّنة مؤقتًا. أعِد الفحص لإعادة إنشائها.</item>
+        <item quantity="two">تم مسح صورتين مصغّرتين مخزّنتين مؤقتًا. أعِد الفحص لإعادة إنشائهما.</item>
+        <item quantity="few">تم مسح %1$d صور مصغّرة مخزّنة مؤقتًا. أعِد الفحص لإعادة إنشائها.</item>
+        <item quantity="many">تم مسح %1$d صورة مصغّرة مخزّنة مؤقتًا. أعِد الفحص لإعادة إنشائها.</item>
+        <item quantity="other">تم مسح %1$d صورة مصغّرة مخزّنة مؤقتًا. أعِد الفحص لإعادة إنشائها.</item>
+    </plurals>
+
+    <!-- Settings ▸ Interface ▸ Notifications -->
+    <string name="sets_notif_title">الإشعارات</string>
+    <string name="sets_notif_record">تسجيل الإشعارات</string>
+    <string name="sets_notif_record_help">الاحتفاظ بسجل لعمليات الفحص والصور الفنية والجلب والإنجازات. الإيقاف يمنع الإدخالات الجديدة؛ ويظل العمل الجاري يعرض تقدّمه.</string>
+    <string name="sets_notif_group_history">السجل</string>
+    <string name="sets_notif_keep_for">الاحتفاظ بالإدخالات لمدة</string>
+    <string name="sets_notif_keep_for_help">تُحذف الإدخالات الأقدم عند تسجيل شيء جديد. يُطبَّق حد 200 إدخال في كل الأحوال، وتُحذف الإدخالات المقروءة أولاً.</string>
+    <string name="sets_notif_never">أبدًا</string>
+    <plurals name="sets_notif_days">
+        <item quantity="zero">%1$d يوم</item>
+        <item quantity="one">يوم واحد</item>
+        <item quantity="two">يومان</item>
+        <item quantity="few">%1$d أيام</item>
+        <item quantity="many">%1$d يومًا</item>
+        <item quantity="other">%1$d يوم</item>
+    </plurals>
+    <string name="sets_notif_mark_read">وضع علامة «مقروء» على الكل</string>
+    <string name="sets_notif_mark_read_help">يمسح عدد غير المقروء في شريط الحالة</string>
+    <plurals name="sets_notif_unread">
+        <item quantity="zero">لا شيء غير مقروء</item>
+        <item quantity="one">واحد غير مقروء</item>
+        <item quantity="two">اثنان غير مقروءين</item>
+        <item quantity="few">%1$d غير مقروءة</item>
+        <item quantity="many">%1$d غير مقروء</item>
+        <item quantity="other">%1$d غير مقروء</item>
+    </plurals>
+    <string name="sets_notif_none_unread">لا شيء غير مقروء</string>
+    <string name="sets_notif_clear_all">مسح الكل</string>
+    <string name="sets_notif_clear_all_help">يفرغ السجل. لا يتأثر العمل الذي لا يزال جاريًا.</string>
+    <plurals name="sets_notif_stored">
+        <item quantity="zero">لا شيء مخزّن</item>
+        <item quantity="one">واحد مخزّن</item>
+        <item quantity="two">اثنان مخزّنان</item>
+        <item quantity="few">%1$d مخزّنة</item>
+        <item quantity="many">%1$d مخزّنًا</item>
+        <item quantity="other">%1$d مخزّن</item>
+    </plurals>
+
+    <!-- Settings ▸ System ▸ System Update -->
+    <string name="sets_update_title">تحديث النظام</string>
+    <string name="sets_update_group_update">التحديث</string>
+    <string name="sets_update_installed">الإصدار المثبّت</string>
+    <string name="sets_update_latest">أحدث إصدار</string>
+    <string name="sets_update_check">التحقق من وجود تحديثات</string>
+    <string name="sets_update_checking">جارٍ التحقق…</string>
+    <string name="sets_update_notifications">إشعارات التحديث</string>
+    <string name="sets_update_notifications_help">ذكّرني في الإشعارات عند صدور إصدار جديد، مرة واحدة يوميًا كحد أقصى</string>
+    <string name="sets_update_group_changelog">سجل التغييرات</string>
+    <string name="sets_update_no_releases">لم يتم تحميل أي إصدارات بعد</string>
+    <string name="sets_update_no_releases_help">تحقّق من وجود تحديثات لتحميل سجل التغييرات</string>
+    <string name="sets_update_install">تنزيل %1$s وتثبيته</string>
+    <string name="sets_update_cannot_install">لا يمكن لهذا الإصدار تثبيت التحديثات من هنا</string>
+    <string name="sets_update_handed_over">أكّد في أداة التثبيت في Android لإنهاء العملية</string>
+    <string name="sets_update_downloading">جارٍ التنزيل…</string>
+    <string name="sets_update_install_help">يطلب منك Android التأكيد قبل تثبيت أي شيء</string>
+    <string name="sets_update_no_summary">لا يوجد ملخص لهذا الإصدار</string>
+    <string name="sets_update_full_notes">ملاحظات الإصدار الكاملة</string>
+    <string name="sets_update_full_notes_help">يفتح GitHub في المتصفح</string>
+    <string name="sets_edition_full">الكاملة</string>
+    <string name="sets_edition_lite">Lite</string>
+    <string name="sets_update_installed_label">%1$s · %2$s</string>
+    <string name="sets_update_unknown_version">غير معروف</string>
+    <string name="sets_update_available">الإصدار %1$s متاح</string>
+    <string name="sets_update_not_checked">لم يتم التحقق بعد</string>
+    <string name="sets_update_up_to_date">محدّث</string>
+    <string name="sets_update_never_checked">لم يتم التحقق أبدًا</string>
+    <string name="sets_update_checked">تم التحقق %1$s</string>
+    <string name="sets_update_tag_new">جديد</string>
+    <string name="sets_update_tag_installed">مثبّت</string>
+    <string name="sets_update_msg_available">يتوفر إصدار جديد.</string>
+    <string name="sets_update_msg_latest">لديك أحدث إصدار.</string>
+    <string name="sets_update_msg_offline">تعذّر الوصول إلى GitHub. حاول مجددًا لاحقًا.</string>
+    <string name="sets_update_msg_invalid">أرسل GitHub ردًا غير متوقع. حاول مجددًا لاحقًا.</string>
+    <string name="sets_update_no_apk">لا يتوفر تنزيل %2$s للإصدار %1$s بعد. حاول مجددًا لاحقًا.</string>
+    <string name="sets_update_download_failed">تعذّر تنزيل التحديث. تحقّق من الاتصال وحاول مجددًا.</string>
+    <string name="sets_update_not_newer">الملف المنزّل ليس إصدارًا أحدث من هذا التطبيق، لذا لم يُثبَّت.</string>
+    <string name="sets_update_no_installer">تعذّر فتح أداة التثبيت في Android على هذا الجهاز.</string>
+    <string name="sets_update_reminder_installed">تم تثبيت الإصدار %1$s.</string>
+    <string name="sets_update_reminder_available">الإصدار %1$s متاح.</string>
+
+    <!-- Settings ▸ About -->
+    <string name="sets_about_label_version">الإصدار</string>
+    <string name="sets_about_label_build">رقم الإصدار</string>
+    <string name="sets_about_label_edition">النسخة</string>
+    <string name="sets_about_label_min_android">الحد الأدنى من Android</string>
+    <string name="sets_about_label_target">المستهدف</string>
+    <string name="sets_about_group_open_source">المصدر المفتوح</string>
+    <string name="sets_about_value_compose">إطار عمل الواجهة</string>
+    <string name="sets_about_value_room">قاعدة البيانات المحلية</string>
+    <string name="sets_about_value_hilt">حقن التبعيات</string>
+    <string name="sets_about_value_ktor">عميل الشبكة</string>
+    <string name="sets_about_value_coil">تحميل الصور</string>
+    <string name="sets_about_value_media3">مقاطع الفيديو والتشغيل</string>
+    <string name="sets_about_value_workmanager">مهام الخلفية</string>
+    <string name="sets_about_value_timber">التسجيل</string>
+    <string name="sets_about_group_credits">الشكر والتقدير</string>
+    <string name="sets_about_label_art_media">الصور الفنية والوسائط</string>
+    <string name="sets_about_label_metadata">البيانات الوصفية</string>
+    <string name="sets_about_label_inspired">مستوحى من</string>
+    <string name="sets_about_label_see_also">انظر أيضًا</string>
+    <string name="sets_about_value_see_also">الإعدادات ▸ الشكر والتقدير</string>
+    <string name="sets_about_group_legal">المعلومات القانونية</string>
+    <string name="sets_about_legal_independent">يُعد Play Field Portal مشروعًا مستقلاً من المعجبين، غير تابع لـ Sony Interactive Entertainment.</string>
+    <string name="sets_about_legal_trademarks">تُعد PlayStation وPSP وXMB علامات تجارية لشركة Sony Interactive Entertainment Inc.</string>
+    <string name="sets_about_title">حول</string>
+    <string name="sets_about_unknown">غير معروف</string>
+
+    <!-- Artwork orphans (notice shown after linking a file to a game) -->
+    <string name="sets_orphan_linked">تم ربط الصورة الفنية — ستبقى مرتبطة في عمليات الفحص المستقبلية.</string>
+    <string name="sets_orphan_link_failed">تعذّر ربط ذلك الملف — شغّل «فحص المكتبة وإعادة ربطها» وحاول مجددًا.</string>
+
+    <!-- Settings ▸ Sound: parts resolved outside the screen -->
+    <!-- Row value when the user picked a sound but its file name is not known. -->
+    <string name="sets_audio_custom_sound">صوت مخصص</string>
+    <string name="sets_audio_import_failed">تعذّر استيراد ذلك الصوت. جرّب ملفًا آخر.</string>
+
+    <!-- Importing a PSP theme (.ptf): the notification text. %1$s is the theme\'s name. -->
+    <string name="sets_ptf_wallpaper_only">تم استيراد \"%1$s\" — الخلفية فقط</string>
+    <plurals name="sets_ptf_icons">
+        <item quantity="zero">تم استيراد \"%1$s\" — الخلفية دون أيقونات</item>
+        <item quantity="one">تم استيراد \"%1$s\" — الخلفية وأيقونة واحدة</item>
+        <item quantity="two">تم استيراد \"%1$s\" — الخلفية وأيقونتان</item>
+        <item quantity="few">تم استيراد \"%1$s\" — الخلفية و%2$d أيقونات</item>
+        <item quantity="many">تم استيراد \"%1$s\" — الخلفية و%2$d أيقونة</item>
+        <item quantity="other">تم استيراد \"%1$s\" — الخلفية و%2$d أيقونة</item>
+    </plurals>
+    <plurals name="sets_ptf_icons_tint">
+        <item quantity="zero">تم استيراد \"%1$s\" — الخلفية دون أيقونات، تطابق اللون %3$d%%</item>
+        <item quantity="one">تم استيراد \"%1$s\" — الخلفية وأيقونة واحدة، تطابق اللون %3$d%%</item>
+        <item quantity="two">تم استيراد \"%1$s\" — الخلفية وأيقونتان، تطابق اللون %3$d%%</item>
+        <item quantity="few">تم استيراد \"%1$s\" — الخلفية و%2$d أيقونات، تطابق اللون %3$d%%</item>
+        <item quantity="many">تم استيراد \"%1$s\" — الخلفية و%2$d أيقونة، تطابق اللون %3$d%%</item>
+        <item quantity="other">تم استيراد \"%1$s\" — الخلفية و%2$d أيقونة، تطابق اللون %3$d%%</item>
+    </plurals>
+    <string name="sets_ptf_cxmb_unsupported">سمات CXMB (.ctf) غير مدعومة — فقط سمات .ptf الرسمية</string>
+
+    <!-- Connecting services (Steam, IGDB, ScreenScraper): the status line shown after a check. -->
+    <string name="sets_svc_steam_connected">تم ربط Steam</string>
+    <string name="sets_svc_steam_resolved">تم ربط Steam — تم التعرّف على \"%1$s\"</string>
+    <string name="sets_svc_steam_unresolved">تم حفظ المفتاح، لكن تعذّر التعرّف على \"%1$s\". أدخِل SteamID64 الخاص بك.</string>
+    <string name="sets_svc_valid">صالح</string>
+    <string name="sets_svc_igdb_invalid">غير صالح — تحقّق من Client ID وSecret</string>
+    <string name="sets_svc_screenscraper_invalid">غير صالح — تحقّق من اسم المستخدم وكلمة المرور</string>
+    <plurals name="sets_svc_screenscraper_valid_threads">
+        <item quantity="zero">صالح — عدد الخيوط: %1$s</item>
+        <item quantity="one">صالح — عدد الخيوط: %1$s</item>
+        <item quantity="two">صالح — عدد الخيوط: %1$s</item>
+        <item quantity="few">صالح — عدد الخيوط: %1$s</item>
+        <item quantity="many">صالح — عدد الخيوط: %1$s</item>
+        <item quantity="other">صالح — عدد الخيوط: %1$s</item>
+    </plurals>
+    <plurals name="sets_svc_screenscraper_valid_both">
+        <item quantity="zero">صالح — عدد الخيوط: %1$s، و%2$s طلب/يوم</item>
+        <item quantity="one">صالح — عدد الخيوط: %1$s، و%2$s طلب/يوم</item>
+        <item quantity="two">صالح — عدد الخيوط: %1$s، و%2$s طلب/يوم</item>
+        <item quantity="few">صالح — عدد الخيوط: %1$s، و%2$s طلب/يوم</item>
+        <item quantity="many">صالح — عدد الخيوط: %1$s، و%2$s طلب/يوم</item>
+        <item quantity="other">صالح — عدد الخيوط: %1$s، و%2$s طلب/يوم</item>
+    </plurals>
+    <string name="sets_svc_screenscraper_valid_requests">صالح، %1$s طلب/يوم</string>
+
+    <!-- Settings ▸ Controller -->
+    <string name="sets_controller_title">وحدة التحكم</string>
+    <string name="sets_controller_group_ab">التأكيد والرجوع</string>
+    <string name="sets_controller_ab_help">يتحكم في الزر الذي يؤكد والزر الذي يرجع. يُطبَّق على كل قوائم المشغّل.</string>
+    <string name="sets_controller_group_xy">الخيارات والفرز</string>
+    <string name="sets_controller_xy_help">يبدّل إجراءَي X وY داخل واجهة المشغّل فقط. لا يؤثر على عناصر التحكم في المحاكي.</string>
+    <string name="sets_controller_group_type">نوع وحدة التحكم</string>
+    <string name="sets_controller_type_help">يغيّر أيقونات الأزرار وتسمياتها المعروضة في تعليمات المساعدة.</string>
+    <string name="sets_controller_type">النوع</string>
+    <string name="sets_controller_type_sub">يؤثر على شريط المساعدة أسفل المشغّل</string>
+    <string name="sets_controller_group_scroll">سرعة التمرير</string>
+    <string name="sets_controller_scroll_help">سرعة تمرير القوائم أثناء الضغط المستمر على اتجاه. كلما طال الضغط زادت السرعة؛ وإمالة العصا بالكامل تمرّر بأقصى سرعة.</string>
+    <string name="sets_controller_scroll_sub">يُطبَّق على التنقل المستمر بلوحة الاتجاهات والعصا</string>
+    <string name="sets_controller_group_navigation">التنقل</string>
+    <string name="sets_controller_left_backs_out">اليسار للخروج</string>
+    <string name="sets_controller_left_backs_out_help">اضغط LEFT لمغادرة مجلد أو قائمة منبثقة — فقط حيث لا يفعل LEFT شيئًا آخر</string>
+    <string name="sets_controller_group_keyboard">لوحة المفاتيح</string>
+    <string name="sets_controller_virtual_keyboard">لوحة المفاتيح الافتراضية</string>
+    <string name="sets_controller_virtual_keyboard_help">اكتب بوحدة التحكم على لوحة مفاتيح PFP الخاصة. عند الإيقاف، أو عند استخدام اللمس، تُفتح لوحة مفاتيح النظام بدلاً منها</string>
+    <string name="sets_controller_group_reset">إعادة الضبط</string>
+    <string name="sets_controller_reset">إعادة ضبط كل إعدادات وحدة التحكم</string>
+    <string name="sets_controller_reset_help">يستعيد الإعدادات المسبقة الافتراضية للتبديل والنوع</string>
+</resources>

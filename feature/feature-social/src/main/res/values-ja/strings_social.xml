@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- QR login screen -->
+    <string name="soc_qr_preparing">サインインを準備しています…</string>
+    <string name="soc_qr_connected">接続しました</string>
+    <string name="soc_qr_expired">コードの有効期限が切れました。</string>
+    <string name="soc_qr_declined">サインインが拒否されました。</string>
+    <string name="soc_qr_error">サインインできませんでした。%1$s</string>
+    <string name="soc_qr_content_description">Discord サインイン用 QR コード</string>
+    <string name="soc_qr_title">Discord でサインイン</string>
+    <string name="soc_qr_copied">コピーしました</string>
+    <string name="soc_qr_tap_to_copy">コードを選択してコピー</string>
+    <string name="soc_qr_instructions">スマートフォンのカメラでスキャンするか、discord.com/activate にアクセスしてコードを貼り付けてください。</string>
+    <string name="soc_qr_expires_in">残り %1$d 秒</string>
+    <string name="soc_qr_expired_short">期限切れ</string>
+    <string name="soc_qr_cancel">キャンセル</string>
+    <string name="soc_qr_try_again">再試行</string>
+</resources>

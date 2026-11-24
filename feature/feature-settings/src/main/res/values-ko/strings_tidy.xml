@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings ▸ Controller: row names for the two swap switches. -->
+    <string name="tidy_controller_swap_confirm_back">확인과 뒤로 바꾸기</string>
+    <string name="tidy_controller_swap_options_sort">옵션과 정렬 바꾸기</string>
+
+    <!-- Settings ▸ Display: group header above the icon, text and font rows. -->
+    <string name="tidy_group_text_icons">텍스트 및 아이콘</string>
+
+    <!-- Wizard header under the page title. %1$d is this page's number, %2$d how many pages this run shows. -->
+    <string name="tidy_wizard_step_of">%1$d/%2$d단계</string>
+</resources>

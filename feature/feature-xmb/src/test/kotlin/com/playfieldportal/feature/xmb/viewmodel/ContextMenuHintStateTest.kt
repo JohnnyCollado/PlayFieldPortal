@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.CategoryType
@@ -60,7 +61,7 @@ class ContextMenuHintStateTest {
 
     @Test
     fun `does not show when a context menu is already open`() {
-        val s = eligibleState().copy(activeContextMenu = XMBContextMenu("X", emptyList()))
+        val s = eligibleState().copy(activeContextMenu = XMBContextMenu(UiText.raw("X"), emptyList()))
         assertFalse(shouldShowContextMenuHint(s, XMBViewModel.IDLE_HINT_DELAY_MS))
     }
 
@@ -189,7 +190,7 @@ class ContextMenuHintStateTest {
 
     @Test
     fun `drawer hint does not show when a context menu is open`() {
-        val s = drawerEligibleState().copy(activeContextMenu = XMBContextMenu("X", emptyList()))
+        val s = drawerEligibleState().copy(activeContextMenu = XMBContextMenu(UiText.raw("X"), emptyList()))
         assertFalse(shouldShowAppDrawerHint(s, XMBViewModel.IDLE_HINT_DELAY_MS))
     }
 
@@ -318,7 +319,7 @@ class ContextMenuHintStateTest {
         val none = mediaEligibleState().copy(musicPlayerVisible = false)
         assertTrue(shouldShowMediaHint(none.copy(activeVideoId = "v1"), XMBViewModel.IDLE_HINT_DELAY_MS))
         assertTrue(shouldShowMediaHint(none.copy(activePhotoViewer = PhotoViewerRequest("p1", libraryId = null)), XMBViewModel.IDLE_HINT_DELAY_MS))
-        assertTrue(shouldShowMediaHint(none.copy(musicBrowser = MusicBrowserState(MusicBrowserView.AllMusic, "All Music")), XMBViewModel.IDLE_HINT_DELAY_MS))
+        assertTrue(shouldShowMediaHint(none.copy(musicBrowser = MusicBrowserState(MusicBrowserView.AllMusic, UiText.raw("All Music"))), XMBViewModel.IDLE_HINT_DELAY_MS))
         assertTrue(shouldShowMediaHint(none.copy(musicTrackPicker = MusicTrackPickerState(1L, "Mix", tracks = emptyList())), XMBViewModel.IDLE_HINT_DELAY_MS))
     }
 

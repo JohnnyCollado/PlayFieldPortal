@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Music playback notification -->
+    <string name="xmbu_music_channel_name">Přehrávání hudby</string>
+    <string name="xmbu_music_channel_description">Ovládání právě hrající skladby</string>
+    <string name="xmbu_music_notif_previous">Předchozí</string>
+    <string name="xmbu_music_notif_play_pause">Přehrát/Pozastavit</string>
+    <string name="xmbu_music_notif_next">Další</string>
+    <string name="xmbu_music_notif_stop">Zastavit</string>
+
+    <string name="xmbu_ptt_hold">"🎙  DRŽET"</string>
+
+    <!-- Clip failures -->
+    <string name="xmbu_clipfail_boot_label">Spouštěcí sekvence</string>
+    <string name="xmbu_clipfail_gameboot_label">Game Boot</string>
+    <string name="xmbu_clipfail_boot_message">Vaše spouštěcí video nelze v tomto zařízení přehrát, proto se přehrála vestavěná sekvence. Znovu exportujte motiv z Theme Studio (video převede) nebo vyberte jiný klip v nastavení Zobrazení.</string>
+    <string name="xmbu_clipfail_gameboot_message">Vaše video Game Boot nelze v tomto zařízení přehrát, proto se přehrála vestavěná sekvence. Znovu exportujte motiv z Theme Studio (video převede) nebo vyberte jiný klip v nastavení Zobrazení.</string>
+
+    <!-- Common words -->
+    <string name="xmbu_common_options">Možnosti</string>
+    <string name="xmbu_common_back">Zpět</string>
+    <string name="xmbu_common_cancel">Zrušit</string>
+    <string name="xmbu_common_done">Hotovo</string>
+    <string name="xmbu_common_close">Zavřít</string>
+    <string name="xmbu_common_reset">Obnovit</string>
+    <string name="xmbu_common_remove">Odebrat</string>
+    <string name="xmbu_common_open">Otevřít</string>
+    <string name="xmbu_common_toggle">Přepnout</string>
+    <string name="xmbu_common_search">Hledat</string>
+    <string name="xmbu_common_artwork">Grafika</string>
+    <string name="xmbu_common_edit_title">Upravit název</string>
+    <string name="xmbu_common_add_to_card">Přidat na kartu</string>
+    <string name="xmbu_common_on">Zap.</string>
+    <string name="xmbu_common_off">Vyp.</string>
+    <string name="xmbu_common_move">Přesunout</string>
+    <string name="xmbu_common_navigate">Navigovat</string>
+    <string name="xmbu_common_play">Přehrát</string>
+    <string name="xmbu_common_pause">Pozastavit</string>
+    <string name="xmbu_common_prev_next">Předch. / Další</string>
+    <string name="xmbu_common_seek">Posun</string>
+    <string name="xmbu_common_confirm">Potvrdit</string>
+    <string name="xmbu_common_close_search">Zavřít hledání</string>
+    <string name="xmbu_common_ellipsis_search">Hledat…</string>
+
+    <!-- App Detail: Options menu rows -->
+    <string name="xmbu_app_opt_favorite">Oblíbené</string>
+    <string name="xmbu_app_opt_app_info">Informace o aplikaci</string>
+    <string name="xmbu_app_opt_hide">Skrýt všude</string>
+    <string name="xmbu_app_opt_change_icon">Změnit ikonu</string>
+    <string name="xmbu_app_opt_change_background">Změnit pozadí</string>
+    <string name="xmbu_app_opt_reset_artwork">Obnovit veškerou grafiku</string>
+
+    <string name="xmbu_app_art_type_icon">Ikona hry</string>
+    <string name="xmbu_app_art_type_hero">Banner hero</string>
+    <string name="xmbu_app_art_type_background">Pozadí</string>
+
+    <string name="xmbu_app_art_no_api_key">Klíč API SteamGridDB není nastaven — přidejte jej v nastavení grafiky</string>
+    <string name="xmbu_app_art_search_failed">Hledání selhalo: %1$s</string>
+    <string name="xmbu_app_art_no_results">Pro „%1$s“ nejsou na SteamGridDB žádné výsledky</string>
+    <string name="xmbu_app_art_load_failed">Grafiku nelze načíst: %1$s</string>
+    <string name="xmbu_app_art_none_found">Na SteamGridDB nebyla nalezena grafika (%1$s)</string>
+    <string name="xmbu_app_art_download_failed">Nelze stáhnout: %1$s</string>
+    <string name="xmbu_app_art_import_failed">Nelze importovat: %1$s</string>
+    <string name="xmbu_app_art_updated">Aktualizováno: %1$s</string>
+    <string name="xmbu_app_art_reset">Obnoveno: %1$s</string>
+    <string name="xmbu_app_art_all_reset">Veškerá grafika obnovena</string>
+    <string name="xmbu_app_no_launchable_package">Tato aplikace nemá spustitelný balíček</string>
+    <string name="xmbu_common_launch">Spustit</string>
+
+    <!-- App Detail screen -->
+    <string name="xmbu_app_breadcrumb_apps">Aplikace</string>
+    <string name="xmbu_app_breadcrumb_android_app">Aplikace pro Android</string>
+    <string name="xmbu_app_edit_artwork_description">Upravit grafiku</string>
+    <string name="xmbu_app_no_icon">Bez ikony</string>
+    <string name="xmbu_app_art_change">Změnit: %1$s</string>
+    <string name="xmbu_app_art_saving">Ukládání…</string>
+    <string name="xmbu_app_art_pick_local">Vybrat místní soubor</string>
+    <string name="xmbu_app_art_restore_icon">Obnovit původní ikonu</string>
+    <string name="xmbu_app_art_remove_custom">Odebrat vlastní grafiku</string>
+    <string name="xmbu_app_art_picker_hint">"◄ ►  Procházet   A  Vybrat   B  Zpět"</string>
+    <string name="xmbu_app_reset_title">Obnovit veškerou grafiku?</string>
+    <string name="xmbu_app_reset_message">Vlastní ikona a pozadí aplikace %1$s budou odebrány a vrátí se její vlastní ikona.</string>
+
+    <!-- Add to Card picker panel -->
+    <string name="xmbu_collection_picker_new_row">"＋  Nová vlastní Paměťová karta"</string>
+    <string name="xmbu_collection_new_title">Nová vlastní Paměťová karta</string>
+    <string name="xmbu_collection_new_placeholder">např. RPG, Právě hraji</string>
+    <string name="xmbu_collection_new_create">Vytvořit</string>
+    <string name="xmbu_common_sort">Řazení</string>
+    <string name="xmbu_common_notifications">Oznámení</string>
+
+    <!-- App picker -->
+    <string name="xmbu_app_picker_empty">Žádné nainstalované aplikace</string>
+    <string name="xmbu_app_picker_no_match">Výrazu „%1$s“ neodpovídají žádné nainstalované aplikace</string>
+    <string name="xmbu_app_picker_choose">Vybrat</string>
+
+    <!-- Arrange mode bars -->
+    <string name="xmbu_arrange_place">Umístit</string>
+    <string name="xmbu_arrange_mark">Označit</string>
+    <string name="xmbu_arrange_move_left">Posunout doleva</string>
+    <string name="xmbu_arrange_move_right">Posunout doprava</string>
+    <string name="xmbu_arrange_move_up">Posunout nahoru</string>
+    <string name="xmbu_arrange_move_down">Posunout dolů</string>
+
+    <!-- Color Scheme picker overlay -->
+    <string name="xmbu_color_scheme_title">Barevné schéma</string>
+    <string name="xmbu_color_scheme_tint">Odstín</string>
+    <string name="xmbu_color_scheme_depth">Hloubka</string>
+    <string name="xmbu_color_scheme_contrast_top">"%1$s Text nahoře  %2$s"</string>
+    <string name="xmbu_color_scheme_contrast_bottom">"%1$s Text dole  %2$s"</string>
+    <string name="xmbu_color_scheme_custom_title">Vlastní barva</string>
+
+    <!-- Customize XMB Icons overlay -->
+    <string name="xmbu_icons_title">Přizpůsobit ikony XMB</string>
+    <string name="xmbu_icons_source_user">Váš výběr</string>
+    <string name="xmbu_icons_source_theme">Z motivu</string>
+    <string name="xmbu_icons_source_default">Výchozí</string>
+    <string name="xmbu_icons_source_with_column">%1$s · sloupec %2$s</string>
+    <string name="xmbu_icons_column">Sloupec</string>
+    <string name="xmbu_icons_tab">Karta</string>
+    <string name="xmbu_icons_pick">Vybrat</string>
+    <string name="xmbu_icons_reset_all">Obnovit vše</string>
+    <string name="xmbu_icons_save_as_theme">Uložit jako motiv</string>
+    <string name="xmbu_icons_save_as_theme_button">Uložit jako motiv…</string>
+
+    <string name="xmbu_game_search_placeholder">Hledat hry…</string>
+
+    <!-- Game picker -->
+    <string name="xmbu_picker_in_this_category">V této kategorii</string>
+    <string name="xmbu_picker_in_category">V kategorii %1$s</string>
+    <string name="xmbu_picker_custom_cards">Vlastní Paměťové karty</string>
+    <string name="xmbu_picker_no_changes">Žádné změny</string>
+    <string name="xmbu_picker_menu_view">Zobrazení</string>
+    <string name="xmbu_picker_menu_select_all">Vybrat vše</string>
+    <string name="xmbu_picker_open_toggle">Otevřít / Přepnout</string>
+    <string name="xmbu_picker_no_games">Ve vaší knihovně zatím nejsou žádné hry</string>
+    <string name="xmbu_picker_add_games">Přidat hry</string>
+    <string name="xmbu_picker_view_mode">Zobrazení: %1$s</string>
+    <string name="xmbu_picker_removing_prefix">"Odebírá se · "</string>
+    <string name="xmbu_picker_search_placeholder">Hledat v této polici…</string>
+    <string name="xmbu_picker_shelves">Police</string>
+    <string name="xmbu_picker_shelf">Police</string>
+
+    <!-- Music browser -->
+    <string name="xmbu_music_breadcrumb_playlists">"Hudba  ›  Playlisty"</string>
+    <string name="xmbu_music_breadcrumb_music">Hudba</string>
+    <string name="xmbu_music_breadcrumb_all_tracks">Všechny skladby</string>
+    <string name="xmbu_music_resume">Pokračovat: %1$s</string>
+
+    <!-- Music player -->
+    <string name="xmbu_music_now_playing">Právě hraje</string>
+    <string name="xmbu_music_nothing_playing">Nic nehraje</string>
+    <string name="xmbu_music_visualizer">Vizualizace</string>
+
+    <!-- Media transport buttons -->
+    <string name="xmbu_media_previous_track">Předchozí skladba</string>
+    <string name="xmbu_media_next_track">Další skladba</string>
+    <string name="xmbu_media_previous_video">Předchozí video</string>
+    <string name="xmbu_media_next_video">Další video</string>
+    <string name="xmbu_media_back_10">Zpět o 10 sekund</string>
+    <string name="xmbu_media_forward_10">Vpřed o 10 sekund</string>
+    <string name="xmbu_media_playing">Přehrává se</string>
+    <string name="xmbu_media_paused">Pozastaveno</string>
+
+    <!-- Music track picker -->
+    <string name="xmbu_track_picker_title">Přidat do %1$s</string>
+    <string name="xmbu_track_picker_add">Přidat</string>
+    <string name="xmbu_track_picker_empty">Žádné další skladby k přidání — všechny prohledané skladby už v tomto playlistu jsou.</string>
+
+    <!-- Notification panel -->
+    <string name="xmbu_notif_options_description">Možnosti oznámení</string>
+    <string name="xmbu_notif_task_stopping">%1$s — Zastavování…</string>
+    <string name="xmbu_notif_task_detail">%1$s — %2$s</string>
+    <string name="xmbu_notif_kind_scan">Prohledávání</string>
+    <string name="xmbu_notif_kind_metadata">Metadata</string>
+    <string name="xmbu_notif_kind_achievements">Achievementy</string>
+    <string name="xmbu_notif_kind_system">Systém</string>
+    <string name="xmbu_notif_kind_download">Stahování</string>
+    <string name="xmbu_notif_kind_feed">Novinky</string>
+    <string name="xmbu_notif_action_go_to_game">Přejít na hru</string>
+    <string name="xmbu_notif_action_open_card">Otevřít Paměťovou kartu</string>
+    <string name="xmbu_notif_action_open_settings">Otevřít Nastavení</string>
+    <string name="xmbu_notif_action_open_category">Otevřít kategorii</string>
+    <string name="xmbu_notif_action_review">Zkontrolovat</string>
+    <string name="xmbu_time_just_now">Právě teď</string>
+
+    <string name="xmbu_share_theme">Sdílet motiv</string>
+    <string name="xmbu_move_position">Přesun · %1$d z %2$d</string>
+    <string name="xmbu_common_later">Později</string>
+
+    <!-- XMB shell dialogs -->
+    <string name="xmbu_shell_rename_shortcut">Přejmenovat zástupce</string>
+    <string name="xmbu_shell_playlist_name">Název playlistu</string>
+    <string name="xmbu_shell_theme_name">Název motivu</string>
+    <string name="xmbu_shell_source_theme">Z použitého motivu</string>
+    <string name="xmbu_shell_source_device">Ze zařízení</string>
+    <string name="xmbu_shell_source_device_detail">PNG nebo GIF</string>
+    <string name="xmbu_shell_continue">Pokračovat</string>
+    <string name="xmbu_shell_shortcut_title">Přidat zástupce?</string>
+    <string name="xmbu_shell_shortcut_message">Aplikace požádala o přidání zástupce „%1$s“, který otevírá %2$s. Přidejte jej, jen pokud jste tohoto zástupce právě sami vytvořili.</string>
+    <string name="xmbu_shell_shortcut_add">Přidat</string>
+    <string name="xmbu_shell_shortcut_ignore">Ignorovat</string>
+    <string name="xmbu_shell_windows_title">Dokončete knihovnu Windows</string>
+    <string name="xmbu_shell_windows_message">Byla přidána hra pro PC, ale knihovna her pro Windows zatím nemá složku. Nastavte ji ve Správci knihovny, aby bylo možné prohledat složky her a achievementy.</string>
+    <string name="xmbu_shell_windows_set_up">Nastavit</string>
+    <string name="xmbu_shell_import_position">%1$d z %2$d</string>
+    <string name="xmbu_shell_open_playlist">Otevřít playlist</string>
+    <string name="xmbu_shell_stop">Zastavit</string>
+    <string name="xmbu_shell_keep_running">Nechat běžet</string>
+
+    <!-- Launch recovery dialog -->
+    <string name="xmbu_recovery_retry">Zkusit znovu</string>
+    <string name="xmbu_recovery_change_emulator">Změnit emulátor</string>
+    <string name="xmbu_recovery_change_default">Změnit výchozí pro systém</string>
+    <string name="xmbu_recovery_copy_diagnostics">Kopírovat diagnostiku</string>
+    <string name="xmbu_recovery_title">%1$s nelze spustit</string>
+    <string name="xmbu_recovery_select">Vybrat</string>
+    <string name="xmbu_recovery_dismiss">Zavřít</string>
+
+    <!-- Artwork folder prompts -->
+    <string name="xmbu_artfolder_unavailable_title">Složka grafiky není dostupná</string>
+    <string name="xmbu_artfolder_unavailable_message">PFP nemá přístup k %1$s. Nová grafika je pozastavena, dokud složku znovu nepropojíte. Stávající grafika se dál zobrazuje.</string>
+    <string name="xmbu_artfolder_relink">Znovu propojit složku</string>
+    <string name="xmbu_artfolder_not_now">Teď ne</string>
+    <string name="xmbu_artfolder_move_title">Přesuňte grafiku do vlastní složky</string>
+    <string name="xmbu_artfolder_choose">Vybrat složku grafiky</string>
+    <string name="xmbu_artfolder_choose_title">Vyberte složku grafiky</string>
+    <string name="xmbu_artfolder_choose_message">Nová grafika se ukládá do vaší vlastní složky. Vyberte ji a PFP do ní bude grafiku ukládat.</string>
+    <string name="xmbu_artfolder_foreign_title">Tato složka obsahuje jinou knihovnu grafiky</string>
+    <string name="xmbu_artfolder_use_library">Použít tuto knihovnu</string>
+    <string name="xmbu_artfolder_choose_another">Vybrat jinou složku</string>
+
+    <!-- Status strip -->
+    <string name="xmbu_status_controller_connected">Ovladač připojen</string>
+    <string name="xmbu_status_battery">Baterie</string>
+    <string name="xmbu_status_battery_charging">Baterie, nabíjí se</string>
+    <string name="xmbu_status_battery_plugged">Baterie, připojeno</string>
+
+    <!-- Adjust XMB Layout overlay -->
+    <string name="xmbu_layout_title">Upravit rozložení XMB</string>
+    <string name="xmbu_layout_readout">"Měřítko %1$sx    Vodorovně %2$d%%    Svisle %3$d%%"</string>
+    <string name="xmbu_layout_scale">Měřítko</string>
+    <string name="xmbu_layout_horizontal">Vodorovně</string>
+    <string name="xmbu_layout_vertical">Svisle</string>
+    <string name="xmbu_layout_sliders">Posuvníky</string>
+    <string name="xmbu_layout_hide_sliders">Skrýt posuvníky</string>
+    <string name="xmbu_layout_save">Uložit</string>
+
+    <string name="xmbu_icon_grid_use">Použít tuto ikonu</string>
+    <string name="xmbu_status_cellular_signal">Mobilní signál</string>
+
+    <string name="xmbu_notif_header_running">PROBÍHÁ</string>
+    <string name="xmbu_notif_header_earlier">DŘÍVE</string>
+    <string name="xmbu_notif_empty">Žádná oznámení</string>
+
+    <!-- Video player -->
+    <string name="xmbu_video_fit">Přizpůsobit</string>
+    <string name="xmbu_video_zoom">Přiblížit</string>
+    <string name="xmbu_video_fill">Vyplnit</string>
+    <string name="xmbu_video_speed">Rychlost přehrávání</string>
+    <string name="xmbu_video_subtitles">Titulky</string>
+    <string name="xmbu_video_audio_track">Zvuková stopa</string>
+    <string name="xmbu_video_screen_mode">Režim obrazovky</string>
+    <string name="xmbu_video_none">Žádné</string>
+    <string name="xmbu_video_default">Výchozí</string>
+    <string name="xmbu_video_track">Stopa</string>
+    <string name="xmbu_video_err_not_found">Video nebylo nalezeno.</string>
+    <string name="xmbu_video_err_permission">K tomuto souboru bylo odepřeno oprávnění.</string>
+    <string name="xmbu_video_err_decode">Toto video nelze v tomto zařízení dekódovat.</string>
+    <string name="xmbu_video_err_unable">Toto video nelze přehrát.</string>
+    <string name="xmbu_video_go_back">Zpět</string>
+    <string name="xmbu_video_status">%1$s× · %2$s</string>
+
+    <!-- Photo viewer -->
+    <string name="xmbu_photo_rotate_left">Otočit doleva</string>
+    <string name="xmbu_photo_rotate_right">Otočit doprava</string>
+    <string name="xmbu_photo_zoom_in">Přiblížit</string>
+    <string name="xmbu_photo_zoom_out">Oddálit</string>
+    <string name="xmbu_photo_reset_zoom">Obnovit přiblížení</string>
+    <string name="xmbu_photo_set_wallpaper">Nastavit jako tapetu launcheru</string>
+    <string name="xmbu_photo_set_lock_screen">Nastavit jako zamykací obrazovku</string>
+    <string name="xmbu_photo_view_info">Zobrazit informace</string>
+    <string name="xmbu_photo_show_location">Zobrazit umístění souboru</string>
+    <string name="xmbu_photo_remove">Odebrat z knihovny</string>
+    <string name="xmbu_photo_group_view">Zobrazení</string>
+    <string name="xmbu_photo_group_manage">Spravovat</string>
+    <string name="xmbu_photo_in_folder">Ve složce: %1$s</string>
+    <string name="xmbu_photo_wallpaper_unreadable">Tapetu nelze nastavit — obrázek nelze přečíst</string>
+    <string name="xmbu_photo_wallpaper_applied">Tapeta použita</string>
+    <string name="xmbu_photo_unreadable">Fotku nelze přečíst</string>
+    <string name="xmbu_photo_lock_screen_set">Zamykací obrazovka nastavena</string>
+    <string name="xmbu_photo_hide_controls">Skrýt ovládání</string>
+    <string name="xmbu_photo_show_controls">Zobrazit ovládání</string>
+    <string name="xmbu_photo_wallpaper_title">Nastavit jako tapetu launcheru?</string>
+    <string name="xmbu_photo_wallpaper_note">Nahradí pozadí s vlnou XMB.</string>
+    <string name="xmbu_photo_apply">Použít</string>
+    <string name="xmbu_photo_applying">Používání…</string>
+    <string name="xmbu_photo_remove_message">„%1$s“ bude z této knihovny odebrána. Fotka na disku smazána nebude.</string>
+    <string name="xmbu_photo_lock_message">„%1$s“ se stane obrázkem zamykací obrazovky zařízení, oříznutým podle obrazovky.</string>
+    <string name="xmbu_photo_set">Nastavit</string>
+    <string name="xmbu_photo_info_resolution">Rozlišení: %1$s</string>
+    <string name="xmbu_photo_info_taken">Pořízeno: %1$s</string>
+    <string name="xmbu_photo_info_modified">Změněno: %1$s</string>
+    <string name="xmbu_photo_info_size">Velikost: %1$s</string>
+    <string name="xmbu_photo_info_type">Typ: %1$s</string>
+    <string name="xmbu_photo_info_location">Umístění: %1$s</string>
+    <string name="xmbu_photo_info_file">Soubor: %1$s</string>
+
+    <!-- Music visualizer picker -->
+    <string name="xmbu_visualizer_portal">Portál</string>
+    <string name="xmbu_visualizer_ripple">Vlnění</string>
+    <string name="xmbu_visualizer_off">Vypnuto</string>
+    <string name="xmbu_visualizer_off_tile">VYP.</string>
+
+    <plurals name="xmbu_app_picker_selected">
+        <item quantity="one">Vybráno: %d</item>
+        <item quantity="few">Vybráno: %d</item>
+        <item quantity="many">Vybráno: %d</item>
+        <item quantity="other">Vybráno: %d</item>
+    </plurals>
+
+    <plurals name="xmbu_arrange_marked">
+        <item quantity="one">Označeno: %d</item>
+        <item quantity="few">Označeno: %d</item>
+        <item quantity="many">Označeno: %d</item>
+        <item quantity="other">Označeno: %d</item>
+    </plurals>
+
+    <plurals name="xmbu_picker_to_add">
+        <item quantity="one">K přidání: %d</item>
+        <item quantity="few">K přidání: %d</item>
+        <item quantity="many">K přidání: %d</item>
+        <item quantity="other">K přidání: %d</item>
+    </plurals>
+    <plurals name="xmbu_picker_to_remove">
+        <item quantity="one">K odebrání: %d</item>
+        <item quantity="few">K odebrání: %d</item>
+        <item quantity="many">K odebrání: %d</item>
+        <item quantity="other">K odebrání: %d</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_games">
+        <item quantity="one">%1$d hra · zaškrtnuto %2$d</item>
+        <item quantity="few">%1$d hry · zaškrtnuto %2$d</item>
+        <item quantity="many">%1$d hry · zaškrtnuto %2$d</item>
+        <item quantity="other">%1$d her · zaškrtnuto %2$d</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_cards">
+        <item quantity="one">%d karta · výběrem ji přesunete sem</item>
+        <item quantity="few">%d karty · výběrem ji přesunete sem</item>
+        <item quantity="many">%d karty · výběrem ji přesunete sem</item>
+        <item quantity="other">%d karet · výběrem ji přesunete sem</item>
+    </plurals>
+    <plurals name="xmbu_picker_card_games">
+        <item quantity="one">%d hra</item>
+        <item quantity="few">%d hry</item>
+        <item quantity="many">%d hry</item>
+        <item quantity="other">%d her</item>
+    </plurals>
+
+    <plurals name="xmbu_track_picker_add_count">
+        <item quantity="one">Přidat %d</item>
+        <item quantity="few">Přidat %d</item>
+        <item quantity="many">Přidat %d</item>
+        <item quantity="other">Přidat %d</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_selected">
+        <item quantity="one">Vybráno: %d</item>
+        <item quantity="few">Vybráno: %d</item>
+        <item quantity="many">Vybráno: %d</item>
+        <item quantity="other">Vybráno: %d</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_add_tracks">
+        <item quantity="one">Přidat %d skladbu</item>
+        <item quantity="few">Přidat %d skladby</item>
+        <item quantity="many">Přidat %d skladby</item>
+        <item quantity="other">Přidat %d skladeb</item>
+    </plurals>
+
+    <plurals name="xmbu_time_minutes_ago">
+        <item quantity="one">Před %d minutou</item>
+        <item quantity="few">Před %d minutami</item>
+        <item quantity="many">Před %d minuty</item>
+        <item quantity="other">Před %d minutami</item>
+    </plurals>
+    <plurals name="xmbu_time_hours_ago">
+        <item quantity="one">Před %d hodinou</item>
+        <item quantity="few">Před %d hodinami</item>
+        <item quantity="many">Před %d hodiny</item>
+        <item quantity="other">Před %d hodinami</item>
+    </plurals>
+
+    <plurals name="xmbu_artfolder_move_message">
+        <item quantity="one">%d obrázek je uložen v aplikaci a při odinstalaci by se ztratil. Vyberte složku a PFP jej do ní přesune.</item>
+        <item quantity="few">%d obrázky jsou uloženy v aplikaci a při odinstalaci by se ztratily. Vyberte složku a PFP je do ní přesune.</item>
+        <item quantity="many">%d obrázku je uloženo v aplikaci a při odinstalaci by se ztratilo. Vyberte složku a PFP je do ní přesune.</item>
+        <item quantity="other">%d obrázků je uloženo v aplikaci a při odinstalaci by se ztratilo. Vyberte složku a PFP je do ní přesune.</item>
+    </plurals>
+    <plurals name="xmbu_artfolder_foreign_message">
+        <item quantity="one">%1$s nastavila jiná instalace (%2$d soubor). Použijte ji a PFP znovu propojí vaše hry s její grafikou, nebo vyberte jinou složku.</item>
+        <item quantity="few">%1$s nastavila jiná instalace (%2$d soubory). Použijte ji a PFP znovu propojí vaše hry s její grafikou, nebo vyberte jinou složku.</item>
+        <item quantity="many">%1$s nastavila jiná instalace (%2$d souboru). Použijte ji a PFP znovu propojí vaše hry s její grafikou, nebo vyberte jinou složku.</item>
+        <item quantity="other">%1$s nastavila jiná instalace (%2$d souborů). Použijte ji a PFP znovu propojí vaše hry s její grafikou, nebo vyberte jinou složku.</item>
+    </plurals>
+
+    <plurals name="xmbu_status_notifications_unread">
+        <item quantity="one">Oznámení, %d nepřečtené</item>
+        <item quantity="few">Oznámení, %d nepřečtená</item>
+        <item quantity="many">Oznámení, %d nepřečteného</item>
+        <item quantity="other">Oznámení, %d nepřečtených</item>
+    </plurals>
+</resources>

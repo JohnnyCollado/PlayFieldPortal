@@ -1,0 +1,399 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Initial Setup wizard (first-run setup), its summary lines, and the scans it starts. -->
+
+    <!-- Wizard chrome -->
+    <string name="setup_title">Configurazione iniziale</string>
+    <string name="setup_prompt_enter">Apri</string>
+    <string name="setup_prompt_change">Cambia</string>
+    <string name="setup_prompt_back">Indietro</string>
+    <string name="setup_prompt_skip">Salta</string>
+    <string name="setup_row_edit">Modifica</string>
+    <string name="setup_row_remove">Rimuovi</string>
+    <string name="setup_message_dismiss_hint">Seleziona per chiudere, oppure conferma su questa riga</string>
+
+    <!-- Page names -->
+    <string name="setup_step_welcome">Benvenuto</string>
+    <string name="setup_step_controller">Controller</string>
+    <string name="setup_step_rom_roots">Cartelle ROM</string>
+    <string name="setup_step_music">Musica</string>
+    <string name="setup_step_video">Video</string>
+    <string name="setup_step_photo">Foto</string>
+    <string name="setup_step_artwork">Immagini</string>
+    <string name="setup_step_services">Servizi online</string>
+    <string name="setup_step_achievements">Servizi achievement</string>
+    <string name="setup_step_local_achievements">Achievement locali</string>
+    <string name="setup_step_retroarch">RetroArch</string>
+    <string name="setup_step_emulators">Emulatori</string>
+    <string name="setup_step_windows">Giochi Windows</string>
+    <string name="setup_step_hints">Suggerimenti e touch</string>
+    <string name="setup_step_home_app">App Home</string>
+    <string name="setup_step_finish">Fine</string>
+
+    <!-- Page headings -->
+    <string name="setup_heading_welcome">Benvenuto in Play Field Portal.</string>
+    <string name="setup_heading_controller">Scegli il tuo controller.</string>
+    <string name="setup_heading_rom_roots">Scegli le tue cartelle ROM.</string>
+    <string name="setup_heading_music">Scegli le tue cartelle musicali.</string>
+    <string name="setup_heading_video">Scegli le tue cartelle video.</string>
+    <string name="setup_heading_photo">Scegli le tue cartelle foto.</string>
+    <string name="setup_heading_artwork">Scegli la tua cartella immagini.</string>
+    <string name="setup_heading_services">Collega le tue fonti di immagini.</string>
+    <string name="setup_heading_achievements">Collega i tuoi servizi di achievement.</string>
+    <string name="setup_heading_local_achievements">Collega le cartelle dati dei tuoi emulatori.</string>
+    <string name="setup_heading_retroarch">Collega la cartella dei core di RetroArch.</string>
+    <string name="setup_heading_emulators">Controlla i tuoi emulatori.</string>
+    <string name="setup_heading_windows">Configura i giochi Windows.</string>
+    <string name="setup_heading_hints">Scegli come ti aiuta il launcher.</string>
+    <string name="setup_heading_home_app">Rendi Play Field Portal la tua schermata Home.</string>
+    <string name="setup_heading_finish">È tutto pronto!</string>
+
+    <!-- Page hints -->
+    <string name="setup_hint_welcome">Quasi tutti i passaggi sono facoltativi. Dovrai scegliere una cartella per le immagini.</string>
+    <string name="setup_hint_controller">Imposta le icone dei pulsanti e quale pulsante conferma, così ogni indicazione da qui in poi corrisponde al tuo controller.</string>
+    <string name="setup_hint_rom_roots">Aggiungi una o più cartelle ROM: i giochi di ogni console si trovano in una sottocartella al loro interno.</string>
+    <string name="setup_hint_media_roots">Aggiungi più cartelle principali per coprire la memoria interna e una scheda SD.</string>
+    <string name="setup_hint_artwork">Obbligatoria. Le tue immagini si trovano qui, fuori dall\'app, così sopravvivono a una reinstallazione.</string>
+    <string name="setup_hint_services">Tutti facoltativi e gratuiti. SteamGridDB, TheGamesDB, IGDB e ScreenScraper scaricano immagini e metadati dei giochi.</string>
+    <string name="setup_hint_achievements">RetroAchievements e Steam monitorano gli achievement come Shiba Coins.</string>
+    <string name="setup_hint_local_achievements">Trofei e achievement che i tuoi emulatori salvano su questo dispositivo. Un solo permesso per emulatore collega tutti i titoli.</string>
+    <string name="setup_hint_retroarch">Permette al launcher di sapere esattamente quali core hai, così vengono proposti solo quelli.</string>
+    <string name="setup_hint_emulators">Il predefinito di ogni console, scelto tra quelli installati. Cambia quelli che non ti sembrano giusti.</string>
+    <string name="setup_hint_windows">È installato un emulatore Windows: scegli dove si trovano i tuoi giochi PC.</string>
+    <string name="setup_hint_hints">I suggerimenti sui pulsanti compaiono quando ti fermi e spariscono appena premi qualcosa.</string>
+    <string name="setup_hint_home_app">Il pulsante Home ti riporterà qui invece che al launcher di sistema.</string>
+    <string name="setup_hint_finish">Tutto quanto qui sotto si può modificare in qualsiasi momento in Impostazioni.</string>
+
+    <!-- Continue row -->
+    <string name="setup_continue">Continua</string>
+    <string name="setup_continue_next">Avanti: %1$s</string>
+    <string name="setup_continue_blocked">Scegli prima una cartella</string>
+
+    <!-- Welcome page -->
+    <string name="setup_welcome_intro">Questa rapida configurazione indica al launcher le tue cartelle multimediali e collega i servizi online usati per immagini e achievement.</string>
+    <string name="setup_welcome_start">Inizia</string>
+    <string name="setup_welcome_start_sub">Prima scegli il tuo controller</string>
+    <string name="setup_welcome_skip">Salta configurazione</string>
+    <string name="setup_welcome_skip_sub">Vai direttamente al launcher: puoi avviare la configurazione guidata in qualsiasi momento da Impostazioni ▸ Sistema</string>
+
+    <!-- Folder rows -->
+    <string name="setup_root_access_lost">Accesso perso: usa ✎ per concederlo di nuovo</string>
+
+    <!-- ROM roots page -->
+    <string name="setup_rom_empty">Ancora nessuna cartella ROM. Aggiungi la cartella in cui si trovano i giochi delle tue console: una sottocartella per console, analizzate automaticamente.</string>
+    <string name="setup_rom_add">Aggiungi cartella ROM</string>
+    <string name="setup_rom_add_sub">Concedi una cartella ROM con una sottocartella per console</string>
+    <string name="setup_rom_rescan">Ripeti scansione cartelle ROM</string>
+    <string name="setup_rom_rescan_sub">Rileva automaticamente le console e analizza i loro giochi</string>
+    <string name="setup_rom_root_linked">Collegata: le cartelle delle console vengono lette da qui</string>
+    <string name="setup_rom_create_folders">Crea cartelle standard</string>
+    <string name="setup_rom_create_folders_sub">Una sottocartella per console, con il nome adatto ai tuoi giochi</string>
+
+    <!-- Music roots page -->
+    <string name="setup_music_empty">Ancora nessuna cartella musicale. Aggiungi la cartella in cui si trova la tua musica: più cartelle possono coprire la memoria interna e una scheda SD.</string>
+    <string name="setup_music_add">Aggiungi cartella musicale</string>
+    <string name="setup_music_add_sub">Concedi una cartella principale (ad es. /Music): aggiungine più di una per coprire più posizioni</string>
+    <string name="setup_music_root_linked">Qui si trova la libreria musicale</string>
+    <string name="setup_music_rescan">Ripeti scansione libreria musicale</string>
+
+    <!-- Video roots page -->
+    <string name="setup_video_empty">Ancora nessuna cartella video. Aggiungi la cartella in cui si trovano i tuoi video: più cartelle possono coprire la memoria interna e una scheda SD.</string>
+    <string name="setup_video_add">Aggiungi cartella video</string>
+    <string name="setup_video_add_sub">Concedi una cartella principale (ad es. /Videos): aggiungine più di una per coprire più posizioni</string>
+    <string name="setup_video_root_linked">Qui si trova la libreria video</string>
+    <string name="setup_video_rescan">Ripeti scansione libreria video</string>
+
+    <!-- Photo roots page -->
+    <string name="setup_photo_empty">Ancora nessuna cartella foto. Aggiungi la cartella in cui si trovano le tue foto: più cartelle possono coprire la memoria interna e una scheda SD.</string>
+    <string name="setup_photo_add">Aggiungi cartella foto</string>
+    <string name="setup_photo_add_sub">Concedi una cartella principale (ad es. /Photos): aggiungine più di una per coprire più posizioni</string>
+    <string name="setup_photo_root_linked">Qui si trova la libreria foto</string>
+    <string name="setup_photo_rescan">Ripeti scansione libreria foto</string>
+
+    <string name="setup_media_rescan_sub">Aggiorna le librerie da ogni cartella principale</string>
+
+    <!-- Artwork page -->
+    <string name="setup_artwork_empty">Scegli una cartella scrivibile. Il launcher vi crea automaticamente una libreria immagini: i giochi ricevono le immagini man mano che vengono aggiunti.</string>
+    <string name="setup_artwork_unavailable">Non disponibile. Ricollegala per riprendere a salvare nuove immagini</string>
+    <string name="setup_artwork_folder_sub">Libreria immagini: usa ✎ per scegliere un\'altra cartella</string>
+    <string name="setup_artwork_choose">Scegli cartella immagini</string>
+    <string name="setup_artwork_choose_sub">Una sola cartella ospita la libreria immagini</string>
+    <string name="setup_artwork_import_title">Importare le immagini ora?</string>
+    <string name="setup_artwork_import_sub_one">Copia %1$s da import/ della cartella nella libreria</string>
+    <plurals name="setup_artwork_import_sub_many">
+        <item quantity="one">Copia %1$d cartella sorgente da import/ della cartella nella libreria</item>
+        <item quantity="many">Copia %1$d cartelle sorgente da import/ della cartella nella libreria</item>
+        <item quantity="other">Copia %1$d cartelle sorgente da import/ della cartella nella libreria</item>
+    </plurals>
+    <string name="setup_artwork_import_row">Importazione immagini</string>
+    <string name="setup_artwork_import_none_sub">Ancora niente da importare: aggiungi la cartella multimediale di un launcher in import/</string>
+
+    <!-- Online services page -->
+    <string name="setup_services_intro">Tutti gli account sono facoltativi e gratuiti. SteamGridDB, TheGamesDB, IGDB e ScreenScraper scaricano immagini e metadati per la tua libreria.</string>
+    <string name="setup_field_api_key">Chiave API</string>
+    <string name="setup_field_api_key_saved">Chiave API (salvata)</string>
+    <string name="setup_field_web_api_key">Chiave Web API</string>
+    <string name="setup_field_web_api_key_saved">Chiave Web API (salvata)</string>
+    <string name="setup_field_client_id">Client ID</string>
+    <string name="setup_field_client_id_saved">Client ID (salvato)</string>
+    <string name="setup_field_client_secret">Client Secret</string>
+    <string name="setup_field_client_secret_saved">Client Secret (salvato)</string>
+    <string name="setup_field_username">Nome utente</string>
+    <string name="setup_field_username_saved">Nome utente (salvato)</string>
+    <string name="setup_field_password">Password</string>
+    <string name="setup_field_password_saved">Password (salvata)</string>
+    <string name="setup_field_steam_id">SteamID64 o nome personalizzato</string>
+    <string name="setup_field_steam_id_saved">SteamID64 o nome personalizzato (salvato)</string>
+    <string name="setup_placeholder_tap_to_replace">Seleziona per sostituire</string>
+    <string name="setup_placeholder_secret_saved">••••••••  (seleziona per sostituire)</string>
+    <string name="setup_placeholder_sgdb_key">Incolla la tua chiave SteamGridDB</string>
+    <string name="setup_placeholder_tgdb_key">Incolla la tua chiave TheGamesDB</string>
+    <string name="setup_placeholder_twitch_client_id">Twitch Client ID</string>
+    <string name="setup_placeholder_twitch_client_secret">Twitch Client Secret</string>
+    <string name="setup_placeholder_ss_username">Nome utente ScreenScraper</string>
+    <string name="setup_placeholder_ss_password">Password ScreenScraper</string>
+    <string name="setup_placeholder_ra_username">Il tuo nome utente RA</string>
+    <string name="setup_placeholder_ra_key">Incolla la tua chiave Web API di RA</string>
+    <string name="setup_placeholder_steam_id">7656119… o il nome del tuo URL personalizzato</string>
+    <string name="setup_placeholder_steam_key">Incolla la tua chiave Steam Web API</string>
+    <string name="setup_connect_sgdb">Collega SteamGridDB</string>
+    <string name="setup_connect_tgdb">Collega TheGamesDB</string>
+    <string name="setup_connect_igdb">Collega IGDB</string>
+    <string name="setup_connect_ss">Collega ScreenScraper</string>
+    <string name="setup_connect_ra">Collega RetroAchievements</string>
+    <string name="setup_connect_steam">Collega Steam</string>
+    <string name="setup_test_credentials">Verifica credenziali</string>
+    <string name="setup_test_account">Verifica account</string>
+    <string name="setup_connected_as">Connesso come</string>
+
+    <!-- Achievement services page -->
+    <string name="setup_achievements_intro">Facoltativi e gratuiti. RetroAchievements e Steam monitorano gli achievement come Shiba Coins.</string>
+
+    <!-- Controller page -->
+    <string name="setup_controller_type">Tipo di controller</string>
+    <string name="setup_controller_type_sub">Cambia le icone dei pulsanti in ogni indicazione</string>
+    <string name="setup_controller_ab_swap">Scambia conferma e indietro</string>
+    <string name="setup_controller_xy_swap">Scambia opzioni e ordinamento</string>
+    <string name="setup_controller_xy_swap_sub">Solo nei menu del launcher: i comandi degli emulatori non cambiano</string>
+    <string name="setup_on">Sì</string>
+    <string name="setup_off">No</string>
+    <string name="setup_controller_summary">%1$s · %2$s conferma</string>
+    <string name="setup_button_circle">Cerchio</string>
+    <string name="setup_button_cross">Croce</string>
+    <string name="setup_confirm_swap_off">No: %1$s conferma, %2$s torna indietro</string>
+    <string name="setup_confirm_swap_on">Sì: %1$s conferma, %2$s torna indietro</string>
+
+    <!-- Local achievements page -->
+    <string name="setup_local_vita_header">PS Vita · Vita3K</string>
+    <string name="setup_local_vita_set">Imposta cartella dati Vita3K</string>
+    <string name="setup_local_vita_set_sub">Concedi la cartella ux0 (o la cartella che la contiene)</string>
+    <string name="setup_local_vita_folder_sub">Cartella dati Vita3K: usa ✎ per sceglierne un\'altra</string>
+    <string name="setup_local_ps3_header">PS3 · ARMSX3</string>
+    <string name="setup_local_ps3_set">Imposta cartella dati ARMSX3</string>
+    <string name="setup_local_ps3_set_sub">Concedi PS3/config/dev_hdd0, o qualsiasi cartella sopra o sotto di essa</string>
+    <string name="setup_local_ps3_folder_sub">Cartella dati ARMSX3: usa ✎ per sceglierne un\'altra</string>
+    <string name="setup_local_x360_header">Xbox 360 · X360 Mobile</string>
+    <string name="setup_local_x360_set">Imposta cartella dati X360 Mobile</string>
+    <string name="setup_local_x360_set_sub">Scegli X360 Mobile nel menu laterale del selettore di cartelle, poi consenti l\'accesso</string>
+    <string name="setup_local_x360_folder_sub">Cartella dati X360 Mobile: usa ✎ per sceglierne un\'altra</string>
+    <string name="setup_local_xendroid_header">Xbox 360 · XenDroid</string>
+    <string name="setup_local_xendroid_set">Imposta cartella dati XenDroid</string>
+    <string name="setup_local_xendroid_set_sub">Concedi Android/data/xendroid.compose, o qualsiasi cartella sopra o sotto di essa</string>
+    <string name="setup_local_xendroid_folder_sub">Cartella dati XenDroid: usa ✎ per sceglierne un\'altra</string>
+
+    <!-- RetroArch page -->
+    <string name="setup_retroarch_cores_folder">Cartella dei core</string>
+    <plurals name="setup_retroarch_cores_detected">
+        <item quantity="one">%1$d core rilevato</item>
+        <item quantity="many">%1$d core rilevati</item>
+        <item quantity="other">%1$d core rilevati</item>
+    </plurals>
+    <string name="setup_retroarch_linked">Collegato</string>
+    <string name="setup_retroarch_relink">Ricollega cartella</string>
+    <string name="setup_retroarch_relink_sub">Scegli di nuovo la cartella di RetroArch</string>
+    <string name="setup_retroarch_recheck">Ricontrolla i core</string>
+    <string name="setup_retroarch_recheck_sub">Dopo aver installato nuovi core</string>
+    <string name="setup_retroarch_unlink">Scollega RetroArch</string>
+    <string name="setup_retroarch_unlink_sub">Torna a proporre tutti i core selezionati</string>
+    <string name="setup_retroarch_intro">RetroArch è installato. Collega la sua cartella così all\'avvio dei giochi vengono proposti solo i core che hai davvero; altrimenti vengono mostrati tutti i core selezionati (senza verifica).</string>
+    <string name="setup_retroarch_link">Collega cartella RetroArch</string>
+    <string name="setup_retroarch_link_sub">Scegli l\'albero di documenti com.retroarch</string>
+
+    <!-- Emulators page -->
+    <string name="setup_emulators_empty">Ancora nessuna console con giochi. Dopo la scansione delle cartelle ROM, ogni console compare qui con l\'emulatore che avvierà: puoi cambiarlo in qualsiasi momento in Impostazioni ▸ Emulatori.</string>
+    <string name="setup_emulators_none">Nessuno</string>
+
+    <!-- Windows games page -->
+    <string name="setup_windows_intro">Scegli la cartella che contiene una sottocartella per gioco. PFP la analizza per trovare i tuoi giochi Windows; al suo interno non viene modificato nulla.</string>
+    <string name="setup_windows_detected">Rilevato</string>
+    <string name="setup_windows_set">Imposta cartella giochi Windows</string>
+    <string name="setup_windows_change">Cambia cartella giochi Windows</string>
+    <string name="setup_windows_set_sub">Concedi la cartella in cui sono installati i tuoi giochi</string>
+
+    <!-- Hints and touch page -->
+    <string name="setup_hints_enabled">Suggerimenti pulsanti</string>
+    <string name="setup_hints_enabled_sub">L\'etichetta di suggerimento in attesa sull\'XMB, in Impostazioni e nelle schermate multimediali</string>
+    <string name="setup_hints_delay">Ritardo suggerimento</string>
+    <string name="setup_hints_delay_sub">Quanto attendere prima che compaiano i suggerimenti (1–5 secondi)</string>
+    <plurals name="setup_hints_delay_seconds">
+        <item quantity="one">%1$d secondo</item>
+        <item quantity="many">%1$d secondi</item>
+        <item quantity="other">%1$d secondi</item>
+    </plurals>
+    <string name="setup_hints_delay_fraction">%1$s secondi</string>
+    <string name="setup_hints_touch">Pulsante touch</string>
+    <string name="setup_hints_touch_sub">Il pulsante a schermo del Cassetto app: Auto lo mostra dopo che tocchi lo schermo</string>
+    <string name="setup_touch_auto">Auto</string>
+    <string name="setup_touch_always_show">Mostra sempre</string>
+    <string name="setup_touch_always_hide">Nascondi sempre</string>
+    <string name="setup_hints_summary_on">Sì · %1$s</string>
+
+    <!-- Home app page -->
+    <string name="setup_home_intro">Android ti chiede di scegliere un\'app Home e di confermarla. Puoi tornare indietro in qualsiasi momento dalle impostazioni App predefinite di Android.</string>
+    <string name="setup_home_current">App Home attuale</string>
+    <string name="setup_home_set">Imposta come app Home</string>
+    <string name="setup_home_set_sub">Apre il selettore dell\'app Home di Android</string>
+    <string name="setup_home_is_pfp">Play Field Portal</string>
+    <string name="setup_home_not_pfp">Non è Play Field Portal</string>
+
+    <!-- Finish page -->
+    <string name="setup_finish_nothing">Non è stato ancora configurato nulla: puoi aggiungere cartelle e servizi in qualsiasi momento da Impostazioni.</string>
+    <string name="setup_finish_summary">Riepilogo</string>
+    <string name="setup_summary_controller">Controller</string>
+    <string name="setup_summary_rom">Libreria ROM</string>
+    <string name="setup_summary_music">Musica</string>
+    <string name="setup_summary_video">Video</string>
+    <string name="setup_summary_photo">Foto</string>
+    <string name="setup_summary_artwork">Libreria immagini</string>
+    <string name="setup_summary_vita">Cartella dati Vita</string>
+    <string name="setup_summary_ps3">Cartella dati PS3</string>
+    <string name="setup_summary_x360">Cartella dati X360 Mobile</string>
+    <string name="setup_summary_xendroid">Cartella dati XenDroid</string>
+    <string name="setup_summary_windows">Giochi Windows</string>
+    <string name="setup_summary_hints">Suggerimenti pulsanti</string>
+    <string name="setup_summary_home">App Home</string>
+    <string name="setup_not_set">Non impostato</string>
+    <string name="setup_connected">Connesso</string>
+    <string name="setup_retroarch_not_linked">Non collegato</string>
+    <plurals name="setup_retroarch_cores_count">
+        <item quantity="one">%1$d core</item>
+        <item quantity="many">%1$d core</item>
+        <item quantity="other">%1$d core</item>
+    </plurals>
+    <string name="setup_roots_more">%1$s +%2$d altre</string>
+    <string name="setup_finish_xmb_header">Layout XMB</string>
+    <string name="setup_finish_autofit">Adatta automaticamente il layout XMB (proporzioni PSP): modificabile in qualsiasi momento in Impostazioni</string>
+    <string name="setup_finish_open_lm">Apri Gestione libreria</string>
+    <string name="setup_finish_open_lm_sub">Aggiungi console e analizza le cartelle ROM appena impostate</string>
+    <string name="setup_finish_go_library">Vai alla tua libreria</string>
+    <string name="setup_finish_go_library_sub">Passa direttamente a Tutti i giochi</string>
+    <string name="setup_finish_done">Fine</string>
+    <string name="setup_finish_done_sub">Vai al launcher</string>
+
+    <!-- Messages -->
+    <string name="setup_status_testing">Verifica…</string>
+    <plurals name="setup_msg_rom_folders_created">
+        <item quantity="one">Creata %1$d cartella console. Copia i tuoi giochi nelle cartelle corrispondenti.</item>
+        <item quantity="many">Create %1$d cartelle console. Copia i tuoi giochi nelle cartelle corrispondenti.</item>
+        <item quantity="other">Create %1$d cartelle console. Copia i tuoi giochi nelle cartelle corrispondenti.</item>
+    </plurals>
+    <plurals name="setup_msg_rom_folders_created_existing">
+        <item quantity="one">Creata %1$d cartella console (%2$d già presenti). Copia i tuoi giochi nelle cartelle corrispondenti.</item>
+        <item quantity="many">Create %1$d cartelle console (%2$d già presenti). Copia i tuoi giochi nelle cartelle corrispondenti.</item>
+        <item quantity="other">Create %1$d cartelle console (%2$d già presenti). Copia i tuoi giochi nelle cartelle corrispondenti.</item>
+    </plurals>
+    <string name="setup_msg_artwork_failed">Impossibile configurare una libreria immagini in quella cartella. Scegli una cartella scrivibile.</string>
+    <string name="setup_msg_artwork_reconnected">Libreria immagini esistente ricollegata.</string>
+    <string name="setup_msg_artwork_created">Libreria immagini creata.</string>
+    <plurals name="setup_msg_artwork_games_linked">
+        <item quantity="one">%1$d gioco collegato da file già presenti nella cartella.</item>
+        <item quantity="many">%1$d giochi collegati da file già presenti nella cartella.</item>
+        <item quantity="other">%1$d giochi collegati da file già presenti nella cartella.</item>
+    </plurals>
+    <string name="setup_msg_artwork_import_hint">Metti i contenuti multimediali degli altri launcher nella sua cartella import/ per raccoglierli qui.</string>
+    <string name="setup_msg_import_none_yet">Ancora niente da importare: metti i file nella directory import/ della cartella immagini.</string>
+    <string name="setup_msg_import_unreadable">Impossibile leggere quella fonte di importazione.</string>
+    <string name="setup_msg_import_empty">Niente da importare: è già tutto presente.</string>
+    <string name="setup_msg_import_started">Importazione di \"%1$s\": l\'avanzamento compare nelle notifiche; i dettagli in Impostazioni ▸ Importazione immagini.</string>
+    <string name="setup_msg_retroarch_linked">RetroArch collegato: i core installati vengono ora proposti in Emulatori.</string>
+    <string name="setup_msg_retroarch_rechecked">Core RetroArch ricontrollati.</string>
+    <string name="setup_msg_retroarch_unlinked">Collegamento a RetroArch rimosso: nessun core RetroArch verrà proposto finché non lo ricolleghi.</string>
+    <string name="setup_msg_vita_set">Cartella dati Vita3K impostata. I titoli installati possono essere analizzati dalla Memory Card PS Vita in Gestione libreria.</string>
+    <string name="setup_msg_vita_released">Cartella dati Vita3K rilasciata: i file sul disco non sono stati toccati.</string>
+    <string name="setup_msg_ps3_set">Cartella dati PS3 impostata. Esegui Abbinamento automatico in Impostazioni ▸ Achievement ▸ Aggiorna achievement per collegare i trofei PS3.</string>
+    <string name="setup_msg_ps3_released">Cartella dati PS3 rilasciata: i file sul disco non sono stati toccati.</string>
+    <string name="setup_msg_x360_set">Cartella dati di %1$s impostata. Esegui Abbinamento automatico in Impostazioni ▸ Achievement ▸ Aggiorna achievement per collegare gli achievement Xbox 360.</string>
+    <string name="setup_msg_x360_released">Cartella dati di %1$s rilasciata: i file sul disco non sono stati toccati.</string>
+    <string name="setup_msg_sgdb_connected">SteamGridDB collegato</string>
+    <string name="setup_msg_tgdb_connected">TheGamesDB collegato</string>
+    <string name="setup_msg_igdb_connected">IGDB collegato</string>
+    <string name="setup_msg_ss_connected">ScreenScraper collegato</string>
+    <string name="setup_msg_ra_connected">RetroAchievements collegato</string>
+
+    <!-- ROM root scan report -->
+    <string name="setup_rom_scan_no_root">Aggiungi prima una cartella ROM in Impostazioni ▸ Libreria ▸ Gestione libreria.</string>
+    <string name="setup_rom_scan_none">Analizzate %1$s in %2$s; nessuna nuova ROM trovata. Copia i giochi nelle cartelle di sistema corrispondenti e riprova.</string>
+    <string name="setup_rom_scan_loaded">Caricati %1$s, %2$s da %3$s.</string>
+    <string name="setup_rom_scan_systems_new">%1$s (%2$s)</string>
+    <plurals name="setup_rom_scan_folders">
+        <item quantity="one">%1$d cartella</item>
+        <item quantity="many">%1$d cartelle</item>
+        <item quantity="other">%1$d cartelle</item>
+    </plurals>
+    <plurals name="setup_rom_scan_systems">
+        <item quantity="one">%1$d sistema</item>
+        <item quantity="many">%1$d sistemi</item>
+        <item quantity="other">%1$d sistemi</item>
+    </plurals>
+    <plurals name="setup_rom_scan_new_consoles">
+        <item quantity="one">%1$d nuova console</item>
+        <item quantity="many">%1$d nuove console</item>
+        <item quantity="other">%1$d nuove console</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roms">
+        <item quantity="one">%1$d ROM</item>
+        <item quantity="many">%1$d ROM</item>
+        <item quantity="other">%1$d ROM</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roots">
+        <item quantity="one">%1$d cartella ROM</item>
+        <item quantity="many">%1$d cartelle ROM</item>
+        <item quantity="other">%1$d cartelle ROM</item>
+    </plurals>
+    <plurals name="setup_rom_scan_skipped">
+        <item quantity="one">%1$d cartella saltata (libreria illeggibile).</item>
+        <item quantity="many">%1$d cartelle saltate (libreria illeggibile).</item>
+        <item quantity="other">%1$d cartelle saltate (libreria illeggibile).</item>
+    </plurals>
+
+    <!-- Media library scans -->
+    <string name="setup_media_add_root_first">Aggiungi prima una cartella principale.</string>
+    <string name="setup_media_not_ready">La memoria di questa cartella non è ancora pronta. Riprova tra poco.</string>
+    <string name="setup_media_scan_failed_title">Scansione di %1$s non riuscita</string>
+    <string name="setup_media_scan_finished_title">Scansione di %1$s completata</string>
+    <string name="setup_media_scan_stopped_title">Scansione di %1$s interrotta</string>
+    <string name="setup_media_scanning_title">Scansione di %1$s</string>
+    <string name="setup_media_stop_note">La cartella verrà analizzata di nuovo la prossima volta.</string>
+    <string name="setup_media_stopped">Interrotta prima del termine</string>
+    <plurals name="setup_media_tracks">
+        <item quantity="one">%1$d brano</item>
+        <item quantity="many">%1$d brani</item>
+        <item quantity="other">%1$d brani</item>
+    </plurals>
+    <plurals name="setup_media_photos">
+        <item quantity="one">%1$d foto</item>
+        <item quantity="many">%1$d foto</item>
+        <item quantity="other">%1$d foto</item>
+    </plurals>
+    <plurals name="setup_media_videos">
+        <item quantity="one">%1$d video</item>
+        <item quantity="many">%1$d video</item>
+        <item quantity="other">%1$d video</item>
+    </plurals>
+    <plurals name="setup_media_roots">
+        <item quantity="one">%1$d cartella principale</item>
+        <item quantity="many">%1$d cartelle principali</item>
+        <item quantity="other">%1$d cartelle principali</item>
+    </plurals>
+    <string name="setup_media_found">Trovati %1$s in %2$s.</string>
+</resources>

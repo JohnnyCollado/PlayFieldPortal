@@ -3,6 +3,8 @@ package com.playfieldportal.feature.xmb.ui.detail
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.xmb.R
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -35,11 +37,13 @@ class ShibaCoinsHelperFooterTest {
 
     private fun labels(state: ShibaCoinsUiState) = shibaCoinsHelperItems(state).map { it.label }
 
+    private fun texts(vararg ids: Int) = ids.map { UiText.res(it) }
+
     @Test
     fun `an open Options menu documents only Select and Close`() {
         val state = state(platinum, focusedRowId = PLATINUM_ROW_ID).copy(options = CoinOptionsMenu())
 
-        assertEquals(listOf("Select", "Close"), labels(state))
+        assertEquals(texts(R.string.shiba_prompt_select, R.string.shiba_prompt_close), labels(state))
         assertEquals(
             listOf(listOf(GamepadAction.SELECT), listOf(GamepadAction.BACK)),
             shibaCoinsHelperItems(state).map { it.actions },
@@ -50,14 +54,17 @@ class ShibaCoinsHelperFooterTest {
     fun `text entry documents only Done`() {
         val state = state(platinum).copy(searchEditing = true)
 
-        assertEquals(listOf("Done"), labels(state))
+        assertEquals(texts(R.string.shiba_prompt_done), labels(state))
     }
 
     @Test
     fun `the pinned Search row says Type`() {
         val state = state(platinum, coin("a"), focusedRowId = null)
 
-        assertEquals(listOf("Type", "Search", "Options", "Change View", "Back"), labels(state))
+        assertEquals(
+            texts(R.string.shiba_prompt_type, R.string.shiba_prompt_search, R.string.shiba_prompt_options, R.string.shiba_prompt_change_view, R.string.shiba_prompt_back),
+            labels(state),
+        )
         assertEquals(
             listOf(
                 listOf(GamepadAction.SELECT),
@@ -79,7 +86,17 @@ class ShibaCoinsHelperFooterTest {
             ),
         )
 
-        assertEquals(listOf("Type", "Search", "Options", "Switch Source", "Change View", "Back"), labels(state))
+        assertEquals(
+            texts(
+                R.string.shiba_prompt_type,
+                R.string.shiba_prompt_search,
+                R.string.shiba_prompt_options,
+                R.string.shiba_prompt_switch_source,
+                R.string.shiba_prompt_change_view,
+                R.string.shiba_prompt_back,
+            ),
+            labels(state),
+        )
         assertEquals(
             listOf(
                 listOf(GamepadAction.SELECT),
@@ -98,29 +115,29 @@ class ShibaCoinsHelperFooterTest {
         val hidden = coin("secret", hidden = true)
         val focused = state(hidden, focusedRowId = "secret")
 
-        assertEquals("Reveal", labels(focused).first())
-        assertEquals("Hide", labels(focused.copy(revealedIds = setOf("secret"))).first())
+        assertEquals(UiText.res(R.string.shiba_prompt_reveal), labels(focused).first())
+        assertEquals(UiText.res(R.string.shiba_prompt_hide), labels(focused.copy(revealedIds = setOf("secret"))).first())
     }
 
     @Test
     fun `an ordinary coin has no Confirm`() {
         val state = state(coin("plain"), focusedRowId = "plain")
 
-        assertEquals(listOf("Search", "Options", "Change View", "Back"), labels(state))
+        assertEquals(texts(R.string.shiba_prompt_search, R.string.shiba_prompt_options, R.string.shiba_prompt_change_view, R.string.shiba_prompt_back), labels(state))
     }
 
     @Test
     fun `an earned hidden coin has no Confirm - there is nothing left to reveal`() {
         val state = state(coin("done", hidden = true, earned = true), focusedRowId = "done")
 
-        assertEquals(listOf("Search", "Options", "Change View", "Back"), labels(state))
+        assertEquals(texts(R.string.shiba_prompt_search, R.string.shiba_prompt_options, R.string.shiba_prompt_change_view, R.string.shiba_prompt_back), labels(state))
     }
 
     @Test
     fun `the Platinum Crown has no Confirm`() {
         val state = state(platinum, focusedRowId = PLATINUM_ROW_ID)
 
-        assertEquals(listOf("Search", "Options", "Change View", "Back"), labels(state))
+        assertEquals(texts(R.string.shiba_prompt_search, R.string.shiba_prompt_options, R.string.shiba_prompt_change_view, R.string.shiba_prompt_back), labels(state))
     }
 
     @Test
@@ -131,7 +148,7 @@ class ShibaCoinsHelperFooterTest {
             provider = AchievementProvider.RETRO_ACHIEVEMENTS,
         )
 
-        assertEquals(listOf("Auto-Match", "Options", "Back"), labels(state))
+        assertEquals(texts(R.string.shiba_prompt_auto_match, R.string.shiba_prompt_options, R.string.shiba_prompt_back), labels(state))
     }
 
     @Test
@@ -142,7 +159,7 @@ class ShibaCoinsHelperFooterTest {
             provider = AchievementProvider.VITA_TROPHY,
         )
 
-        assertEquals(listOf("Options", "Back"), labels(state))
+        assertEquals(texts(R.string.shiba_prompt_options, R.string.shiba_prompt_back), labels(state))
     }
 
     // Survey P3 (docs/audits/codebase-survey-2026-10-22.md): the Local Steam panel draws a focused
@@ -155,6 +172,6 @@ class ShibaCoinsHelperFooterTest {
             provider = AchievementProvider.LOCAL_STEAM,
         )
 
-        assertEquals(listOf("Pick Game Folder", "Options", "Back"), labels(state))
+        assertEquals(texts(R.string.shiba_prompt_pick_game_folder, R.string.shiba_prompt_options, R.string.shiba_prompt_back), labels(state))
     }
 }

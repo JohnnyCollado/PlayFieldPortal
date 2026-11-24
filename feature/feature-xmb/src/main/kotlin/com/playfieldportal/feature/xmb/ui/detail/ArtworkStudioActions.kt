@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.domain.model.GamepadAction
 
 /**
@@ -14,7 +15,7 @@ interface ArtworkStudioActions {
     // Tabs and sources
     fun selectTab(index: Int)
     fun sourcesForTab(): List<StudioSource>
-    fun sourceBadge(source: StudioSource): String?
+    fun sourceBadge(source: StudioSource): UiText?
     fun selectSource(index: Int)
     fun requestLocalPick()
     fun toggleNsfw()

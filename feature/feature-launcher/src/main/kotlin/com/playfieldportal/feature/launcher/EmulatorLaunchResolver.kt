@@ -2,6 +2,7 @@ package com.playfieldportal.feature.launcher
 
 import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.core.domain.model.IntentType
+import com.playfieldportal.core.domain.text.UiText
 
 /**
  * Which level of the configuration ladder decided a game's emulator.
@@ -11,23 +12,31 @@ import com.playfieldportal.core.domain.model.IntentType
  * caller can attribute the choice on screen and log it without string matching.
  */
 enum class LaunchSource(
-    /** Short, user-facing attribution (shown under the emulator on Game Detail). */
-    val label: String,
-    /** Lowercase phrase used when a configured emulator can't be resolved (message continuity). */
-    val configuredErrorPhrase: String?,
+    /** String resource of the short, user-facing attribution (shown under the emulator on Game Detail). */
+    val labelRes: Int,
+    /** String resource of the same attribution in lowercase, for use inside a sentence. */
+    val lowerRes: Int,
+    /** String resource of the phrase used when a configured emulator can't be resolved (message continuity). */
+    val configuredPhraseRes: Int?,
 ) {
     /** The game itself is pinned to this emulator (Options ▸ Emulator / the XMB Change Emulator menu). */
-    PER_GAME_OVERRIDE("Per-game override", "per-game override"),
+    PER_GAME_OVERRIDE(R.string.launch_source_per_game, R.string.launch_source_per_game_lower, R.string.launch_phrase_per_game),
 
     /** The console's Memory Card entry picks this emulator. */
-    MEMORY_CARD("Memory card default", "memory card emulator"),
+    MEMORY_CARD(R.string.launch_source_memory_card, R.string.launch_source_memory_card_lower, R.string.launch_phrase_memory_card),
 
     /** The platform record's preferred emulator (set per system). */
-    PLATFORM_DEFAULT("Platform default", "platform default"),
+    PLATFORM_DEFAULT(R.string.launch_source_platform, R.string.launch_source_platform_lower, R.string.launch_phrase_platform),
 
     /** No explicit choice anywhere — the first valid installed emulator was picked automatically. */
-    CATALOG_DEFAULT("Recommended", null),
+    CATALOG_DEFAULT(R.string.launch_source_recommended, R.string.launch_source_recommended_lower, null),
 }
+
+/**
+ * A launch refusal whose message is user text in a string resource, so it is resolved in the user's
+ * language where it is shown. [GameLaunchLadder] resolves it into an ordinary message for callers.
+ */
+class LaunchFailure(val text: UiText) : IllegalStateException(text.toString())
 
 /**
  * The emulator a game will actually launch with, plus why: the winning [profile], the ladder level
@@ -98,20 +107,21 @@ object EmulatorLaunchResolver {
         // Why a configured choice is explained, not silently replaced: the ladder's whole job is
         // to be attributable, so a dead platform default surfaces as "this is broken, here's why"
         // and routes to recovery, rather than quietly launching something the user did not pick.
-        fun unresolvableMessage(configuredIdOrPackage: String, source: LaunchSource): String {
+        fun unresolvableMessage(configuredIdOrPackage: String, source: LaunchSource): UiText {
             val shelved = installedProfiles.firstOrNull {
                 it.id == configuredIdOrPackage || it.packageName == configuredIdOrPackage
             }
             return when {
                 shelved == null ->
-                    "The ${source.configuredErrorPhrase} emulator is not installed or " +
-                        "available: $configuredIdOrPackage"
+                    UiText.res(
+                        R.string.launch_err_configured_missing,
+                        UiText.res(source.configuredPhraseRes ?: source.lowerRes),
+                        configuredIdOrPackage,
+                    )
                 shelved.isRetroArchProfile() ->
-                    "${shelved.name} is set as the ${source.label.lowercase()}, but that core is " +
-                        "not installed in RetroArch. Install it, or choose another emulator."
+                    UiText.res(R.string.launch_err_core_not_installed, shelved.name, UiText.res(source.lowerRes))
                 else ->
-                    "${shelved.name} is set as the ${source.label.lowercase()}, but is no longer " +
-                        "available. Choose another emulator."
+                    UiText.res(R.string.launch_err_no_longer_available, shelved.name, UiText.res(source.lowerRes))
             }
         }
 
@@ -131,13 +141,13 @@ object EmulatorLaunchResolver {
                 }
                 ?: available.firstOrNull { it.packageName == configuredIdOrPackage }
                 ?: return Result.failure(
-                    IllegalStateException(unresolvableMessage(configuredIdOrPackage, source))
+                    LaunchFailure(unresolvableMessage(configuredIdOrPackage, source))
                 )
 
             if (!profile.supportsPlatform(platformId)) {
                 return Result.failure(
-                    IllegalStateException(
-                        "${profile.name} is not configured for ${platformId.uppercase()}"
+                    LaunchFailure(
+                        UiText.res(R.string.launch_err_not_configured_for_platform, profile.name, platformId.uppercase())
                     )
                 )
             }
@@ -158,10 +168,7 @@ object EmulatorLaunchResolver {
         }
 
         return Result.failure(
-            IllegalStateException(
-                "No emulator configured for ${platformId.uppercase()}. Choose an emulator for " +
-                    "this game or set a platform default."
-            )
+            LaunchFailure(UiText.res(R.string.launch_err_no_emulator_for_platform, platformId.uppercase()))
         )
     }
 }

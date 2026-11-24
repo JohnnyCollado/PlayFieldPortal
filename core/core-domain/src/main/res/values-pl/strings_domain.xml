@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shiba rank titles -->
+    <string name="dom_shiba_rank_pup">Szczeniak</string>
+    <string name="dom_shiba_rank_ruffian">Łobuziak</string>
+    <string name="dom_shiba_rank_lone_ron_inu">Samotny Ron-inu</string>
+    <string name="dom_shiba_rank_inu_master">Mistrz Inu</string>
+    <string name="dom_shiba_rank_legendary_hachiko">Legendarny Hachiko</string>
+
+    <!-- App editions -->
+    <string name="dom_edition_full">Pełna</string>
+    <string name="dom_edition_lite">Lite</string>
+
+    <!-- Audio channels (volume rows) -->
+    <string name="dom_audio_channel_navigation">Nawigacja</string>
+    <string name="dom_audio_channel_back">Wstecz / anuluj</string>
+    <string name="dom_audio_channel_confirm">Potwierdź / zastosuj</string>
+    <string name="dom_audio_channel_error">Błąd / nieprawidłowe</string>
+    <string name="dom_audio_channel_category">Kategoria</string>
+    <string name="dom_audio_channel_options">Opcje</string>
+    <string name="dom_audio_channel_notification">Powiadomienie</string>
+    <string name="dom_audio_channel_boot">Sekwencja startowa</string>
+    <string name="dom_audio_channel_gameboot">Game Boot</string>
+    <string name="dom_audio_channel_ambience">Tło dźwiękowe</string>
+
+    <!-- Customisable media slots -->
+    <string name="dom_media_slot_navigation">Nawigacja</string>
+    <string name="dom_media_slot_back">Wstecz / Anuluj</string>
+    <string name="dom_media_slot_confirm">Potwierdź / Zastosuj</string>
+    <string name="dom_media_slot_error">Błąd / Nieprawidłowe</string>
+    <string name="dom_media_slot_category">Kategoria</string>
+    <string name="dom_media_slot_options">Opcje</string>
+    <string name="dom_media_slot_notification">Powiadomienie</string>
+    <string name="dom_media_slot_boot_video">Animacja startowa</string>
+    <string name="dom_media_slot_gameboot_video">Animacja Game Boot</string>
+    <string name="dom_media_slot_ambience_audio">Ścieżka tła</string>
+
+    <!-- Game tile display modes -->
+    <string name="dom_icon_display_icon0">Własna ikona</string>
+    <string name="dom_icon_display_box_art">Okładka</string>
+    <string name="dom_icon_display_physical_media">Nośnik fizyczny</string>
+    <string name="dom_icon_display_box_3d">Okładka 3D</string>
+
+    <!-- Icon legibility styles -->
+    <string name="dom_icon_legibility_none">Brak</string>
+    <string name="dom_icon_legibility_offset_shadow">Przesunięty cień (ciemny)</string>
+    <string name="dom_icon_legibility_offset_shadow_light">Przesunięty cień (jasny)</string>
+    <string name="dom_icon_legibility_contour_dark">Kontur (ciemny)</string>
+    <string name="dom_icon_legibility_contour_light">Kontur (jasny)</string>
+    <string name="dom_icon_legibility_contour_auto">Kontur (auto)</string>
+
+    <!-- Animated image playback -->
+    <string name="dom_image_motion_animated">Animowane</string>
+    <string name="dom_image_motion_reduced">Ograniczone</string>
+    <string name="dom_image_motion_static">Statyczne</string>
+
+    <!-- Text legibility styles -->
+    <string name="dom_text_legibility_none">Brak</string>
+    <string name="dom_text_legibility_shadow">Cień</string>
+    <string name="dom_text_legibility_outline">Obrys</string>
+    <string name="dom_text_legibility_plate">Kontrastowe tło</string>
+    <string name="dom_text_legibility_auto">Automatycznie</string>
+
+    <!-- Touch gestures -->
+    <string name="dom_touch_gesture_tap">Dotknięcie</string>
+    <string name="dom_touch_gesture_long_press">Przytrzymanie</string>
+    <string name="dom_touch_gesture_swipe_left">Przesunięcie w lewo</string>
+    <string name="dom_touch_gesture_swipe_right">Przesunięcie w prawo</string>
+    <string name="dom_touch_gesture_swipe_down">Przesunięcie w dół</string>
+
+    <!-- UMD slot display modes -->
+    <string name="dom_umd_slot_off">Wył.</string>
+    <string name="dom_umd_slot_inserted">Włożona</string>
+    <string name="dom_umd_slot_inserted_and_recent">Włożona i ostatnia</string>
+
+    <!-- Item list motion styles -->
+    <string name="dom_list_motion_rewind">Przewijanie</string>
+    <string name="dom_list_motion_glide">Płynięcie</string>
+
+    <!-- Confirm / Back button layouts -->
+    <string name="dom_confirm_back_standard">Standardowy (A = Potwierdź, B = Wstecz)</string>
+    <string name="dom_confirm_back_reversed">Odwrócony (B = Potwierdź, A = Wstecz)</string>
+
+    <!-- X / Y button layouts -->
+    <string name="dom_xy_layout_standard">Standardowy (Y = Opcje, X = Sortuj)</string>
+    <string name="dom_xy_layout_swapped">Zamieniony (X = Opcje, Y = Sortuj)</string>
+
+    <!-- Controller prompt styles -->
+    <string name="dom_controller_type_xbox">Xbox</string>
+    <string name="dom_controller_type_nintendo">Nintendo</string>
+    <string name="dom_controller_type_playstation">PlayStation</string>
+
+    <!-- Held-navigation scroll speeds -->
+    <string name="dom_scroll_speed_relaxed">Spokojna</string>
+    <string name="dom_scroll_speed_standard">Standardowa</string>
+    <string name="dom_scroll_speed_fast">Szybka</string>
+
+    <!-- Colour schemes -->
+    <string name="dom_color_scheme_original">Oryginalny (miesięczny)</string>
+    <string name="dom_color_scheme_classic_blue">Klasyczny niebieski</string>
+    <string name="dom_color_scheme_sunset_orange">Pomarańcz zachodu</string>
+    <string name="dom_color_scheme_fresh_green">Świeża zieleń</string>
+    <string name="dom_color_scheme_royal_purple">Królewski fiolet</string>
+    <string name="dom_color_scheme_crimson_red">Karmazynowy</string>
+    <string name="dom_color_scheme_silver">Srebrny</string>
+    <string name="dom_color_scheme_sakura_pink">Róż sakury</string>
+    <string name="dom_color_scheme_golden_amber">Złoty bursztyn</string>
+    <string name="dom_color_scheme_aqua_teal">Morski turkus</string>
+    <string name="dom_color_scheme_midnight_navy">Granat północy</string>
+    <string name="dom_color_scheme_charcoal">Grafitowy</string>
+
+    <!-- Controller actions -->
+    <string name="dom_action_navigate_up">Nawigacja w górę</string>
+    <string name="dom_action_navigate_down">Nawigacja w dół</string>
+    <string name="dom_action_navigate_left">Nawigacja w lewo (poprzednia kategoria)</string>
+    <string name="dom_action_navigate_right">Nawigacja w prawo (następna kategoria)</string>
+    <string name="dom_action_select">Wybierz / Uruchom</string>
+    <string name="dom_action_back">Wstecz / Zamknij</string>
+    <string name="dom_action_open_context_menu">Opcje / Menu kontekstowe</string>
+    <string name="dom_action_change_sort">Zmień kolejność sortowania</string>
+    <string name="dom_action_prev_category">Poprzednia karta (szuflada aplikacji)</string>
+    <string name="dom_action_next_category">Następna karta (szuflada aplikacji)</string>
+    <string name="dom_action_home">Start (powiadomienia / potwierdzanie w selektorach)</string>
+    <string name="dom_action_shift">Shift (klawiatura)</string>
+    <string name="dom_action_caps_lock">Caps Lock (klawiatura)</string>
+    <string name="dom_action_category_menu">Menu kategorii</string>
+
+    <!-- Controller button names -->
+    <string name="dom_key_a">A / Krzyżyk</string>
+    <string name="dom_key_b">B / Kółko</string>
+    <string name="dom_key_x">X / Kwadrat</string>
+    <string name="dom_key_y">Y / Trójkąt</string>
+    <string name="dom_key_dpad_up">D-pad w górę</string>
+    <string name="dom_key_dpad_down">D-pad w dół</string>
+    <string name="dom_key_dpad_left">D-pad w lewo</string>
+    <string name="dom_key_dpad_right">D-pad w prawo</string>
+    <string name="dom_key_dpad_center">D-pad środek</string>
+    <string name="dom_key_l1">L1</string>
+    <string name="dom_key_r1">R1</string>
+    <string name="dom_key_l2">L2</string>
+    <string name="dom_key_r2">R2</string>
+    <string name="dom_key_start">Start</string>
+    <string name="dom_key_select">Select</string>
+    <string name="dom_key_enter">Enter</string>
+    <string name="dom_key_back">Wstecz</string>
+    <string name="dom_key_unknown">Klawisz %1$d</string>
+
+    <!-- Colour naming -->
+    <string name="dom_hue_orange">pomarańczowy</string>
+    <string name="dom_hue_yellow">żółty</string>
+    <string name="dom_hue_green">zielony</string>
+    <string name="dom_hue_teal">morski</string>
+    <string name="dom_hue_blue">niebieski</string>
+    <string name="dom_hue_purple">fioletowy</string>
+    <string name="dom_hue_pink">różowy</string>
+    <string name="dom_hue_red">czerwony</string>
+    <string name="dom_hue_orange_cap">Pomarańczowy</string>
+    <string name="dom_hue_yellow_cap">Żółty</string>
+    <string name="dom_hue_green_cap">Zielony</string>
+    <string name="dom_hue_teal_cap">Morski</string>
+    <string name="dom_hue_blue_cap">Niebieski</string>
+    <string name="dom_hue_purple_cap">Fioletowy</string>
+    <string name="dom_hue_pink_cap">Różowy</string>
+    <string name="dom_hue_red_cap">Czerwony</string>
+    <string name="dom_hue_lean">%1$s wpadający w %2$s</string>
+    <string name="dom_hue_lean_cap">%1$s wpadający w %2$s</string>
+    <string name="dom_color_dark">Ciemny %1$s</string>
+    <string name="dom_color_very_dark">Bardzo ciemny %1$s</string>
+    <string name="dom_color_muted">Stonowany %1$s</string>
+    <string name="dom_color_dark_muted">Ciemny stonowany %1$s</string>
+    <string name="dom_color_very_dark_muted">Bardzo ciemny stonowany %1$s</string>
+    <string name="dom_color_grey">%1$s szary</string>
+    <string name="dom_saturation_grey">Szary</string>
+    <string name="dom_saturation_muted">Stonowany</string>
+    <string name="dom_saturation_vivid">Żywy</string>
+    <string name="dom_saturation_intense">Intensywny</string>
+    <string name="dom_brightness_very_dark">Bardzo ciemny</string>
+    <string name="dom_brightness_dark">Ciemny</string>
+    <string name="dom_brightness_medium">Średni</string>
+    <string name="dom_brightness_bright">Jasny</string>
+    <string name="dom_tint_standard">Standardowy</string>
+    <string name="dom_tint_orange">Bardziej pomarańczowy</string>
+    <string name="dom_tint_yellow">Bardziej żółty</string>
+    <string name="dom_tint_green">Bardziej zielony</string>
+    <string name="dom_tint_teal">Bardziej morski</string>
+    <string name="dom_tint_blue">Bardziej niebieski</string>
+    <string name="dom_tint_purple">Bardziej fioletowy</string>
+    <string name="dom_tint_pink">Bardziej różowy</string>
+    <string name="dom_tint_red">Bardziej czerwony</string>
+    <string name="dom_tint_much_orange">Dużo bardziej pomarańczowy</string>
+    <string name="dom_tint_much_yellow">Dużo bardziej żółty</string>
+    <string name="dom_tint_much_green">Dużo bardziej zielony</string>
+    <string name="dom_tint_much_teal">Dużo bardziej morski</string>
+    <string name="dom_tint_much_blue">Dużo bardziej niebieski</string>
+    <string name="dom_tint_much_purple">Dużo bardziej fioletowy</string>
+    <string name="dom_tint_much_pink">Dużo bardziej różowy</string>
+    <string name="dom_tint_much_red">Dużo bardziej czerwony</string>
+    <string name="dom_tint_cooler">Chłodniejszy</string>
+    <string name="dom_tint_warmer">Cieplejszy</string>
+    <string name="dom_tint_much_cooler">Dużo chłodniejszy</string>
+    <string name="dom_tint_much_warmer">Dużo cieplejszy</string>
+    <string name="dom_depth_much_lighter">Dużo jaśniejszy</string>
+    <string name="dom_depth_lighter">Jaśniejszy</string>
+    <string name="dom_depth_deeper">Głębszy</string>
+    <string name="dom_depth_much_deeper">Dużo głębszy</string>
+
+    <!-- File limit messages -->
+    <string name="dom_limit_motion_unsupported_format">Nieobsługiwany format — użyj MP4, WebM, GIF lub WebP</string>
+    <string name="dom_limit_motion_too_large_resolution">Wideo jest za duże — maks. 1080p</string>
+    <string name="dom_limit_motion_too_long">Klip jest za długi — maks. 60 sekund</string>
+    <string name="dom_limit_motion_too_large_bytes">Plik jest za duży — poniżej 60 MB</string>
+    <string name="dom_limit_motion_undecodable">Nie można odczytać tego wideo — spróbuj innego pliku</string>
+    <string name="dom_limit_media_unsupported_audio">Nieobsługiwany format — użyj dźwięku MP3, WAV, OGG lub M4A</string>
+    <string name="dom_limit_media_unsupported_video">Nieobsługiwany format — użyj wideo MP4 lub WebM</string>
+    <string name="dom_limit_media_too_large_sound">Plik jest za duży</string>
+    <string name="dom_limit_media_too_large_video">Plik jest za duży — wideo musi mieć poniżej 25 MB</string>
+    <string name="dom_limit_media_undecodable">Nie można odczytać tego pliku — spróbuj innego</string>
+    <string name="dom_limit_media_no_duration">Nie można odczytać długości pliku — spróbuj innego pliku lub przekonwertuj go na MP3/WAV/OGG/M4A</string>
+    <string name="dom_limit_media_too_long">Ten klip jest za długi — maks. %1$s</string>
+
+    <!-- Error codes -->
+    <string name="dom_error_ln_1001_title">Do tej platformy nie przypisano emulatora</string>
+    <string name="dom_error_ln_1001_why">PlayFieldPortal nie wie, która aplikacja ma uruchamiać gry tej platformy.</string>
+    <string name="dom_error_ln_1001_action">Wybierz emulator dla tej platformy w Ustawienia › Przypisanie emulatorów.</string>
+    <string name="dom_error_ln_1002_title">Wybrany rdzeń RetroArch nie jest zainstalowany</string>
+    <string name="dom_error_ln_1002_why">RetroArch otrzymał polecenie załadowania rdzenia, którego nie ma na tym urządzeniu.</string>
+    <string name="dom_error_ln_1002_action">Zainstaluj rdzeń przez Online Updater w RetroArch lub wybierz inny rdzeń w Przypisaniu emulatorów.</string>
+    <string name="dom_error_ln_2001_title">Brak pliku gry lub nie można go odczytać</string>
+    <string name="dom_error_ln_2001_why">Plik mógł zostać przeniesiony, zmieniony lub usunięty albo wyjęto kartę SD, na której się znajdował.</string>
+    <string name="dom_error_ln_2001_action">Sprawdź, czy plik nadal istnieje, a potem przeskanuj ponownie jego kartę pamięci.</string>
+    <string name="dom_error_ln_4001_title">Nie znaleziono emulatora</string>
+    <string name="dom_error_ln_4001_why">Emulator przypisany do tej gry nie jest zainstalowany lub Android nie znalazł ekranu, który otwiera PlayFieldPortal.</string>
+    <string name="dom_error_ln_4001_action">Zainstaluj emulator lub wybierz inny w Ustawienia › Przypisanie emulatorów.</string>
+    <string name="dom_error_ln_4002_title">Android nie pozwolił otworzyć emulatora</string>
+    <string name="dom_error_ln_4002_why">Android odmówił PlayFieldPortal uprawnień do uruchomienia tego emulatora.</string>
+    <string name="dom_error_ln_4002_action">Otwórz emulator raz samodzielnie, a potem spróbuj ponownie. Jeśli to się powtarza, zaktualizuj emulator.</string>
+    <string name="dom_error_ln_4003_title">Emulator nie pojawił się na pierwszym planie</string>
+    <string name="dom_error_ln_4003_why">Emulator najprawdopodobniej zamknął się podczas uruchamiania lub Android zatrzymał go przed załadowaniem gry.</string>
+    <string name="dom_error_ln_4003_action">Otwórz emulator raz samodzielnie, aby sprawdzić, czy się uruchamia, i zaktualizuj go, jeśli jest nowsza wersja. Jeśli to się powtarza, wybierz inny emulator w Ustawienia › Przypisanie emulatorów.</string>
+    <string name="dom_error_ln_9001_title">Nie można otworzyć emulatora</string>
+    <string name="dom_error_ln_9001_why">Podczas uruchamiania emulatora wystąpił nieoczekiwany błąd.</string>
+    <string name="dom_error_ln_9001_action">Spróbuj ponownie. Jeśli to się powtarza, skopiuj szczegóły i zgłoś problem.</string>
+    <string name="dom_error_sc_1001_title">Nie ustawiono folderu dla tej karty pamięci</string>
+    <string name="dom_error_sc_1001_why">Ta karta pamięci nie ma jeszcze miejsca do skanowania.</string>
+    <string name="dom_error_sc_1001_action">Wybierz folder w Opcjach karty pamięci, a potem go przeskanuj.</string>
+    <string name="dom_error_sc_1002_title">Skanowanie już trwa</string>
+    <string name="dom_error_sc_1002_why">Ta karta pamięci była już skanowana, więc drugie skanowanie pominięto.</string>
+    <string name="dom_error_sc_1002_action">Poczekaj na zakończenie trwającego skanowania. Wynik pojawi się tutaj po jego zakończeniu.</string>
+    <string name="dom_error_sc_2001_title">Utracono dostęp do folderu</string>
+    <string name="dom_error_sc_2001_why">PlayFieldPortal utracił uprawnienia do odczytu tego folderu.</string>
+    <string name="dom_error_sc_2001_action">Wybierz folder ponownie w Opcjach karty pamięci, aby przyznać dostęp, a potem go przeskanuj.</string>
+    <string name="dom_error_sc_2002_title">Folder już nie istnieje</string>
+    <string name="dom_error_sc_2002_why">Folder został przeniesiony lub usunięty. Jeśli był na karcie SD, karta mogła zostać wyjęta.</string>
+    <string name="dom_error_sc_2002_action">Włóż kartę SD i przeskanuj ponownie lub wybierz nowy folder w Opcjach karty pamięci.</string>
+    <string name="dom_error_sc_2003_title">Nieznany folder systemu</string>
+    <string name="dom_error_sc_2003_why">Ten folder w głównym folderze ROM-ów nie odpowiada żadnemu systemowi znanemu PlayFieldPortal.</string>
+    <string name="dom_error_sc_2003_action">Zmień nazwę folderu na nazwę obsługiwanego systemu lub przenieś do niego gry.</string>
+    <string name="dom_error_sc_2004_title">Nie rozpoznano pliku</string>
+    <string name="dom_error_sc_2004_why">Typ tego pliku nie jest używany przez gry tej platformy.</string>
+    <string name="dom_error_sc_2004_action">Sprawdź, czy plik jest grą dla tej platformy. Archiwa i łatki są pomijane celowo.</string>
+    <string name="dom_error_sc_9001_title">Skanowanie nieoczekiwanie się nie powiodło</string>
+    <string name="dom_error_sc_9001_why">Podczas skanowania wystąpił nieoczekiwany błąd.</string>
+    <string name="dom_error_sc_9001_action">Spróbuj przeskanować ponownie. Jeśli to się powtarza, skopiuj szczegóły i zgłoś problem.</string>
+    <string name="dom_error_ar_1001_title">Folder grafik niedostępny</string>
+    <string name="dom_error_ar_1001_why">PFP nie ma dostępu do folderu grafik, więc pobieranie nowych grafik jest wstrzymane.</string>
+    <string name="dom_error_ar_1001_action">Połącz ponownie folder w Ustawienia › Grafiki.</string>
+    <string name="dom_error_ar_2001_title">Nie można zapisać pliku grafiki</string>
+    <string name="dom_error_ar_2001_why">Pamięć była pełna lub nie można było zapisać w folderze grafik.</string>
+    <string name="dom_error_ar_2001_action">Zwolnij trochę miejsca i spróbuj ponownie.</string>
+    <string name="dom_error_ar_2002_title">Nie można skopiować pliku</string>
+    <string name="dom_error_ar_2002_why">Kopiowanie przerwało się w trakcie lub nie można było zapisać w miejscu docelowym.</string>
+    <string name="dom_error_ar_2002_action">Sprawdź, czy w miejscu docelowym jest wolne miejsce, a potem uruchom ponownie.</string>
+    <string name="dom_error_ar_2003_title">Nieznany folder systemu w imporcie</string>
+    <string name="dom_error_ar_2003_why">Ten folder w imporcie nie odpowiada żadnemu systemowi znanemu PlayFieldPortal.</string>
+    <string name="dom_error_ar_2003_action">Zmień nazwę folderu na nazwę obsługiwanego systemu i zaimportuj ponownie.</string>
+    <string name="dom_error_ar_3001_title">Nie można połączyć się ze źródłem grafik</string>
+    <string name="dom_error_ar_3001_why">Urządzenie jest offline lub źródło nie odpowiedziało.</string>
+    <string name="dom_error_ar_3001_action">Sprawdź połączenie i spróbuj ponownie później.</string>
+    <string name="dom_error_ar_3002_title">Źródło odrzuciło zapytanie</string>
+    <string name="dom_error_ar_3002_why">Źródło ogranicza liczbę zapytań lub odrzuciło wymagane konto albo klucz.</string>
+    <string name="dom_error_ar_3002_action">Odczekaj chwilę i spróbuj ponownie lub sprawdź konto źródła w Ustawieniach.</string>
+    <string name="dom_error_ar_3003_title">Nie znaleziono dopasowania dla tej gry</string>
+    <string name="dom_error_ar_3003_why">Źródło nie ma wpisu pasującego do tytułu tej gry.</string>
+    <string name="dom_error_ar_3003_action">Sprawdź tytuł gry lub wybierz grafiki ręcznie w Artwork Studio.</string>
+    <string name="dom_error_ar_9001_title">Pobieranie nieoczekiwanie się nie powiodło</string>
+    <string name="dom_error_ar_9001_why">Podczas pobierania wystąpił nieoczekiwany błąd.</string>
+    <string name="dom_error_ar_9001_action">Spróbuj ponownie. Jeśli to się powtarza, skopiuj szczegóły i zgłoś problem.</string>
+    <string name="dom_error_ac_1001_title">Nie dopasowano zestawu osiągnięć do tej gry</string>
+    <string name="dom_error_ac_1001_why">Żadna z połączonych usług nie ma osiągnięć dla gry o tym tytule.</string>
+    <string name="dom_error_ac_1001_action">Dopasuj grę ręcznie na jej stronie osiągnięć.</string>
+    <string name="dom_error_ac_2001_title">Nie można odczytać folderu osiągnięć Windows</string>
+    <string name="dom_error_ac_2001_why">Nie można otworzyć folderu wybranego dla lokalnych osiągnięć tej gry.</string>
+    <string name="dom_error_ac_2001_action">Wybierz ponownie folder gry na jej stronie osiągnięć.</string>
+    <string name="dom_error_ac_3001_title">Urządzenie jest offline</string>
+    <string name="dom_error_ac_3001_why">Osiągnięcia nie mogą się aktualizować bez połączenia z internetem.</string>
+    <string name="dom_error_ac_3001_action">Połącz się z internetem. Aktualizacja uruchomi się ponownie sama.</string>
+    <string name="dom_error_ac_3002_title">Logowanie wygasło</string>
+    <string name="dom_error_ac_3002_why">Połączona usługa nie akceptuje już logowania PlayFieldPortal.</string>
+    <string name="dom_error_ac_3002_action">Połącz ponownie usługę w Ustawienia › Osiągnięcia.</string>
+    <string name="dom_error_ac_3003_title">Szczegóły gier Steam są prywatne</string>
+    <string name="dom_error_ac_3003_why">Steam udostępnia osiągnięcia tylko wtedy, gdy szczegóły gier są publiczne.</string>
+    <string name="dom_error_ac_3003_action">Ustaw Szczegóły gier jako publiczne w ustawieniach prywatności Steam, a potem zaktualizuj ponownie.</string>
+    <string name="dom_error_ac_3004_title">Nie udało się zaktualizować tej gry</string>
+    <string name="dom_error_ac_3004_why">Usługa nie odpowiedziała dla tej gry lub odpowiedziała błędem.</string>
+    <string name="dom_error_ac_3004_action">Spróbuj zaktualizować ponownie później.</string>
+    <string name="dom_error_md_2001_title">Nie można odczytać folderu multimediów</string>
+    <string name="dom_error_md_2001_why">PlayFieldPortal utracił dostęp do tego folderu lub folder już nie istnieje.</string>
+    <string name="dom_error_md_2001_action">Wybierz folder ponownie w ustawieniach multimediów, a potem przeskanuj.</string>
+    <string name="dom_error_md_9001_title">Skanowanie multimediów nieoczekiwanie się nie powiodło</string>
+    <string name="dom_error_md_9001_why">Podczas skanowania wystąpił nieoczekiwany błąd.</string>
+    <string name="dom_error_md_9001_action">Spróbuj przeskanować ponownie. Jeśli to się powtarza, skopiuj szczegóły i zgłoś problem.</string>
+    <string name="dom_error_bk_1001_title">Przywracanie pominęło element</string>
+    <string name="dom_error_bk_1001_why">Tego elementu nie dało się bezpiecznie przywrócić, więc pozostawiono go bez zmian.</string>
+    <string name="dom_error_bk_1001_action">Nic więcej nie zostało naruszone. W razie potrzeby skonfiguruj ten element ponownie ręcznie.</string>
+    <string name="dom_error_bk_2001_title">Nie można zapisać pliku kopii zapasowej</string>
+    <string name="dom_error_bk_2001_why">Pamięć była pełna lub nie można było zapisać w folderze kopii zapasowych.</string>
+    <string name="dom_error_bk_2001_action">Zwolnij trochę miejsca lub wybierz inną lokalizację kopii, a potem spróbuj ponownie.</string>
+    <string name="dom_error_bk_2002_title">Plik kopii jest nieczytelny lub uszkodzony</string>
+    <string name="dom_error_bk_2002_why">Plik nie jest kopią zapasową PlayFieldPortal lub jest niekompletny.</string>
+    <string name="dom_error_bk_2002_action">Wybierz inny plik kopii zapasowej.</string>
+    <string name="dom_error_sy_9001_title">Coś poszło nie tak</string>
+    <string name="dom_error_sy_9001_why">Wystąpił nieoczekiwany błąd.</string>
+    <string name="dom_error_sy_9001_action">Spróbuj ponownie. Jeśli to się powtarza, skopiuj szczegóły i zgłoś problem.</string>
+</resources>

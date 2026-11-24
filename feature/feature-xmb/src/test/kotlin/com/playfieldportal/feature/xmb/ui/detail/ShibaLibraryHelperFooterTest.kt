@@ -1,6 +1,8 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.xmb.viewmodel.ShibaLibraryMode
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -13,16 +15,27 @@ import org.junit.Test
 class ShibaLibraryHelperFooterTest {
 
     private val trackedRow = row(id = "STEAM:1", title = "Half-Life 2", reason = null, target = ShibaCoinsTarget.LibraryGame(1L))
-    private val matchableRow = row(id = "untracked:2", title = "Sonic Adventure 2", reason = "Not found on Steam", target = ShibaCoinsTarget.LibraryGame(2L))
-    private val unmatchableRow = row(id = "untracked:3", title = "Gravity Rush", reason = "System not supported", target = null)
+    private val matchableRow = row(id = "untracked:2", title = "Sonic Adventure 2", reason = UiText.raw("Not found on Steam"), target = ShibaCoinsTarget.LibraryGame(2L))
+    private val unmatchableRow = row(id = "untracked:3", title = "Gravity Rush", reason = UiText.raw("System not supported"), target = null)
 
     private fun labels(state: ShibaLibraryUiState) = shibaLibraryHelperItems(state).map { it.label }
+
+    private fun texts(vararg ids: Int) = ids.map { UiText.res(it) }
 
     @Test
     fun `a tracked game documents View Achievements, Search, Options, Change View and Back`() {
         val state = ShibaLibraryUiState(rows = listOf(trackedRow), focusedRowId = trackedRow.id)
 
-        assertEquals(listOf("View Achievements", "Search", "Options", "Change View", "Back"), labels(state))
+        assertEquals(
+            texts(
+                R.string.shiba_prompt_view_achievements,
+                R.string.shiba_prompt_search,
+                R.string.shiba_prompt_options,
+                R.string.shiba_prompt_change_view,
+                R.string.shiba_prompt_back,
+            ),
+            labels(state),
+        )
         assertEquals(
             listOf(
                 listOf(GamepadAction.SELECT),
@@ -39,27 +52,27 @@ class ShibaLibraryHelperFooterTest {
     fun `a matchable untracked game says Attempt Match`() {
         val state = ShibaLibraryUiState(mode = ShibaLibraryMode.UNTRACKED, rows = listOf(matchableRow), focusedRowId = matchableRow.id)
 
-        assertEquals("Attempt Match", labels(state).first())
+        assertEquals(UiText.res(R.string.shiba_prompt_attempt_match), labels(state).first())
     }
 
     @Test
     fun `an untracked game nothing can match offers no Confirm prompt`() {
         val state = ShibaLibraryUiState(mode = ShibaLibraryMode.UNTRACKED, rows = listOf(unmatchableRow), focusedRowId = unmatchableRow.id)
 
-        assertEquals(listOf("Search", "Options", "Change View", "Back"), labels(state))
+        assertEquals(texts(R.string.shiba_prompt_search, R.string.shiba_prompt_options, R.string.shiba_prompt_change_view, R.string.shiba_prompt_back), labels(state))
     }
 
     @Test
     fun `a focused Search says Confirm types`() {
         val state = ShibaLibraryUiState(rows = listOf(trackedRow), focusedRowId = null)
 
-        assertEquals("Type", labels(state).first())
+        assertEquals(UiText.res(R.string.shiba_prompt_type), labels(state).first())
     }
 
     @Test
     fun `text entry and the Options menu replace the page hints`() {
-        assertEquals(listOf("Done"), labels(ShibaLibraryUiState(searchEditing = true)))
-        assertEquals(listOf("Select", "Close"), labels(ShibaLibraryUiState(options = LibraryOptionsMenu())))
+        assertEquals(texts(R.string.shiba_prompt_done), labels(ShibaLibraryUiState(searchEditing = true)))
+        assertEquals(texts(R.string.shiba_prompt_select, R.string.shiba_prompt_close), labels(ShibaLibraryUiState(options = LibraryOptionsMenu())))
     }
 
     @Test
@@ -68,8 +81,11 @@ class ShibaLibraryHelperFooterTest {
 
         val rows = libraryOptionRows(state)
 
-        assertEquals(listOf("Sort", "Provider", "Update Installed Achievements"), rows.map { it.label })
-        assertEquals(listOf("Progress Highest First", "Steam", null), rows.map { it.value })
+        assertEquals(
+            texts(R.string.shiba_options_sort, R.string.shiba_options_provider, R.string.shiba_options_update_installed),
+            rows.map { it.label },
+        )
+        assertEquals(listOf(UiText.res(R.string.shiba_library_sort_progress_desc), UiText.raw("Steam"), null), rows.map { it.value })
         assertEquals(
             listOf(LibraryOption.OpenGroup(LibraryOptionGroup.SORT), LibraryOption.OpenGroup(LibraryOptionGroup.PROVIDER), LibraryOption.SyncAll),
             rows.map { it.option },
@@ -82,8 +98,12 @@ class ShibaLibraryHelperFooterTest {
 
         val rows = libraryOptionRows(state)
 
-        assertEquals(listOf("All", "RetroAchievements", "Steam", "Local Steam", "PS Vita", "PS3", "Xbox 360"), rows.map { it.label })
-        assertEquals(listOf("All"), rows.filter { it.checked }.map { it.label })
+        assertEquals(
+            listOf(UiText.res(R.string.shiba_filter_all)) +
+                listOf("RetroAchievements", "Steam", "Local Steam", "PS Vita", "PS3", "Xbox 360").map { UiText.raw(it) },
+            rows.map { it.label },
+        )
+        assertEquals(listOf(UiText.res(R.string.shiba_filter_all)), rows.filter { it.checked }.map { it.label })
     }
 
     @Test
@@ -92,7 +112,7 @@ class ShibaLibraryHelperFooterTest {
             id = SEARCH_ONLINE_ROW_ID,
             coinsTarget = null,
             title = "Search online",
-            platformLabel = "Look up a game that isn't on this device",
+            platformLabel = UiText.res(R.string.shiba_library_search_online_subtitle),
             provider = null,
             platformSortKey = "",
             icon0Uri = null,
@@ -103,22 +123,22 @@ class ShibaLibraryHelperFooterTest {
         )
         val state = ShibaLibraryUiState(rows = listOf(searchOnline), focusedRowId = searchOnline.id)
 
-        assertEquals("Search online", labels(state).first())
+        assertEquals(UiText.res(R.string.shiba_prompt_search_online), labels(state).first())
         assertEquals("an action row is not a tracked game", false, searchOnline.isTracked)
     }
 
     @Test
     fun `empty messages keep the shell and explain the empty list`() {
-        assertEquals("No tracked games yet.", ShibaLibraryUiState().emptyMessage)
-        assertEquals("Every eligible game is tracked.", ShibaLibraryUiState(mode = ShibaLibraryMode.UNTRACKED).emptyMessage)
-        assertEquals("No games match \"Final Fantasy\".", ShibaLibraryUiState(query = "Final Fantasy").emptyMessage)
+        assertEquals(UiText.res(R.string.shiba_library_empty_tracked), ShibaLibraryUiState().emptyMessage)
+        assertEquals(UiText.res(R.string.shiba_library_empty_untracked), ShibaLibraryUiState(mode = ShibaLibraryMode.UNTRACKED).emptyMessage)
+        assertEquals(UiText.res(R.string.shiba_library_empty_no_match, "Final Fantasy"), ShibaLibraryUiState(query = "Final Fantasy").emptyMessage)
     }
 
-    private fun row(id: String, title: String, reason: String?, target: ShibaCoinsTarget?) = ShibaLibraryRow(
+    private fun row(id: String, title: String, reason: UiText?, target: ShibaCoinsTarget?) = ShibaLibraryRow(
         id = id,
         coinsTarget = target,
         title = title,
-        platformLabel = "Steam",
+        platformLabel = UiText.raw("Steam"),
         provider = null,
         platformSortKey = "Windows",
         icon0Uri = null,

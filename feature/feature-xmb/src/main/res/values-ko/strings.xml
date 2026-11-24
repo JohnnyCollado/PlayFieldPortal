@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="xmb_icons_reset_removed_themed">선택 해제됨 — 이제 적용된 테마의 아이콘이 표시됩니다.</string>
+    <string name="xmb_icons_reset_themed_slot">초기화할 항목이 없습니다 — 이 아이콘은 적용된 테마에서 제공됩니다.</string>
+    <string name="xmb_icons_reset_builtin_slot">초기화할 항목이 없습니다 — 이 슬롯은 이미 기본 제공 아이콘을 사용합니다.</string>
+    <string name="xmb_icons_reset_all_none">초기화할 항목이 없습니다 — 선택한 아이콘이 없습니다.</string>
+    <string name="xmb_icons_reset_all_themed">선택 해제됨 — 이제 적용된 테마의 아이콘이 표시됩니다.</string>
+</resources>

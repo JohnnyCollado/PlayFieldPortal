@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slice H2: feature-backup (backup and restore results) -->
+<resources>
+    <!-- Backup failures -->
+    <string name="bak_no_folder">Kein Sicherungsordner festgelegt. Wähle einen unter Einstellungen → Sichern &amp; Wiederherstellen → Sicherungsordner.</string>
+    <string name="bak_too_large">Diese Sicherung wäre zu groß zum Wiederherstellen (maximal 20.000 Dateien und 2 GB). Entferne ungenutzte Artwork oder Medien und versuche es erneut.</string>
+    <string name="bak_write_failed">In den Sicherungsordner konnte nicht geschrieben werden. Wähle den Sicherungsordner erneut unter Einstellungen ▸ System ▸ Sichern &amp; Wiederherstellen.</string>
+    <string name="bak_unknown_error">Unbekannter Fehler</string>
+
+    <!-- Restore failures -->
+    <string name="bak_open_failed">Sicherungsdatei konnte nicht geöffnet werden</string>
+    <string name="bak_missing_manifest">In der Sicherung fehlt das Manifest</string>
+    <string name="bak_format_too_new">Sicherungsformat v%1$d ist neuer als von dieser App unterstützt (v%2$d)</string>
+    <string name="bak_no_uri">Keine URI angegeben</string>
+
+    <!-- Notification titles -->
+    <string name="bak_task_created">Sicherung erstellt</string>
+    <string name="bak_task_failed">Sicherung fehlgeschlagen</string>
+    <string name="bak_task_restored">Sicherung wiederhergestellt</string>
+    <string name="bak_task_restore_failed">Wiederherstellung fehlgeschlagen</string>
+    <string name="bak_results_restored">Wiederhergestellt</string>
+    <plurals name="bak_items_skipped">
+        <item quantity="one">%d Element übersprungen</item>
+        <item quantity="other">%d Elemente übersprungen</item>
+    </plurals>
+
+    <!-- Items turned away during restore -->
+    <string name="bak_refused_out_of_root">Abgelehnt \'%1$s\': nicht in einem wiederherstellbaren Ordner</string>
+    <string name="bak_refused_profiles_unparseable">Emulatorprofile abgelehnt: Datei konnte nicht ausgewertet werden</string>
+    <string name="bak_refused_profile">Emulatorprofil \'%1$s\' abgelehnt: %2$s</string>
+</resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings ▸ Controller: row names for the two swap switches. -->
+    <string name="tidy_controller_swap_confirm_back">決定と戻るを入れ替え</string>
+    <string name="tidy_controller_swap_options_sort">オプションと並べ替えを入れ替え</string>
+
+    <!-- Settings ▸ Display: group header above the icon, text and font rows. -->
+    <string name="tidy_group_text_icons">テキストとアイコン</string>
+
+    <!-- Wizard header under the page title. %1$d is this page's number, %2$d how many pages this run shows. -->
+    <string name="tidy_wizard_step_of">ステップ %1$d / %2$d</string>
+</resources>

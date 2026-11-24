@@ -298,7 +298,7 @@ class AchievementAutoMatcher @Inject constructor(
         }
         when (game.windowsLabel) {
             WindowsGameLabel.LOCAL -> return Outcome.Unmatched(
-                "Labelled Local — pick its folder in Windows ▸ Game List",
+                "Labelled Local — pick its folder in Windows Games",
                 ownReason = true,
             )
             WindowsGameLabel.NON_STEAM -> return Outcome.Unmatched(NON_STEAM_REASON, ownReason = true)

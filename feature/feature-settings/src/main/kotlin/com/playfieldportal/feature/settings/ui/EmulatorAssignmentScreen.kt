@@ -15,10 +15,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.playfieldportal.feature.launcher.LaunchSource
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.feature.settings.viewmodel.EmulatorAssignmentUiState
 import com.playfieldportal.feature.settings.viewmodel.EmulatorAssignmentViewModel
 import com.playfieldportal.feature.settings.viewmodel.PlatformAssignRow
@@ -76,8 +79,8 @@ private fun AssignmentListContent(
     modifier: Modifier,
 ) {
     SettingsScaffold(
-        title           = "Emulators",
-        subtitle        = "Per-System Defaults",
+        title           = stringResource(R.string.lib_emu_title),
+        subtitle        = stringResource(R.string.lib_assign_title),
         onBack          = onBack,
         modifier        = modifier,
         restoreFocusKey = state.returnFocusKey,
@@ -85,12 +88,9 @@ private fun AssignmentListContent(
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
-            SettingsGroup("Consoles with games")
+            SettingsGroup(stringResource(R.string.lib_assign_group_consoles))
             if (state.platforms.isEmpty()) {
-                EmulatorHint(
-                    "No consoles with games yet — scan a console first, then set its default " +
-                        "emulator and core here."
-                )
+                EmulatorHint(stringResource(R.string.lib_assign_none))
             } else {
                 state.platforms.forEach { platform ->
                     SettingsRow(
@@ -105,13 +105,13 @@ private fun AssignmentListContent(
                                 when {
                                     platform.overrideCount > 0 ->
                                         Text(
-                                            "${platform.overrideCount} overridden",
+                                            stringResource(R.string.lib_assign_overridden, platform.overrideCount),
                                             color = SettingsAccent,
                                             fontSize = 11.sp,
                                         )
-                                    platform.isMissingCore -> Badge("CORE MISSING", WarnColor)
+                                    platform.isMissingCore -> Badge(stringResource(R.string.lib_assign_badge_core_missing), WarnColor)
                                     platform.defaultDisplayName == null ->
-                                        Badge("NO EMULATOR", WarnColor)
+                                        Badge(stringResource(R.string.lib_assign_badge_no_emulator), WarnColor)
                                 }
                             }
                         },
@@ -123,12 +123,13 @@ private fun AssignmentListContent(
     }
 }
 
-private fun listSublabel(platform: PlatformAssignRow): String {
-    val default = platform.defaultDisplayName?.let { "Default: $it" } ?: "No emulator"
-    val core = platform.resolvedCoreName?.let { " · Core: $it" } ?: ""
-    val games = "${platform.gameCount} game${if (platform.gameCount == 1) "" else "s"}"
-    return "$default$core · $games"
-}
+@Composable
+private fun listSublabel(platform: PlatformAssignRow): String = listOfNotNull(
+    platform.defaultDisplayName?.let { stringResource(R.string.lib_assign_default_is, it) }
+        ?: stringResource(R.string.lib_assign_no_emulator),
+    platform.resolvedCoreName?.let { stringResource(R.string.lib_assign_core_is, it) },
+    pluralStringResource(R.plurals.lib_assign_game_count, platform.gameCount, platform.gameCount),
+).joinToString(" · ")
 
 // ── Per-platform detail ───────────────────────────────────────────────────────
 
@@ -149,10 +150,9 @@ private fun AssignmentDetailContent(
         if (confirmClearCount != null && confirmClearCount > 0) {
             PfpModalSpec.Confirm(
                 key = "clear_overrides:${row.platformId}",
-                title = "Clear $confirmClearCount override${if (confirmClearCount == 1) "" else "s"}?",
-                message = "These ${row.platformName} games have their own pinned emulator and ignore this " +
-                    "platform's default. Clear them so every game on ${row.platformName} uses the default.",
-                confirmLabel = "Clear",
+                title = pluralStringResource(R.plurals.lib_assign_clear_title, confirmClearCount, confirmClearCount),
+                message = stringResource(R.string.lib_assign_clear_message, row.platformName),
+                confirmLabel = stringResource(R.string.lib_assign_clear),
                 destructive = true,
                 onConfirm = onConfirmClear,
                 onCancel = onCancelClear,
@@ -163,7 +163,7 @@ private fun AssignmentDetailContent(
     )
 
     SettingsScaffold(
-        title    = "Emulators",
+        title    = stringResource(R.string.lib_emu_title),
         subtitle = row.platformName,
         onBack   = onBack,
         modifier = modifier,
@@ -173,28 +173,25 @@ private fun AssignmentDetailContent(
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
-            SettingsGroup("Current default")
+            SettingsGroup(stringResource(R.string.lib_assign_group_current))
             SettingsValueRow(
-                label   = "Emulator",
-                value   = row.defaultDisplayName ?: "None",
+                label   = stringResource(R.string.lib_assign_emulator),
+                value   = row.defaultDisplayName ?: stringResource(R.string.lib_assign_none_value),
                 sublabel = sourceLine(row),
             )
             row.resolvedCoreName?.let { core ->
-                SettingsValueRow(label = "RetroArch core", value = core)
+                SettingsValueRow(label = stringResource(R.string.lib_assign_ra_core), value = core)
             }
 
-            SettingsGroup("Choose the default")
+            SettingsGroup(stringResource(R.string.lib_assign_group_choose))
             SettingsRow(
-                label    = "Automatic (recommended)",
-                sublabel = "First installed emulator — a standalone before RetroArch cores",
-                trailing = { if (row.isAutomatic) Badge("ACTIVE", DefaultBadgeColor) },
+                label    = stringResource(R.string.lib_assign_automatic),
+                sublabel = stringResource(R.string.lib_assign_automatic_sub),
+                trailing = { if (row.isAutomatic) Badge(stringResource(R.string.lib_assign_badge_active), DefaultBadgeColor) },
                 onClick  = { onUseAutomatic(row.platformId) },
             )
             if (row.candidates.isEmpty()) {
-                EmulatorHint(
-                    "No installed emulator can run this platform. Install one — or link RetroArch " +
-                        "and let core detection generate profiles — and launches resolve automatically."
-                )
+                EmulatorHint(stringResource(R.string.lib_assign_no_candidates))
             } else {
                 row.candidates.forEach { candidate ->
                     val profile = candidate.profile
@@ -206,8 +203,8 @@ private fun AssignmentDetailContent(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalAlignment     = Alignment.CenterVertically,
                             ) {
-                                if (candidate.isDefault) Badge("DEFAULT", DefaultBadgeColor)
-                                if (candidate.isRecommended) Badge("RECOMMENDED", RecommendedBadgeColor)
+                                if (candidate.isDefault) Badge(stringResource(R.string.lib_assign_badge_default), DefaultBadgeColor)
+                                if (candidate.isRecommended) Badge(stringResource(R.string.lib_assign_badge_recommended), RecommendedBadgeColor)
                             }
                         },
                         onClick = { onSelectDefault(row.platformId, profile.id) },
@@ -215,20 +212,18 @@ private fun AssignmentDetailContent(
                 }
             }
 
-            SettingsGroup("Per-game overrides")
+            SettingsGroup(stringResource(R.string.lib_assign_group_overrides))
             SettingsValueRow(
-                label    = "Games with a custom emulator",
-                value    = "${row.overrideCount} of ${row.gameCount}",
-                sublabel = if (row.overrideCount == 0) {
-                    "None — every game follows the default above"
-                } else {
-                    "These games launch with their own pinned emulator and ignore the default"
-                },
+                label    = stringResource(R.string.lib_assign_overrides_label),
+                value    = stringResource(R.string.lib_assign_overrides_value, row.overrideCount, row.gameCount),
+                sublabel = stringResource(
+                    if (row.overrideCount == 0) R.string.lib_assign_overrides_none else R.string.lib_assign_overrides_some,
+                ),
             )
             if (row.overrideCount > 0) {
                 SettingsRow(
-                    label    = "Clear All ${row.overrideCount} Override(s)",
-                    sublabel = "Reset these games to follow the platform default",
+                    label    = pluralStringResource(R.plurals.lib_assign_clear_all, row.overrideCount, row.overrideCount),
+                    sublabel = stringResource(R.string.lib_assign_clear_all_sub),
                     onClick  = onRequestClearOverrides,
                 )
             }
@@ -248,18 +243,19 @@ private fun Badge(label: String, color: Color) {
     )
 }
 
+@Composable
 private fun sourceLine(row: PlatformAssignRow): String = when (row.source) {
-    LaunchSource.MEMORY_CARD      -> "Console default — set here or in Library Manager"
-    LaunchSource.PLATFORM_DEFAULT -> "Platform default"
+    LaunchSource.MEMORY_CARD      -> stringResource(R.string.lib_assign_source_card)
+    LaunchSource.PLATFORM_DEFAULT -> stringResource(R.string.lib_assign_source_platform)
     // Never produced on this screen (per-game overrides are excluded from the ladder inputs).
-    LaunchSource.PER_GAME_OVERRIDE -> "Per-game override"
-    LaunchSource.CATALOG_DEFAULT  -> "Automatic — first installed emulator"
+    LaunchSource.PER_GAME_OVERRIDE -> stringResource(R.string.lib_assign_source_game)
+    LaunchSource.CATALOG_DEFAULT  -> stringResource(R.string.lib_assign_source_auto)
     null -> when {
         row.storedDefaultName != null ->
-            "Stored default (${row.storedDefaultName}) is not installed or can't run this platform"
+            stringResource(R.string.lib_assign_source_stored_missing, row.storedDefaultName)
         row.platformDefaultId != null ->
-            "Platform default is not installed or can't run this platform"
-        else -> "No emulator installed for this platform"
+            stringResource(R.string.lib_assign_source_platform_missing)
+        else -> stringResource(R.string.lib_assign_source_none)
     }
 }
 

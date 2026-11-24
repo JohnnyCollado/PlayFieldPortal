@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launch refusals shown before an emulator starts -->
+    <string name="launch_err_custom_command">Profilurile cu comandă personalizată nu mai sunt acceptate. Comută acest emulator pe metoda de pornire „Deschide ROM-ul cu aplicația” sau „Deschide un ecran al aplicației”.</string>
+    <string name="launch_err_shortcut_unsupported">Pornirea scurtăturilor nu este acceptată din acest ecran</string>
+    <string name="launch_err_no_package">Nu există niciun pachet Android înregistrat pentru %1$s</string>
+    <string name="launch_err_app_not_launchable">Aplicația Android nu este instalată sau nu poate fi pornită: %1$s</string>
+    <string name="launch_err_emulator_not_installed">Emulatorul nu este instalat: %1$s (%2$s)</string>
+    <string name="launch_err_wrong_build">%1$s (%2$s) nu este versiunea așteptată: certificatul de semnare nu corespunde. Reinstalează emulatorul din sursa oficială.</string>
+    <string name="launch_err_no_activity_for_path">%1$s nu are nicio activitate de pornire înregistrată, deci nu i se poate transmite o cale de fișier. Importă din nou intrarea de cunoștințe sau redetectează emulatorul.</string>
+    <string name="launch_err_activity_required">Pentru această metodă de pornire este necesar numele unui ecran al aplicației - profil: %1$s</string>
+    <string name="launch_err_activity_gone">%1$s nu mai oferă activitatea de pornire (%2$s). Actualizează emulatorul sau alege alt emulator pentru această platformă.</string>
+    <string name="launch_err_no_launch_id">Nu există niciun ID de pornire înregistrat pentru %1$s. Rescanează biblioteca.</string>
+    <string name="launch_err_rom_link_invalid">Legătura către ROM-ul acestui joc nu este validă. Rescanează biblioteca.</string>
+    <string name="launch_err_lost_access">Play Field Portal a pierdut accesul la fișierul acestui joc. Reconectează spațiul de stocare și rescanează biblioteca.</string>
+    <string name="launch_err_rom_path_required">Calea ROM este necesară pentru a porni %1$s</string>
+    <string name="launch_err_rom_not_found">Fișierul ROM nu a fost găsit: %1$s</string>
+    <string name="launch_err_no_core">Niciun core RetroArch configurat pentru platforma \'%1$s\' în profilul \'%2$s\'. Deschide RetroArch → Core Downloader pentru a instala un core pentru acest sistem.</string>
+    <string name="launch_err_cannot_open_rom_type">%1$s nu poate deschide acest tip de ROM. Încearcă să reinstalezi emulatorul sau verifică permisiunile aplicației în Setările Android.</string>
+    <string name="launch_err_no_file_path">%1$s nu are o cale de fișier pe acest dispozitiv, deci %2$s nu poate afla ce joc să pornească.</string>
+    <string name="launch_err_not_in_rom_folder">%1$s nu se află într-un dosar ROM configurat, deci nu poate fi transmis către %2$s. Verifică dosarul setat pentru acest card de memorie în Setări.</string>
+
+    <!-- Emulator choice problems -->
+    <string name="launch_err_configured_missing">Emulatorul (%1$s) nu este instalat sau disponibil: %2$s</string>
+    <string name="launch_err_core_not_installed">%1$s este setat ca %2$s, dar acel core nu este instalat în RetroArch. Instalează-l sau alege alt emulator.</string>
+    <string name="launch_err_no_longer_available">%1$s este setat ca %2$s, dar nu mai este disponibil. Alege alt emulator.</string>
+    <string name="launch_err_not_configured_for_platform">%1$s nu este configurat pentru %2$s</string>
+    <string name="launch_err_no_emulator_for_platform">Niciun emulator configurat pentru %1$s. Alege un emulator pentru acest joc sau setează unul implicit pentru platformă.</string>
+
+    <!-- Where an emulator choice came from -->
+    <string name="launch_source_per_game">Setare per joc</string>
+    <string name="launch_source_per_game_lower">setare per joc</string>
+    <string name="launch_source_memory_card">Implicit pentru cardul de memorie</string>
+    <string name="launch_source_memory_card_lower">implicit pentru cardul de memorie</string>
+    <string name="launch_source_platform">Implicit pentru platformă</string>
+    <string name="launch_source_platform_lower">implicit pentru platformă</string>
+    <string name="launch_source_recommended">Recomandat</string>
+    <string name="launch_source_recommended_lower">recomandat</string>
+    <string name="launch_phrase_per_game">setare per joc</string>
+    <string name="launch_phrase_memory_card">emulatorul cardului de memorie</string>
+    <string name="launch_phrase_platform">implicit pentru platformă</string>
+
+    <!-- Launch hand-off failures -->
+    <string name="launch_err_emulator_not_found">Emulatorul nu a fost găsit. Este instalat?</string>
+    <string name="launch_err_permission_denied">Permisiune refuzată la pornirea emulatorului</string>
+    <string name="launch_err_open_emulator">Emulatorul nu a putut fi deschis: %1$s</string>
+    <string name="launch_never_foreground">Emulatorul nu a ajuns niciodată în prim-plan după pornire.</string>
+    <string name="launch_never_appeared">Emulatorul nu a apărut deloc. Verifică dacă este instalat și actualizat, apoi încearcă din nou să-l pornești.</string>
+    <plurals name="launch_history_failed">
+        <item quantity="one">%1$d din ultimele %2$d porniri ale acestui joc a eșuat.</item>
+        <item quantity="few">%1$d din ultimele %2$d porniri ale acestui joc au eșuat.</item>
+        <item quantity="other">%1$d din ultimele %2$d de porniri ale acestui joc au eșuat.</item>
+    </plurals>
+
+    <!-- Launch failure notification -->
+    <string name="launch_rec_title">%1$s nu a putut fi pornit</string>
+    <string name="launch_rec_could_not_start">Emulatorul nu a putut fi pornit</string>
+    <string name="launch_rec_never_foreground">Emulatorul nu a ajuns niciodată în prim-plan</string>
+    <string name="launch_fact_emulator">Emulator</string>
+    <string name="launch_fact_core">Core</string>
+    <string name="launch_fact_platform">Platformă</string>
+    <string name="launch_fact_recent">Porniri recente</string>
+    <string name="launch_fact_recent_value">%1$d din ultimele %2$d au eșuat</string>
+
+    <!-- Shortcut requests -->
+    <string name="launch_shortcut_request_title">Cerere de scurtătură: %1$s (deschide %2$s)</string>
+    <string name="launch_shortcut_request_message">Adaug-o doar dacă tocmai ai creat tu această scurtătură.</string>
+    <string name="launch_shortcut_added_title">Scurtătură adăugată: %1$s</string>
+    <string name="launch_shortcut_ignored_title">Scurtătură ignorată: %1$s</string>
+    <string name="launch_shortcut_from">De la %1$s</string>
+    <string name="launch_windows_added_title">„%1$s” a fost adăugat la Jocuri Windows</string>
+    <string name="launch_windows_added_message">Termină configurarea Bibliotecii Windows pentru a-i scana dosarul</string>
+
+    <!-- First-run setup prompts -->
+    <string name="launch_setup_add_rom_folder">Adaugă un dosar ROM pentru a-ți începe biblioteca</string>
+    <string name="launch_setup_add_console_card">Adaugă un card de memorie de consolă în care să scanezi</string>
+    <string name="launch_setup_install_emulator">Instalează un emulator pentru a-ți juca jocurile</string>
+
+    <!-- Emulator detection notes -->
+    <string name="launch_inspect_known">Completat automat din profilul integrat pentru %1$s. Confirmă platforma (platformele) și salvează.</string>
+    <string name="launch_inspect_best_guess">Estimare pe baza modului în care această aplicație deschide fișierele ROM. Setează platforma (platformele), apoi testează un ROM înainte de a salva.</string>
+    <string name="launch_inspect_minimal">Nu s-a putut detecta cum acceptă această aplicație ROM-urile. Completează manual setările de activitate / intent, apoi testează un ROM.</string>
+
+    <!-- Emulator knowledge file updates -->
+    <string name="launch_kb_too_many_files">Se pot importa cel mult %1$d fișiere de cunoștințe; elimină mai întâi unul</string>
+    <string name="launch_kb_installed">Actualizat</string>
+    <string name="launch_kb_not_configured">Actualizările nu sunt configurate în această versiune</string>
+    <string name="launch_kb_offline">Serverul de actualizări nu a putut fi accesat</string>
+    <string name="launch_kb_too_large">Fișierul de actualizare este prea mare</string>
+    <string name="launch_kb_signature_invalid">Semnătura actualizării nu este validă</string>
+    <string name="launch_kb_needs_app_update">Această actualizare necesită o versiune mai nouă a aplicației</string>
+    <string name="launch_kb_older">Actualizarea este mai veche decât cea deja instalată</string>
+    <string name="launch_kb_invalid_content">Fișierul de actualizare are conținut nevalid</string>
+    <string name="launch_kb_storage_failed">Actualizarea nu a putut fi salvată</string>
+    <string name="launch_kb_skipped">Nu a fost necesară nicio verificare</string>
+
+    <!-- Windows game launchers -->
+    <string name="launch_unknown_gamehub_or_bannerhub">poate fi GameHub sau BannerHub</string>
+    <string name="launch_unknown_gamehublite_or_bannerhub">poate fi GameHub Lite sau BannerHub</string>
+    <string name="launch_unknown_not_in_list">nu este în lista PFP</string>
+    <string name="launch_choice_not_a_launcher">Nu este un launcher</string>
+    <string name="launch_id_prompt_gamehub">ID joc — pe pagina jocului: atinge Copy lângă Local Game ID sau ⋮ → Banner Tools → Show Game ID</string>
+    <string name="launch_id_prompt_gamenative">Steam App ID (sau ID-ul aplicației din magazin) pentru jocul instalat</string>
+</resources>

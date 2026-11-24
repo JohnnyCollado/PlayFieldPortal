@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.artwork.match.MatchConfidence
 import com.playfieldportal.feature.artwork.match.MatchSignal
 import com.playfieldportal.feature.artwork.match.ScoredStorefrontCandidate
@@ -7,6 +8,7 @@ import com.playfieldportal.feature.artwork.match.Storefront
 import com.playfieldportal.feature.artwork.match.StorefrontCandidate
 import com.playfieldportal.feature.artwork.match.StorefrontMatchRepository
 import com.playfieldportal.feature.artwork.match.StorefrontIdentityRecord
+import com.playfieldportal.feature.xmb.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -45,7 +47,7 @@ class StorefrontMatchUiTest {
             )
         )
 
-        assertEquals("appid 379720", row.idLabel)
+        assertEquals(UiText.res(R.string.det_store_id_steam, "379720"), row.idLabel)
         assertEquals("2016  ·  id Software  ·  Bethesda Softworks", row.subtitle)
         assertEquals(78, row.score)
         assertTrue(row.exactTitle)
@@ -75,7 +77,7 @@ class StorefrontMatchUiTest {
 
         // A "Partial title" chip would dress a weak match up as evidence. The full ledger is one
         // button away for anyone who wants it.
-        assertEquals(listOf("Exact title"), row.strongSignals)
+        assertEquals(listOf(UiText.res(R.string.det_signal_chip_exact_title)), row.strongSignals)
     }
 
     @Test
@@ -90,10 +92,12 @@ class StorefrontMatchUiTest {
         val absent = row.signalLines.filterNot { it.counted }
         // Worded by which side was silent: this store returned no year and no developer, so the
         // line must not tell the user their own copy is the thing missing them.
-        assertTrue(absent.any { it.label == "Release year — the store didn't say" })
-        assertTrue(absent.any { it.label == "Developer — the store didn't say" })
+        assertTrue(absent.any { it.label == absentSilent(R.string.det_signal_field_release_year) })
+        assertTrue(absent.any { it.label == absentSilent(R.string.det_signal_field_developer) })
         assertTrue(absent.all { it.points == "—" })
     }
+
+    private fun absentSilent(field: Int) = UiText.res(R.string.det_signal_absent_silent, UiText.res(field))
 
     @Test
     fun `a signal the store supplied but that did not agree is worded as such`() {
@@ -101,7 +105,7 @@ class StorefrontMatchUiTest {
             scored(developer = "Nightdive Studios", signals = arrayOf(MatchSignal.EXACT_TITLE))
         )
 
-        assertTrue(row.signalLines.any { it.label == "Developer — no match against your copy" })
+        assertTrue(row.signalLines.any { it.label == UiText.res(R.string.det_signal_absent_no_match, UiText.res(R.string.det_signal_field_developer)) })
     }
 
     @Test
@@ -221,14 +225,14 @@ class StorefrontMatchUiTest {
     @Test
     fun `stores that did not need a choice are named, unreachable ones first`() {
         assertEquals(
-            "GOG didn't answer, so this list is Steam's alone. Try again later for GOG.",
+            UiText.res(R.string.det_store_note_unreachable, "GOG", "Steam"),
             storefrontOtherStoresNote(
                 StorefrontMatchUi(loading = false, unavailableStores = listOf("GOG"))
                     .withStores(listOf(tab(Storefront.STEAM, MatchConfidence.LOW, "1")))
             ),
         )
         assertEquals(
-            "Already linked on GOG. That link is not changed here.",
+            UiText.res(R.string.det_store_note_linked, "GOG"),
             storefrontOtherStoresNote(
                 StorefrontMatchUi(loading = false, settledStores = listOf("GOG"))
                     .withStores(listOf(tab(Storefront.STEAM, MatchConfidence.LOW, "1")))
@@ -244,9 +248,9 @@ class StorefrontMatchUiTest {
             StorefrontMatchUi(loading = false, gameTitle = "Brave Default FF", typedQuery = "Bravely Defalt")
         )
 
-        assertEquals("No store has “Bravely Defalt”.", headline)
+        assertEquals(UiText.res(R.string.det_store_empty_typed_title, "Bravely Defalt"), headline)
         // Not "edit the title": the search bar exists so the title never has to change.
-        assertEquals("Nothing was changed, and nothing is linked. Go back to try another name.", detail)
+        assertEquals(UiText.res(R.string.det_store_empty_typed_detail), detail)
     }
 
     @Test
@@ -255,7 +259,7 @@ class StorefrontMatchUiTest {
             StorefrontMatchUi(loading = false, typedQuery = "Quake", unavailableStores = listOf("Steam"))
         )
 
-        assertEquals("Steam didn't answer.", headline)
+        assertEquals(UiText.res(R.string.det_store_empty_unavailable_title, "Steam"), headline)
     }
 
     @Test
@@ -288,7 +292,7 @@ class StorefrontMatchUiTest {
         )
 
         assertEquals(listOf(RematchAction.REPLACE, RematchAction.REMOVE), row.actions)
-        assertEquals("DOOM  ·  appid 379720", row.detail)
+        assertEquals(UiText.Joined(listOf(UiText.raw("DOOM"), UiText.res(R.string.det_store_id_steam, "379720")), "  ·  "), row.detail)
         assertTrue(row.userConfirmed)
         // Remove is never the pre-selected action on a row the user just arrived at.
         assertEquals(RematchAction.REPLACE, row.selectedAction)
@@ -299,7 +303,7 @@ class StorefrontMatchUiTest {
         val row = storefrontRematchRowOf(repoRow(Storefront.STEAM))
 
         assertEquals(listOf(RematchAction.SEARCH), row.actions)
-        assertEquals("Not linked", row.detail)
+        assertEquals(UiText.res(R.string.det_rematch_not_linked), row.detail)
         assertTrue(row.enabled)
     }
 
@@ -309,7 +313,7 @@ class StorefrontMatchUiTest {
 
         assertFalse(row.enabled)
         // Said as what it is, not as a promise: there may never be a way to search this store.
-        assertEquals("Can't be searched — this store has no public catalog to ask", row.note)
+        assertEquals(UiText.res(R.string.det_rematch_note_not_searchable), row.note)
     }
 
     @Test
@@ -322,6 +326,6 @@ class StorefrontMatchUiTest {
         )
 
         assertFalse(row.userConfirmed)
-        assertEquals("Matched automatically", row.note)
+        assertEquals(UiText.res(R.string.det_rematch_note_auto), row.note)
     }
 }

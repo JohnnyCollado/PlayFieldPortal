@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared button and prompt labels -->
+    <string name="core_cancel">Cancelar</string>
+    <string name="core_ok">Aceptar</string>
+    <string name="core_save">Guardar</string>
+    <string name="core_apply">Aplicar</string>
+    <string name="core_select">Seleccionar</string>
+    <string name="core_close">Cerrar</string>
+    <string name="core_back">Atrás</string>
+
+    <!-- Modals (text entry) -->
+    <string name="core_modal_name_label">Nombre</string>
+    <string name="core_modal_counter">%1$d / %2$d</string>
+
+    <!-- Convert-to-achievement-tracking picker -->
+    <string name="core_steam_convert_title">¿Instalar el seguimiento de logros?</string>
+    <string name="core_steam_convert_selected_count">%1$d de %2$d</string>
+    <string name="core_steam_convert_found_count">%1$d encontrados</string>
+    <string name="core_steam_convert_hints">"Arriba/Abajo  Filas  •  Select  Marcar  •  △  Todos/Ninguno  •  Start  Instalar  •  B  Cancelar"</string>
+    <string name="core_steam_convert_loading">Leyendo de Steam la lista de logros de cada juego…</string>
+    <string name="core_steam_convert_install">Instalar (%1$d)</string>
+    <string name="core_steam_convert_none">Ninguno</string>
+    <string name="core_steam_convert_all">Todos</string>
+    <string name="core_steam_convert_skip_sync">Omitir y sincronizar</string>
+    <string name="core_steam_convert_write_notice">En la carpeta de cada juego marcado, PFP escribe achievements.json, stats.json y configs.user.ini, crea una carpeta saves y renombra steam_api64.dll a steam_api64_o.dll para que el emulador incluido pueda cargarse a través de ella.</string>
+    <string name="core_steam_convert_backup_warning">Haz una copia de los datos guardados de cualquier juego que ya hayas jugado antes de convertirlo: el emulador empezará a leer desde la nueva ubicación de guardado.</string>
+
+    <!-- Shiba player card -->
+    <string name="core_shiba_xp">%1$s XP</string>
+    <string name="core_shiba_progress_next_bone">%1$s / %2$s para tu próximo Hueso</string>
+    <string name="core_shiba_progress_next_level">%1$s / %2$s para el nivel %3$d</string>
+    <string name="core_shiba_level_abbrev">NV</string>
+
+    <!-- Colour picker -->
+    <string name="core_hsv_hex">Hex</string>
+    <string name="core_hsv_hue">Tono</string>
+    <string name="core_hsv_saturation">Saturación</string>
+    <string name="core_hsv_brightness">Brillo</string>
+    <string name="core_hsv_hint_move">Mover</string>
+    <string name="core_hsv_hint_type_hex">Escribir hex</string>
+    <string name="core_hsv_hint_adjust">Ajustar</string>
+    <string name="core_hsv_sample_text">Texto de ejemplo</string>
+    <string name="core_color_default">Predeterminado</string>
+    <string name="core_color_pink">Rosa</string>
+    <string name="core_color_gold">Dorado</string>
+    <string name="core_color_aqua">Aguamarina</string>
+    <string name="core_color_sky_blue">Celeste</string>
+    <string name="core_color_green">Verde</string>
+    <string name="core_color_coral">Coral</string>
+    <string name="core_color_slate">Pizarra</string>
+    <string name="core_color_custom">Personalizado</string>
+
+    <!-- Notification detail sheets -->
+    <string name="core_sheet_copied">Copiado</string>
+    <string name="core_sheet_copy_details">Copiar detalles</string>
+    <string name="core_sheet_copy_list">Copiar lista</string>
+    <string name="core_sheet_filter">Filtrar</string>
+    <string name="core_sheet_what_happened">Qué pasó</string>
+    <string name="core_sheet_diagnostic_open">"▾  Detalles de diagnóstico"</string>
+    <string name="core_sheet_diagnostic_closed">"▸  Detalles de diagnóstico"</string>
+    <string name="core_sheet_diagnostic_heading">Diagnóstico</string>
+    <string name="core_sheet_summary_chip">%1$d %2$s</string>
+    <string name="core_sheet_filter_all">Todos</string>
+    <string name="core_sheet_more">+%1$d más</string>
+    <string name="core_sheet_what_you_can_do">Qué puedes hacer</string>
+
+    <!-- On-screen keyboard -->
+    <string name="core_vk_prompt_type">Escribir</string>
+    <string name="core_vk_prompt_delete">Borrar</string>
+    <string name="core_vk_prompt_cursor">Cursor</string>
+    <string name="core_vk_prompt_caps">Mayús</string>
+    <string name="core_vk_key_space">Espacio</string>
+    <string name="core_vk_key_shift">Mayús</string>
+    <string name="core_vk_key_backspace">Retroceso</string>
+    <string name="core_vk_key_done">Listo</string>
+    <string name="core_vk_shift_off">Desactivado</string>
+    <string name="core_vk_shift_once">Activado para la siguiente letra</string>
+    <string name="core_vk_shift_held">Activado mientras se mantiene</string>
+    <string name="core_vk_shift_locked">Bloq Mayús activado</string>
+
+    <!-- Background tasks -->
+    <string name="core_task_failed">Tarea fallida</string>
+    <string name="core_task_done">Listo</string>
+
+    <!-- Detail screens -->
+    <string name="core_detail_favorite_badge">FAVORITO</string>
+    <string name="core_detail_video_badge">VIDEO</string>
+    <string name="core_detail_confirm_collapse">Confirma para contraer</string>
+    <string name="core_detail_confirm_read_more">Confirma para leer más</string>
+
+    <!-- Rotate-to-landscape prompt -->
+    <string name="core_rotate_title">Gira a horizontal</string>
+    <string name="core_rotate_message">PlayField Portal funciona en horizontal. Gira tu dispositivo de lado para continuar.</string>
+    <string name="core_rotate_switch_launcher">Cambiar de launcher</string>
+</resources>

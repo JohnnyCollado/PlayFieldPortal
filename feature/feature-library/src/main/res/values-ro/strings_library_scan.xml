@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Scan error messages -->
+    <string name="scan_error_card_not_found">Cardul de memorie nu a fost găsit.</string>
+    <string name="scan_error_scan_failed">Scanarea a eșuat — vezi jurnalul.</string>
+    <string name="scan_error_library_unreadable">Biblioteca nu a putut fi citită.</string>
+    <string name="scan_error_save_failed">Un joc scanat nu a putut fi salvat.</string>
+    <string name="scan_error_rom_dir_not_found">Directorul ROM nu a fost găsit: %1$s</string>
+    <string name="scan_error_folder_link_invalid">Legătura către dosarul acestei biblioteci nu este validă. Adaugă din nou dosarul.</string>
+    <string name="scan_error_root_unreadable">Un dosar ROM nu a putut fi citit. Dacă este pe un card SD, verifică dacă acesta este introdus.</string>
+    <string name="scan_error_permission_lost">Permisiunea s-a pierdut, selectează din nou dosarul.</string>
+    <string name="scan_error_partial_read">O parte din dosar nu a putut fi citită, așa că nu s-a modificat nimic. Încearcă din nou peste puțin timp.</string>
+
+    <!-- One-line scan outcome -->
+    <string name="scan_outcome_line">%1$s: %2$s</string>
+    <string name="scan_outcome_no_source">Dosarul ROM nu este configurat.</string>
+    <string name="scan_outcome_busy">scanare deja în curs.</string>
+    <string name="scan_outcome_failed">scanarea a eșuat.</string>
+    <string name="scan_outcome_no_new">niciun ROM nou</string>
+    <string name="scan_outcome_no_new_none_missing">niciun ROM nou, niciunul lipsă</string>
+    <string name="scan_outcome_no_new_marked_missing">niciun ROM nou, %1$d marcate ca lipsă</string>
+    <plurals name="scan_outcome_added">
+        <item quantity="one">%1$d ROM nou adăugat</item>
+        <item quantity="few">%1$d ROM-uri noi adăugate</item>
+        <item quantity="other">%1$d de ROM-uri noi adăugate</item>
+    </plurals>
+    <plurals name="scan_outcome_added_none_missing">
+        <item quantity="one">%1$d ROM nou adăugat, niciunul lipsă</item>
+        <item quantity="few">%1$d ROM-uri noi adăugate, niciunul lipsă</item>
+        <item quantity="other">%1$d de ROM-uri noi adăugate, niciunul lipsă</item>
+    </plurals>
+    <plurals name="scan_outcome_added_marked_missing">
+        <item quantity="one">%1$d ROM nou adăugat, %2$d marcate ca lipsă</item>
+        <item quantity="few">%1$d ROM-uri noi adăugate, %2$d marcate ca lipsă</item>
+        <item quantity="other">%1$d de ROM-uri noi adăugate, %2$d marcate ca lipsă</item>
+    </plurals>
+    <string name="scan_with_error_note">%1$s (%2$s)</string>
+
+    <!-- Per-card line in the scan results list -->
+    <string name="scan_badge_no_new">Nimic nou</string>
+    <string name="scan_reason_no_new">Niciun joc nou</string>
+    <string name="scan_reason_no_new_marked_missing">Niciun joc nou, %1$d marcate ca lipsă</string>
+    <plurals name="scan_reason_added">
+        <item quantity="one">%1$d joc nou adăugat</item>
+        <item quantity="few">%1$d jocuri noi adăugate</item>
+        <item quantity="other">%1$d de jocuri noi adăugate</item>
+    </plurals>
+    <plurals name="scan_reason_added_marked_missing">
+        <item quantity="one">%1$d joc nou adăugat, %2$d marcate ca lipsă</item>
+        <item quantity="few">%1$d jocuri noi adăugate, %2$d marcate ca lipsă</item>
+        <item quantity="other">%1$d de jocuri noi adăugate, %2$d marcate ca lipsă</item>
+    </plurals>
+</resources>

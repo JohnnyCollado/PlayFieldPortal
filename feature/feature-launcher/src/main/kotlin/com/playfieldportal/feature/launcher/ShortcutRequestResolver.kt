@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.launcher
 
+import android.content.Context
 import com.playfieldportal.core.data.repository.CollectionRepository
 import com.playfieldportal.core.data.repository.PendingShortcutRequest
 import com.playfieldportal.core.data.repository.PendingShortcutRequestStore
@@ -10,6 +11,7 @@ import com.playfieldportal.core.domain.model.NotificationKind
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
+import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -30,6 +32,8 @@ class ShortcutRequestResolver @Inject constructor(
     private val collectionRepository: CollectionRepository,
     private val pcShortcutImporter: PcShortcutImporter,
     private val tasks: BackgroundTaskCenter,
+    // Resolves the notification text in the user's language when the row is posted.
+    @ApplicationContext private val context: Context,
 ) {
     val requests = store.requests
 
@@ -42,8 +46,8 @@ class ShortcutRequestResolver @Inject constructor(
             id = rowId(request.id),
             // hostLabel is the app the shortcut OPENS, not the sender: the INSTALL_SHORTCUT
             // broadcast does not say who sent it, so the copy must not attribute it.
-            label = "Shortcut request: ${request.name} (opens ${request.hostLabel})",
-            message = "Only add it if you just made this shortcut yourself.",
+            label = context.getString(R.string.launch_shortcut_request_title, request.name, request.hostLabel),
+            message = context.getString(R.string.launch_shortcut_request_message),
             severity = NotificationSeverity.INFO,
             kind = NotificationKind.SYSTEM,
             action = NotificationAction.ReviewShortcut(request.id),
@@ -89,8 +93,8 @@ class ShortcutRequestResolver @Inject constructor(
         }
         tasks.report(
             id = rowId(id),
-            label = "Added shortcut: ${request.name}",
-            message = "From ${request.hostLabel}",
+            label = context.getString(R.string.launch_shortcut_added_title, request.name),
+            message = context.getString(R.string.launch_shortcut_from, request.hostLabel),
             severity = NotificationSeverity.SUCCESS,
             kind = NotificationKind.SYSTEM,
             read = true,
@@ -103,8 +107,8 @@ class ShortcutRequestResolver @Inject constructor(
         store.remove(id)
         tasks.report(
             id = rowId(id),
-            label = "Ignored shortcut: ${request.name}",
-            message = "From ${request.hostLabel}",
+            label = context.getString(R.string.launch_shortcut_ignored_title, request.name),
+            message = context.getString(R.string.launch_shortcut_from, request.hostLabel),
             severity = NotificationSeverity.INFO,
             kind = NotificationKind.SYSTEM,
             read = true,
@@ -118,8 +122,8 @@ class ShortcutRequestResolver @Inject constructor(
     fun windowsSetupNeeded(gameTitle: String) {
         tasks.report(
             id = "windows_setup",
-            label = "\"$gameTitle\" added to Windows Games",
-            message = "Finish setting up your Windows Library to scan its folder",
+            label = context.getString(R.string.launch_windows_added_title, gameTitle),
+            message = context.getString(R.string.launch_windows_added_message),
             severity = NotificationSeverity.INFO,
             kind = NotificationKind.SYSTEM,
             action = NotificationAction.OpenSettingsScreen(WINDOWS_SETUP_ROUTE),

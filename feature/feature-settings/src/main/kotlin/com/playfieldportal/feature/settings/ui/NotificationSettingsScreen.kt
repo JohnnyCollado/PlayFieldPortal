@@ -1,5 +1,9 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.settings.R
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
@@ -28,8 +32,8 @@ fun NotificationSettingsScreen(
     val state by viewModel.uiState.collectAsState()
 
     SettingsScaffold(
-        title = "Settings",
-        subtitle = "Notifications",
+        title = stringResource(R.string.settings_title),
+        subtitle = stringResource(R.string.sets_notif_title),
         onBack = onBack,
         modifier = modifier,
     ) {
@@ -40,32 +44,34 @@ fun NotificationSettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState),
         ) {
-            SettingsGroup("Notifications")
+            SettingsGroup(stringResource(R.string.sets_notif_title))
 
             SettingsToggleRow(
-                label = "Record notifications",
-                sublabel = "Keep a history of scans, artwork, scraping and achievement work. " +
-                    "Off stops new entries; running work still shows its progress.",
+                label = stringResource(R.string.sets_notif_record),
+                sublabel = stringResource(R.string.sets_notif_record_help),
                 focusKey = "notifications_enabled",
                 checked = state.enabled,
                 onToggle = { viewModel.setEnabled(it) },
             )
 
-            SettingsGroup("History")
+            SettingsGroup(stringResource(R.string.sets_notif_group_history))
 
             SettingsValueRow(
-                label = "Keep entries for",
-                sublabel = "Older entries are dropped the next time something is recorded. " +
-                    "A cap of 200 entries applies either way, and read entries go first.",
-                value = NotificationSettingsViewModel.autoClearLabel(state.autoClearDays),
+                label = stringResource(R.string.sets_notif_keep_for),
+                sublabel = stringResource(R.string.sets_notif_keep_for_help),
+                value = NotificationSettingsViewModel.autoClearLabel(state.autoClearDays).asString(),
                 focusKey = "notifications_auto_clear",
                 onClick = { viewModel.cycleAutoClearDays() },
             )
 
             SettingsValueRow(
-                label = "Mark all read",
-                sublabel = "Clears the unread count on the status bar",
-                value = if (state.unreadCount > 0) "${state.unreadCount} unread" else "None unread",
+                label = stringResource(R.string.sets_notif_mark_read),
+                sublabel = stringResource(R.string.sets_notif_mark_read_help),
+                value = if (state.unreadCount > 0) {
+                    pluralStringResource(R.plurals.sets_notif_unread, state.unreadCount, state.unreadCount)
+                } else {
+                    stringResource(R.string.sets_notif_none_unread)
+                },
                 focusKey = "notifications_mark_all_read",
                 onClick = { viewModel.markAllRead() },
             )
@@ -73,9 +79,9 @@ fun NotificationSettingsScreen(
             // Always available, and it can never cancel anything: running work is in-flight state,
             // not a stored entry, so there is nothing here for a clear to reach.
             SettingsValueRow(
-                label = "Clear all",
-                sublabel = "Empties the history. Work that is still running is not affected.",
-                value = "${state.storedCount} stored",
+                label = stringResource(R.string.sets_notif_clear_all),
+                sublabel = stringResource(R.string.sets_notif_clear_all_help),
+                value = pluralStringResource(R.plurals.sets_notif_stored, state.storedCount, state.storedCount),
                 focusKey = "notifications_clear_all",
                 onClick = { viewModel.clearAll() },
             )

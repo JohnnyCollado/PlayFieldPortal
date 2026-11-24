@@ -811,17 +811,10 @@ private fun LeadingIcon(model: XmbPreviewModel, row: SampleContent.Row, selected
                 SlotIcon(model, "item_umd", Modifier.size(spec.itemIconDp.dp), focused = selected)
             }
         }
-        // The Shiba Coins player card: "Lv N" in a ring, both in the icon colour.
+        // The Shiba Coins player card: the Shiba's head (the item_shiba_player slot), as on the
+        // launcher since Nov 2026. The level it used to carry in a ring is in the row's title.
         SampleContent.Leading.LEVEL -> Box(Modifier.width(spec.itemIconSlotDp.dp), contentAlignment = Alignment.Center) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size((spec.itemIconDp * 0.8f).dp)
-                    .clip(CircleShape)
-                    .border(2.dp, model.iconTint, CircleShape),
-            ) {
-                Text(row.badge.orEmpty(), color = model.iconTint, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-            }
+            SlotIcon(model, "item_shiba_player", Modifier.size(spec.itemIconDp.dp), focused = selected)
         }
         SampleContent.Leading.APP -> Box(Modifier.width(spec.itemIconSlotDp.dp), contentAlignment = Alignment.Center) {
             AppIconStandIn(row.title)

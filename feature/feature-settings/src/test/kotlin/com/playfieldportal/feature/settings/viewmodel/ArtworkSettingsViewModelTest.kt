@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import com.playfieldportal.feature.settings.R
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.artwork.MetadataApiKeyProvider
 import com.playfieldportal.feature.artwork.api.ArtworkFolderState
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
@@ -28,6 +30,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -312,17 +315,7 @@ class ArtworkSettingsViewModelTest {
         assertEquals(com.playfieldportal.core.domain.model.ImageMotion.STATIC, viewModel.uiState.value.imageMotion)
     }
 
-    @Test
-    fun `cycling Animated Images wraps from Static to Animated and saves it`() = runTest(testDispatcher) {
-        viewModel = activeViewModel()
-        advanceUntilIdle()
-
-        viewModel.cycleImageMotion()
-        advanceUntilIdle()
-
-        assertEquals(com.playfieldportal.core.domain.model.ImageMotion.ANIMATED, viewModel.uiState.value.imageMotion)
-        coVerify { iconDisplayPreferences.setImageMotion(com.playfieldportal.core.domain.model.ImageMotion.ANIMATED) }
-    }
+    // Picking a value moved to Display ▸ Motion (DisplaySettingsViewModelOptionChoiceTest).
 
     // ── IGDB credential test ───────────────────────────────────────────────────
 
@@ -335,7 +328,7 @@ class ArtworkSettingsViewModelTest {
         viewModel.testIgdbCredentials("id", "secret")
         advanceUntilIdle()
 
-        assertEquals("Valid", viewModel.uiState.value.igdbCredentialStatus)
+        assertEquals(UiText.res(R.string.sets_svc_valid), viewModel.uiState.value.igdbCredentialStatus)
     }
 
     @Test
@@ -347,7 +340,7 @@ class ArtworkSettingsViewModelTest {
         viewModel.testIgdbCredentials("bad", "creds")
         advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.igdbCredentialStatus?.contains("Invalid") == true)
+        assertEquals(UiText.res(R.string.sets_svc_igdb_invalid), viewModel.uiState.value.igdbCredentialStatus)
     }
 
     // ── Dismiss helpers ───────────────────────────────────────────────────────
@@ -370,7 +363,7 @@ class ArtworkSettingsViewModelTest {
 
         viewModel.testIgdbCredentials("id", "secret")
         advanceUntilIdle()
-        assertFalse(viewModel.uiState.value.igdbCredentialStatus.isNullOrBlank())
+        assertNotNull(viewModel.uiState.value.igdbCredentialStatus)
 
         viewModel.dismissCredentialStatus()
         advanceUntilIdle()

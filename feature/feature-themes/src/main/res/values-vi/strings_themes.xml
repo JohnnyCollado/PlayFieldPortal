@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Localization slice H1: theme package (.xmbtheme) import errors -->
+<resources>
+    <string name="thm_error_manifest_missing">Thiếu tệp theme.json bắt buộc trong gói</string>
+    <string name="thm_error_manifest_invalid">theme.json không hợp lệ: %1$s</string>
+    <string name="thm_error_id_invalid">ID chủ đề \'%1$s\' không hợp lệ — dùng chữ cái, chữ số, \'.\', \'_\' hoặc \'-\' (tối đa 64)</string>
+    <string name="thm_error_color_invalid">%1$s \'%2$s\' không hợp lệ — cần dạng #RRGGBB hoặc #AARRGGBB</string>
+</resources>

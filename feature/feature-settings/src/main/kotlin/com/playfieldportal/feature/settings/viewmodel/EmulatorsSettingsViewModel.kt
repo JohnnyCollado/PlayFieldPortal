@@ -3,6 +3,7 @@ package com.playfieldportal.feature.settings.viewmodel
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.domain.model.EmulatorProfile
@@ -11,6 +12,8 @@ import com.playfieldportal.core.domain.model.IntentType
 import com.playfieldportal.core.domain.model.emulatorkb.EffectiveKb
 import com.playfieldportal.core.domain.model.emulatorkb.EffectiveKbEmulator
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.settings.R
 import kotlinx.coroutines.flow.first
 import android.net.Uri
 import com.playfieldportal.feature.launcher.AppLaunchInspector
@@ -82,7 +85,7 @@ data class ProfileEditorState(
     val useSafUri: Boolean = false,
     val notes: String = "",
     val isSaving: Boolean = false,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
     // Wizard banner explaining detection confidence (null = plain edit).
     val detectionNote: String? = null,
     // ── Advanced launch fields (editable as text; parsed back to typed on save) ──
@@ -97,11 +100,11 @@ data class ProfileEditorState(
 const val ADD_CUSTOM_EMULATOR_FOCUS_KEY = "add_custom_emulator"
 
 // Recommended launch-shape presets offered when auto-detection can't infer the settings.
-enum class EmulatorTemplate(val label: String, val description: String) {
-    VIEW_CONTENT("ACTION_VIEW + content:// URI", "Most modern emulators (Eden, Azahar, PPSSPP)"),
-    VIEW_FILE("ACTION_VIEW + file:// path", "Older emulators that read a raw file path"),
-    COMPONENT_BOOTPATH("COMPONENT + bootPath extra", "DuckStation / AetherSX2 style"),
-    RETROARCH_CORE("RetroArch core (ROM + LIBRETRO)", "Set the core path in LIBRETRO"),
+enum class EmulatorTemplate(@StringRes val labelRes: Int, @StringRes val descriptionRes: Int) {
+    VIEW_CONTENT(R.string.lib_emu_template_view_content, R.string.lib_emu_template_view_content_desc),
+    VIEW_FILE(R.string.lib_emu_template_view_file, R.string.lib_emu_template_view_file_desc),
+    COMPONENT_BOOTPATH(R.string.lib_emu_template_component, R.string.lib_emu_template_component_desc),
+    RETROARCH_CORE(R.string.lib_emu_template_retroarch, R.string.lib_emu_template_retroarch_desc),
 }
 
 // ── Test launch (wizard step) ──────────────────────────────────────────────────
@@ -116,10 +119,10 @@ data class TestRom(
 data class IntentPreview(
     val packageName: String,
     val activity: String?,
-    val action: String,
+    val action: UiText,
     val mimeType: String?,
-    val uriMode: String,
-    val romRef: String,
+    val uriMode: UiText,
+    val romRef: UiText,
     val extras: List<String>,
     val flags: List<String>,
 )
@@ -128,7 +131,7 @@ data class TestLaunchState(
     val roms: List<TestRom> = emptyList(),
     val selectedRom: TestRom? = null,
     val preview: IntentPreview? = null,
-    val resultMessage: String? = null,
+    val resultMessage: UiText? = null,
     val isError: Boolean = false,
     val canLaunch: Boolean = false,
 )
@@ -399,7 +402,7 @@ class EmulatorsSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val game = withContext(Dispatchers.IO) { gameRepository.getById(gameId) }
             if (game == null) {
-                _uiState.update { it.copy(testLaunch = test.copy(selectedRom = rom, resultMessage = "Could not load that ROM.", isError = true)) }
+                _uiState.update { it.copy(testLaunch = test.copy(selectedRom = rom, resultMessage = UiText.res(R.string.lib_emu_test_rom_unloadable), isError = true)) }
                 return@launch
             }
             val profile = editor.draftProfile()
@@ -410,7 +413,7 @@ class EmulatorsSettingsViewModel @Inject constructor(
                     testIntent = intent
                     _uiState.update { it.copy(testLaunch = test.copy(
                         selectedRom = rom, preview = preview,
-                        resultMessage = "Resolves OK — press Launch Now to try it.",
+                        resultMessage = UiText.res(R.string.lib_emu_test_resolves_ok),
                         isError = false, canLaunch = true,
                     )) }
                 },
@@ -432,7 +435,7 @@ class EmulatorsSettingsViewModel @Inject constructor(
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             appContext.startActivity(intent)
         }.onSuccess {
-            _uiState.update { it.copy(testLaunch = test.copy(resultMessage = "Launched — check the emulator.", isError = false)) }
+            _uiState.update { it.copy(testLaunch = test.copy(resultMessage = UiText.res(R.string.lib_emu_test_launched), isError = false)) }
         }.onFailure { e ->
             _uiState.update { it.copy(testLaunch = test.copy(resultMessage = mapLaunchError(e), isError = true, canLaunch = false)) }
         }
@@ -487,16 +490,16 @@ class EmulatorsSettingsViewModel @Inject constructor(
 
     private fun buildPreview(profile: EmulatorProfile, game: Game): IntentPreview {
         val uriMode = when {
-            profile.filesystemPathOnly -> "raw path (the emulator opens the file itself)"
-            profile.useSafUri  -> "content:// (FileProvider, read granted)"
-            profile.useFileUri -> "file:// (content:// on API 24+)"
-            else               -> "content://"
+            profile.filesystemPathOnly -> UiText.res(R.string.lib_emu_uri_mode_raw_path)
+            profile.useSafUri  -> UiText.res(R.string.lib_emu_uri_mode_saf)
+            profile.useFileUri -> UiText.res(R.string.lib_emu_uri_mode_file)
+            else               -> UiText.raw("content://")
         }
         val action = when (profile.intentType) {
-            IntentType.ACTION_VIEW    -> "android.intent.action.VIEW"
-            IntentType.COMPONENT      -> profile.intentAction ?: "android.intent.action.MAIN"
-            IntentType.CUSTOM_COMMAND -> "(not supported)"
-            IntentType.SHORTCUT       -> "(shortcut)"
+            IntentType.ACTION_VIEW    -> UiText.raw("android.intent.action.VIEW")
+            IntentType.COMPONENT      -> UiText.raw(profile.intentAction ?: "android.intent.action.MAIN")
+            IntentType.CUSTOM_COMMAND -> UiText.res(R.string.lib_emu_action_unsupported)
+            IntentType.SHORTCUT       -> UiText.res(R.string.lib_emu_action_shortcut)
         }
         val extras = buildList {
             profile.intentExtras.forEach { (k, v) -> add("$k = $v") }
@@ -508,28 +511,28 @@ class EmulatorsSettingsViewModel @Inject constructor(
             action      = action,
             mimeType    = profile.mimeType,
             uriMode     = uriMode,
-            romRef      = game.romPath ?: game.packageName ?: "(none)",
+            romRef      = (game.romPath ?: game.packageName)?.let { UiText.raw(it) } ?: UiText.res(R.string.lib_emu_none),
             extras      = extras,
             flags       = profile.intentFlags,
         )
     }
 
     // Maps resolver failures and startActivity exceptions to the spec's actionable error cases.
-    private fun mapLaunchError(e: Throwable): String {
+    private fun mapLaunchError(e: Throwable): UiText {
         val msg = e.message.orEmpty()
         return when {
             e is android.content.ActivityNotFoundException ->
-                "Activity not found or not exported. Check the activity name, or try ACTION_VIEW instead."
+                UiText.res(R.string.lib_emu_error_activity_not_found)
             e is SecurityException ->
-                "Permission denied — the app rejected the ROM URI. Try toggling SAF (content://) vs file URI."
-            msg.contains("not installed", ignoreCase = true)      -> msg
-            msg.contains("ROM file not found", ignoreCase = true)  -> msg
-            msg.contains("ROM path is required", ignoreCase = true) -> msg
-            msg.contains("core", ignoreCase = true)                -> msg   // missing RetroArch core
+                UiText.res(R.string.lib_emu_error_permission_denied)
+            msg.contains("not installed", ignoreCase = true)      -> UiText.raw(msg)
+            msg.contains("ROM file not found", ignoreCase = true)  -> UiText.raw(msg)
+            msg.contains("ROM path is required", ignoreCase = true) -> UiText.raw(msg)
+            msg.contains("core", ignoreCase = true)                -> UiText.raw(msg)   // missing RetroArch core
             msg.contains("cannot open this ROM", ignoreCase = true) ->
-                "$msg The app didn't accept this MIME type / URI mode — try the other URI mode."
-            msg.isNotBlank()                                       -> msg
-            else                                                  -> "Launch failed for an unknown reason."
+                UiText.res(R.string.lib_emu_error_rom_not_accepted, msg)
+            msg.isNotBlank()                                       -> UiText.raw(msg)
+            else                                                  -> UiText.res(R.string.lib_emu_error_unknown)
         }
     }
 
@@ -586,11 +589,11 @@ class EmulatorsSettingsViewModel @Inject constructor(
     fun saveEditorProfile() {
         val editor = _uiState.value.editorState ?: return
         if (editor.name.isBlank()) {
-            updateEditor { copy(errorMessage = "Name is required") }
+            updateEditor { copy(errorMessage = UiText.res(R.string.lib_emu_error_name_required)) }
             return
         }
         if (editor.packageName.isBlank()) {
-            updateEditor { copy(errorMessage = "Package name is required") }
+            updateEditor { copy(errorMessage = UiText.res(R.string.lib_emu_error_package_required)) }
             return
         }
         updateEditor { copy(isSaving = true, errorMessage = null) }

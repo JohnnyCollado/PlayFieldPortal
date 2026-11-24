@@ -36,6 +36,8 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -55,6 +57,8 @@ import com.playfieldportal.core.ui.detail.PfpDetailBackground
 import com.playfieldportal.core.ui.detail.PfpDetailBreadcrumb
 import com.playfieldportal.core.ui.detail.PfpDetailHelperFooter
 import com.playfieldportal.core.ui.detail.detailPalette
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.xmb.ui.PspIcon0Icon
 import com.playfieldportal.feature.xmb.viewmodel.ShibaLibraryMode
 import kotlin.math.roundToInt
@@ -85,10 +89,10 @@ private fun LibraryCoinCounts.countFor(tier: ShibaTier): Int = when (tier) {
     ShibaTier.BRONZE -> bronze
 }
 
-private val ShibaLibraryMode.viewTitle: String
+private val ShibaLibraryMode.viewTitleRes: Int
     get() = when (this) {
-        ShibaLibraryMode.TRACKED -> "Tracked Games"
-        ShibaLibraryMode.UNTRACKED -> "Untracked Games"
+        ShibaLibraryMode.TRACKED -> R.string.shiba_library_view_tracked
+        ShibaLibraryMode.UNTRACKED -> R.string.shiba_library_view_untracked
     }
 
 @Composable
@@ -159,7 +163,7 @@ fun ShibaLibraryScreen(
     ) {
         Column(Modifier.fillMaxSize()) {
             PfpDetailBreadcrumb(
-                title = "Achievements / ${state.mode.viewTitle}",
+                title = stringResource(R.string.shiba_library_breadcrumb, stringResource(state.mode.viewTitleRes)),
                 subtitle = when (state.mode) {
                     ShibaLibraryMode.TRACKED -> gameCount(state.trackedCount)
                     ShibaLibraryMode.UNTRACKED -> gameCount(state.untrackedCount)
@@ -194,7 +198,7 @@ fun ShibaLibraryScreen(
                 if (!state.hasGames) {
                     // The shell stays; only the list area explains itself.
                     Text(
-                        text = state.emptyMessage,
+                        text = state.emptyMessage.asString(),
                         color = palette.textMuted,
                         fontSize = 15.sp,
                         // Below the pinned Search online row, which is listed even with no games.
@@ -221,13 +225,13 @@ fun ShibaLibraryScreen(
             }
 
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                PfpDetailHelperFooter(items = shibaLibraryHelperItems(state), visible = !showTouchControls)
+                PfpDetailHelperFooter(items = shibaLibraryHelperItems(state).toPromptItems(), visible = !showTouchControls)
                 // Touch mode: the footer hints fade; Options is the header's ⋮, and the view switch
                 // becomes a pill in the same reserved band (rows, Search and ◀ are tappable already).
                 if (showTouchControls && state.options == null) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         XmbHeaderPill(
-                            label = ShibaLibraryMode.entries.first { it != state.mode }.viewTitle,
+                            label = stringResource(ShibaLibraryMode.entries.first { it != state.mode }.viewTitleRes),
                             onClick = { viewModel.switchSibling(1) },
                         )
                     }
@@ -239,8 +243,8 @@ fun ShibaLibraryScreen(
         // list, titled by name, with the active choice checked.
         state.options?.let { menu ->
             PspContextMenuOverlay(
-                title = menu.title,
-                rows = state.optionRows.map { row -> PspMenuRow(label = row.label, checked = row.checked, value = row.value, opensMenu = row.opensMenu) },
+                title = menu.title.asString(),
+                rows = state.optionRows.map { row -> PspMenuRow(label = row.label.asString(), checked = row.checked, value = row.value?.asString(), opensMenu = row.opensMenu) },
                 selectedIndex = menu.selectedIndex,
                 onRowActivated = viewModel::onOptionActivated,
                 onDismiss = viewModel::closeOptions,
@@ -249,7 +253,8 @@ fun ShibaLibraryScreen(
     }
 }
 
-private fun gameCount(count: Int): String = if (count == 1) "1 game" else "$count games"
+@Composable
+private fun gameCount(count: Int): String = pluralStringResource(R.plurals.shiba_library_game_count, count, count)
 
 // ── Header summary ────────────────────────────────────────────────────────────
 
@@ -257,10 +262,10 @@ private fun gameCount(count: Int): String = if (count == 1) "1 game" else "$coun
 private fun LibrarySummaryBlock(summary: LibrarySummary, palette: DetailPalette) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         ShibaLevelMedallion(level = summary.level, size = 40.dp, accent = palette.focus)
-        SummaryStat(label = "NEXT LEVEL", value = "${(summary.nextLevelFraction * 100).roundToInt()}%", palette = palette) {
+        SummaryStat(label = stringResource(R.string.shiba_stat_next_level), value = "${(summary.nextLevelFraction * 100).roundToInt()}%", palette = palette) {
             ProgressLine(summary.nextLevelFraction, palette, Modifier.width(56.dp))
         }
-        SummaryStat(label = "TOTAL", value = "%,d".format(summary.total), palette = palette)
+        SummaryStat(label = stringResource(R.string.shiba_stat_total), value = "%,d".format(summary.total), palette = palette)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             CoinOrder.forEach { tier -> CoinCount(tier, summary.coins.countFor(tier), palette, iconSize = 18.dp) }
         }
@@ -313,7 +318,7 @@ private fun GameRow(
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        row.platformLabel,
+                        row.platformLabel.asString(),
                         color = palette.textMuted,
                         fontSize = 12.sp,
                         maxLines = 1,
@@ -327,7 +332,7 @@ private fun GameRow(
                 }
             }
             Spacer(Modifier.width(16.dp))
-            if (row.isTracked) TrackedStats(row, focused, palette) else UntrackedReason(row.reason.orEmpty(), palette)
+            if (row.isTracked) TrackedStats(row, focused, palette) else UntrackedReason(row.reason?.asString().orEmpty(), palette)
         }
         Separator(palette)
     }
@@ -359,14 +364,15 @@ private fun SearchOnlineActionRow(
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    row.title,
+                    // The pinned action row carries no title of its own; this screen words it.
+                    stringResource(R.string.shiba_library_search_online),
                     color = palette.textPrimary,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(row.platformLabel, color = palette.textMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(row.platformLabel.asString(), color = palette.textMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Spacer(Modifier.width(16.dp))
             Text("›", color = palette.textMuted, fontSize = 18.sp)

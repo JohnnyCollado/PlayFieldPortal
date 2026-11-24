@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Definições</string>
+    <string name="sound_title">Som</string>
+    <string name="sound_group_master">Geral</string>
+    <string name="sound_group_levels">Níveis</string>
+    <string name="sound_group_sounds">Sons</string>
+    <string name="sound_master_volume">Volume geral</string>
+    <string name="sound_master_volume_help">Ajusta todos os sons do launcher. A 0, o launcher fica sem som.</string>
+    <string name="sound_ambience_help">Repete enquanto navega. O OGG repete sem cortes; o MP3 pode dar um estalido.</string>
+    <string name="sound_rejected_title">Não foi possível utilizar esse som</string>
+    <string name="sound_reset_confirm_title">Repor o som para as predefinições?</string>
+    <string name="sound_reset_confirm_message">Cada som do menu volta à amostra PFP incluída e cada nível, incluindo o geral, volta ao máximo. A sua faixa de ambiente e os conteúdos de Boot Video e Game Boot não são afetados.</string>
+    <string name="sound_reset_confirm_action">Repor</string>
+    <string name="sound_reset_row">Repor som para as predefinições</string>
+    <string name="sound_reset_row_help">Repõe cada som do menu na amostra PFP incluída e cada nível no máximo. Mantém a sua faixa de ambiente.</string>
+    <string name="sound_channel_navigation">Navegação</string>
+    <string name="sound_channel_back">Voltar / Cancelar</string>
+    <string name="sound_channel_confirm">Confirmar / Aplicar</string>
+    <string name="sound_channel_error">Erro / Inválido</string>
+    <string name="sound_channel_notification">Notificação</string>
+    <string name="sound_channel_boot">Sequência de arranque</string>
+    <string name="sound_channel_ambience">Ambiente</string>
+    <string name="sound_slot_navigation">Navegação</string>
+    <string name="sound_slot_back">Voltar / Cancelar</string>
+    <string name="sound_slot_confirm">Confirmar / Aplicar</string>
+    <string name="sound_slot_error">Erro / Inválido</string>
+    <string name="sound_slot_notification">Notificação</string>
+    <string name="sound_slot_ambience">Faixa de ambiente</string>
+</resources>

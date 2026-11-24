@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared button and prompt labels -->
+    <string name="core_cancel">Zrušit</string>
+    <string name="core_ok">OK</string>
+    <string name="core_save">Uložit</string>
+    <string name="core_apply">Použít</string>
+    <string name="core_select">Vybrat</string>
+    <string name="core_close">Zavřít</string>
+    <string name="core_back">Zpět</string>
+
+    <!-- Modals (text entry) -->
+    <string name="core_modal_name_label">Název</string>
+    <string name="core_modal_counter">%1$d / %2$d</string>
+
+    <!-- Convert-to-achievement-tracking picker -->
+    <string name="core_steam_convert_title">Nainstalovat sledování achievementů?</string>
+    <string name="core_steam_convert_selected_count">%1$d z %2$d</string>
+    <string name="core_steam_convert_found_count">Nalezeno: %1$d</string>
+    <string name="core_steam_convert_hints">"Nahoru/Dolů  Řádky  •  Select  Přepnout  •  △  Vše/Nic  •  Start  Instalovat  •  B  Zrušit"</string>
+    <string name="core_steam_convert_loading">Načítání seznamu achievementů každé hry ze Steamu…</string>
+    <string name="core_steam_convert_install">Instalovat (%1$d)</string>
+    <string name="core_steam_convert_none">Nic</string>
+    <string name="core_steam_convert_all">Vše</string>
+    <string name="core_steam_convert_skip_sync">Přeskočit a synchronizovat</string>
+    <string name="core_steam_convert_write_notice">Do složky každé zaškrtnuté hry PFP zapíše achievements.json, stats.json a configs.user.ini, vytvoří složku saves a přejmenuje steam_api64.dll na steam_api64_o.dll, aby se přes ni mohl načíst přiložený emulátor.</string>
+    <string name="core_steam_convert_backup_warning">Před převodem zálohujte uložené pozice všech her, které jste již hráli — emulátor začne číst z nového umístění uložených pozic.</string>
+
+    <!-- Shiba player card -->
+    <string name="core_shiba_xp">%1$s XP</string>
+    <string name="core_shiba_progress_next_bone">%1$s / %2$s do další Kosti</string>
+    <string name="core_shiba_progress_next_level">%1$s / %2$s do úrovně %3$d</string>
+    <string name="core_shiba_level_abbrev">ÚR</string>
+
+    <!-- Colour picker -->
+    <string name="core_hsv_hex">Hex</string>
+    <string name="core_hsv_hue">Odstín</string>
+    <string name="core_hsv_saturation">Sytost</string>
+    <string name="core_hsv_brightness">Jas</string>
+    <string name="core_hsv_hint_move">Posunout</string>
+    <string name="core_hsv_hint_type_hex">Zadat hex</string>
+    <string name="core_hsv_hint_adjust">Upravit</string>
+    <string name="core_hsv_sample_text">Ukázkový text</string>
+    <string name="core_color_default">Výchozí</string>
+    <string name="core_color_pink">Růžová</string>
+    <string name="core_color_gold">Zlatá</string>
+    <string name="core_color_aqua">Akvamarínová</string>
+    <string name="core_color_sky_blue">Nebeská modř</string>
+    <string name="core_color_green">Zelená</string>
+    <string name="core_color_coral">Korálová</string>
+    <string name="core_color_slate">Břidlicová</string>
+    <string name="core_color_custom">Vlastní</string>
+
+    <!-- Notification detail sheets -->
+    <string name="core_sheet_copied">Zkopírováno</string>
+    <string name="core_sheet_copy_details">Kopírovat podrobnosti</string>
+    <string name="core_sheet_copy_list">Kopírovat seznam</string>
+    <string name="core_sheet_filter">Filtr</string>
+    <string name="core_sheet_what_happened">Co se stalo</string>
+    <string name="core_sheet_diagnostic_open">"▾  Diagnostické podrobnosti"</string>
+    <string name="core_sheet_diagnostic_closed">"▸  Diagnostické podrobnosti"</string>
+    <string name="core_sheet_diagnostic_heading">Diagnostika</string>
+    <string name="core_sheet_summary_chip">%2$s: %1$d</string>
+    <string name="core_sheet_filter_all">Vše</string>
+    <string name="core_sheet_more">+%1$d další</string>
+    <string name="core_sheet_what_you_can_do">Co můžete udělat</string>
+
+    <!-- On-screen keyboard -->
+    <string name="core_vk_prompt_type">Psát</string>
+    <string name="core_vk_prompt_delete">Smazat</string>
+    <string name="core_vk_prompt_cursor">Kurzor</string>
+    <string name="core_vk_prompt_caps">Velká</string>
+    <string name="core_vk_key_space">Mezera</string>
+    <string name="core_vk_key_shift">Shift</string>
+    <string name="core_vk_key_backspace">Backspace</string>
+    <string name="core_vk_key_done">Hotovo</string>
+    <string name="core_vk_shift_off">Vypnuto</string>
+    <string name="core_vk_shift_once">Zapnuto pro další písmeno</string>
+    <string name="core_vk_shift_held">Zapnuto při podržení</string>
+    <string name="core_vk_shift_locked">Caps Lock zapnut</string>
+
+    <!-- Background tasks -->
+    <string name="core_task_failed">Úloha selhala</string>
+    <string name="core_task_done">Hotovo</string>
+
+    <!-- Detail screens -->
+    <string name="core_detail_favorite_badge">OBLÍBENÉ</string>
+    <string name="core_detail_video_badge">VIDEO</string>
+    <string name="core_detail_confirm_collapse">Potvrzením sbalíte</string>
+    <string name="core_detail_confirm_read_more">Potvrzením zobrazíte více</string>
+
+    <!-- Rotate-to-landscape prompt -->
+    <string name="core_rotate_title">Otočte na šířku</string>
+    <string name="core_rotate_message">PlayField Portal běží na šířku. Pokračujte otočením zařízení.</string>
+    <string name="core_rotate_switch_launcher">Přepnout launcher</string>
+</resources>

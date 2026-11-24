@@ -1,5 +1,8 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.domain.text.UiText
+import androidx.test.core.app.ApplicationProvider
+import android.content.Context
 import com.playfieldportal.core.domain.model.MusicTrack
 import com.playfieldportal.core.domain.model.Playlist
 import com.playfieldportal.core.domain.model.ResultOutcome
@@ -20,12 +23,18 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /** Parse, match, name, write, report: with mockk repositories and no Context. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class PlaylistImportRunnerTest {
 
     private val music = mockk<MusicRepository>()
     private val video = mockk<VideoRepository>()
+    private val context: Context = ApplicationProvider.getApplicationContext()
     private val runner = PlaylistImportRunner(music, video)
 
     private fun track(id: String, name: String, title: String? = null, artist: String? = null) =
@@ -50,14 +59,14 @@ class PlaylistImportRunnerTest {
 
         coVerify(exactly = 0) { music.importPlaylist(any(), any()) }
         assertNull(report.playlistId)
-        val results = report.toResults()
+        val results = report.toResults(context)
         assertEquals(2, results.items.size)
         assertEquals(ResultOutcome.FAILED, results.items[0].outcome)
         assertEquals("not in your library", results.items[0].reason)
         assertEquals("nope.mp3", results.items[0].primary)
         assertEquals(ResultOutcome.SKIPPED, results.items[1].outcome)
         assertEquals("not a local file", results.items[1].reason)
-        assertEquals("Nothing imported from \"Mix.m3u\"", report.title)
+        assertEquals("Nothing imported from \"Mix.m3u\"", report.title.en())
     }
 
     @Test
@@ -74,22 +83,22 @@ class PlaylistImportRunnerTest {
         assertEquals(listOf("t2", "t1"), ids.captured)
         assertEquals(7L, report.playlistId)
         assertEquals("Mix (2)", report.playlistName)
-        assertEquals("Imported \"Mix (2)\"", report.title)
-        assertEquals(2, report.toResults().items.count { it.outcome == ResultOutcome.DONE })
+        assertEquals("Imported \"Mix (2)\"", report.title.en())
+        assertEquals(2, report.toResults(context).items.count { it.outcome == ResultOutcome.DONE })
     }
 
     @Test
     fun `music uses audio as own and video as other, and video the reverse`() = runTest {
         givenMusic(listOf(track("t1", "song.mp3")))
         val m = runner.run(PlaylistKind.MUSIC, listOf(m3u("A.m3u", "clip.mp4", "song.mp3"))).single()
-        assertEquals("wrong media type", m.toResults().items.first { it.outcome == ResultOutcome.SKIPPED }.reason)
+        assertEquals("wrong media type", m.toResults(context).items.first { it.outcome == ResultOutcome.SKIPPED }.reason)
         assertEquals(42L, m.playlistId)
 
         every { video.observeAllVideos() } returns flowOf(listOf(movie("v1", "clip.mp4")))
         every { video.observePlaylists() } returns flowOf(emptyList())
         coEvery { video.importPlaylist(any(), any()) } returns 9L
         val v = runner.run(PlaylistKind.VIDEO, listOf(m3u("B.m3u", "song.mp3", "clip.mp4"))).single()
-        assertEquals("wrong media type", v.toResults().items.first { it.outcome == ResultOutcome.SKIPPED }.reason)
+        assertEquals("wrong media type", v.toResults(context).items.first { it.outcome == ResultOutcome.SKIPPED }.reason)
         assertEquals(9L, v.playlistId)
         coVerify { video.importPlaylist("B", listOf("v1")) }
     }
@@ -114,11 +123,11 @@ class PlaylistImportRunnerTest {
         givenMusic(listOf(track("t1", "a.mp3")))
         val reports = runner.run(
             PlaylistKind.MUSIC,
-            listOf(PickedPlaylistFile.Unreadable("Bad.m3u", "Permission denied"), m3u("Good.m3u", "a.mp3")),
+            listOf(PickedPlaylistFile.Unreadable("Bad.m3u", UiText.raw("Permission denied")), m3u("Good.m3u", "a.mp3")),
         )
-        assertEquals("Couldn't import \"Bad.m3u\"", reports[0].title)
-        assertEquals("Permission denied", reports[0].toResults().summary)
-        assertTrue(reports[0].toResults().items.isEmpty())
+        assertEquals("Couldn't import \"Bad.m3u\"", reports[0].title.en())
+        assertEquals("Permission denied", reports[0].toResults(context).summary)
+        assertTrue(reports[0].toResults(context).items.isEmpty())
         assertNull(reports[0].playlistId)
         assertNotNull(reports[1].playlistId)
     }
@@ -131,8 +140,8 @@ class PlaylistImportRunnerTest {
             listOf(PickedPlaylistFile.Content("photo.jpg", "a.mp3".toByteArray())),
         ).single()
         coVerify(exactly = 0) { music.importPlaylist(any(), any()) }
-        assertEquals("Not a playlist file", report.toResults().summary)
-        assertEquals("Couldn't import \"photo.jpg\"", report.title)
+        assertEquals("Not a playlist file", report.toResults(context).summary)
+        assertEquals("Couldn't import \"photo.jpg\"", report.title.en())
     }
 
     @Test
@@ -142,7 +151,7 @@ class PlaylistImportRunnerTest {
             PlaylistKind.MUSIC,
             listOf(m3u("L.m3u", "#EXTINF:100,Ghost - Missing", "gone.mp3", "a.mp3", "a.mp3")),
         ).single()
-        val r = report.toResults()
+        val r = report.toResults(context)
         assertEquals("Found", r.labels.done)
         assertEquals("Not in your library", r.labels.failed)
         assertEquals("Skipped", r.labels.skipped)

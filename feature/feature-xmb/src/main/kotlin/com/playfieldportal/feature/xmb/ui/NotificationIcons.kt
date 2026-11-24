@@ -20,6 +20,8 @@ import com.playfieldportal.core.domain.model.NotificationKind
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.ui.icons.CustomIconSurface
 import com.playfieldportal.core.ui.icons.LocalXmbIcons
+import android.content.res.Resources
+import com.playfieldportal.feature.xmb.R
 
 /**
  * Kind → glyph, as one table.
@@ -80,25 +82,25 @@ internal fun severityColor(severity: NotificationSeverity): Color = when (severi
 }
 
 /** The kind as the Notes sheet's meta line names it ("Launch · 12 Minutes Ago"). */
-internal fun notificationKindLabel(kind: NotificationKind): String = when (kind) {
-    NotificationKind.SCAN -> "Scan"
-    NotificationKind.ARTWORK -> "Artwork"
-    NotificationKind.METADATA -> "Metadata"
-    NotificationKind.ACHIEVEMENT -> "Achievements"
-    NotificationKind.LAUNCH -> "Launch"
-    NotificationKind.SYSTEM -> "System"
-    NotificationKind.DOWNLOAD -> "Download"
-    NotificationKind.FEED -> "Feed"
-}
+internal fun notificationKindLabel(kind: NotificationKind, res: Resources): String = res.getString(when (kind) {
+    NotificationKind.SCAN -> R.string.xmbu_notif_kind_scan
+    NotificationKind.ARTWORK -> R.string.xmbu_common_artwork
+    NotificationKind.METADATA -> R.string.xmbu_notif_kind_metadata
+    NotificationKind.ACHIEVEMENT -> R.string.xmbu_notif_kind_achievements
+    NotificationKind.LAUNCH -> R.string.xmbu_common_launch
+    NotificationKind.SYSTEM -> R.string.xmbu_notif_kind_system
+    NotificationKind.DOWNLOAD -> R.string.xmbu_notif_kind_download
+    NotificationKind.FEED -> R.string.xmbu_notif_kind_feed
+})
 
 /** What the ✕ hint calls an action inside a sheet, or null when there is nowhere to go. */
-internal fun notificationActionLabel(action: com.playfieldportal.core.domain.model.NotificationAction): String? =
+internal fun notificationActionLabel(action: com.playfieldportal.core.domain.model.NotificationAction, res: Resources): String? =
     when (action) {
-        is com.playfieldportal.core.domain.model.NotificationAction.OpenGame -> "Go to Game"
-        is com.playfieldportal.core.domain.model.NotificationAction.OpenMemoryCard -> "Open Memory Card"
-        is com.playfieldportal.core.domain.model.NotificationAction.OpenSettingsScreen -> "Open Settings"
-        is com.playfieldportal.core.domain.model.NotificationAction.OpenCategory -> "Open Category"
-        is com.playfieldportal.core.domain.model.NotificationAction.ReviewShortcut -> "Review"
+        is com.playfieldportal.core.domain.model.NotificationAction.OpenGame -> res.getString(R.string.xmbu_notif_action_go_to_game)
+        is com.playfieldportal.core.domain.model.NotificationAction.OpenMemoryCard -> res.getString(R.string.xmbu_notif_action_open_card)
+        is com.playfieldportal.core.domain.model.NotificationAction.OpenSettingsScreen -> res.getString(R.string.xmbu_notif_action_open_settings)
+        is com.playfieldportal.core.domain.model.NotificationAction.OpenCategory -> res.getString(R.string.xmbu_notif_action_open_category)
+        is com.playfieldportal.core.domain.model.NotificationAction.ReviewShortcut -> res.getString(R.string.xmbu_notif_action_review)
         is com.playfieldportal.core.domain.model.NotificationAction.OpenUrl,
         com.playfieldportal.core.domain.model.NotificationAction.None -> null
     }

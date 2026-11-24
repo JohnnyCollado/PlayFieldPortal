@@ -16,6 +16,8 @@ class CollectionCardGameMenuTest {
 
     private fun rows() = collectionGameMenuRows(
         gameId = 7L,
+        viewDetailsLabel = "View Game Details",
+        removeLabel = "Remove from Card",
         onViewDetails = { calls += "details:$it" },
         onRemove = { calls += "remove:$it" },
     )

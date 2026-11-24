@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notificacions d'actualització d'assoliments -->
+    <string name="ach_upd_running">S\'estan actualitzant els assoliments instal·lats</string>
+    <string name="ach_upd_running_stop_note">Es conserven els assoliments ja actualitzats.</string>
+    <string name="ach_upd_progress">S\'estan comprovant %1$d de %2$d jocs</string>
+    <string name="ach_upd_stopped">S\'ha aturat l\'actualització d\'assoliments</string>
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="one">%d joc comprovat; es conserva el progrés desat</item>
+        <item quantity="many">%d jocs comprovats; es conserva el progrés desat</item>
+        <item quantity="other">%d jocs comprovats; es conserva el progrés desat</item>
+    </plurals>
+    <string name="ach_upd_some_failed">Alguns assoliments no s\'han pogut actualitzar</string>
+    <plurals name="ach_upd_failed_message">
+        <item quantity="one">%1$d de %2$d jocs s\'ha de tornar a provar</item>
+        <item quantity="many">%1$d de %2$d jocs s\'han de tornar a provar</item>
+        <item quantity="other">%1$d de %2$d jocs s\'han de tornar a provar</item>
+    </plurals>
+    <string name="ach_upd_results_done">Actualitzats</string>
+    <string name="ach_upd_updated">Assoliments actualitzats</string>
+    <plurals name="ach_upd_updated_message">
+        <item quantity="one">%1$d joc actualitzat · %2$d sense canvis</item>
+        <item quantity="many">%1$d jocs actualitzats · %2$d sense canvis</item>
+        <item quantity="other">%1$d jocs actualitzats · %2$d sense canvis</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">Els assoliments estan al dia</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="one">%d joc instal·lat comprovat</item>
+        <item quantity="many">%d jocs instal·lats comprovats</item>
+        <item quantity="other">%d jocs instal·lats comprovats</item>
+    </plurals>
+    <string name="ach_upd_paused">S\'ha posat en pausa l\'actualització d\'assoliments</string>
+    <string name="ach_upd_fact_service">Servei</string>
+    <string name="ach_upd_pause_offline">Connecta\'t a Internet</string>
+    <string name="ach_upd_pause_reconnect">Torna a connectar %1$s</string>
+    <string name="ach_upd_pause_steam_private">Els detalls dels jocs de Steam no estan disponibles</string>
+
+    <!-- Notificacions d'associació automàtica -->
+    <string name="ach_match_running">S\'estan associant els jocs automàticament</string>
+    <string name="ach_match_running_stop_note">Els jocs ja associats continuen enllaçats.</string>
+    <string name="ach_match_stopped_note">Els jocs ja associats continuen enllaçats</string>
+    <string name="ach_match_stopped">S\'ha aturat l\'associació automàtica</string>
+    <string name="ach_match_recognized">Jocs reconeguts</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="one">%d joc instal·lat associat. S\'estan actualitzant els seus assoliments.</item>
+        <item quantity="many">%d jocs instal·lats associats. S\'estan actualitzant els seus assoliments.</item>
+        <item quantity="other">%d jocs instal·lats associats. S\'estan actualitzant els seus assoliments.</item>
+    </plurals>
+
+    <!-- Esborrar els registres d'assoliments -->
+    <string name="ach_clear_done">S\'han esborrat els registres d\'assoliments</string>
+    <string name="ach_clear_done_message">Cal tornar a sincronitzar els jocs instal·lats perquè tornin a mostrar els assoliments</string>
+    <string name="ach_clear_failed">No s\'han pogut esborrar els assoliments</string>
+    <string name="ach_clear_failed_message">No s\'ha eliminat res. Torna-ho a provar des de Configuració ▸ Assoliments</string>
+
+    <!-- Local Steam: motius -->
+    <string name="ach_ls_unavail_store">no s\'ha pogut consultar la botiga</string>
+    <string name="ach_ls_unavail_steam">Steam no està disponible ara mateix</string>
+    <string name="ach_ls_steam_unreachable">No s\'ha pogut connectar amb Steam</string>
+    <string name="ach_ls_steam_rate_limited">Steam està limitant les sol·licituds</string>
+    <string name="ach_ls_steam_error">Steam ha retornat un error</string>
+    <string name="ach_ls_steam_needs_key">Steam necessita la teva clau de Web API</string>
+
+    <!-- Local Steam: enllaçar una carpeta -->
+    <string name="ach_link_no_match">Steam no té cap joc que coincideixi amb \"%1$s\". Canvia el nom de la carpeta pel nom del joc a Steam, o enllaça-la primer des de Detall del joc ▸ Associa el joc.</string>
+    <string name="ach_link_unavailable">%1$s, així que no s\'ha pogut determinar l\'app id d\'aquesta carpeta. No s\'ha canviat res — torna-ho a provar quan tornis a tenir connexió.</string>
+    <string name="ach_link_marker_failed">No s\'ha pogut crear steam_appid.txt en aquesta carpeta — és possible que PFP només hi tingui accés de lectura.</string>
+    <string name="ach_link_not_recorded">No s\'ha pogut registrar l\'associació triada.</string>
+    <string name="ach_link_installer_off">Activa Instal·la Goldberg i converteix jocs a la configuració d\'Assoliments perquè PFP pugui escriure en una carpeta de joc.</string>
+    <string name="ach_link_no_app_id">Aquesta carpeta ja no declara cap app id — torna-la a triar.</string>
+    <string name="ach_link_need_key">Afegeix la teva clau de Web API de Steam a Configuració ▸ Assoliments ▸ Credencials dels proveïdors — la llista d\'assoliments s\'obté amb ella.</string>
+    <string name="ach_link_no_achievements">Steam no té cap assoliment per a l\'app id %1$s, així que no hi ha res a seguir.</string>
+    <string name="ach_link_kit_failed">No s\'ha pogut escriure el kit d\'assoliments: %1$s</string>
+    <string name="ach_link_read_back_failed">No s\'ha pogut tornar a llegir aquesta carpeta. Si és en un emmagatzematge extraïble, torna\'l a muntar i torna a triar-la.</string>
+    <string name="ach_link_not_steam_build">No hi ha cap biblioteca de Steam (steam_api64.dll) en aquesta carpeta, així que no és una versió de Steam i l\'emulador no hi té res a seguir. Tria la carpeta on hi ha l\'.exe del joc.</string>
+
+    <!-- Local Steam: files del selector de conversió -->
+    <string name="ach_pick_checking">S\'està comprovant Steam…</string>
+    <plurals name="ach_pick_coins">
+        <item quantity="one">%1$d moneda  ·  appid %2$s</item>
+        <item quantity="many">%1$d monedes  ·  appid %2$s</item>
+        <item quantity="other">%1$d monedes  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">Sense llista a Steam  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">Cal la teva clau de Web API de Steam  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">Steam no ha respost  ·  appid %1$s</string>
+
+    <!-- Local Steam: resum de l'associació per lots -->
+    <string name="ach_batch_already_running">Ja hi ha una associació per lots en curs.</string>
+    <string name="ach_batch_no_folders">Aquí no hi ha cap carpeta de joc. Tria la carpeta que CONTÉ les carpetes dels jocs, no la carpeta d\'un sol joc.</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="one">S\'ha trobat %d carpeta, però no és una versió de Steam — no té la biblioteca steam_api, així que l\'emulador no hi té res a seguir.</item>
+        <item quantity="many">S\'han trobat %d carpetes, però cap no és una versió de Steam — no tenen la biblioteca steam_api, així que l\'emulador no hi té res a seguir.</item>
+        <item quantity="other">S\'han trobat %d carpetes, però cap no és una versió de Steam — no tenen la biblioteca steam_api, així que l\'emulador no hi té res a seguir.</item>
+    </plurals>
+    <string name="ach_batch_linked">%1$d enllaçades a jocs de la biblioteca</string>
+    <string name="ach_batch_tracked">%1$d seguides pel seu compte</string>
+    <string name="ach_batch_converting">%1$d pendents de conversió</string>
+    <plurals name="ach_batch_matched">
+        <item quantity="one">S\'han associat %1$d de %2$d carpeta.</item>
+        <item quantity="many">S\'han associat %1$d de %2$d carpetes.</item>
+        <item quantity="other">S\'han associat %1$d de %2$d carpetes.</item>
+    </plurals>
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="one">S\'han associat %1$d de %2$d carpeta: %3$s.</item>
+        <item quantity="many">S\'han associat %1$d de %2$d carpetes: %3$s.</item>
+        <item quantity="other">S\'han associat %1$d de %2$d carpetes: %3$s.</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="one">%1$d no s\'ha pogut identificar pel nom — obre la pàgina de Shiba Coins del joc i fes servir Associació automàtica per triar-ne la carpeta.</item>
+        <item quantity="many">%1$d no s\'han pogut identificar pel nom — obre la pàgina de Shiba Coins de cada joc i fes servir Associació automàtica per triar-ne la carpeta.</item>
+        <item quantity="other">%1$d no s\'han pogut identificar pel nom — obre la pàgina de Shiba Coins de cada joc i fes servir Associació automàtica per triar-ne la carpeta.</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="one">%1$d no és a la biblioteca — afegeix-lo primer a la targeta de Windows i torna a associar.</item>
+        <item quantity="many">%1$d no són a la biblioteca — afegeix-los primer a la targeta de Windows i torna a associar.</item>
+        <item quantity="other">%1$d no són a la biblioteca — afegeix-los primer a la targeta de Windows i torna a associar.</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="one">%1$d no és una versió de Steam.</item>
+        <item quantity="many">%1$d no són versions de Steam.</item>
+        <item quantity="other">%1$d no són versions de Steam.</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="one">%1$d ha fallat — consulta el registre.</item>
+        <item quantity="many">%1$d han fallat — consulta el registre.</item>
+        <item quantity="other">%1$d han fallat — consulta el registre.</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">No s\'ha pogut obrir aquesta carpeta.</string>
+    <string name="ach_batch_fail_read_back">%1$s: no s\'ha pogut tornar a llegir després d\'identificar-la.</string>
+    <string name="ach_batch_fail_reason">%1$s: %2$s.</string>
+    <string name="ach_batch_fail_marker">%1$s: no s\'ha pogut crear steam_appid.txt.</string>
+
+    <!-- Escaneig de la biblioteca de Vita3K -->
+    <string name="ach_vita_set_folder">Defineix primer la carpeta de dades de Vita3K (ux0).</string>
+    <string name="ach_vita_link_invalid">L\'enllaç a aquesta carpeta de Vita3K no és vàlid — torna a concedir-hi l\'accés.</string>
+    <string name="ach_vita_no_ux0">No s\'ha trobat ux0/app a la carpeta concedida — tria la carpeta ux0 de Vita3K (o la carpeta que la conté).</string>
+    <string name="ach_vita_no_app">No hi ha cap carpeta app/ dins d\'ux0 — comprova la carpeta concedida.</string>
+    <string name="ach_vita_none_installed">No s\'ha trobat cap joc de Vita instal·lat a ux0/app. Instal·la primer un joc a Vita3K.</string>
+    <plurals name="ach_vita_no_new">
+        <item quantity="one">Cap joc de Vita nou — %d ja és a la biblioteca.</item>
+        <item quantity="many">Cap joc de Vita nou — %d ja són a la biblioteca.</item>
+        <item quantity="other">Cap joc de Vita nou — %d ja són a la biblioteca.</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="one">S\'ha importat %d joc de Vita.</item>
+        <item quantity="many">S\'han importat %d jocs de Vita.</item>
+        <item quantity="other">S\'han importat %d jocs de Vita.</item>
+    </plurals>
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="one">S\'ha importat %1$d joc de Vita i se n\'han actualitzat %2$d.</item>
+        <item quantity="many">S\'han importat %1$d jocs de Vita i se n\'han actualitzat %2$d.</item>
+        <item quantity="other">S\'han importat %1$d jocs de Vita i se n\'han actualitzat %2$d.</item>
+    </plurals>
+</resources>

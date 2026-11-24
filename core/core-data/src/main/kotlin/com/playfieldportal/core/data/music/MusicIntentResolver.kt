@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import com.playfieldportal.core.data.R
 import com.playfieldportal.core.domain.model.MusicTrack
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
@@ -61,7 +62,7 @@ class MusicIntentResolver @Inject constructor(
                 return launch(track, defaultPlayerPackage = null)
             }
             Timber.e(e, "No app could play \"${track.displayTitle}\"")
-            "No music player could open this track. Install a player or pick one in Settings → Music."
+            context.getString(R.string.data_music_no_player)
         }
     }
 

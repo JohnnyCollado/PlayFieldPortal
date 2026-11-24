@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,7 +12,7 @@ import com.playfieldportal.core.domain.achievement.LocalCopyOwnership
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.repository.GameRepository
-import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.components.PspMenuCue
 import com.playfieldportal.core.ui.components.PspMenuNav
 import com.playfieldportal.core.ui.components.PspMenuOutcome
@@ -26,6 +27,7 @@ import com.playfieldportal.feature.artwork.match.ScoredStorefrontCandidate
 import com.playfieldportal.feature.artwork.match.Storefront
 import com.playfieldportal.feature.artwork.match.StorefrontCandidate
 import com.playfieldportal.feature.artwork.match.StorefrontMatchResult
+import com.playfieldportal.feature.xmb.R
 import timber.log.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -54,10 +56,21 @@ import javax.inject.Inject
 // Change Match. What is NOT rebuilt: loading, syncing, matching and the Auto-Match flow, which are
 // carried over unchanged.
 
-enum class CoinSort(val label: String) { TIER("Tier"), EARNED("Earned"), RAREST("Rarest") }
+enum class CoinSort(val label: UiText) {
+    TIER(UiText.res(R.string.shiba_sort_tier)),
+    EARNED(UiText.res(R.string.shiba_sort_earned)),
+    RAREST(UiText.res(R.string.shiba_sort_rarest)),
+}
 
-/** The three views of a game's coins, switched with L1/R1 and shown as tabs beside Search. */
-enum class CoinFilter(val label: String) { ALL("All"), EARNED("Earned"), LOCKED("Locked") }
+/**
+ * The three views of a game's coins, switched with L1/R1 and shown as tabs beside Search. [tabRes]
+ * is the tab's text, which takes the view's coin count.
+ */
+enum class CoinFilter(@StringRes val tabRes: Int) {
+    ALL(R.string.shiba_coins_tab_all),
+    EARNED(R.string.shiba_coins_tab_earned),
+    LOCKED(R.string.shiba_coins_tab_locked),
+}
 
 /**
  * The Auto-Match flow's current step (unlinked Steam-platform games only).
@@ -158,7 +171,7 @@ data class CoinViewCounts(val all: Int = 0, val earned: Int = 0, val locked: Int
 }
 
 /** A second-level list in the Options menu, opened from its root row (the Icon Display pattern). */
-enum class CoinOptionGroup(val title: String) { SORT("Sort") }
+enum class CoinOptionGroup(val title: UiText) { SORT(UiText.res(R.string.shiba_options_sort)) }
 
 /** What an Options row does. */
 sealed interface CoinOption {
@@ -172,13 +185,13 @@ sealed interface CoinOption {
 
 /** A row of the Options menu: its label, action, and whether it is the active choice. */
 data class CoinOptionRow(
-    val label: String,
+    val label: UiText,
     val option: CoinOption,
     val checked: Boolean = false,
     /** Drawn red; a destructive row is also last, and asks before it acts. */
     val isDestructive: Boolean = false,
     /** The row's current setting, drawn at the right edge (Sort: "Tier"). */
-    val value: String? = null,
+    val value: UiText? = null,
     /** Activating this row opens a list, so a › is drawn. */
     val opensMenu: Boolean = false,
 )
@@ -191,13 +204,13 @@ data class CoinOptionsMenu(
     val selectedIndex: Int = 0,
     val group: CoinOptionGroup? = null,
 ) {
-    val title: String get() = group?.title ?: "Options"
+    val title: UiText get() = group?.title ?: UiText.res(R.string.shiba_options_title)
 }
 
 @Immutable
 data class ShibaCoinsUiState(
     val title: String = "",
-    val platformLabel: String = "",
+    val platformLabel: UiText? = null,
     val provider: AchievementProvider = AchievementProvider.RETRO_ACHIEVEMENTS,
     val linked: Boolean = false,
     // Every set this library game holds, in link order; empty unless there are at least two. The
@@ -258,10 +271,10 @@ data class ShibaCoinsUiState(
     val steamPick: Boolean = false,
     val kitPrompt: LocalSteamKitPrompt? = null,
     // The terminal NO_EMU_DATA line, in the folder's own terms.
-    val noEmuDataReason: String? = null,
+    val noEmuDataReason: UiText? = null,
     // The branch the user picked, so manual appid entry links the matching provider.
     val isMatching: Boolean = false,
-    val message: String? = null,
+    val message: UiText? = null,
     val closed: Boolean = false,
 ) {
     /** More than one set for this game: L1/R1 switch between them instead of changing the view. */
@@ -302,12 +315,12 @@ data class ShibaCoinsUiState(
 
     val optionRows: List<CoinOptionRow> get() = coinOptionRows(this)
 
-    val emptyMessage: String
+    val emptyMessage: UiText
         get() = when {
-            query.isNotBlank() -> "No coins match \"${query.trim()}\"."
-            filter == CoinFilter.EARNED -> "No coins earned yet."
-            filter == CoinFilter.LOCKED -> "Every coin is earned."
-            else -> "No coins to show."
+            query.isNotBlank() -> UiText.res(R.string.shiba_coins_empty_no_match, query.trim())
+            filter == CoinFilter.EARNED -> UiText.res(R.string.shiba_coins_empty_none_earned)
+            filter == CoinFilter.LOCKED -> UiText.res(R.string.shiba_coins_empty_all_earned)
+            else -> UiText.res(R.string.shiba_coins_empty_default)
         }
 }
 
@@ -319,14 +332,16 @@ data class ShibaCoinsUiState(
  */
 fun coinOptionRows(state: ShibaCoinsUiState): List<CoinOptionRow> = when (state.options?.group) {
     null -> buildList {
-        add(CoinOptionRow("Sort", CoinOption.OpenGroup(CoinOptionGroup.SORT), value = state.sort.label, opensMenu = true))
+        add(CoinOptionRow(UiText.res(R.string.shiba_options_sort), CoinOption.OpenGroup(CoinOptionGroup.SORT), value = state.sort.label, opensMenu = true))
         // A sync in flight keeps its row so the menu doesn't reflow under the cursor; it just
         // says so and does nothing when picked.
-        if (state.canSync) add(CoinOptionRow(if (state.isSyncing) "Updating…" else "Update Achievements", CoinOption.SyncNow))
-        if (state.hasChangeMatch) add(CoinOptionRow("Change Match", CoinOption.ChangeMatch, opensMenu = true))
+        if (state.canSync) {
+            add(CoinOptionRow(UiText.res(if (state.isSyncing) R.string.shiba_options_updating else R.string.shiba_coins_options_update), CoinOption.SyncNow))
+        }
+        if (state.hasChangeMatch) add(CoinOptionRow(UiText.res(R.string.shiba_coins_options_change_match), CoinOption.ChangeMatch, opensMenu = true))
         // Any linked library game can drop its link — both, for a game holding two sets — and go
         // back to its Auto-Match panel. An account entry has no link of its own to remove.
-        if (state.linked && !state.accountOnly) add(CoinOptionRow("Unlink Game", CoinOption.Unlink, isDestructive = true))
+        if (state.linked && !state.accountOnly) add(CoinOptionRow(UiText.res(R.string.shiba_coins_options_unlink), CoinOption.Unlink, isDestructive = true))
     }
     CoinOptionGroup.SORT -> CoinSort.entries.map { sort ->
         CoinOptionRow(sort.label, CoinOption.Sort(sort), checked = sort == state.sort)
@@ -337,39 +352,40 @@ fun coinOptionRows(state: ShibaCoinsUiState): List<CoinOptionRow> = when (state.
  * The helper footer for [state]. Confirm is named for what it would do on the focused row and is
  * left out when it would do nothing; text entry and the Options menu replace the page hints.
  */
-fun shibaCoinsHelperItems(state: ShibaCoinsUiState): List<ControllerPromptItem> = when {
+internal fun shibaCoinsHelperItems(state: ShibaCoinsUiState): List<DetailPrompt> = when {
     state.options != null -> listOf(
-        ControllerPromptItem(GamepadAction.SELECT, "Select"),
-        ControllerPromptItem(GamepadAction.BACK, "Close"),
+        DetailPrompt(GamepadAction.SELECT, UiText.res(R.string.shiba_prompt_select)),
+        DetailPrompt(GamepadAction.BACK, UiText.res(R.string.shiba_prompt_close)),
     )
-    state.searchEditing -> listOf(ControllerPromptItem(GamepadAction.BACK, "Done"))
+    state.searchEditing -> listOf(DetailPrompt(GamepadAction.BACK, UiText.res(R.string.shiba_prompt_done)))
     // The link panel is the whole page: there is nothing to search and no view to change.
     state.focused is CoinListItem.LinkPanel -> buildList {
-        if (state.canAutoMatch) add(ControllerPromptItem(GamepadAction.SELECT, "Auto-Match"))
+        if (state.canAutoMatch) add(DetailPrompt(GamepadAction.SELECT, UiText.res(R.string.shiba_prompt_auto_match)))
         // The Local Steam panel's own button, pressed by Confirm (survey P3).
         if (state.provider == AchievementProvider.LOCAL_STEAM) {
-            add(ControllerPromptItem(GamepadAction.SELECT, "Pick Game Folder"))
+            add(DetailPrompt(GamepadAction.SELECT, UiText.res(R.string.shiba_prompt_pick_game_folder)))
         }
-        add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
-        add(ControllerPromptItem(GamepadAction.BACK, "Back"))
+        add(DetailPrompt(GamepadAction.OPEN_CONTEXT_MENU, UiText.res(R.string.shiba_prompt_options)))
+        add(DetailPrompt(GamepadAction.BACK, UiText.res(R.string.shiba_prompt_back)))
     }
     else -> buildList {
         val confirm = when {
-            state.searchFocused -> "Type"
+            state.searchFocused -> UiText.res(R.string.shiba_prompt_type)
             // Confirm only does something on a coin the user may reveal or re-hide.
-            state.focusedCoin?.isHideable == true -> if (state.focusedRevealed) "Hide" else "Reveal"
+            state.focusedCoin?.isHideable == true ->
+                UiText.res(if (state.focusedRevealed) R.string.shiba_prompt_hide else R.string.shiba_prompt_reveal)
             else -> null
         }
-        confirm?.let { add(ControllerPromptItem(GamepadAction.SELECT, it)) }
-        add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"))
-        add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
+        confirm?.let { add(DetailPrompt(GamepadAction.SELECT, it)) }
+        add(DetailPrompt(GamepadAction.CHANGE_SORT, UiText.res(R.string.shiba_prompt_search)))
+        add(DetailPrompt(GamepadAction.OPEN_CONTEXT_MENU, UiText.res(R.string.shiba_prompt_options)))
         if (state.hasSourceSwitch) {
-            add(ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Switch Source"))
-            add(ControllerPromptItem(listOf(GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT), "Change View"))
+            add(DetailPrompt(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), UiText.res(R.string.shiba_prompt_switch_source)))
+            add(DetailPrompt(listOf(GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT), UiText.res(R.string.shiba_prompt_change_view)))
         } else {
-            add(ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Change View"))
+            add(DetailPrompt(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), UiText.res(R.string.shiba_prompt_change_view)))
         }
-        add(ControllerPromptItem(GamepadAction.BACK, "Back"))
+        add(DetailPrompt(GamepadAction.BACK, UiText.res(R.string.shiba_prompt_back)))
     }
 }
 
@@ -441,7 +457,7 @@ class ShibaCoinsViewModel @Inject constructor(
             _state.update {
                 it.copy(
                     title = game?.displayTitle ?: "",
-                    platformLabel = game?.platformId?.let(::platformDisplay) ?: "",
+                    platformLabel = game?.platformId?.let { id -> UiText.raw(platformDisplay(id)) },
                     // The link, when it has already arrived, names the provider; the platform's
                     // is only the unlinked default.
                     provider = if (it.linked) it.provider else providerForPlatform(game?.platformId),
@@ -540,7 +556,7 @@ class ShibaCoinsViewModel @Inject constructor(
                 linked = false,
                 installed = false,
                 provider = entry.provider,
-                platformLabel = providerLabel(entry.provider),
+                platformLabel = UiText.raw(providerLabel(entry.provider)),
             )
         }
         loadJobs += viewModelScope.launch {
@@ -550,7 +566,11 @@ class ShibaCoinsViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         installed = installed,
-                        platformLabel = providerLabel(entry.provider) + if (installed) "" else " · Not installed",
+                        platformLabel = if (installed) {
+                            UiText.raw(providerLabel(entry.provider))
+                        } else {
+                            UiText.res(R.string.shiba_platform_not_installed, providerLabel(entry.provider))
+                        },
                     )
                 }
                 // One stale-on-open check, and only for an entry that is on this device.
@@ -877,7 +897,7 @@ class ShibaCoinsViewModel @Inject constructor(
             when (result) {
                 AchievementAutoMatcher.RaMatchResult.Matched -> sync()
                 is AchievementAutoMatcher.RaMatchResult.Unmatched ->
-                    _state.update { it.copy(message = result.reason) }
+                    _state.update { it.copy(message = UiText.raw(result.reason)) }
             }
         }
     }
@@ -897,7 +917,7 @@ class ShibaCoinsViewModel @Inject constructor(
             when (result) {
                 AchievementAutoMatcher.Ps3MatchResult.Matched -> sync()
                 is AchievementAutoMatcher.Ps3MatchResult.Unmatched ->
-                    _state.update { it.copy(message = result.reason) }
+                    _state.update { it.copy(message = UiText.raw(result.reason)) }
             }
         }
     }
@@ -915,7 +935,7 @@ class ShibaCoinsViewModel @Inject constructor(
             when (result) {
                 AchievementAutoMatcher.X360MatchResult.Matched -> sync()
                 is AchievementAutoMatcher.X360MatchResult.Unmatched ->
-                    _state.update { it.copy(message = result.reason) }
+                    _state.update { it.copy(message = UiText.raw(result.reason)) }
             }
         }
     }
@@ -1014,8 +1034,7 @@ class ShibaCoinsViewModel @Inject constructor(
                 it.copy(
                     autoMatchStep = AutoMatchStep.NO_EMU_DATA,
                     storefrontMatch = null,
-                    noEmuDataReason = "That folder could not be read. Pick it again, or remount the " +
-                        "storage it is on.",
+                    noEmuDataReason = UiText.res(R.string.shiba_coins_folder_unreadable),
                 )
             }
             is LocalSteamFolderLinker.LinkOutcome.Linked -> {
@@ -1024,7 +1043,7 @@ class ShibaCoinsViewModel @Inject constructor(
                         autoMatchStep = null,
                         storefrontMatch = null,
                         kitPrompt = null,
-                        message = "Linked to ${outcome.folderName} (appid ${outcome.appId}).",
+                        message = UiText.res(R.string.shiba_coins_linked_to, outcome.folderName, outcome.appId),
                     )
                 }
                 sync()
@@ -1054,14 +1073,14 @@ class ShibaCoinsViewModel @Inject constructor(
                 it.copy(
                     autoMatchStep = AutoMatchStep.NO_EMU_DATA,
                     storefrontMatch = null,
-                    noEmuDataReason = outcome.reason,
+                    noEmuDataReason = outcome.text,
                 )
             }
             is LocalSteamFolderLinker.LinkOutcome.Failed -> _state.update {
                 it.copy(
                     autoMatchStep = AutoMatchStep.NO_EMU_DATA,
                     storefrontMatch = null,
-                    noEmuDataReason = outcome.reason,
+                    noEmuDataReason = outcome.text,
                 )
             }
         }
@@ -1144,8 +1163,7 @@ class ShibaCoinsViewModel @Inject constructor(
             it.copy(
                 autoMatchStep = AutoMatchStep.NO_EMU_DATA,
                 storefrontMatch = null,
-                noEmuDataReason = "Nothing was written. Set the game's Steam match from Game Detail " +
-                    "▸ Match Game, then Auto-Match again — PFP will use that id.",
+                noEmuDataReason = UiText.res(R.string.shiba_coins_nothing_written),
             )
         }
         _state.update { it.copy(storefrontMatch = ui.copy(confirming = true)) }
@@ -1222,7 +1240,7 @@ class ShibaCoinsViewModel @Inject constructor(
     fun submitManualAppId(raw: String) {
         val id = raw.trim()
         if (id.isEmpty() || !id.all { ch -> ch.isDigit() }) {
-            _state.update { it.copy(message = "A Steam app id is a number — check steamdb.info for more information on the game") }
+            _state.update { it.copy(message = UiText.res(R.string.shiba_coins_appid_not_number)) }
             return
         }
         // The game this id was typed for. `gameId` is a field that load() repoints, and the sync
@@ -1246,7 +1264,7 @@ class ShibaCoinsViewModel @Inject constructor(
                     _state.update { it.copy(isMatching = false, autoMatchStep = null, message = null) }
                 ProviderSyncResult.NotFound, is ProviderSyncResult.Failed ->
                     _state.update {
-                        it.copy(isMatching = false, message = "App id $id doesn't match — check steamdb.info for more information on the game")
+                        it.copy(isMatching = false, message = UiText.res(R.string.shiba_coins_appid_no_match, id))
                     }
                 // Credentials/profile problems aren't the appid's fault — keep the link, surface why.
                 else -> _state.update { it.copy(isMatching = false, autoMatchStep = null, message = messageFor(result)) }
@@ -1347,15 +1365,15 @@ class ShibaCoinsViewModel @Inject constructor(
         }
     }
 
-    private fun messageFor(result: ProviderSyncResult): String? = when (result) {
+    private fun messageFor(result: ProviderSyncResult): UiText? = when (result) {
         is ProviderSyncResult.Success -> null
         ProviderSyncResult.NotLinked ->
-            if (_state.value.installed) "Link this game to a provider id first"
-            else "This game isn't installed — its saved achievements are shown"
-        ProviderSyncResult.MissingCredentials -> "Add your key in Settings ▸ Achievements ▸ Provider Credentials"
-        ProviderSyncResult.ProfileNotPublic -> "Your Steam profile's Game Details are private"
-        ProviderSyncResult.NotFound -> "No achievements found for this game"
-        is ProviderSyncResult.Failed -> "Sync failed: ${result.reason}"
+            if (_state.value.installed) UiText.res(R.string.shiba_coins_sync_not_linked)
+            else UiText.res(R.string.shiba_coins_sync_not_installed)
+        ProviderSyncResult.MissingCredentials -> UiText.res(R.string.shiba_coins_sync_missing_credentials)
+        ProviderSyncResult.ProfileNotPublic -> UiText.res(R.string.shiba_coins_sync_profile_private)
+        ProviderSyncResult.NotFound -> UiText.res(R.string.shiba_coins_sync_not_found)
+        is ProviderSyncResult.Failed -> UiText.res(R.string.shiba_coins_sync_failed, result.reason)
     }
 
     private fun providerForPlatform(platformId: String?): AchievementProvider = when (platformId) {

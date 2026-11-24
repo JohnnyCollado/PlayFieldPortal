@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Localization slice H1: library scanning (ROM, music, photo and video scans) -->
+<resources>
+    <!-- Scan error messages -->
+    <string name="scan_error_card_not_found">Memory Card not found.</string>
+    <string name="scan_error_scan_failed">Scan failed — see the log.</string>
+    <string name="scan_error_library_unreadable">Could not read the library.</string>
+    <string name="scan_error_save_failed">Could not save a scanned game.</string>
+    <!-- %1$s is a folder path on the device -->
+    <string name="scan_error_rom_dir_not_found">ROM directory not found: %1$s</string>
+    <string name="scan_error_folder_link_invalid">This library\'s folder link is invalid. Re-add the folder.</string>
+    <string name="scan_error_root_unreadable">A ROM folder could not be read. If it is on an SD card, check that the card is inserted.</string>
+    <string name="scan_error_permission_lost">Permission lost, re-select folder.</string>
+    <string name="scan_error_partial_read">Part of the folder couldn\'t be read, so nothing was changed. Try again in a moment.</string>
+
+    <!-- One-line scan outcome. %1$s is the Memory Card name, %2$s is the outcome sentence below -->
+    <string name="scan_outcome_line">%1$s: %2$s</string>
+    <string name="scan_outcome_no_source">ROM folder not configured.</string>
+    <string name="scan_outcome_busy">scan already in progress.</string>
+    <string name="scan_outcome_failed">scan failed.</string>
+    <string name="scan_outcome_no_new">no new ROMs</string>
+    <string name="scan_outcome_no_new_none_missing">no new ROMs, none missing</string>
+    <!-- %1$d is how many ROMs are marked missing (files no longer found) -->
+    <string name="scan_outcome_no_new_marked_missing">no new ROMs, %1$d marked missing</string>
+    <plurals name="scan_outcome_added">
+        <item quantity="one">%1$d new ROM added</item>
+        <item quantity="other">%1$d new ROMs added</item>
+    </plurals>
+    <plurals name="scan_outcome_added_none_missing">
+        <item quantity="one">%1$d new ROM added, none missing</item>
+        <item quantity="other">%1$d new ROMs added, none missing</item>
+    </plurals>
+    <!-- %1$d new ROMs added, %2$d ROMs marked missing -->
+    <plurals name="scan_outcome_added_marked_missing">
+        <item quantity="one">%1$d new ROM added, %2$d marked missing</item>
+        <item quantity="other">%1$d new ROMs added, %2$d marked missing</item>
+    </plurals>
+    <!-- %1$s is a summary sentence, %2$s is a warning detail shown in brackets -->
+    <string name="scan_with_error_note">%1$s (%2$s)</string>
+
+    <!-- Per-card line in the scan results list -->
+    <!-- Short badge on a card that scanned but found no new games -->
+    <string name="scan_badge_no_new">No new</string>
+    <string name="scan_reason_no_new">No new games</string>
+    <!-- %1$d is how many games are marked missing (files no longer found) -->
+    <string name="scan_reason_no_new_marked_missing">No new games, %1$d marked missing</string>
+    <plurals name="scan_reason_added">
+        <item quantity="one">%1$d new game added</item>
+        <item quantity="other">%1$d new games added</item>
+    </plurals>
+    <!-- %1$d new games added, %2$d games marked missing -->
+    <plurals name="scan_reason_added_marked_missing">
+        <item quantity="one">%1$d new game added, %2$d marked missing</item>
+        <item quantity="other">%1$d new games added, %2$d marked missing</item>
+    </plurals>
+</resources>

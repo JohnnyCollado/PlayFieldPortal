@@ -2,6 +2,8 @@ package com.playfieldportal.feature.xmb.ui
 
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.NotificationKind
+import com.playfieldportal.core.ui.icons.systemIconRes
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.xmb.ui.detail.shibaCoinRes
 import com.playfieldportal.themekit.CustomizableIcons
 import com.playfieldportal.themekit.IconSlot
@@ -167,5 +169,23 @@ class DefaultSlotGlyphTest {
     fun `the settings wrench is console art, not a Material glyph`() {
         val slot = CustomizableIcons.byKey("item_settings")!!
         assertTrue(defaultGlyphFor(slot) is SlotGlyphDefault.Drawable)
+    }
+
+    @Test
+    fun `each Settings section slot defaults to its own single-colour vector`() {
+        val expected = mapOf(
+            "item_settings_section_library" to R.drawable.settings_section_library,
+            "item_settings_section_emulators" to R.drawable.settings_section_emulators,
+            "item_settings_section_interface" to R.drawable.settings_section_interface,
+            "item_settings_section_achievements" to R.drawable.settings_section_achievements,
+            "item_settings_section_media" to R.drawable.settings_section_media,
+            "item_settings_section_system" to R.drawable.settings_section_system,
+        )
+        for ((key, res) in expected) {
+            assertEquals(key, SlotGlyphDefault.Drawable(res), defaultGlyphFor(CustomizableIcons.byKey(key)!!))
+        }
+        assertEquals(6, expected.values.toSet().size)
+        // The wrench stays the default of the rows inside a section.
+        assertTrue(expected.values.none { it == systemIconRes("settings") })
     }
 }

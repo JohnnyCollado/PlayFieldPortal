@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_switch_launcher_chooser">Přepnout launcher</string>
+    <string name="app_shortcut_fallback_name">Zástupce</string>
+    <string name="app_shortcut_fallback_host">Jiná aplikace</string>
+</resources>

@@ -116,7 +116,7 @@ class DisplaySettingsViewModelFontColorTest {
         vm.setTextColor(failingColor)
         eventually("notice raised") { vm.uiState.first().textContrastNotice != null }
 
-        val notice = vm.uiState.first().textContrastNotice!!
+        val notice = vm.uiState.first().textContrastNotice!!.resolve(context)
         assertTrue(notice, notice.contains("4.5:1"))
         assertTrue(notice, notice.contains("hard to read"))
         assertFalse(notice, notice.contains("Adjusted", ignoreCase = true))

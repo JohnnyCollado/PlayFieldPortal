@@ -1,9 +1,11 @@
 package com.playfieldportal.feature.xmb.video
 
 import com.playfieldportal.core.ui.components.PspMenuRow
+import android.content.res.Resources
+import com.playfieldportal.feature.xmb.R
 
 internal val VIDEO_SPEEDS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
-internal val VIDEO_SCREEN_MODE_LABELS = listOf("Fit", "Zoom", "Fill")
+internal val VIDEO_SCREEN_MODE_LABEL_RES = listOf(R.string.xmbu_video_fit, R.string.xmbu_video_zoom, R.string.xmbu_video_fill)
 
 /** The sub-list a root row of the Video Player's options panel opens. */
 internal enum class VideoOptionGroup { SPEED, SUBTITLES, AUDIO, SCREEN_MODE }
@@ -37,14 +39,15 @@ internal fun videoTrackChoices(
     tracks: List<VideoTrackInfo>,
     allowOff: Boolean,
     trackTypeDisabled: Boolean,
+    res: Resources,
 ): List<VideoTrackChoice> {
     if (tracks.isEmpty()) return emptyList()
     return buildList {
-        if (allowOff) add(VideoTrackChoice("Off", selected = trackTypeDisabled || tracks.none { it.selected }))
+        if (allowOff) add(VideoTrackChoice(res.getString(R.string.xmbu_common_off), selected = trackTypeDisabled || tracks.none { it.selected }))
         tracks.forEach { t ->
             add(
                 VideoTrackChoice(
-                    label = t.language?.uppercase() ?: t.label ?: "Track",
+                    label = t.language?.uppercase() ?: t.label ?: res.getString(R.string.xmbu_video_track),
                     selected = t.selected && !trackTypeDisabled,
                 ),
             )
@@ -56,19 +59,20 @@ internal fun videoTrackChoices(
  * The rows of the Video Player's options panel: the four options with their current values when
  * [group] is null, otherwise that option's list with the active entry checked.
  */
-internal fun videoPlayerOptionRows(state: VideoOptionsState, group: VideoOptionGroup?): List<PspMenuRow> =
+internal fun videoPlayerOptionRows(state: VideoOptionsState, group: VideoOptionGroup?, res: Resources): List<PspMenuRow> =
     when (group) {
         null -> listOf(
-            PspMenuRow("Playback Speed", value = videoSpeedLabel(state.speed), opensMenu = true),
-            PspMenuRow("Subtitles", value = state.subtitleChoices.currentLabel("None"), opensMenu = true),
-            PspMenuRow("Audio Track", value = state.audioChoices.currentLabel("Default"), opensMenu = true),
-            PspMenuRow("Screen Mode", value = state.screenModeLabel, opensMenu = true),
+            PspMenuRow(res.getString(R.string.xmbu_video_speed), value = videoSpeedLabel(state.speed), opensMenu = true),
+            PspMenuRow(res.getString(R.string.xmbu_video_subtitles), value = state.subtitleChoices.currentLabel(res.getString(R.string.xmbu_video_none)), opensMenu = true),
+            PspMenuRow(res.getString(R.string.xmbu_video_audio_track), value = state.audioChoices.currentLabel(res.getString(R.string.xmbu_video_default)), opensMenu = true),
+            PspMenuRow(res.getString(R.string.xmbu_video_screen_mode), value = state.screenModeLabel, opensMenu = true),
         )
         VideoOptionGroup.SPEED -> VIDEO_SPEEDS.map { PspMenuRow(videoSpeedLabel(it), checked = it == state.speed) }
         VideoOptionGroup.SUBTITLES -> state.subtitleChoices.map { PspMenuRow(it.label, checked = it.selected) }
         VideoOptionGroup.AUDIO -> state.audioChoices.map { PspMenuRow(it.label, checked = it.selected) }
-        VideoOptionGroup.SCREEN_MODE -> VIDEO_SCREEN_MODE_LABELS.map {
-            PspMenuRow(it, checked = it == state.screenModeLabel)
+        VideoOptionGroup.SCREEN_MODE -> VIDEO_SCREEN_MODE_LABEL_RES.map {
+            val label = res.getString(it)
+            PspMenuRow(label, checked = label == state.screenModeLabel)
         }
     }
 

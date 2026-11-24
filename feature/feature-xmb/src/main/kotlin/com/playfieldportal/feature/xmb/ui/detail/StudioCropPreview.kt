@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.feature.artwork.store.ArtworkKind
+import com.playfieldportal.feature.xmb.R
 import kotlin.math.roundToInt
 
 /**
@@ -76,13 +78,14 @@ fun cropPreviewChromeFor(kind: ArtworkKind): CropPreviewChrome? = when (kind) {
 }
 
 /** Caption under the inset, so it reads as a preview of a named slot and not a stray thumbnail. */
-fun cropPreviewCaptionFor(kind: ArtworkKind): String? = when (kind) {
-    ArtworkKind.ICON -> "XMB tile"
-    ArtworkKind.ICON1 -> "XMB icon animation"
-    ArtworkKind.BOX_ART -> "Box Art tile"
-    ArtworkKind.BOX_3D -> "3D Box tile"
-    ArtworkKind.PHYSICAL_MEDIA -> "Phys. Media tile"
-    ArtworkKind.VIDEO -> "Media strip"
+@StringRes
+fun cropPreviewCaptionFor(kind: ArtworkKind): Int? = when (kind) {
+    ArtworkKind.ICON -> R.string.det_crop_caption_tile
+    ArtworkKind.ICON1 -> R.string.det_crop_caption_icon_anim
+    ArtworkKind.BOX_ART -> R.string.det_crop_caption_box_art
+    ArtworkKind.BOX_3D -> R.string.det_crop_caption_box_3d
+    ArtworkKind.PHYSICAL_MEDIA -> R.string.det_crop_caption_phys_media
+    ArtworkKind.VIDEO -> R.string.det_crop_caption_media_strip
     else -> null
 }
 

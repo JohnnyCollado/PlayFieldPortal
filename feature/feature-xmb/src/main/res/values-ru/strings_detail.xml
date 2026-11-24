@@ -1,0 +1,661 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Stored-assets manager -->
+    <string name="det_assets_reorder_title">Порядок: %1$s</string>
+    <string name="det_assets_first_hint">Первый — тот, что показывает игра.</string>
+    <string name="det_assets_empty">Для этого слота ничего не сохранено.</string>
+    <string name="det_assets_up">Вверх</string>
+    <string name="det_assets_down">Вниз</string>
+    <string name="det_assets_make_first">Сделать первым</string>
+    <string name="det_assets_move">Переместить</string>
+    <string name="det_assets_relink_note">Перепривязка библиотеки восстанавливает этот порядок по именам файлов — так обложки снова связываются с заново импортированными играми.</string>
+    <string name="det_assets_primary">Основной</string>
+    <string name="det_assets_stored_artwork">Сохранённые обложки</string>
+
+    <!-- Shared -->
+    <string name="det_close">Закрыть</string>
+    <string name="det_crop_caption_tile">Плитка XMB</string>
+    <string name="det_crop_caption_icon_anim">Анимация значка XMB</string>
+    <string name="det_crop_caption_box_art">Плитка обложки</string>
+    <string name="det_crop_caption_box_3d">Плитка 3D-коробки</string>
+    <string name="det_crop_caption_phys_media">Плитка носителя</string>
+    <string name="det_crop_caption_media_strip">Лента медиа</string>
+    <string name="det_filter_filters">Фильтры</string>
+    <string name="det_filter_style">Стиль</string>
+    <string name="det_filter_dimensions">Размеры</string>
+    <string name="det_filter_animation">Анимация</string>
+    <string name="det_filter_region">Регион</string>
+    <string name="det_filter_media">Медиа</string>
+
+    <!-- Filter value meaning "no filter applied" -->
+    <string name="det_filter_all">Все</string>
+    <string name="det_filter_anim_static">Статичные</string>
+    <string name="det_filter_anim_animated">Анимированные</string>
+    <string name="det_filter_on">Вкл.</string>
+    <string name="det_filter_off">Выкл.</string>
+    <string name="det_filter_active">Активны</string>
+    <string name="det_filter_n_of_m">%1$d из %2$d</string>
+
+    <!-- Content rating filter: adult content -->
+    <string name="det_filter_mature">18+</string>
+    <string name="det_filter_humor">Юмор</string>
+    <string name="det_filter_epilepsy">Риск эпилепсии</string>
+    <string name="det_filter_clear">Сбросить фильтры</string>
+    <string name="det_filter_region_from_disc">%1$s · с диска</string>
+
+    <!-- ScreenScraper media type names -->
+    <string name="det_ssmedia_mix_v2">Mix v2</string>
+    <string name="det_ssmedia_mix_v1">Mix v1</string>
+    <string name="det_ssmedia_marquee">Marquee</string>
+    <string name="det_ssmedia_steam_grid">Steam Grid</string>
+    <string name="det_ssmedia_box_2d">Обложка 2D</string>
+    <string name="det_ssmedia_box_3d">Обложка 3D</string>
+    <string name="det_ssmedia_disc_art_2d">Диск 2D</string>
+    <string name="det_ssmedia_disc_texture">Текстура диска</string>
+    <string name="det_ssmedia_fan_art">Фан-арт</string>
+    <string name="det_ssmedia_screenshot">Скриншот</string>
+    <string name="det_ssmedia_title_screen">Титульный экран</string>
+    <string name="det_ssmedia_logo">Логотип</string>
+    <string name="det_ssmedia_logo_hd">Логотип HD</string>
+    <string name="det_ssmedia_manual">Руководство</string>
+    <string name="det_ssmedia_video">Видео</string>
+    <string name="det_ssmedia_video_normalized">Видео (нормализованное)</string>
+    <string name="det_steam_art_library_capsule">капсула библиотеки</string>
+    <string name="det_steam_art_library_hero">баннер библиотеки</string>
+    <string name="det_steam_art_logo">логотип</string>
+    <string name="det_steam_art_header">шапка</string>
+    <string name="det_steam_art_store_capsule">капсула магазина</string>
+    <string name="det_steam_art_store_background">фон магазина</string>
+    <string name="det_steam_art_screenshot_n">скриншот %1$d</string>
+    <string name="det_steam_art_trailer_short">%1$s · короткий</string>
+    <string name="det_art_best_title_match">лучшее совпадение по названию</string>
+    <string name="det_page_range">%1$d–%2$d из %3$d</string>
+    <string name="det_page_range_shown">%1$d–%2$d · показано %3$d из %4$d</string>
+
+    <!-- Button: go to the previous page -->
+    <string name="det_page_prev">‹ Назад</string>
+
+    <!-- Button: go to the next page -->
+    <string name="det_page_next">Далее ›</string>
+    <string name="det_page_n_of_m">Стр. %1$d / %2$d</string>
+    <string name="det_picks_add">Добавить: %1$d</string>
+    <string name="det_picks_remove">Удалить: %1$d</string>
+    <string name="det_picks_add_remove">Добавить: %1$d · удалить: %2$d</string>
+    <string name="det_picks_apply_pill">Применить ›</string>
+    <string name="det_picks_apply">Применить</string>
+    <string name="det_picks_progress">Добавлено %1$d из %2$d</string>
+    <string name="det_picks_progress_failed">Добавлено %1$d из %2$d · ошибок: %3$d</string>
+
+    <!-- Button: retry the failed downloads -->
+    <string name="det_picks_retry">Повторить</string>
+    <string name="det_picks_remove_failed">Удалить</string>
+    <string name="det_options">Параметры</string>
+
+    <!-- Storefront match picker ("Match Game") -->
+    <string name="det_store_match_title">Сопоставить игру</string>
+    <string name="det_store_hint_multi">"Вверх/Вниз  Строки  •  L1/R1  Магазин  •  Select  Выбрать  •  △  Подробнее  •  B  Отмена"</string>
+    <string name="det_store_hint_single">"Вверх/Вниз  Строки  •  Select  Выбрать  •  △  Подробнее  •  B  Отмена"</string>
+    <string name="det_store_notice_tied">Две записи в магазине носят точно такое название. Совпадение имён нельзя разрешить по признакам, поэтому ничего не привязывается, пока вы не выберете.</string>
+    <string name="det_store_notice_low">Ни один вариант не совпадает уверенно — названия совпадают лишь частично. Проверьте год и разработчика перед выбором или оставьте игру непривязанной.</string>
+    <string name="det_store_empty_unavailable_title">%1$s не ответил.</string>
+    <string name="det_store_empty_unavailable_detail">Ничего не изменено. Это проблема соединения, а не отсутствие игры — повторите позже.</string>
+    <string name="det_store_empty_not_windows_title">Это не игра для Windows.</string>
+    <string name="det_store_empty_not_windows_detail">Записи магазинов есть только у игр для ПК. ROM консолей сопоставляются по файлу.</string>
+    <string name="det_store_empty_settled_title">Уже сопоставлено.</string>
+    <string name="det_store_empty_settled_detail">%1$s — выбирать было не из чего. Чтобы изменить, используйте «Сопоставление в магазине».</string>
+    <string name="det_store_empty_typed_title">Ни в одном магазине нет «%1$s».</string>
+    <string name="det_store_empty_typed_detail">Ничего не изменено и не привязано. Вернитесь и попробуйте другое название.</string>
+    <string name="det_store_empty_none_title">Ни в одном магазине нет этой игры.</string>
+    <string name="det_store_empty_none_detail">Ничего не изменено и не привязано. Попробуйте другое название в строке поиска «Сопоставление в магазине».</string>
+    <string name="det_store_note_unreachable">%1$s не ответил, поэтому список только из %2$s. Повторите позже для %1$s.</string>
+    <string name="det_store_note_linked">Уже привязано в %1$s. Здесь эта привязка не меняется.</string>
+    <string name="det_store_your_game">Ваша игра</string>
+    <string name="det_store_searched_as">Искали как</string>
+    <string name="det_store_quoted">«%1$s»</string>
+    <string name="det_store_score">баллы: %1$d</string>
+    <string name="det_store_no_match">Нет верного совпадения</string>
+    <string name="det_store_no_match_detail">Оставить %1$s непривязанной. Ничего не записывается, можно повторить позже.</string>
+
+    <!-- Button: pick the highlighted candidate -->
+    <string name="det_store_choose">Выбрать</string>
+    <string name="det_store_more_info">Подробнее</string>
+    <string name="det_store_hint_more_info">"Select  Выбрать эту игру  •  B  Назад"</string>
+    <string name="det_store_why_ranked">Почему на этом месте</string>
+    <string name="det_store_total">Итого</string>
+    <string name="det_store_notice_rival">Всё ещё не привязано автоматически: у другой записи магазина (%1$s) точно такое же название, а совпадение имён баллами не решается.</string>
+    <string name="det_store_choose_this">Выбрать эту игру</string>
+    <string name="det_store_back_to_matches">К совпадениям</string>
+    <string name="det_store_id_steam">appid %1$s</string>
+    <string name="det_store_id_gog">product %1$s</string>
+    <string name="det_store_id_epic">catalog %1$s</string>
+    <string name="det_signal_chip_store_id">ID магазина</string>
+    <string name="det_signal_chip_exact_title">Точное название</string>
+    <string name="det_signal_chip_developer">Разработчик совпадает</string>
+    <string name="det_signal_chip_publisher">Издатель совпадает</string>
+    <string name="det_signal_chip_year">Год совпадает</string>
+    <string name="det_signal_chip_other_edition">Та же игра, другое издание</string>
+    <string name="det_signal_chip_partial_title">Частичное название</string>
+    <string name="det_signal_chip_year_conflict">Год не совпадает</string>
+
+    <!-- Lines of the "Why it ranked here" list -->
+    <string name="det_signal_desc_store_id">ID магазина — лаунчер сам сообщил этот ID</string>
+    <string name="det_signal_desc_exact_title">Точное название — нормализованные названия идентичны</string>
+    <string name="det_signal_desc_developer">Разработчик — совпадает с вашей копией</string>
+    <string name="det_signal_desc_publisher">Издатель — совпадает с вашей копией</string>
+    <string name="det_signal_desc_year">Год выхода — совпадает с вашей копией</string>
+    <string name="det_signal_desc_other_edition">Та же игра, другое издание</string>
+    <string name="det_signal_desc_partial_title">Частичное название — одно содержит другое</string>
+    <string name="det_signal_desc_year_conflict">Год выхода — не совпадает с вашей копией</string>
+    <string name="det_signal_field_release_year">Год выхода</string>
+    <string name="det_signal_field_developer">Разработчик</string>
+    <string name="det_signal_field_publisher">Издатель</string>
+    <string name="det_signal_absent_no_match">%1$s — не совпадает с вашей копией</string>
+    <string name="det_signal_absent_silent">%1$s — магазин не указал</string>
+
+    <!-- Storefront rematch ("Store Match") -->
+    <string name="det_rematch_title">Сопоставление в магазине</string>
+    <string name="det_rematch_hint_editing">"Поиск на клавиатуре  Найти совпадения  •  B  Готово"</string>
+    <string name="det_rematch_hint_query">"Вверх/Вниз  Строки  •  Select  Ввести название  •  B  Закрыть"</string>
+    <string name="det_rematch_hint_rows">"Вверх/Вниз  Строки  •  Влево/Вправо  Действие  •  Select  Подтвердить  •  B  Закрыть"</string>
+    <string name="det_rematch_remove_note">Удаление привязки удаляет только привязку. Описание, разработчик и все прочие поля остаются как есть — включая введённое вручную.</string>
+    <string name="det_rematch_searching">Поиск…</string>
+    <string name="det_rematch_search_all">Снова искать во всех магазинах</string>
+    <string name="det_rematch_search_by_name">Поиск по названию</string>
+    <string name="det_rematch_search">Найти</string>
+    <string name="det_rematch_replace">Заменить</string>
+
+    <!-- Action on a store row: remove the link -->
+    <string name="det_rematch_remove">Удалить</string>
+    <string name="det_rematch_search_help">Ищет это название в магазинах. Название вашей игры не меняется.</string>
+    <string name="det_rematch_confirmed">Подтверждено вами</string>
+    <string name="det_rematch_not_linked">Не привязано</string>
+    <string name="det_rematch_note_not_searchable">Поиск невозможен — у этого магазина нет публичного каталога</string>
+    <string name="det_rematch_note_nothing_stored">Для этого магазина ничего не сохранено</string>
+    <string name="det_rematch_note_auto">Сопоставлено автоматически</string>
+
+    <!-- Shared buttons -->
+    <string name="det_cancel">Отмена</string>
+    <string name="det_back">Назад</string>
+
+    <!-- Metadata preview ("Update Metadata") -->
+    <string name="det_meta_title">Обновить метаданные</string>
+    <string name="det_meta_failed_title">Источники метаданных не ответили.</string>
+    <string name="det_meta_unreadable_title">Не удалось прочитать эту игру.</string>
+    <string name="det_meta_failed_detail">Ничего не изменено. Проверьте подключение и повторите.</string>
+    <string name="det_meta_unreadable_detail">Ничего не изменено. Попробуйте открыть игру заново.</string>
+    <string name="det_meta_no_source">Ни один источник не распознал игру — заполните нужные поля вручную.</string>
+    <string name="det_meta_col_field">Поле</string>
+    <string name="det_meta_col_current">Сейчас</string>
+    <string name="det_meta_col_yours">Ваше значение</string>
+    <string name="det_meta_col_incoming">Новое</string>
+    <string name="det_meta_applying">Применение…</string>
+    <string name="det_meta_keep_close">Оставить и закрыть</string>
+    <string name="det_meta_nothing_to_change">Нечего менять</string>
+    <string name="det_meta_tap_to_type">Выберите для ввода</string>
+    <plurals name="det_meta_apply_changes">
+        <item quantity="one">Применить %1$d изменение</item>
+        <item quantity="few">Применить %1$d изменения</item>
+        <item quantity="many">Применить %1$d изменений</item>
+        <item quantity="other">Применить %1$d изменения</item>
+    </plurals>
+    <string name="det_search_title">Найти онлайн</string>
+
+    <!-- Options menu list names -->
+    <string name="det_search_group_provider">Сервис</string>
+    <string name="det_search_group_system">Система</string>
+    <string name="det_search_subtitle_not_installed">%1$s · Не установлена</string>
+    <string name="det_search_subtitle_results">%1$s · %2$s</string>
+    <plurals name="det_search_result_count">
+        <item quantity="one">%1$d результат</item>
+        <item quantity="few">%1$d результата</item>
+        <item quantity="many">%1$d результатов</item>
+        <item quantity="other">%1$d результата</item>
+    </plurals>
+    <string name="det_search_placeholder_coins">Поиск монет…</string>
+    <string name="det_search_placeholder_provider">Поиск в %1$s…</string>
+    <string name="det_search_loading_achievements">Загрузка достижений…</string>
+    <string name="det_search_no_achievements">У %1$s нет достижений в %2$s.</string>
+    <string name="det_search_no_coins_match">Нет монет по запросу «%1$s».</string>
+    <string name="det_search_no_coins_in_view">В этом виде нет монет.</string>
+    <string name="det_search_idle">Введите не менее %1$d букв для поиска в %2$s.</string>
+    <string name="det_search_searching">Поиск в %1$s…</string>
+    <string name="det_search_no_games_match">В %1$s нет игр по запросу «%2$s».</string>
+    <string name="det_search_offline">Для поиска нужно подключение к интернету.</string>
+    <string name="det_search_not_connected">Подключите %1$s, чтобы искать его игры.</string>
+    <string name="det_search_failed">Не удалось связаться с %1$s. Повторите.</string>
+
+    <!-- Button shown on an error: search again -->
+    <string name="det_search_retry">Повторить</string>
+    <string name="det_search_open_settings">Открыть настройки</string>
+    <string name="det_search_refresh_preview">Обновить просмотр</string>
+    <string name="det_search_prompt_select">Выбрать</string>
+    <string name="det_search_prompt_done">Готово</string>
+    <string name="det_search_prompt_hide">Скрыть</string>
+    <string name="det_search_prompt_reveal">Показать</string>
+    <string name="det_search_prompt_search">Поиск</string>
+    <string name="det_search_prompt_change_view">Вид</string>
+    <string name="det_search_prompt_close_preview">Закрыть просмотр</string>
+    <string name="det_search_prompt_type">Ввод</string>
+    <string name="det_search_prompt_preview">Просмотр</string>
+
+    <!-- Reasons a preview could not be shown -->
+    <string name="det_search_err_missing_credentials">Подключите этот сервис в настройках, чтобы искать его игры.</string>
+    <string name="det_search_err_not_linked">У этой игры нет набора достижений для показа.</string>
+    <string name="det_search_err_profile_private">Сведения об играх Steam недоступны для вашего профиля.</string>
+    <string name="det_search_err_not_found">У этой игры нет достижений в этом сервисе.</string>
+    <string name="det_search_lookup_only">Результаты только для просмотра — ничего не добавляется в библиотеку или кошелёк монет.</string>
+    <string name="det_search_available">ДОСТУПНО</string>
+    <plurals name="det_search_achievement_count">
+        <item quantity="one">%1$d достижение</item>
+        <item quantity="few">%1$d достижения</item>
+        <item quantity="many">%1$d достижений</item>
+        <item quantity="other">%1$d достижения</item>
+    </plurals>
+    <string name="det_search_preview_chip">ПРОСМОТР</string>
+    <string name="det_search_preview_notice">Только просмотр. Этой игры нет на устройстве, поэтому здесь ничего не отслеживается, не учитывается и не синхронизируется. При закрытии просмотр сбрасывается.</string>
+    <string name="det_search_candidate_app">%1$s · app %2$s</string>
+    <string name="det_search_candidate_game">%1$s · game %2$s</string>
+
+    <!-- Game Detail page -->
+    <string name="det_library">Библиотека</string>
+    <string name="det_game_not_found">Игра не найдена</string>
+    <string name="det_game_gone">Этой игры больше нет в библиотеке.</string>
+    <string name="det_game_gone_hint">Нажмите «Назад», чтобы вернуться в библиотеку.</string>
+    <string name="det_meta_replace_title">Заменить ваше название?</string>
+    <string name="det_meta_replace_message">Вы задали это название вручную. Применение нового удалит ваше.\n\nВаше: %1$s\nНовое: %2$s</string>
+    <string name="det_meta_replace">Заменить</string>
+
+    <!-- Button: keep the title the user typed -->
+    <string name="det_meta_keep_mine">Оставить моё</string>
+    <string name="det_meta_edit_field">Изменить: %1$s</string>
+    <string name="det_remove_title">Удалить из библиотеки</string>
+    <string name="det_remove_message">«%1$s» будет удалена из библиотеки. Файлы останутся на устройстве.</string>
+
+    <!-- Button: confirm removing the game -->
+    <string name="det_remove">Удалить</string>
+    <string name="det_edit_note">Изменить заметку</string>
+    <string name="det_edit_title">Изменить название</string>
+    <string name="det_fact_last_played">Последний запуск: %1$s</string>
+    <string name="det_fact_play_time">Время игры: %1$s</string>
+
+    <!-- Main buttons -->
+    <string name="det_launch">Запустить</string>
+    <string name="det_favorite">Избранное</string>
+    <string name="det_favorite_remove_cd">Убрать из избранного</string>
+    <string name="det_favorite_add_cd">Добавить в избранное</string>
+
+    <!-- Button that opens the artwork tools -->
+    <string name="det_artwork">Обложки</string>
+    <string name="det_artwork_edit_cd">Изменить обложки</string>
+    <string name="det_manual">Руководство</string>
+    <string name="det_manual_open_cd">Открыть руководство</string>
+    <string name="det_get_help">Справка</string>
+    <string name="det_shiba_coins">Shiba Coins</string>
+    <string name="det_coins_not_tracked">Пока не отслеживается</string>
+    <string name="det_no_description">Описание отсутствует.</string>
+
+    <!-- Heading of the game description row -->
+    <string name="det_overview">Обзор</string>
+    <string name="det_media_preview">Медиа</string>
+    <string name="det_media_play_video_cd">Воспроизвести видео</string>
+    <string name="det_media_screenshot_cd">Скриншот</string>
+    <string name="det_media_preview_cd">Просмотр медиа</string>
+    <string name="det_manual_viewer_title">%1$s — Руководство</string>
+
+    <!-- Disc row for multi-disc games -->
+    <string name="det_discs">Диски</string>
+    <string name="det_disc_n">Диск %1$d</string>
+    <string name="det_disc_playlist">Плейлист</string>
+    <string name="det_disc_missing">Отсутствует</string>
+    <string name="det_disc_preferred">Основной</string>
+    <string name="det_disc_available">Доступен</string>
+
+    <!-- Game information fields -->
+    <string name="det_info_released">Дата выхода</string>
+    <string name="det_info_developer">Разработчик</string>
+    <string name="det_info_publisher">Издатель</string>
+    <string name="det_info_genre">Жанр</string>
+    <string name="det_info_last_played">Последний запуск</string>
+    <string name="det_info_play_time">Время игры</string>
+    <string name="det_info_emulator">Эмулятор</string>
+    <string name="det_info_core">Ядро: %1$s</string>
+    <string name="det_prompt_page">Страница</string>
+    <string name="det_prompt_scroll">Прокрутка</string>
+    <string name="det_prompt_navigate">Навигация</string>
+    <string name="det_prompt_apply_toggle">Применить / Отметить</string>
+    <string name="det_prompt_policy">Режим</string>
+    <string name="det_prompt_source">Источник</string>
+    <string name="det_prompt_toggle">Отметить</string>
+    <string name="det_prompt_select">Выбрать</string>
+    <string name="det_choose">Выбрать</string>
+    <string name="det_confirm_play">Играть</string>
+    <string name="det_confirm_preview">Просмотр</string>
+    <string name="det_confirm_view">Открыть</string>
+    <string name="det_confirm_collapse">Свернуть</string>
+    <string name="det_confirm_read_more">Читать далее</string>
+    <string name="det_confirm_choose_disc">Выбрать диск</string>
+    <string name="det_confirm_change_emulator">Сменить эмулятор</string>
+    <string name="det_kind_app">Приложение</string>
+    <string name="det_kind_pc_shortcut">Ярлык ПК</string>
+    <string name="det_kind_game_app">Игра-приложение</string>
+    <string name="det_kind_rom">ROM</string>
+
+    <!-- Play time -->
+    <string name="det_time_under_minute">Меньше минуты</string>
+    <string name="det_time_minutes">%1$d мин</string>
+    <string name="det_time_hours_minutes">%1$d ч %2$d мин</string>
+    <string name="det_days_today">Сегодня</string>
+    <string name="det_days_yesterday">Вчера</string>
+    <plurals name="det_days_ago">
+        <item quantity="one">%1$d день назад</item>
+        <item quantity="few">%1$d дня назад</item>
+        <item quantity="many">%1$d дней назад</item>
+        <item quantity="other">%1$d дня назад</item>
+    </plurals>
+    <string name="det_fetching_artwork">Загрузка обложек…</string>
+
+    <!-- Options menu value when nothing is set -->
+    <string name="det_none">Нет</string>
+    <string name="det_emulator_picker_title">Выбор эмулятора</string>
+    <string name="det_menu_options">Параметры</string>
+    <string name="det_menu_artwork">Обложки</string>
+    <string name="det_menu_information">Информация</string>
+    <string name="det_menu_file">Файл</string>
+    <string name="det_group_library">Библиотека</string>
+    <string name="det_group_play">Игра</string>
+    <string name="det_group_customize">Настройка</string>
+    <string name="det_group_manage">Управление</string>
+    <string name="det_action_favorite">Избранное</string>
+
+    <!-- Adds the game to a card (a collection) -->
+    <string name="det_action_collections">Добавить на карту</string>
+    <string name="det_action_emulator">Эмулятор</string>
+    <string name="det_action_manual">Руководство</string>
+    <string name="det_action_menu_artwork">Обложки</string>
+    <string name="det_action_menu_information">Информация</string>
+    <string name="det_action_menu_file">Файл</string>
+    <string name="det_action_remove">Удалить из библиотеки</string>
+    <string name="det_action_artwork_studio">Artwork Studio</string>
+    <string name="det_action_fetch_artwork">Загрузить обложки</string>
+    <string name="det_action_metadata">Обновить метаданные</string>
+    <string name="det_action_rename">Изменить название</string>
+    <string name="det_action_edit_note">Изменить заметку</string>
+    <string name="det_action_storefront">Сопоставление в магазине</string>
+    <string name="det_action_location">Расположение файла</string>
+    <string name="det_action_export">Экспорт игры</string>
+
+    <!-- Artwork kind names -->
+    <string name="det_arttype_icon">Значок игры</string>
+    <string name="det_arttype_hero">Баннер</string>
+    <string name="det_arttype_background">Фон</string>
+
+    <!-- Game Detail messages -->
+    <string name="det_location_package">Пакет: %1$s</string>
+    <string name="det_location_none">Расположение файла не записано</string>
+    <string name="det_export_failed">Ошибка экспорта — см. журнал.</string>
+    <string name="det_no_video_snap">Нет видеоролика — включите «Загружать видеоролики» и загрузите заново</string>
+    <string name="det_no_manual">Для этой игры нет руководства</string>
+    <string name="det_launch_loading">Игра ещё загружается</string>
+    <string name="det_launch_file_missing">Файл не найден при последнем сканировании. Подключите карту или восстановите файл и пересканируйте.</string>
+    <string name="det_launching">Запуск %1$s...</string>
+    <string name="det_launch_failed">Не удалось запустить: %1$s</string>
+    <string name="det_launch_could_not">Не удалось запустить %1$s</string>
+    <string name="det_launch_no_emulator">Не удалось определить эмулятор для %1$s</string>
+    <string name="det_no_emulators">Для %1$s не установлены эмуляторы</string>
+    <string name="det_emulator_set">Выбран эмулятор %1$s</string>
+    <string name="det_title_updated">Название изменено на «%1$s»</string>
+    <string name="det_title_reset">Название сброшено на «%1$s»</string>
+    <string name="det_artwork_updated">Обложки обновлены</string>
+    <string name="det_artwork_already_fetching">Обложки для этой игры уже загружаются</string>
+    <string name="det_artwork_fetch_failed">Ошибка загрузки обложек</string>
+    <string name="det_meta_reverted">%1$s: возвращено загруженное значение</string>
+    <string name="det_meta_kept_current">Текущие метаданные сохранены</string>
+    <string name="det_meta_msg_nothing">Нечего менять</string>
+    <plurals name="det_meta_updated_from">
+        <item quantity="one">Обновлено %1$d поле из %2$s</item>
+        <item quantity="few">Обновлено %1$d поля из %2$s</item>
+        <item quantity="many">Обновлено %1$d полей из %2$s</item>
+        <item quantity="other">Обновлено %1$d поля из %2$s</item>
+    </plurals>
+    <plurals name="det_meta_updated_by_hand">
+        <item quantity="one">Обновлено %1$d поле вручную</item>
+        <item quantity="few">Обновлено %1$d поля вручную</item>
+        <item quantity="many">Обновлено %1$d полей вручную</item>
+        <item quantity="other">Обновлено %1$d поля вручную</item>
+    </plurals>
+    <string name="det_meta_update_failed">Ошибка обновления метаданных</string>
+    <string name="det_rematch_cant_search">В %1$s поиск невозможен</string>
+    <string name="det_rematch_link_removed">Привязка к %1$s удалена. Метаданные не изменены.</string>
+    <string name="det_rematch_linked">Привязано к %1$s: %2$s</string>
+
+    <!-- Artwork Studio -->
+    <string name="det_source_local">Локальный файл</string>
+    <string name="det_tab_tile">ICON0</string>
+    <string name="det_tab_icon1">ICON1</string>
+    <string name="det_tab_box_art">ОБЛОЖКА</string>
+    <string name="det_tab_box_3d">3D-КОРОБКА</string>
+    <string name="det_tab_phys">НОСИТЕЛЬ</string>
+    <string name="det_tab_hero">БАННЕР</string>
+    <string name="det_tab_background">ФОН</string>
+    <string name="det_tab_logo">ЛОГОТИП</string>
+    <string name="det_tab_screenshot">СКРИНШОТ</string>
+    <string name="det_tab_manual">РУКОВОДСТВО</string>
+    <string name="det_tab_video">ВИДЕО</string>
+    <string name="det_tab_tile_contract">Плитка XMB · 144×80 · обрезка</string>
+    <string name="det_tab_icon1_contract">Анимация значка XMB · 60 с без звука</string>
+    <string name="det_tab_box_art_contract">Плитка XMB (режим «Обложка») · исходные пропорции</string>
+    <string name="det_tab_box_3d_contract">Плитка XMB (режим «3D-коробка») · исходные пропорции</string>
+    <string name="det_tab_phys_contract">Плитка XMB (режим «Носитель») · исходные пропорции</string>
+    <string name="det_tab_hero_contract">Баннер сведений об игре · широкий · обрезка</string>
+    <string name="det_tab_background_contract">Фон XMB при наведении · весь экран</string>
+    <string name="det_tab_logo_contract">Наложение PIC0 · прозрачный PNG · вписать</string>
+    <string name="det_tab_screenshot_contract">Лента медиа в сведениях об игре</string>
+    <string name="det_tab_manual_contract">PDF-руководство в приложении</string>
+    <string name="det_tab_video_contract">Лента медиа в сведениях об игре · полное видео</string>
+    <string name="det_leave_apply">Применить и закрыть</string>
+    <string name="det_leave_discard">Отменить изменения</string>
+    <string name="det_leave_stay">Остаться</string>
+    <plurals name="det_leave_changes_waiting">
+        <item quantity="one">Не применено %1$d изменение</item>
+        <item quantity="few">Не применено %1$d изменения</item>
+        <item quantity="many">Не применено %1$d изменений</item>
+        <item quantity="other">Не применено %1$d изменения</item>
+    </plurals>
+
+    <!-- Crop editor menu -->
+    <string name="det_crop_options_title">Параметры обрезки</string>
+    <string name="det_crop_live_preview">Живой просмотр</string>
+
+    <!-- Row label: the shape of the crop frame -->
+    <string name="det_crop_shape">Форма</string>
+    <string name="det_crop_shape_platform_default">Как у платформы</string>
+    <string name="det_crop_shape_original">Исходное изображение</string>
+    <string name="det_no_options">Здесь нет параметров</string>
+    <string name="det_replace_anyway">Всё равно заменить</string>
+    <string name="det_replace_title">%1$s уже это изображение</string>
+    <string name="det_replace_title_default">Эта обложка уже это изображение</string>
+    <string name="det_apply_title_default">Применить изменения?</string>
+    <string name="det_apply_title_add_remove">Добавить %1$s и удалить %2$d?</string>
+    <string name="det_apply_title_remove">Удалить %1$s?</string>
+    <string name="det_apply_title_add">Добавить %1$s?</string>
+    <plurals name="det_asset_count_screenshot">
+        <item quantity="one">%1$d скриншот</item>
+        <item quantity="few">%1$d скриншота</item>
+        <item quantity="many">%1$d скриншотов</item>
+        <item quantity="other">%1$d скриншота</item>
+    </plurals>
+    <plurals name="det_asset_count_video">
+        <item quantity="one">%1$d видео</item>
+        <item quantity="few">%1$d видео</item>
+        <item quantity="many">%1$d видео</item>
+        <item quantity="other">%1$d видео</item>
+    </plurals>
+    <plurals name="det_asset_count_image">
+        <item quantity="one">%1$d изображение</item>
+        <item quantity="few">%1$d изображения</item>
+        <item quantity="many">%1$d изображений</item>
+        <item quantity="other">%1$d изображения</item>
+    </plurals>
+    <string name="det_local_add_cap_only">У игры не более: %1$s</string>
+    <string name="det_local_add_cap">Добавлено: %1$s — у игры не более %2$d</string>
+    <plurals name="det_local_add_failed">
+        <item quantity="one">Не удалось добавить %1$d файл</item>
+        <item quantity="few">Не удалось добавить %1$d файла</item>
+        <item quantity="many">Не удалось добавить %1$d файлов</item>
+        <item quantity="other">Не удалось добавить %1$d файла</item>
+    </plurals>
+    <plurals name="det_local_add_some_failed">
+        <item quantity="one">Добавлено: %1$s · не удалось добавить %2$d файл</item>
+        <item quantity="few">Добавлено: %1$s · не удалось добавить %2$d файла</item>
+        <item quantity="many">Добавлено: %1$s · не удалось добавить %2$d файлов</item>
+        <item quantity="other">Добавлено: %1$s · не удалось добавить %2$d файла</item>
+    </plurals>
+    <string name="det_local_added">Добавлено: %1$s</string>
+    <string name="det_cap_uncheck">У игры не более: %1$s — снимите отметку с %2$d, чтобы применить</string>
+
+    <!-- Actions in the Options menu -->
+    <string name="det_action_apply_changes">Применить изменения</string>
+    <string name="det_action_retry_failed">Повторить неудачные загрузки</string>
+    <string name="det_action_remove_failed">Убрать неудачные загрузки</string>
+    <string name="det_action_reorder">Порядок сохранённых обложек</string>
+    <string name="det_action_crop">Обрезка / положение</string>
+    <string name="det_action_crop_before">Обрезать перед применением</string>
+    <string name="det_action_restore_previous">Вернуть предыдущую</string>
+    <string name="det_action_reset_default">Сбросить до загруженной</string>
+    <string name="det_action_clear">Удалить обложку</string>
+    <string name="det_action_file_info">Информация о файле</string>
+    <string name="det_action_change_match">Изменить сопоставление</string>
+    <string name="det_action_forget_match">Забыть сопоставление</string>
+    <string name="det_source_badge_na">н/д</string>
+    <string name="det_source_badge_no_key">нет ключа</string>
+    <string name="det_source_no_artwork">В %1$s нет обложек %2$s</string>
+    <string name="det_source_igdb_needs">Для IGDB нужны Client ID и Secret — добавьте их в «Настройки ▸ Обложки»</string>
+    <string name="det_source_needs_key">Для %1$s нужен ключ API — добавьте его в «Настройки ▸ Обложки»</string>
+    <string name="det_source_with_badge">%1$s · %2$s</string>
+    <string name="det_match_cant_search">В %1$s нельзя искать по названию — выбирать не из чего.</string>
+    <string name="det_match_no_answer">%1$s не ответил. Нажмите «Поиск», чтобы повторить.</string>
+    <string name="det_matched_as">Сопоставлено как %1$s</string>
+    <string name="det_msg_reorder_failed">Не удалось изменить порядок обложек</string>
+    <string name="det_msg_remove_failed">Часть обложек не удалось удалить</string>
+    <string name="det_msg_no_previous">Нет предыдущей версии для восстановления</string>
+    <string name="det_msg_restored">%1$s: восстановлена предыдущая</string>
+    <string name="det_msg_redownload_failed">Не удалось заново скачать загруженную версию</string>
+    <string name="det_msg_reset">%1$s: сброшено до загруженной</string>
+    <string name="det_msg_crop_download_failed">Не удалось скачать выбранное для обрезки</string>
+    <string name="det_msg_crop_not_image">Выбранное — не изображение, которое можно обрезать</string>
+    <string name="det_msg_crop_open_failed">Не удалось открыть оригинал для обрезки</string>
+    <string name="det_msg_crop_failed">Ошибка обрезки</string>
+    <string name="det_msg_crop_save_failed">Не удалось сохранить обрезанную обложку</string>
+    <string name="det_msg_cropped">%1$s: обрезано</string>
+    <string name="det_msg_apply_rejected">Не удалось применить — загрузка или файл отклонены</string>
+    <string name="det_msg_updated_from">%1$s: обновлено из %2$s</string>
+    <string name="det_msg_cleared">%1$s: удалено</string>
+    <string name="det_tgdb_box_art">обложка</string>
+    <string name="det_tgdb_fanart">фан-арт</string>
+    <string name="det_tgdb_clear_logo">логотип</string>
+    <string name="det_tgdb_box_art_crop">обложка · обрезать под плитку</string>
+    <string name="det_tgdb_hero_crop">баннер · обрезать под плитку</string>
+    <string name="det_igdb_cover">обложка</string>
+    <string name="det_igdb_artwork">арт</string>
+    <string name="det_igdb_cover_crop">обложка · обрезать под плитку</string>
+    <string name="det_igdb_artwork_crop">арт · обрезать под плитку</string>
+
+    <!-- Artwork Studio screen -->
+    <string name="det_studio_title">Artwork Studio</string>
+    <string name="det_studio_title_platform">Artwork Studio · %1$s</string>
+    <string name="det_studio_artwork_word">обложки</string>
+    <string name="det_clear_title">Удалить обложку?</string>
+    <string name="det_clear_message">Обложка %1$s для %2$s будет удалена вместе с резервной и исходной копией. Это действие нельзя отменить.</string>
+    <string name="det_clear">Удалить</string>
+    <string name="det_forget_title">Забыть сопоставление?</string>
+    <string name="det_forget_message">%1$s будет заново опрошен о %2$s. Обложки и метаданные не затрагиваются.</string>
+    <string name="det_forget_the_provider">Сервис</string>
+    <string name="det_forget">Забыть</string>
+    <string name="det_studio_reset">Сбросить</string>
+    <string name="det_studio_game_title_chip">название игры</string>
+    <string name="det_studio_game_title_placeholder">Название игры</string>
+    <string name="det_studio_pdf_stored">PDF сохранён</string>
+    <string name="det_studio_icon_video_stored">Видеозначок сохранён</string>
+    <string name="det_studio_video_stored">Видео сохранено</string>
+    <string name="det_studio_no_artwork">Обложка не задана</string>
+
+    <!-- Mature-content filter toggle chip -->
+    <string name="det_mature_on">18+ вкл.</string>
+    <string name="det_mature_off">18+ выкл.</string>
+    <string name="det_studio_matched_as">Сопоставлено как %1$s</string>
+    <string name="det_studio_matching_on">Сопоставление в %1$s…</string>
+    <string name="det_studio_no_answer">%1$s не ответил</string>
+    <string name="det_studio_no_match">Нет совпадения в %1$s</string>
+    <string name="det_studio_confirmed">Подтверждено</string>
+    <string name="det_studio_forget_btn">ЗАБЫТЬ</string>
+    <string name="det_studio_change_match_btn">ИЗМЕНИТЬ</string>
+    <string name="det_studio_add_files">"+  Добавить файлы с устройства"</string>
+    <string name="det_studio_choose_file">"+  Выбрать файл с устройства"</string>
+    <string name="det_studio_none_videos">Видео пока не сохранены</string>
+    <string name="det_studio_none_screenshots">Скриншоты пока не сохранены</string>
+    <string name="det_studio_replaces_this">Выбранный файл заменит: %1$s</string>
+    <string name="det_studio_filters_hide_all">Ничего не подходит под фильтры · скрыто: %1$d</string>
+    <string name="det_studio_no_results">Нет результатов</string>
+    <string name="det_studio_ss_looking">Поиск игры в ScreenScraper…</string>
+    <string name="det_studio_ss_no_answer">ScreenScraper не ответил. Используйте «Изменить сопоставление» для нового поиска.</string>
+    <string name="det_studio_ss_no_match">В ScreenScraper нет совпадения для этой игры. Выберите вручную через «Изменить сопоставление».</string>
+    <string name="det_studio_ss_nothing">В ScreenScraper нет материалов этого типа для этой игры</string>
+
+    <!-- Label on a video tile -->
+    <string name="det_studio_tile_video">▶ ВИДЕО</string>
+
+    <!-- Controller prompts in the footer -->
+    <string name="det_studio_prompt_browse">Обзор / Выбрать файл</string>
+    <string name="det_studio_prompt_check">Отметить</string>
+    <string name="det_studio_prompt_preview_apply">Просмотр / Применить</string>
+    <string name="det_studio_downloading_manual">Загрузка руководства…</string>
+    <string name="det_studio_video_snap_from">Видеоролик из %1$s</string>
+    <string name="det_studio_candidate_apply">"Ⓐ  ПРИМЕНИТЬ"</string>
+    <string name="det_studio_candidate_cancel">"Ⓑ  ОТМЕНА"</string>
+    <string name="det_studio_close_btn">"Ⓑ  ЗАКРЫТЬ"</string>
+    <string name="det_studio_manual_page_cd">Страница руководства</string>
+
+    <!-- Change Match panel -->
+    <string name="det_cm_title">Изменить сопоставление в %1$s</string>
+    <string name="det_cm_help">Сообщает сервису, какая это игра. Обложки и метаданные не затрагиваются.</string>
+    <string name="det_cm_other_platforms">Включает другие платформы. Проверьте платформу перед выбором.</string>
+    <string name="det_cm_searching_every">Поиск по всем платформам. ScreenScraper может отвечать около 10 секунд…</string>
+    <string name="det_cm_no_games">Игры не найдены. Попробуйте название короче или без указания издания.</string>
+    <string name="det_cm_no_media">нет медиа</string>
+    <string name="det_cm_media">медиа: %1$d</string>
+    <string name="det_cm_hint">"Вверх/Вниз  Перемещение  •  A  Выбрать  •  X  Изменить название  •  B  Назад"</string>
+
+    <!-- Search panel -->
+    <string name="det_sq_title">Поиск у источников обложек</string>
+    <string name="det_sq_help">Меняет запрос к источникам. Игру это никогда не переименовывает.</string>
+    <string name="det_sq_use_title">Название игры</string>
+
+    <!-- File information panel -->
+    <string name="det_fi_title">ИНФОРМАЦИЯ О ФАЙЛЕ</string>
+    <string name="det_fi_no_record">Для этого слота нет записи (появится, когда обложка будет в привязанной библиотеке).</string>
+    <string name="det_fi_type">Тип</string>
+    <string name="det_fi_provider">Сервис</string>
+    <string name="det_fi_source">Источник</string>
+    <string name="det_fi_pinned">Закреплено</string>
+    <string name="det_fi_pinned_yes">Да (заблокировано)</string>
+    <string name="det_fi_dimensions">Размеры</string>
+    <string name="det_fi_size">Размер</string>
+    <string name="det_fi_cropped">Обрезано</string>
+    <string name="det_fi_previous">Предыдущая версия</string>
+    <string name="det_fi_path">Путь</string>
+    <string name="det_fi_origin">Происхождение</string>
+    <string name="det_yes">Да</string>
+    <string name="det_no">Нет</string>
+    <string name="det_crop_title">ОБРЕЗКА / ПОЛОЖЕНИЕ</string>
+    <string name="det_crop_title_shape">"ОБРЕЗКА / ПОЛОЖЕНИЕ  ·  %1$s"</string>
+    <string name="det_crop_baking">Обработка…</string>
+    <string name="det_crop_apply">"Ⓐ  ОБРЕЗАТЬ"</string>
+    <string name="det_crop_options_btn">"Ⓨ  ПАРАМЕТРЫ"</string>
+    <string name="det_crop_hint">"перетащите, чтобы сдвинуть   ·   сведите пальцы для масштаба   ·   крестовина — сдвиг   ·   LB / RB — масштаб"</string>
+    <string name="det_meta_prompt_rows">Строки</string>
+    <string name="det_meta_prompt_policy">Режим</string>
+    <string name="det_meta_prompt_source">Источник</string>
+    <string name="det_meta_prompt_toggle_apply">Отметить / Применить</string>
+    <string name="det_meta_prompt_edit_apply">Изменить / Применить</string>
+</resources>

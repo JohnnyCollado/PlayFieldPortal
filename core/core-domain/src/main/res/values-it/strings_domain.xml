@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shiba rank titles -->
+    <string name="dom_shiba_rank_pup">Cucciolo</string>
+    <string name="dom_shiba_rank_ruffian">Monello</string>
+    <string name="dom_shiba_rank_lone_ron_inu">Ron-inu solitario</string>
+    <string name="dom_shiba_rank_inu_master">Maestro Inu</string>
+    <string name="dom_shiba_rank_legendary_hachiko">Hachiko leggendario</string>
+
+    <!-- App editions -->
+    <string name="dom_edition_full">Full</string>
+    <string name="dom_edition_lite">Lite</string>
+
+    <!-- Audio channels (volume rows) -->
+    <string name="dom_audio_channel_navigation">Navigazione</string>
+    <string name="dom_audio_channel_back">Indietro / Annulla</string>
+    <string name="dom_audio_channel_confirm">Conferma / Applica</string>
+    <string name="dom_audio_channel_error">Errore / Non valido</string>
+    <string name="dom_audio_channel_category">Categoria</string>
+    <string name="dom_audio_channel_options">Opzioni</string>
+    <string name="dom_audio_channel_notification">Notifica</string>
+    <string name="dom_audio_channel_boot">Sequenza di avvio</string>
+    <string name="dom_audio_channel_gameboot">Game Boot</string>
+    <string name="dom_audio_channel_ambience">Ambiente</string>
+
+    <!-- Customisable media slots -->
+    <string name="dom_media_slot_navigation">Navigazione</string>
+    <string name="dom_media_slot_back">Indietro / Annulla</string>
+    <string name="dom_media_slot_confirm">Conferma / Applica</string>
+    <string name="dom_media_slot_error">Errore / Non valido</string>
+    <string name="dom_media_slot_category">Categoria</string>
+    <string name="dom_media_slot_options">Opzioni</string>
+    <string name="dom_media_slot_notification">Notifica</string>
+    <string name="dom_media_slot_boot_video">Animazione di avvio</string>
+    <string name="dom_media_slot_gameboot_video">Animazione Game Boot</string>
+    <string name="dom_media_slot_ambience_audio">Traccia d\'ambiente</string>
+
+    <!-- Game tile display modes -->
+    <string name="dom_icon_display_icon0">Icona personalizzata</string>
+    <string name="dom_icon_display_box_art">Copertina</string>
+    <string name="dom_icon_display_physical_media">Supporto fisico</string>
+    <string name="dom_icon_display_box_3d">Copertina 3D</string>
+
+    <!-- Icon legibility styles -->
+    <string name="dom_icon_legibility_none">Nessuno</string>
+    <string name="dom_icon_legibility_offset_shadow">Ombra sfalsata (scura)</string>
+    <string name="dom_icon_legibility_offset_shadow_light">Ombra sfalsata (chiara)</string>
+    <string name="dom_icon_legibility_contour_dark">Contorno (scuro)</string>
+    <string name="dom_icon_legibility_contour_light">Contorno (chiaro)</string>
+    <string name="dom_icon_legibility_contour_auto">Contorno (auto)</string>
+
+    <!-- Animated image playback -->
+    <string name="dom_image_motion_animated">Animate</string>
+    <string name="dom_image_motion_reduced">Ridotte</string>
+    <string name="dom_image_motion_static">Statiche</string>
+
+    <!-- Text legibility styles -->
+    <string name="dom_text_legibility_none">Nessuno</string>
+    <string name="dom_text_legibility_shadow">Ombra esterna</string>
+    <string name="dom_text_legibility_outline">Contorno</string>
+    <string name="dom_text_legibility_plate">Fondo a contrasto</string>
+    <string name="dom_text_legibility_auto">Automatico</string>
+
+    <!-- Touch gestures -->
+    <string name="dom_touch_gesture_tap">Tocco</string>
+    <string name="dom_touch_gesture_long_press">Tieni premuto</string>
+    <string name="dom_touch_gesture_swipe_left">Scorri a sinistra</string>
+    <string name="dom_touch_gesture_swipe_right">Scorri a destra</string>
+    <string name="dom_touch_gesture_swipe_down">Scorri in basso</string>
+
+    <!-- UMD slot display modes -->
+    <string name="dom_umd_slot_off">Disattivato</string>
+    <string name="dom_umd_slot_inserted">Inserito</string>
+    <string name="dom_umd_slot_inserted_and_recent">Inserito e recente</string>
+
+    <!-- Item list motion styles -->
+    <string name="dom_list_motion_rewind">Riavvolgi</string>
+    <string name="dom_list_motion_glide">Scivola</string>
+
+    <!-- Confirm / Back button layouts -->
+    <string name="dom_confirm_back_standard">Standard (A = Conferma, B = Indietro)</string>
+    <string name="dom_confirm_back_reversed">Invertito (B = Conferma, A = Indietro)</string>
+
+    <!-- X / Y button layouts -->
+    <string name="dom_xy_layout_standard">Standard (Y = Opzioni, X = Ordina)</string>
+    <string name="dom_xy_layout_swapped">Scambiato (X = Opzioni, Y = Ordina)</string>
+
+    <!-- Controller prompt styles -->
+    <string name="dom_controller_type_xbox">Xbox</string>
+    <string name="dom_controller_type_nintendo">Nintendo</string>
+    <string name="dom_controller_type_playstation">PlayStation</string>
+
+    <!-- Held-navigation scroll speeds -->
+    <string name="dom_scroll_speed_relaxed">Tranquilla</string>
+    <string name="dom_scroll_speed_standard">Standard</string>
+    <string name="dom_scroll_speed_fast">Veloce</string>
+
+    <!-- Colour schemes -->
+    <string name="dom_color_scheme_original">Originale (mensile)</string>
+    <string name="dom_color_scheme_classic_blue">Blu classico</string>
+    <string name="dom_color_scheme_sunset_orange">Arancione tramonto</string>
+    <string name="dom_color_scheme_fresh_green">Verde fresco</string>
+    <string name="dom_color_scheme_royal_purple">Viola reale</string>
+    <string name="dom_color_scheme_crimson_red">Rosso cremisi</string>
+    <string name="dom_color_scheme_silver">Argento</string>
+    <string name="dom_color_scheme_sakura_pink">Rosa sakura</string>
+    <string name="dom_color_scheme_golden_amber">Ambra dorata</string>
+    <string name="dom_color_scheme_aqua_teal">Verde acqua</string>
+    <string name="dom_color_scheme_midnight_navy">Blu notte</string>
+    <string name="dom_color_scheme_charcoal">Antracite</string>
+
+    <!-- Controller actions -->
+    <string name="dom_action_navigate_up">Naviga su</string>
+    <string name="dom_action_navigate_down">Naviga giù</string>
+    <string name="dom_action_navigate_left">Naviga a sinistra (categoria precedente)</string>
+    <string name="dom_action_navigate_right">Naviga a destra (categoria successiva)</string>
+    <string name="dom_action_select">Seleziona / Avvia</string>
+    <string name="dom_action_back">Indietro / Chiudi</string>
+    <string name="dom_action_open_context_menu">Opzioni / Menu contestuale</string>
+    <string name="dom_action_change_sort">Cambia ordinamento</string>
+    <string name="dom_action_prev_category">Scheda precedente (cassetto app)</string>
+    <string name="dom_action_next_category">Scheda successiva (cassetto app)</string>
+    <string name="dom_action_home">Start (Notifiche / Conferma nei selettori)</string>
+    <string name="dom_action_shift">Maiusc (tastiera)</string>
+    <string name="dom_action_caps_lock">Bloc Maiusc (tastiera)</string>
+    <string name="dom_action_category_menu">Menu categoria</string>
+
+    <!-- Controller button names -->
+    <string name="dom_key_a">A / Croce</string>
+    <string name="dom_key_b">B / Cerchio</string>
+    <string name="dom_key_x">X / Quadrato</string>
+    <string name="dom_key_y">Y / Triangolo</string>
+    <string name="dom_key_dpad_up">Croce direzionale su</string>
+    <string name="dom_key_dpad_down">Croce direzionale giù</string>
+    <string name="dom_key_dpad_left">Croce direzionale sinistra</string>
+    <string name="dom_key_dpad_right">Croce direzionale destra</string>
+    <string name="dom_key_dpad_center">Croce direzionale centro</string>
+    <string name="dom_key_l1">L1</string>
+    <string name="dom_key_r1">R1</string>
+    <string name="dom_key_l2">L2</string>
+    <string name="dom_key_r2">R2</string>
+    <string name="dom_key_start">Start</string>
+    <string name="dom_key_select">Select</string>
+    <string name="dom_key_enter">Invio</string>
+    <string name="dom_key_back">Indietro</string>
+    <string name="dom_key_unknown">Tasto %1$d</string>
+
+    <!-- Colour naming -->
+    <string name="dom_hue_orange">arancione</string>
+    <string name="dom_hue_yellow">giallo</string>
+    <string name="dom_hue_green">verde</string>
+    <string name="dom_hue_teal">verde acqua</string>
+    <string name="dom_hue_blue">blu</string>
+    <string name="dom_hue_purple">viola</string>
+    <string name="dom_hue_pink">rosa</string>
+    <string name="dom_hue_red">rosso</string>
+    <string name="dom_hue_orange_cap">Arancione</string>
+    <string name="dom_hue_yellow_cap">Giallo</string>
+    <string name="dom_hue_green_cap">Verde</string>
+    <string name="dom_hue_teal_cap">Verde acqua</string>
+    <string name="dom_hue_blue_cap">Blu</string>
+    <string name="dom_hue_purple_cap">Viola</string>
+    <string name="dom_hue_pink_cap">Rosa</string>
+    <string name="dom_hue_red_cap">Rosso</string>
+    <string name="dom_hue_lean">%1$s con sfumature di %2$s</string>
+    <string name="dom_hue_lean_cap">%1$s con sfumature di %2$s</string>
+    <string name="dom_color_dark">Tono scuro di %1$s</string>
+    <string name="dom_color_very_dark">Tono molto scuro di %1$s</string>
+    <string name="dom_color_muted">Tono tenue di %1$s</string>
+    <string name="dom_color_dark_muted">Tono tenue scuro di %1$s</string>
+    <string name="dom_color_very_dark_muted">Tono tenue molto scuro di %1$s</string>
+    <string name="dom_color_grey">Grigio (%1$s)</string>
+    <string name="dom_saturation_grey">Grigio</string>
+    <string name="dom_saturation_muted">Tenue</string>
+    <string name="dom_saturation_vivid">Vivace</string>
+    <string name="dom_saturation_intense">Intenso</string>
+    <string name="dom_brightness_very_dark">Molto scuro</string>
+    <string name="dom_brightness_dark">Scuro</string>
+    <string name="dom_brightness_medium">Medio</string>
+    <string name="dom_brightness_bright">Chiaro</string>
+    <string name="dom_tint_standard">Standard</string>
+    <string name="dom_tint_orange">Più arancione</string>
+    <string name="dom_tint_yellow">Più giallo</string>
+    <string name="dom_tint_green">Più verde</string>
+    <string name="dom_tint_teal">Più verde acqua</string>
+    <string name="dom_tint_blue">Più blu</string>
+    <string name="dom_tint_purple">Più viola</string>
+    <string name="dom_tint_pink">Più rosa</string>
+    <string name="dom_tint_red">Più rosso</string>
+    <string name="dom_tint_much_orange">Molto più arancione</string>
+    <string name="dom_tint_much_yellow">Molto più giallo</string>
+    <string name="dom_tint_much_green">Molto più verde</string>
+    <string name="dom_tint_much_teal">Molto più verde acqua</string>
+    <string name="dom_tint_much_blue">Molto più blu</string>
+    <string name="dom_tint_much_purple">Molto più viola</string>
+    <string name="dom_tint_much_pink">Molto più rosa</string>
+    <string name="dom_tint_much_red">Molto più rosso</string>
+    <string name="dom_tint_cooler">Più freddo</string>
+    <string name="dom_tint_warmer">Più caldo</string>
+    <string name="dom_tint_much_cooler">Molto più freddo</string>
+    <string name="dom_tint_much_warmer">Molto più caldo</string>
+    <string name="dom_depth_much_lighter">Molto più chiaro</string>
+    <string name="dom_depth_lighter">Più chiaro</string>
+    <string name="dom_depth_deeper">Più intenso</string>
+    <string name="dom_depth_much_deeper">Molto più intenso</string>
+
+    <!-- File limit messages -->
+    <string name="dom_limit_motion_unsupported_format">Formato non supportato: usa MP4, WebM, GIF o WebP</string>
+    <string name="dom_limit_motion_too_large_resolution">Video troppo grande: massimo 1080p</string>
+    <string name="dom_limit_motion_too_long">Clip troppo lunga: massimo 60 secondi</string>
+    <string name="dom_limit_motion_too_large_bytes">File troppo grande: meno di 60 MB</string>
+    <string name="dom_limit_motion_undecodable">Impossibile leggere il video: prova un altro file</string>
+    <string name="dom_limit_media_unsupported_audio">Formato non supportato: usa audio MP3, WAV, OGG o M4A</string>
+    <string name="dom_limit_media_unsupported_video">Formato non supportato: usa video MP4 o WebM</string>
+    <string name="dom_limit_media_too_large_sound">File troppo grande</string>
+    <string name="dom_limit_media_too_large_video">File troppo grande: i video devono essere sotto i 25 MB</string>
+    <string name="dom_limit_media_undecodable">Impossibile leggere il file: provane un altro</string>
+    <string name="dom_limit_media_no_duration">Impossibile leggere la durata del file: prova un altro file o convertilo in MP3/WAV/OGG/M4A</string>
+    <string name="dom_limit_media_too_long">Clip troppo lunga: massimo %1$s</string>
+
+    <!-- Error codes -->
+    <string name="dom_error_ln_1001_title">Nessun emulatore assegnato a questa piattaforma</string>
+    <string name="dom_error_ln_1001_why">PlayFieldPortal non sa quale app deve avviare i giochi di questa piattaforma.</string>
+    <string name="dom_error_ln_1001_action">Scegli un emulatore per questa piattaforma in Impostazioni › Assegnazione emulatori.</string>
+    <string name="dom_error_ln_1002_title">Il core RetroArch selezionato non è installato</string>
+    <string name="dom_error_ln_1002_why">È stato chiesto a RetroArch di caricare un core che non è presente su questo dispositivo.</string>
+    <string name="dom_error_ln_1002_action">Installa il core dall\'Online Updater di RetroArch o scegli un altro core in Assegnazione emulatori.</string>
+    <string name="dom_error_ln_2001_title">Il file del gioco manca o non è leggibile</string>
+    <string name="dom_error_ln_2001_why">Il file potrebbe essere stato spostato, rinominato o eliminato, oppure la scheda SD che lo contiene è stata rimossa.</string>
+    <string name="dom_error_ln_2001_action">Controlla che il file ci sia ancora, poi ripeti la scansione della sua Memory Card.</string>
+    <string name="dom_error_ln_4001_title">Emulatore non trovato</string>
+    <string name="dom_error_ln_4001_why">L\'emulatore assegnato a questo gioco non è installato, oppure Android non ha trovato la schermata che PlayFieldPortal apre.</string>
+    <string name="dom_error_ln_4001_action">Installa l\'emulatore o scegline un altro in Impostazioni › Assegnazione emulatori.</string>
+    <string name="dom_error_ln_4002_title">Android non ha permesso l\'apertura dell\'emulatore</string>
+    <string name="dom_error_ln_4002_why">Android ha negato a PlayFieldPortal il permesso di avviare questo emulatore.</string>
+    <string name="dom_error_ln_4002_action">Apri l\'emulatore da solo una volta, poi riprova. Se continua a succedere, aggiorna l\'emulatore.</string>
+    <string name="dom_error_ln_4003_title">L\'emulatore non è mai passato in primo piano</string>
+    <string name="dom_error_ln_4003_why">Molto probabilmente l\'emulatore si è chiuso all\'avvio, oppure Android l\'ha fermato prima che il gioco venisse caricato.</string>
+    <string name="dom_error_ln_4003_action">Apri l\'emulatore da solo una volta per verificare che si avvii e aggiornalo se è disponibile una versione più recente. Se continua a succedere, scegli un altro emulatore in Impostazioni › Assegnazione emulatori.</string>
+    <string name="dom_error_ln_9001_title">Impossibile aprire l\'emulatore</string>
+    <string name="dom_error_ln_9001_why">Si è verificato un problema imprevisto durante l\'avvio dell\'emulatore.</string>
+    <string name="dom_error_ln_9001_action">Riprova. Se continua a succedere, copia i dettagli e segnalalo.</string>
+    <string name="dom_error_sc_1001_title">Nessuna cartella impostata per questa Memory Card</string>
+    <string name="dom_error_sc_1001_why">Questa Memory Card non ha ancora una posizione da analizzare.</string>
+    <string name="dom_error_sc_1001_action">Scegli una cartella dalle Opzioni della Memory Card, poi avvia la scansione.</string>
+    <string name="dom_error_sc_1002_title">Una scansione è già in corso</string>
+    <string name="dom_error_sc_1002_why">Questa Memory Card era già in fase di scansione, quindi la seconda scansione è stata saltata.</string>
+    <string name="dom_error_sc_1002_action">Attendi che la scansione in corso finisca. Il risultato apparirà qui al termine.</string>
+    <string name="dom_error_sc_2001_title">Accesso alla cartella perso</string>
+    <string name="dom_error_sc_2001_why">PlayFieldPortal ha perso il permesso di leggere questa cartella.</string>
+    <string name="dom_error_sc_2001_action">Scegli di nuovo la cartella dalle Opzioni della Memory Card per concedere l\'accesso, poi avvia la scansione.</string>
+    <string name="dom_error_sc_2002_title">La cartella non esiste più</string>
+    <string name="dom_error_sc_2002_why">La cartella è stata spostata o eliminata. Se si trova su una scheda SD, la scheda potrebbe essere stata rimossa.</string>
+    <string name="dom_error_sc_2002_action">Inserisci la scheda SD e ripeti la scansione, oppure scegli una nuova cartella dalle Opzioni della Memory Card.</string>
+    <string name="dom_error_sc_2003_title">Cartella di sistema sconosciuta</string>
+    <string name="dom_error_sc_2003_why">Questa cartella nella cartella ROM principale non corrisponde a nessun sistema noto a PlayFieldPortal.</string>
+    <string name="dom_error_sc_2003_action">Rinomina la cartella con il nome di un sistema supportato o sposta i suoi giochi in una di queste.</string>
+    <string name="dom_error_sc_2004_title">File non riconosciuto</string>
+    <string name="dom_error_sc_2004_why">Il tipo di questo file non è tra quelli usati dai giochi di questa piattaforma.</string>
+    <string name="dom_error_sc_2004_action">Controlla che il file sia un gioco per questa piattaforma. Archivi e patch vengono saltati di proposito.</string>
+    <string name="dom_error_sc_9001_title">La scansione non è riuscita per un errore imprevisto</string>
+    <string name="dom_error_sc_9001_why">Si è verificato un problema imprevisto durante la scansione.</string>
+    <string name="dom_error_sc_9001_action">Ripeti la scansione. Se continua a succedere, copia i dettagli e segnalalo.</string>
+    <string name="dom_error_ar_1001_title">Cartella delle immagini non disponibile</string>
+    <string name="dom_error_ar_1001_why">PFP non riesce a raggiungere la cartella delle immagini, quindi le nuove immagini sono in pausa.</string>
+    <string name="dom_error_ar_1001_action">Ricollega la cartella in Impostazioni › Immagini.</string>
+    <string name="dom_error_ar_2001_title">Impossibile salvare il file dell\'immagine</string>
+    <string name="dom_error_ar_2001_why">La memoria era piena oppure non è stato possibile scrivere nella cartella delle immagini.</string>
+    <string name="dom_error_ar_2001_action">Libera un po\' di spazio e riprova.</string>
+    <string name="dom_error_ar_2002_title">Impossibile copiare un file</string>
+    <string name="dom_error_ar_2002_why">La copia si è interrotta a metà oppure non è stato possibile scrivere nella destinazione.</string>
+    <string name="dom_error_ar_2002_action">Controlla che ci sia spazio libero nella destinazione, poi riprova.</string>
+    <string name="dom_error_ar_2003_title">Cartella di sistema sconosciuta nell\'importazione</string>
+    <string name="dom_error_ar_2003_why">Questa cartella nell\'importazione non corrisponde a nessun sistema noto a PlayFieldPortal.</string>
+    <string name="dom_error_ar_2003_action">Rinomina la cartella con il nome di un sistema supportato e ripeti l\'importazione.</string>
+    <string name="dom_error_ar_3001_title">Impossibile raggiungere la fonte delle immagini</string>
+    <string name="dom_error_ar_3001_why">Il dispositivo è offline oppure la fonte non ha risposto.</string>
+    <string name="dom_error_ar_3001_action">Controlla la connessione e riprova più tardi.</string>
+    <string name="dom_error_ar_3002_title">La fonte ha rifiutato la richiesta</string>
+    <string name="dom_error_ar_3002_why">La fonte sta limitando le richieste, oppure l\'account o la chiave richiesti sono stati rifiutati.</string>
+    <string name="dom_error_ar_3002_action">Attendi un po\' e riprova, oppure controlla l\'account della fonte in Impostazioni.</string>
+    <string name="dom_error_ar_3003_title">Nessuna corrispondenza trovata per questo gioco</string>
+    <string name="dom_error_ar_3003_why">La fonte non ha voci che corrispondano al titolo di questo gioco.</string>
+    <string name="dom_error_ar_3003_action">Controlla il titolo del gioco oppure scegli le immagini a mano nell\'Artwork Studio.</string>
+    <string name="dom_error_ar_9001_title">Il download non è riuscito per un errore imprevisto</string>
+    <string name="dom_error_ar_9001_why">Si è verificato un problema imprevisto durante il download.</string>
+    <string name="dom_error_ar_9001_action">Riprova. Se continua a succedere, copia i dettagli e segnalalo.</string>
+    <string name="dom_error_ac_1001_title">Nessun set di achievement corrisponde a questo gioco</string>
+    <string name="dom_error_ac_1001_why">Nessuno dei servizi collegati ha achievement per un gioco con questo titolo.</string>
+    <string name="dom_error_ac_1001_action">Abbina il gioco a mano dalla sua pagina degli achievement.</string>
+    <string name="dom_error_ac_2001_title">Impossibile leggere la cartella degli achievement Windows</string>
+    <string name="dom_error_ac_2001_why">Non è stato possibile aprire la cartella scelta per gli achievement locali di questo gioco.</string>
+    <string name="dom_error_ac_2001_action">Scegli di nuovo la cartella del gioco dalla sua pagina degli achievement.</string>
+    <string name="dom_error_ac_3001_title">Il dispositivo è offline</string>
+    <string name="dom_error_ac_3001_why">Gli achievement non possono aggiornarsi senza una connessione a Internet.</string>
+    <string name="dom_error_ac_3001_action">Connettiti a Internet. L\'aggiornamento ripartirà da solo.</string>
+    <string name="dom_error_ac_3002_title">Accesso scaduto</string>
+    <string name="dom_error_ac_3002_why">Il servizio collegato non accetta più l\'accesso di PlayFieldPortal.</string>
+    <string name="dom_error_ac_3002_action">Ricollega il servizio in Impostazioni › Achievement.</string>
+    <string name="dom_error_ac_3003_title">I dettagli di gioco di Steam sono privati</string>
+    <string name="dom_error_ac_3003_why">Steam condivide gli achievement solo quando i tuoi dettagli di gioco sono pubblici.</string>
+    <string name="dom_error_ac_3003_action">Imposta Dettagli di gioco su Pubblico nelle impostazioni della privacy di Steam, poi aggiorna di nuovo.</string>
+    <string name="dom_error_ac_3004_title">Impossibile aggiornare questo gioco</string>
+    <string name="dom_error_ac_3004_why">Il servizio non ha risposto per questo gioco oppure ha risposto con un errore.</string>
+    <string name="dom_error_ac_3004_action">Riprova l\'aggiornamento più tardi.</string>
+    <string name="dom_error_md_2001_title">Impossibile leggere la cartella multimediale</string>
+    <string name="dom_error_md_2001_why">PlayFieldPortal ha perso l\'accesso a questa cartella oppure non esiste più.</string>
+    <string name="dom_error_md_2001_action">Scegli di nuovo la cartella nelle impostazioni multimediali, poi avvia la scansione.</string>
+    <string name="dom_error_md_9001_title">La scansione multimediale non è riuscita per un errore imprevisto</string>
+    <string name="dom_error_md_9001_why">Si è verificato un problema imprevisto durante la scansione.</string>
+    <string name="dom_error_md_9001_action">Ripeti la scansione. Se continua a succedere, copia i dettagli e segnalalo.</string>
+    <string name="dom_error_bk_1001_title">Il ripristino ha saltato un elemento</string>
+    <string name="dom_error_bk_1001_why">Questo elemento non poteva essere ripristinato in modo sicuro, quindi è stato lasciato com\'era.</string>
+    <string name="dom_error_bk_1001_action">Nient\'altro è stato modificato. Se ti serve, configura di nuovo questo elemento a mano.</string>
+    <string name="dom_error_bk_2001_title">Impossibile scrivere il file di backup</string>
+    <string name="dom_error_bk_2001_why">La memoria era piena oppure non è stato possibile scrivere nella cartella di backup.</string>
+    <string name="dom_error_bk_2001_action">Libera un po\' di spazio o scegli un\'altra posizione per il backup, poi riprova.</string>
+    <string name="dom_error_bk_2002_title">Il file di backup è illeggibile o danneggiato</string>
+    <string name="dom_error_bk_2002_why">Il file non è un backup di PlayFieldPortal oppure è incompleto.</string>
+    <string name="dom_error_bk_2002_action">Scegli un altro file di backup.</string>
+    <string name="dom_error_sy_9001_title">Si è verificato un problema</string>
+    <string name="dom_error_sy_9001_why">Si è verificato un problema imprevisto.</string>
+    <string name="dom_error_sy_9001_action">Riprova. Se continua a succedere, copia i dettagli e segnalalo.</string>
+</resources>

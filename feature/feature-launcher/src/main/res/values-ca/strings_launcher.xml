@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Errors d'inici abans que s'obri un emulador -->
+    <string name="launch_err_custom_command">Els perfils d\'ordre personalitzada ja no són compatibles. Canvia aquest emulador al mètode d\'inici \"Obre la ROM amb l\'aplicació\" o \"Obre una pantalla de l\'aplicació\".</string>
+    <string name="launch_err_shortcut_unsupported">No es poden iniciar dreceres des d\'aquesta pantalla</string>
+    <string name="launch_err_no_package">No hi ha cap paquet d\'Android registrat per a %1$s</string>
+    <string name="launch_err_app_not_launchable">L\'aplicació d\'Android no està instal·lada o no es pot iniciar: %1$s</string>
+    <string name="launch_err_emulator_not_installed">L\'emulador no està instal·lat: %1$s (%2$s)</string>
+    <string name="launch_err_wrong_build">%1$s (%2$s) no és la versió esperada: el certificat de signatura no coincideix. Torna a instal·lar l\'emulador des de la font oficial.</string>
+    <string name="launch_err_no_activity_for_path">%1$s no té cap activitat d\'inici registrada, així que no se li pot passar una ruta de fitxer. Torna a importar-ne l\'entrada de coneixement o torna a detectar l\'emulador.</string>
+    <string name="launch_err_activity_required">Aquest mètode d\'inici necessita el nom d\'una pantalla de l\'aplicació - perfil: %1$s</string>
+    <string name="launch_err_activity_gone">%1$s ja no ofereix la seva activitat d\'inici (%2$s). Actualitza l\'emulador o tria\'n un altre per a aquesta plataforma.</string>
+    <string name="launch_err_no_launch_id">No hi ha cap ID d\'inici registrat per a %1$s. Torna a escanejar-ne la biblioteca.</string>
+    <string name="launch_err_rom_link_invalid">L\'enllaç a la ROM d\'aquest joc no és vàlid. Torna a escanejar-ne la biblioteca.</string>
+    <string name="launch_err_lost_access">Play Field Portal ha perdut l\'accés al fitxer d\'aquest joc. Torna a connectar l\'emmagatzematge i torna a escanejar-ne la biblioteca.</string>
+    <string name="launch_err_rom_path_required">Cal la ruta de la ROM per iniciar %1$s</string>
+    <string name="launch_err_rom_not_found">No s\'ha trobat el fitxer de ROM: %1$s</string>
+    <string name="launch_err_no_core">No hi ha cap nucli de RetroArch configurat per a la plataforma \'%1$s\' al perfil \'%2$s\'. Obre RetroArch → Core Downloader per instal·lar un nucli per a aquest sistema.</string>
+    <string name="launch_err_cannot_open_rom_type">%1$s no pot obrir aquest tipus de ROM. Prova de tornar a instal·lar l\'emulador o comprova els permisos de l\'aplicació a la configuració d\'Android.</string>
+    <string name="launch_err_no_file_path">%1$s no té cap ruta de fitxer en aquest dispositiu, així que no es pot indicar a %2$s quin joc ha d\'iniciar.</string>
+    <string name="launch_err_not_in_rom_folder">%1$s no és dins d\'una carpeta de ROM configurada, així que no es pot passar a %2$s. Comprova la carpeta definida per a aquesta Memory Card a Configuració.</string>
+
+    <!-- Problemes amb l'elecció d'emulador -->
+    <string name="launch_err_configured_missing">L\'emulador (%1$s) no està instal·lat o no està disponible: %2$s</string>
+    <string name="launch_err_core_not_installed">%1$s està definit com a %2$s, però aquest nucli no està instal·lat a RetroArch. Instal·la\'l o tria un altre emulador.</string>
+    <string name="launch_err_no_longer_available">%1$s està definit com a %2$s, però ja no està disponible. Tria un altre emulador.</string>
+    <string name="launch_err_not_configured_for_platform">%1$s no està configurat per a %2$s</string>
+    <string name="launch_err_no_emulator_for_platform">No hi ha cap emulador configurat per a %1$s. Tria un emulador per a aquest joc o defineix-ne un per defecte per a la plataforma.</string>
+
+    <!-- Origen de l'elecció d'emulador -->
+    <string name="launch_source_per_game">Personalització per joc</string>
+    <string name="launch_source_per_game_lower">personalització per joc</string>
+    <string name="launch_source_memory_card">Per defecte de la Memory Card</string>
+    <string name="launch_source_memory_card_lower">per defecte de la Memory Card</string>
+    <string name="launch_source_platform">Per defecte de la plataforma</string>
+    <string name="launch_source_platform_lower">per defecte de la plataforma</string>
+    <string name="launch_source_recommended">Recomanat</string>
+    <string name="launch_source_recommended_lower">recomanat</string>
+    <string name="launch_phrase_per_game">personalització per joc</string>
+    <string name="launch_phrase_memory_card">emulador de la Memory Card</string>
+    <string name="launch_phrase_platform">per defecte de la plataforma</string>
+
+    <!-- Errors en passar el control -->
+    <string name="launch_err_emulator_not_found">No s\'ha trobat l\'emulador. Està instal·lat?</string>
+    <string name="launch_err_permission_denied">S\'ha denegat el permís per iniciar l\'emulador</string>
+    <string name="launch_err_open_emulator">No s\'ha pogut obrir l\'emulador: %1$s</string>
+    <string name="launch_never_foreground">L\'emulador no ha passat mai a primer pla després d\'iniciar-se.</string>
+    <string name="launch_never_appeared">L\'emulador no ha aparegut. Comprova que estigui instal·lat i actualitzat i torna a provar d\'iniciar-lo.</string>
+    <plurals name="launch_history_failed">
+        <item quantity="one">%1$d dels últims %2$d inicis d\'aquest joc ha fallat.</item>
+        <item quantity="many">%1$d dels últims %2$d inicis d\'aquest joc han fallat.</item>
+        <item quantity="other">%1$d dels últims %2$d inicis d\'aquest joc han fallat.</item>
+    </plurals>
+
+    <!-- Notificació d'error d'inici -->
+    <string name="launch_rec_title">No s\'ha pogut iniciar %1$s</string>
+    <string name="launch_rec_could_not_start">No s\'ha pogut iniciar l\'emulador</string>
+    <string name="launch_rec_never_foreground">L\'emulador no ha passat mai a primer pla</string>
+    <string name="launch_fact_emulator">Emulador</string>
+    <string name="launch_fact_core">Nucli</string>
+    <string name="launch_fact_platform">Plataforma</string>
+    <string name="launch_fact_recent">Inicis recents</string>
+    <string name="launch_fact_recent_value">%1$d dels últims %2$d han fallat</string>
+
+    <!-- Sol·licituds de drecera -->
+    <string name="launch_shortcut_request_title">Sol·licitud de drecera: %1$s (obre %2$s)</string>
+    <string name="launch_shortcut_request_message">Afegeix-la només si acabes de crear tu aquesta drecera.</string>
+    <string name="launch_shortcut_added_title">Drecera afegida: %1$s</string>
+    <string name="launch_shortcut_ignored_title">Drecera ignorada: %1$s</string>
+    <string name="launch_shortcut_from">De %1$s</string>
+    <string name="launch_windows_added_title">\"%1$s\" s\'ha afegit a Jocs de Windows</string>
+    <string name="launch_windows_added_message">Acaba de configurar la biblioteca de Windows per escanejar-ne la carpeta</string>
+
+    <!-- Indicacions de la primera configuració -->
+    <string name="launch_setup_add_rom_folder">Afegeix una carpeta de ROM per començar la biblioteca</string>
+    <string name="launch_setup_add_console_card">Afegeix una Memory Card de consola on escanejar</string>
+    <string name="launch_setup_install_emulator">Instal·la un emulador per jugar als teus jocs</string>
+
+    <!-- Detecció d'emuladors -->
+    <string name="launch_inspect_known">Emplenat automàticament amb el perfil integrat de %1$s. Confirma les plataformes i desa.</string>
+    <string name="launch_inspect_best_guess">Estimació a partir de com aquesta aplicació obre els fitxers de ROM. Defineix les plataformes i prova una ROM abans de desar.</string>
+    <string name="launch_inspect_minimal">No s\'ha pogut detectar com accepta ROM aquesta aplicació. Emplena manualment la configuració d\'activitat / intent i prova una ROM.</string>
+
+    <!-- Actualitzacions dels fitxers de coneixement -->
+    <string name="launch_kb_too_many_files">Es poden importar com a màxim %1$d fitxers de coneixement; elimina\'n un primer</string>
+    <string name="launch_kb_installed">Actualitzat</string>
+    <string name="launch_kb_not_configured">Les actualitzacions no estan configurades en aquesta versió</string>
+    <string name="launch_kb_offline">No s\'ha pogut connectar amb el servidor d\'actualitzacions</string>
+    <string name="launch_kb_too_large">El fitxer d\'actualització és massa gran</string>
+    <string name="launch_kb_signature_invalid">La signatura de l\'actualització no és vàlida</string>
+    <string name="launch_kb_needs_app_update">Aquesta actualització necessita una versió més nova de l\'aplicació</string>
+    <string name="launch_kb_older">L\'actualització és més antiga que la que ja hi ha instal·lada</string>
+    <string name="launch_kb_invalid_content">El fitxer d\'actualització té contingut no vàlid</string>
+    <string name="launch_kb_storage_failed">No s\'ha pogut desar l\'actualització</string>
+    <string name="launch_kb_skipped">No calia cap comprovació</string>
+
+    <!-- Llançadors de jocs de Windows -->
+    <string name="launch_unknown_gamehub_or_bannerhub">podria ser GameHub o BannerHub</string>
+    <string name="launch_unknown_gamehublite_or_bannerhub">podria ser GameHub Lite o BannerHub</string>
+    <string name="launch_unknown_not_in_list">no és a la llista de PFP</string>
+    <string name="launch_choice_not_a_launcher">No és un llançador</string>
+    <string name="launch_id_prompt_gamehub">ID del joc — a la pàgina del joc: toca Copy al costat de Local Game ID, o ⋮ → Banner Tools → Show Game ID</string>
+    <string name="launch_id_prompt_gamenative">Steam App ID (o l\'ID de l\'aplicació a la botiga) del joc instal·lat</string>
+</resources>

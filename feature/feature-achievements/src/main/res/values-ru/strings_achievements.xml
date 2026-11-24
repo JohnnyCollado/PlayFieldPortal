@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ach_upd_running">Обновление установленных достижений</string>
+    <string name="ach_upd_running_stop_note">Уже обновлённые достижения сохранятся.</string>
+    <string name="ach_upd_progress">Проверка: %1$d из %2$d игр</string>
+    <string name="ach_upd_stopped">Обновление достижений остановлено</string>
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="one">Проверена %d игра; сохранённый прогресс не потерян</item>
+        <item quantity="few">Проверено %d игры; сохранённый прогресс не потерян</item>
+        <item quantity="many">Проверено %d игр; сохранённый прогресс не потерян</item>
+        <item quantity="other">Проверено %d игры; сохранённый прогресс не потерян</item>
+    </plurals>
+    <string name="ach_upd_some_failed">Часть достижений не обновилась</string>
+    <plurals name="ach_upd_failed_message">
+        <item quantity="one">%1$d из %2$d игры нужно повторить</item>
+        <item quantity="few">%1$d из %2$d игр нужно повторить</item>
+        <item quantity="many">%1$d из %2$d игр нужно повторить</item>
+        <item quantity="other">%1$d из %2$d игры нужно повторить</item>
+    </plurals>
+    <string name="ach_upd_results_done">Обновлено</string>
+    <string name="ach_upd_updated">Достижения обновлены</string>
+    <plurals name="ach_upd_updated_message">
+        <item quantity="one">Обновлена %1$d игра · без изменений: %2$d</item>
+        <item quantity="few">Обновлено %1$d игры · без изменений: %2$d</item>
+        <item quantity="many">Обновлено %1$d игр · без изменений: %2$d</item>
+        <item quantity="other">Обновлено %1$d игры · без изменений: %2$d</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">Достижения актуальны</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="one">Проверена %d установленная игра</item>
+        <item quantity="few">Проверено %d установленные игры</item>
+        <item quantity="many">Проверено %d установленных игр</item>
+        <item quantity="other">Проверено %d установленной игры</item>
+    </plurals>
+    <string name="ach_upd_paused">Обновление достижений приостановлено</string>
+    <string name="ach_upd_fact_service">Сервис</string>
+    <string name="ach_upd_pause_offline">Подключитесь к интернету</string>
+    <string name="ach_upd_pause_reconnect">Переподключите %1$s</string>
+    <string name="ach_upd_pause_steam_private">Сведения об играх Steam недоступны</string>
+
+    <!-- Auto-match notifications -->
+    <string name="ach_match_running">Автосопоставление игр</string>
+    <string name="ach_match_running_stop_note">Уже сопоставленные игры останутся привязанными.</string>
+    <string name="ach_match_stopped_note">Уже сопоставленные игры останутся привязанными</string>
+    <string name="ach_match_stopped">Автосопоставление остановлено</string>
+    <string name="ach_match_recognized">Игры распознаны</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="one">Сопоставлена %d установленная игра. Обновляем её достижения.</item>
+        <item quantity="few">Сопоставлено %d установленные игры. Обновляем их достижения.</item>
+        <item quantity="many">Сопоставлено %d установленных игр. Обновляем их достижения.</item>
+        <item quantity="other">Сопоставлено %d установленной игры. Обновляем их достижения.</item>
+    </plurals>
+
+    <!-- Clearing achievement records -->
+    <string name="ach_clear_done">Записи о достижениях удалены</string>
+    <string name="ach_clear_done_message">Чтобы снова увидеть достижения, синхронизируйте установленные игры заново</string>
+    <string name="ach_clear_failed">Не удалось удалить достижения</string>
+    <string name="ach_clear_failed_message">Ничего не удалено. Повторите в разделе «Настройки ▸ Достижения»</string>
+    <string name="ach_ls_unavail_store">не удалось запросить магазин</string>
+    <string name="ach_ls_unavail_steam">Steam сейчас недоступен</string>
+    <string name="ach_ls_steam_unreachable">Не удалось связаться со Steam</string>
+    <string name="ach_ls_steam_rate_limited">Steam ограничивает частоту запросов</string>
+    <string name="ach_ls_steam_error">Steam вернул ошибку</string>
+    <string name="ach_ls_steam_needs_key">Для Steam нужен ваш ключ Web API</string>
+    <string name="ach_link_no_match">В Steam нет игры «%1$s». Переименуйте папку по названию игры в Steam или сначала привяжите её в разделе «Об игре ▸ Сопоставить игру».</string>
+    <string name="ach_link_unavailable">%1$s, поэтому не удалось определить app id этой папки. Ничего не изменено — повторите, когда снова будете в сети.</string>
+    <string name="ach_link_marker_failed">Не удалось создать steam_appid.txt в этой папке — возможно, у PFP есть доступ только на чтение.</string>
+    <string name="ach_link_not_recorded">Не удалось сохранить выбранное сопоставление.</string>
+    <string name="ach_link_installer_off">Включите «Установка Goldberg и конвертация игр» в настройках достижений, прежде чем PFP будет записывать в папку игры.</string>
+    <string name="ach_link_no_app_id">В папке больше не указан app id — выберите её заново.</string>
+    <string name="ach_link_need_key">Добавьте ключ Steam Web API в разделе «Настройки ▸ Достижения ▸ Учётные данные» — список достижений берётся по нему.</string>
+    <string name="ach_link_no_achievements">В Steam нет достижений для app id %1$s, отслеживать нечего.</string>
+    <string name="ach_link_kit_failed">Не удалось записать набор достижений: %1$s</string>
+    <string name="ach_link_read_back_failed">Не удалось повторно прочитать папку. Если она на съёмном носителе, подключите его заново и выберите папку снова.</string>
+    <string name="ach_link_not_steam_build">В папке нет библиотеки Steam (steam_api64.dll), значит, это не сборка для Steam и эмулятору нечего отслеживать. Выберите папку, где лежит .exe игры.</string>
+    <string name="ach_pick_checking">Проверка в Steam…</string>
+    <plurals name="ach_pick_coins">
+        <item quantity="one">%1$d монета  ·  appid %2$s</item>
+        <item quantity="few">%1$d монеты  ·  appid %2$s</item>
+        <item quantity="many">%1$d монет  ·  appid %2$s</item>
+        <item quantity="other">%1$d монеты  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">Нет списка в Steam  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">Нужен ключ Steam Web API  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">Steam не ответил  ·  appid %1$s</string>
+
+    <!-- Local Steam: batch match summary -->
+    <string name="ach_batch_already_running">Пакетное сопоставление уже идёт.</string>
+    <string name="ach_batch_no_folders">Здесь нет папок игр. Выберите папку, В КОТОРОЙ лежат папки игр, а не папку одной игры.</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="one">Найдена %d папка, но это не сборка для Steam — нет библиотеки steam_api, эмулятору нечего отслеживать.</item>
+        <item quantity="few">Найдено %d папки, но ни одна не является сборкой для Steam — нет библиотеки steam_api, эмулятору нечего отслеживать.</item>
+        <item quantity="many">Найдено %d папок, но ни одна не является сборкой для Steam — нет библиотеки steam_api, эмулятору нечего отслеживать.</item>
+        <item quantity="other">Найдено %d папки, но ни одна не является сборкой для Steam — нет библиотеки steam_api, эмулятору нечего отслеживать.</item>
+    </plurals>
+    <string name="ach_batch_linked">привязано к играм библиотеки: %1$d</string>
+    <string name="ach_batch_tracked">отслеживается отдельно: %1$d</string>
+    <string name="ach_batch_converting">ожидает конвертации: %1$d</string>
+    <plurals name="ach_batch_matched">
+        <item quantity="one">Сопоставлено %1$d из %2$d папки.</item>
+        <item quantity="few">Сопоставлено %1$d из %2$d папок.</item>
+        <item quantity="many">Сопоставлено %1$d из %2$d папок.</item>
+        <item quantity="other">Сопоставлено %1$d из %2$d папки.</item>
+    </plurals>
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="one">Сопоставлено %1$d из %2$d папки: %3$s.</item>
+        <item quantity="few">Сопоставлено %1$d из %2$d папок: %3$s.</item>
+        <item quantity="many">Сопоставлено %1$d из %2$d папок: %3$s.</item>
+        <item quantity="other">Сопоставлено %1$d из %2$d папки: %3$s.</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="one">%1$d не удалось опознать по названию — откройте страницу Shiba Coins игры и выберите папку через автосопоставление.</item>
+        <item quantity="few">%1$d не удалось опознать по названиям — откройте страницу Shiba Coins каждой игры и выберите папку через автосопоставление.</item>
+        <item quantity="many">%1$d не удалось опознать по названиям — откройте страницу Shiba Coins каждой игры и выберите папку через автосопоставление.</item>
+        <item quantity="other">%1$d не удалось опознать по названиям — откройте страницу Shiba Coins каждой игры и выберите папку через автосопоставление.</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="one">%1$d нет в библиотеке — сначала добавьте на карту Windows, затем сопоставьте снова.</item>
+        <item quantity="few">%1$d нет в библиотеке — сначала добавьте их на карту Windows, затем сопоставьте снова.</item>
+        <item quantity="many">%1$d нет в библиотеке — сначала добавьте их на карту Windows, затем сопоставьте снова.</item>
+        <item quantity="other">%1$d нет в библиотеке — сначала добавьте их на карту Windows, затем сопоставьте снова.</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="one">Не сборки для Steam: %1$d.</item>
+        <item quantity="few">Не сборки для Steam: %1$d.</item>
+        <item quantity="many">Не сборки для Steam: %1$d.</item>
+        <item quantity="other">Не сборки для Steam: %1$d.</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="one">Ошибок: %1$d — см. журнал.</item>
+        <item quantity="few">Ошибок: %1$d — см. журнал.</item>
+        <item quantity="many">Ошибок: %1$d — см. журнал.</item>
+        <item quantity="other">Ошибок: %1$d — см. журнал.</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">Не удалось открыть папку.</string>
+    <string name="ach_batch_fail_read_back">%1$s: не удалось прочитать после опознания.</string>
+    <string name="ach_batch_fail_reason">%1$s: %2$s.</string>
+    <string name="ach_batch_fail_marker">%1$s: не удалось создать steam_appid.txt.</string>
+
+    <!-- Vita3K library scan results -->
+    <string name="ach_vita_set_folder">Сначала укажите папку данных Vita3K (ux0).</string>
+    <string name="ach_vita_link_invalid">Ссылка на папку Vita3K недействительна — дайте доступ заново.</string>
+    <string name="ach_vita_no_ux0">В выбранной папке нет ux0/app — выберите папку ux0 Vita3K (или папку, в которой она лежит).</string>
+    <string name="ach_vita_no_app">В ux0 нет папки app/ — проверьте выбранную папку.</string>
+    <string name="ach_vita_none_installed">В ux0/app нет установленных игр Vita. Сначала установите игру в Vita3K.</string>
+    <plurals name="ach_vita_no_new">
+        <item quantity="one">Новых игр Vita нет — %d уже в библиотеке.</item>
+        <item quantity="few">Новых игр Vita нет — %d уже в библиотеке.</item>
+        <item quantity="many">Новых игр Vita нет — %d уже в библиотеке.</item>
+        <item quantity="other">Новых игр Vita нет — %d уже в библиотеке.</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="one">Импортирована %d игра Vita.</item>
+        <item quantity="few">Импортировано %d игры Vita.</item>
+        <item quantity="many">Импортировано %d игр Vita.</item>
+        <item quantity="other">Импортировано %d игры Vita.</item>
+    </plurals>
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="one">Импортирована %1$d игра Vita, обновлено: %2$d.</item>
+        <item quantity="few">Импортировано %1$d игры Vita, обновлено: %2$d.</item>
+        <item quantity="many">Импортировано %1$d игр Vita, обновлено: %2$d.</item>
+        <item quantity="other">Импортировано %1$d игры Vita, обновлено: %2$d.</item>
+    </plurals>
+</resources>

@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared -->
+    <string name="art_error_unexpected">Neočekávaná chyba</string>
+    <string name="art_no_folder_linked">Není propojena žádná složka grafiky</string>
+    <string name="art_paused_message">Grafika pozastavena. Chcete-li ukládat novou grafiku, znovu propojte složku grafiky.</string>
+    <string name="art_error_game_not_found">Hra nebyla nalezena</string>
+    <string name="art_error_not_found_any_source">Nenalezeno v žádném zdroji</string>
+    <string name="art_found_via">Nalezeno přes %1$s</string>
+    <string name="art_results_label_updated">Aktualizováno</string>
+    <string name="art_results_label_imported">Importováno</string>
+
+    <!-- Live scrape progress -->
+    <string name="art_progress_hashing">Výpočet hashe ROM…</string>
+    <string name="art_progress_searching">Hledání…</string>
+    <string name="art_asset_hero">Hero</string>
+    <string name="art_asset_background">Pozadí</string>
+    <string name="art_asset_logo">Logo</string>
+    <string name="art_asset_box_art">Obal</string>
+    <string name="art_asset_physical_media">Fyzické médium</string>
+    <string name="art_asset_3d_box">3D obal</string>
+    <string name="art_asset_screenshot">Snímek obrazovky</string>
+    <string name="art_asset_manual">Manuál</string>
+    <string name="art_asset_video">Video</string>
+    <string name="art_asset_icon_video">Video ikony</string>
+    <string name="art_asset_icon_video_converting">Video ikony (převádí se)</string>
+    <string name="art_source_storefronts">Obchody</string>
+
+    <!-- Metadata fields -->
+    <string name="art_field_title">Název</string>
+    <string name="art_field_description">Popis</string>
+    <string name="art_field_developer">Vývojář</string>
+    <string name="art_field_publisher">Vydavatel</string>
+    <string name="art_field_year">Rok</string>
+    <string name="art_field_release_date">Datum vydání</string>
+    <string name="art_field_genre">Žánr</string>
+    <string name="art_field_age_rating">Věková klasifikace</string>
+    <string name="art_field_franchise">Série</string>
+    <string name="art_field_rating">Hodnocení</string>
+
+    <!-- Ways to apply scraped metadata -->
+    <string name="art_policy_replace_all">Nahradit vše</string>
+    <string name="art_policy_fill_missing">Doplnit jen chybějící</string>
+    <string name="art_policy_choose_fields">Vybrat pole</string>
+    <string name="art_policy_keep_current">Ponechat stávající</string>
+
+    <!-- Scrape (background task) -->
+    <string name="art_scrape_label_all">Opětovné stahování grafiky všech her</string>
+    <string name="art_scrape_label_missing">Stahování chybějící grafiky</string>
+    <string name="art_scrape_stop_note">Již stažená grafika zůstane zachována.</string>
+    <string name="art_scrape_paused_all_title">Opětovné stahování grafiky pozastaveno</string>
+    <string name="art_scrape_paused_title">Stahování grafiky pozastaveno</string>
+    <string name="art_scrape_finished_all_title">Opětovné stahování grafiky dokončeno</string>
+    <string name="art_scrape_finished_title">Stahování grafiky dokončeno</string>
+    <string name="art_scrape_stopped_title">Stahování grafiky zastaveno</string>
+    <string name="art_scrape_failed_title">Stahování grafiky selhalo</string>
+    <string name="art_scrape_result">Úspěšně %1$d, neúspěšně %2$d z %3$d</string>
+    <plurals name="art_scrape_stopped_after">
+        <item quantity="one">Zastaveno po %1$d hře — dosud stažená grafika zůstane zachována</item>
+        <item quantity="few">Zastaveno po %1$d hrách — dosud stažená grafika zůstane zachována</item>
+        <item quantity="many">Zastaveno po %1$d hry — dosud stažená grafika zůstane zachována</item>
+        <item quantity="other">Zastaveno po %1$d hrách — dosud stažená grafika zůstane zachována</item>
+    </plurals>
+
+    <!-- Relink (background task) -->
+    <string name="art_relink_label">Opětovné propojování grafiky</string>
+    <plurals name="art_relink_label_consoles">
+        <item quantity="one">Opětovné propojování grafiky pro %1$d konzoli</item>
+        <item quantity="few">Opětovné propojování grafiky pro %1$d konzole</item>
+        <item quantity="many">Opětovné propojování grafiky pro %1$d konzole</item>
+        <item quantity="other">Opětovné propojování grafiky pro %1$d konzolí</item>
+    </plurals>
+    <string name="art_relink_stop_note">Již propojená grafika zůstane propojená.</string>
+    <string name="art_relink_finished_title">Propojení grafiky dokončeno</string>
+    <string name="art_relink_stopped_title">Propojení grafiky zastaveno</string>
+    <string name="art_relink_stopped_note">Dosud propojená grafika zůstane zachována</string>
+    <string name="art_relink_failed_title">Propojení grafiky selhalo</string>
+    <plurals name="art_relink_games_linked">
+        <item quantity="one">Propojena %1$d hra</item>
+        <item quantity="few">Propojeny %1$d hry</item>
+        <item quantity="many">Propojeno %1$d hry</item>
+        <item quantity="other">Propojeno %1$d her</item>
+    </plurals>
+    <plurals name="art_relink_files">
+        <item quantity="one">%1$d soubor</item>
+        <item quantity="few">%1$d soubory</item>
+        <item quantity="many">%1$d souboru</item>
+        <item quantity="other">%1$d souborů</item>
+    </plurals>
+    <string name="art_relink_result">%1$s · celkem %2$s</string>
+    <string name="art_relink_result_unmatched">%1$s · nepřiřazeno: %2$d</string>
+
+    <!-- Export to ES-DE (background task) -->
+    <string name="art_export_label">Export grafiky pro ES-DE</string>
+    <string name="art_export_stop_note">Již exportované soubory zůstanou na místě.</string>
+    <string name="art_export_error_no_destination">Žádná cílová složka</string>
+    <string name="art_export_error_access_lost">Přístup ke složce grafiky byl ztracen</string>
+    <string name="art_export_dest_not_created">Cílovou složku nelze vytvořit.</string>
+    <plurals name="art_export_files_badge">
+        <item quantity="one">%1$d soubor</item>
+        <item quantity="few">%1$d soubory</item>
+        <item quantity="many">%1$d souboru</item>
+        <item quantity="other">%1$d souborů</item>
+    </plurals>
+    <string name="art_export_failed_title">Export grafiky selhal</string>
+    <string name="art_export_stopped_title">Export grafiky zastaven</string>
+    <string name="art_export_finished_title">Export grafiky dokončen</string>
+    <plurals name="art_export_stopped_note">
+        <item quantity="one">Předtím exportován %1$d soubor</item>
+        <item quantity="few">Předtím exportovány %1$d soubory</item>
+        <item quantity="many">Předtím exportováno %1$d souboru</item>
+        <item quantity="other">Předtím exportováno %1$d souborů</item>
+    </plurals>
+    <string name="art_export_result">Zkopírováno %1$d, již existuje %2$d, selhalo %3$d</string>
+
+    <!-- Import (background task and its notification) -->
+    <string name="art_import_plan_not_found">Plán importu nebyl nalezen</string>
+    <string name="art_import_plan_unreadable">Plán importu nelze přečíst</string>
+    <string name="art_import_label">Import grafiky — %1$s</string>
+    <string name="art_import_stop_note">Již importovaná grafika zůstane zachována.</string>
+    <string name="art_import_failed_title">Import grafiky selhal</string>
+    <string name="art_import_cancelled">Import grafiky zrušen</string>
+    <string name="art_import_done">Grafika importována</string>
+    <plurals name="art_import_needs_review">
+        <item quantity="one">Grafika importována, %1$d položka vyžaduje kontrolu</item>
+        <item quantity="few">Grafika importována, %1$d položky vyžadují kontrolu</item>
+        <item quantity="many">Grafika importována, %1$d položky vyžaduje kontrolu</item>
+        <item quantity="other">Grafika importována, %1$d položek vyžaduje kontrolu</item>
+    </plurals>
+    <string name="art_import_headline">%1$s: %2$s</string>
+    <string name="art_import_counts">Importováno %1$d, přeskočeno %2$d, selhalo %3$d, nejednoznačné %4$d, nepřiřazeno %5$d.</string>
+    <string name="art_import_results_summary">Importováno %1$d, přeskočeno %2$d</string>
+
+    <!-- Move artwork into the linked folder (background task) -->
+    <string name="art_move_label">Přesouvání grafiky do vaší složky</string>
+    <string name="art_move_failed_title">Přesun grafiky selhal</string>
+    <string name="art_move_stopped_title">Přesun grafiky zastaven</string>
+    <string name="art_move_finished_title">Přesun grafiky dokončen</string>
+    <plurals name="art_move_stopped_note">
+        <item quantity="one">Předtím přesunut %1$d soubor</item>
+        <item quantity="few">Předtím přesunuty %1$d soubory</item>
+        <item quantity="many">Předtím přesunuto %1$d souboru</item>
+        <item quantity="other">Předtím přesunuto %1$d souborů</item>
+    </plurals>
+    <string name="art_move_result">Přesunuto %1$d, již pokryto %2$d, selhalo %3$d</string>
+</resources>

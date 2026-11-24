@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_title">Halo de sélection</string>
+    <string name="glow_sub_off">Aucun halo autour de l\'icône sélectionnée.</string>
+    <string name="glow_sub_steady">Une lumière douce autour de l\'icône sélectionnée. Elle reste fixe.</string>
+    <string name="glow_sub_pulsing">La lumière autour de l\'icône sélectionnée s\'intensifie et s\'estompe lentement. Elle reste fixe tant que « Mouvement » est réglé sur « Statiques ».</string>
+    <string name="glow_value_off">Désactivé</string>
+    <string name="glow_value_steady">Fixe</string>
+    <string name="glow_value_pulsing">Pulsation</string>
+</resources>

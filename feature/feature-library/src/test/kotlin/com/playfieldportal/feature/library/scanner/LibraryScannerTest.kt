@@ -5,6 +5,7 @@ import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.MemoryCard
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.domain.text.UiText
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -130,13 +131,13 @@ class LibraryScannerTest {
         val scanner = scannerFor()
         coEvery { scanSourceResolver.sourcesFor(card) } returns listOf(
             completeSource(present = setOf("/roms/psx/a.bin")),
-            { flowOf(ScanResult.Error("card went away mid-walk")) },
+            { flowOf(ScanResult.Error(UiText.raw("card went away mid-walk"))) },
         )
 
         val outcome = scanner.scanPlatform("psx", removeMissing = true)
 
         assertFalse(outcome.surveyTrusted)
-        assertEquals("card went away mid-walk", outcome.errorMessage)
+        assertEquals(UiText.raw("card went away mid-walk"), outcome.errorMessage)
         coVerify(exactly = 1) { reconciler.reconcile(any(), any(), eq(true), any()) }
     }
 
@@ -203,7 +204,7 @@ class LibraryScannerTest {
 
         assertEquals(ScanStatus.FAILED, outcome.status)
         assertEquals(1, outcome.added)
-        assertEquals("disk full", outcome.errorMessage)
+        assertEquals(UiText.raw("disk full"), outcome.errorMessage)
         coVerify(exactly = 0) { reconciler.reconcile(any(), any(), any(), any()) }
     }
 

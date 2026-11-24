@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_switch_launcher_chooser">Mudar de launcher</string>
+    <string name="app_shortcut_fallback_name">Atalho</string>
+    <string name="app_shortcut_fallback_host">Outra app</string>
+</resources>

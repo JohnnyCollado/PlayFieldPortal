@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">Ruch</string>
+    <string name="motion_summary">Ile rzeczy porusza się samoczynnie.</string>
+    <string name="motion_detail_animated">Wszystko się porusza</string>
+    <string name="motion_detail_reduced">Tylko wybrany element</string>
+    <string name="motion_detail_static">Nic samoczynnie</string>
+    <string name="motion_sub_animated">Porusza się wszystko, co może: grafiki, ikony, tapety, tło i poświata. Zużywa najwięcej baterii.</string>
+    <string name="motion_sub_reduced">Porusza się tylko wybrany element: jego grafika, fragment wideo i poświata. Tło nadal się porusza.</string>
+    <string name="motion_sub_static">Nic nie porusza się samoczynnie. Menu nadal przesuwają się podczas nawigacji.</string>
+    <string name="motion_holds_background">Zatrzymane, gdy opcja „Ruch” ma wartość „Statyczne”.</string>
+    <string name="motion_holds_glow">Stała, gdy opcja „Ruch” ma wartość „Statyczne”.</string>
+</resources>

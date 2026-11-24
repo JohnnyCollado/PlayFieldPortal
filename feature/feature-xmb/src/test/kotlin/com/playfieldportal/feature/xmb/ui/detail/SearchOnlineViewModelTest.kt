@@ -5,6 +5,7 @@ import com.playfieldportal.core.data.network.NetworkMonitor
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
@@ -12,6 +13,7 @@ import com.playfieldportal.feature.achievements.api.SyncedCoin
 import com.playfieldportal.feature.achievements.preview.AchievementPreviewRepository
 import com.playfieldportal.feature.achievements.preview.PreviewCandidate
 import com.playfieldportal.feature.achievements.preview.PreviewSearch
+import com.playfieldportal.feature.xmb.R
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.confirmVerified
@@ -114,7 +116,10 @@ class SearchOnlineViewModelTest {
         assertEquals(SearchStatus.RESULTS, state.status)
         assertEquals(listOf("Resonance of Fate", "Resonance"), state.rows.map { (it as SearchOnlineRow.Result).candidate.title })
         assertEquals("STEAM:645730", state.focusedRowId)
-        assertEquals("Steam · 2 results", state.subtitle)
+        assertEquals(
+            UiText.res(R.string.det_search_subtitle_results, "Steam", UiText.plural(R.plurals.det_search_result_count, 2)),
+            state.subtitle,
+        )
     }
 
     @Test
@@ -135,7 +140,7 @@ class SearchOnlineViewModelTest {
         search("zzzxqv")
 
         assertEquals(SearchStatus.NO_RESULTS, state.status)
-        assertEquals("No Steam games match \"zzzxqv\".", state.emptyMessage)
+        assertEquals(UiText.res(R.string.det_search_no_games_match, "Steam", "zzzxqv"), state.emptyMessage)
         assertNull(state.recovery)
     }
 
@@ -163,7 +168,7 @@ class SearchOnlineViewModelTest {
         search()
 
         press(GamepadAction.OPEN_CONTEXT_MENU)
-        val index = state.optionRows.indexOfFirst { it.label == "Try again" }
+        val index = state.optionRows.indexOfFirst { it.label == UiText.res(R.string.det_search_retry) }
         assertTrue("Options must offer the error's Try again", index >= 0)
 
         every { network.isOnline() } returns true
@@ -182,7 +187,7 @@ class SearchOnlineViewModelTest {
         search()
 
         press(GamepadAction.OPEN_CONTEXT_MENU)
-        val index = state.optionRows.indexOfFirst { it.label == "Open Settings" }
+        val index = state.optionRows.indexOfFirst { it.label == UiText.res(R.string.det_search_open_settings) }
         viewModel.onOptionActivated(index)
 
         assertTrue(state.openCredentials)
@@ -216,7 +221,7 @@ class SearchOnlineViewModelTest {
         assertEquals(2, preview.available)
         assertEquals(CoinViewCounts(all = 2, earned = 1, locked = 1), preview.counts)
         assertEquals(listOf("First Contact", "Tri-Attack"), state.rows.map { (it as SearchOnlineRow.Coin).coin.title })
-        assertEquals("Steam · Not installed", state.subtitle)
+        assertEquals(UiText.res(R.string.det_search_subtitle_not_installed, "Steam"), state.subtitle)
     }
 
     @Test
@@ -248,7 +253,7 @@ class SearchOnlineViewModelTest {
 
         assertTrue(state.inPreview)
         assertTrue(state.rows.isEmpty())
-        assertEquals("Steam Game Details aren't available for your profile.", state.emptyMessage)
+        assertEquals(UiText.res(R.string.det_search_err_profile_private), state.emptyMessage)
     }
 
     @Test
@@ -323,12 +328,15 @@ class SearchOnlineViewModelTest {
     @Test
     fun `the Options root lists the provider, and RetroAchievements adds its system list`() {
         press(GamepadAction.OPEN_CONTEXT_MENU)
-        assertEquals(listOf("Provider"), state.optionRows.map { it.label })
+        assertEquals(listOf(UiText.res(R.string.det_search_group_provider)), state.optionRows.map { it.label })
         assertEquals(listOf("Steam"), state.optionRows.map { it.value })
         assertEquals(listOf(true), state.optionRows.map { it.opensMenu })
 
         viewModel.setProvider(SearchProvider.RETRO_ACHIEVEMENTS)
-        assertEquals(listOf("Provider", "System"), state.optionRows.map { it.label })
+        assertEquals(
+            listOf(UiText.res(R.string.det_search_group_provider), UiText.res(R.string.det_search_group_system)),
+            state.optionRows.map { it.label },
+        )
         assertEquals(listOf("RetroAchievements", state.console.label), state.optionRows.map { it.value })
         assertEquals(listOf(true, true), state.optionRows.map { it.opensMenu })
     }
@@ -383,7 +391,10 @@ class SearchOnlineViewModelTest {
 
     @Test
     fun `the search list footer names the menu Options`() {
-        assertEquals("Options", searchOnlineHelperItems(SearchOnlineUiState()).single { GamepadAction.OPEN_CONTEXT_MENU in it.actions }.label)
+        assertEquals(
+            UiText.res(R.string.det_options),
+            searchOnlineHelperItems(SearchOnlineUiState()).single { GamepadAction.OPEN_CONTEXT_MENU in it.actions }.label,
+        )
     }
 
     @Test
@@ -394,7 +405,7 @@ class SearchOnlineViewModelTest {
         scheduler.advanceUntilIdle()
 
         press(GamepadAction.OPEN_CONTEXT_MENU)
-        assertEquals(listOf("Refresh Preview"), state.optionRows.map { it.label })
+        assertEquals(listOf(UiText.res(R.string.det_search_refresh_preview)), state.optionRows.map { it.label })
         press(GamepadAction.SELECT)
         scheduler.advanceUntilIdle()
 

@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Achievement update notifications -->
+    <string name="ach_upd_running">正在更新已安装游戏的成就</string>
+    <string name="ach_upd_running_stop_note">已更新的成就会保留。</string>
+    <string name="ach_upd_progress">正在检查第 %1$d 个游戏，共 %2$d 个</string>
+    <string name="ach_upd_stopped">成就更新已停止</string>
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="other">已检查 %d 个游戏，已保存的进度会保留</item>
+    </plurals>
+    <string name="ach_upd_some_failed">部分成就无法更新</string>
+    <plurals name="ach_upd_failed_message">
+        <item quantity="other">%2$d 个游戏中有 %1$d 个需要重试</item>
+    </plurals>
+    <string name="ach_upd_results_done">已更新</string>
+    <string name="ach_upd_updated">成就已更新</string>
+    <plurals name="ach_upd_updated_message">
+        <item quantity="other">已更新 %1$d 个游戏 · %2$d 个无变化</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">成就已是最新</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="other">已检查 %d 个已安装的游戏</item>
+    </plurals>
+    <string name="ach_upd_paused">成就更新已暂停</string>
+    <string name="ach_upd_fact_service">服务</string>
+    <string name="ach_upd_pause_offline">请连接互联网</string>
+    <string name="ach_upd_pause_reconnect">重新连接 %1$s</string>
+    <string name="ach_upd_pause_steam_private">无法获取 Steam 游戏详情</string>
+
+    <!-- Auto-match notifications -->
+    <string name="ach_match_running">正在自动匹配游戏</string>
+    <string name="ach_match_running_stop_note">已匹配的游戏会保持关联。</string>
+    <string name="ach_match_stopped_note">已匹配的游戏会保持关联</string>
+    <string name="ach_match_stopped">自动匹配已停止</string>
+    <string name="ach_match_recognized">已识别游戏</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="other">已匹配 %d 个已安装的游戏。正在更新它们的成就。</item>
+    </plurals>
+
+    <!-- Clearing achievement records -->
+    <string name="ach_clear_done">已清除成就记录</string>
+    <string name="ach_clear_done_message">需要重新同步已安装的游戏才能再次显示成就</string>
+    <string name="ach_clear_failed">无法清除成就</string>
+    <string name="ach_clear_failed_message">未删除任何内容。请在“设置 ▸ 成就”中重试</string>
+
+    <!-- Local Steam: why a game's Steam identity could not be checked -->
+    <string name="ach_ls_unavail_store">无法查询商店</string>
+    <string name="ach_ls_unavail_steam">Steam 目前不可用</string>
+    <string name="ach_ls_steam_unreachable">无法连接到 Steam</string>
+    <string name="ach_ls_steam_rate_limited">Steam 正在限制请求频率</string>
+    <string name="ach_ls_steam_error">Steam 返回了错误</string>
+    <string name="ach_ls_steam_needs_key">Steam 需要你的 Web API 密钥</string>
+
+    <!-- Local Steam: linking a picked game folder -->
+    <string name="ach_link_no_match">Steam 上没有与“%1$s”匹配的游戏。请将文件夹重命名为该游戏在 Steam 上的名称，或先在“游戏详情 ▸ 匹配游戏”中关联。</string>
+    <string name="ach_link_unavailable">%1$s，因此无法确定此文件夹的 App ID。未做任何更改，请在恢复联网后重试。</string>
+    <string name="ach_link_marker_failed">无法在该文件夹中创建 steam_appid.txt。PFP 可能只有该文件夹的读取权限。</string>
+    <string name="ach_link_not_recorded">无法记录所选的匹配项。</string>
+    <string name="ach_link_installer_off">PFP 写入游戏文件夹前，请先在成就设置中开启“安装 Goldberg 并转换游戏”。</string>
+    <string name="ach_link_no_app_id">该文件夹不再声明 App ID，请重新选择。</string>
+    <string name="ach_link_need_key">请在“设置 ▸ 成就 ▸ 服务凭据”中添加你的 Steam Web API 密钥，成就列表需要通过它获取。</string>
+    <string name="ach_link_no_achievements">Steam 上 App ID %1$s 没有任何成就，因此无可追踪的内容。</string>
+    <string name="ach_link_kit_failed">无法写入成就套件：%1$s</string>
+    <string name="ach_link_read_back_failed">无法回读该文件夹。如果它位于可移动存储设备上，请重新挂载后再次选择。</string>
+    <string name="ach_link_not_steam_build">该文件夹中没有 Steam 库文件（steam_api64.dll），因此它不是 Steam 版本，模拟器无可追踪的内容。请选择游戏 .exe 所在的文件夹。</string>
+
+    <!-- Local Steam: convert picker rows -->
+    <string name="ach_pick_checking">正在检查 Steam…</string>
+    <plurals name="ach_pick_coins">
+        <item quantity="other">%1$d 枚金币  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">Steam 上无列表  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">需要你的 Steam Web API 密钥  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">Steam 未响应  ·  appid %1$s</string>
+
+    <!-- Local Steam: batch match summary -->
+    <string name="ach_batch_already_running">批量匹配已在进行中。</string>
+    <string name="ach_batch_no_folders">其中没有游戏文件夹。请选择“包含”各游戏文件夹的那个文件夹，而不是某个游戏自己的文件夹。</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="other">找到 %d 个文件夹，但都不是 Steam 版本：没有 steam_api 库，因此模拟器无可追踪的内容。</item>
+    </plurals>
+    <string name="ach_batch_linked">%1$d 个已关联到库中的游戏</string>
+    <string name="ach_batch_tracked">%1$d 个单独追踪</string>
+    <string name="ach_batch_converting">%1$d 个等待转换</string>
+    <plurals name="ach_batch_matched">
+        <item quantity="other">已匹配 %1$d / %2$d 个文件夹。</item>
+    </plurals>
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="other">已匹配 %1$d / %2$d 个文件夹：%3$s。</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="other">%1$d 个无法通过名称识别。请打开对应游戏的 Shiba Coins 页面，使用自动匹配来选择其文件夹。</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="other">%1$d 个不在你的库中。请先将其添加到 Windows 卡片，然后重新匹配。</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="other">%1$d 个不是 Steam 版本。</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="other">%1$d 个失败，请查看日志。</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">无法打开该文件夹。</string>
+    <string name="ach_batch_fail_read_back">%1$s：识别后无法回读。</string>
+    <string name="ach_batch_fail_reason">%1$s：%2$s。</string>
+    <string name="ach_batch_fail_marker">%1$s：无法创建 steam_appid.txt。</string>
+
+    <!-- Vita3K library scan results -->
+    <string name="ach_vita_set_folder">请先设置你的 Vita3K 数据文件夹（ux0）。</string>
+    <string name="ach_vita_link_invalid">该 Vita3K 文件夹链接无效，请重新授权。</string>
+    <string name="ach_vita_no_ux0">在已授权的文件夹中找不到 ux0/app。请选择你的 Vita3K ux0 文件夹（或包含它的文件夹）。</string>
+    <string name="ach_vita_no_app">ux0 下没有 app/ 文件夹，请检查已授权的文件夹。</string>
+    <string name="ach_vita_none_installed">ux0/app 下未找到已安装的 Vita 游戏。请先在 Vita3K 中安装游戏。</string>
+    <plurals name="ach_vita_no_new">
+        <item quantity="other">没有新的 Vita 游戏。库中已有 %d 个。</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="other">已导入 %d 个 Vita 游戏。</item>
+    </plurals>
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="other">已导入 %1$d 个 Vita 游戏，更新 %2$d 个。</item>
+    </plurals>
+</resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="fb_sound_slot_category">Kategoria</string>
+    <string name="fb_sound_channel_category">Kategoria</string>
+    <string name="fb_sound_slot_options">Opcje</string>
+    <string name="fb_sound_channel_options">Opcje</string>
+    <string name="fb_haptic_feedback">Reakcje haptyczne</string>
+    <string name="fb_haptic_feedback_help">Lekki impuls przy każdym kroku i mocniejszy przy potwierdzeniu — na tym urządzeniu i na kontrolerze z wibracjami.</string>
+</resources>

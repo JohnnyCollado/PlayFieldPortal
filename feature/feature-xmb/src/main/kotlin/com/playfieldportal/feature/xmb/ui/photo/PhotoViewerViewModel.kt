@@ -38,6 +38,10 @@ import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
+import androidx.annotation.StringRes
+import android.content.res.Resources
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.xmb.R
 
 // Same key Display settings and XMBViewModel use — the XMB re-renders the background reactively.
 private val KEY_CUSTOM_WALLPAPER = ThemePrefKeys.CUSTOM_WALLPAPER
@@ -61,17 +65,23 @@ private const val PAN_STEP_PX = 160f
 private const val WALLPAPER_MAX_DIM = 2560
 
 // A row in the viewer's Options menu, in menu order. Zoom Out / Reset Zoom only show while zoomed.
-enum class PhotoViewerAction(val label: String, val group: String) {
-    ROTATE_LEFT("Rotate Left", "View"),
-    ROTATE_RIGHT("Rotate Right", "View"),
-    ZOOM_IN("Zoom In", "View"),
-    ZOOM_OUT("Zoom Out", "View"),
-    RESET_ZOOM("Reset Zoom", "View"),
-    SET_WALLPAPER("Set as Launcher Wallpaper", "Manage"),
-    SET_LOCKSCREEN("Set as Lock Screen", "Manage"),
-    INFO("View Information", "Manage"),
-    LOCATION("Show File Location", "Manage"),
-    REMOVE("Remove from Library", "Manage"),
+enum class PhotoViewerAction(@StringRes val labelRes: Int, val group: PhotoViewerGroup) {
+    ROTATE_LEFT(R.string.xmbu_photo_rotate_left, PhotoViewerGroup.VIEW),
+    ROTATE_RIGHT(R.string.xmbu_photo_rotate_right, PhotoViewerGroup.VIEW),
+    ZOOM_IN(R.string.xmbu_photo_zoom_in, PhotoViewerGroup.VIEW),
+    ZOOM_OUT(R.string.xmbu_photo_zoom_out, PhotoViewerGroup.VIEW),
+    RESET_ZOOM(R.string.xmbu_photo_reset_zoom, PhotoViewerGroup.VIEW),
+    SET_WALLPAPER(R.string.xmbu_photo_set_wallpaper, PhotoViewerGroup.MANAGE),
+    SET_LOCKSCREEN(R.string.xmbu_photo_set_lock_screen, PhotoViewerGroup.MANAGE),
+    INFO(R.string.xmbu_photo_view_info, PhotoViewerGroup.MANAGE),
+    LOCATION(R.string.xmbu_photo_show_location, PhotoViewerGroup.MANAGE),
+    REMOVE(R.string.xmbu_photo_remove, PhotoViewerGroup.MANAGE),
+}
+
+/** The two groups of the viewer's Options menu; the header drawn above a group's first row. */
+enum class PhotoViewerGroup(@StringRes val titleRes: Int) {
+    VIEW(R.string.xmbu_photo_group_view),
+    MANAGE(R.string.xmbu_photo_group_manage),
 }
 
 data class PhotoViewerUiState(
@@ -94,7 +104,7 @@ data class PhotoViewerUiState(
     // Wallpaper flow: fullscreen preview first, then apply on confirm.
     val wallpaperPreviewVisible: Boolean = false,
     val applyingWallpaper: Boolean = false,
-    val actionMessage: String? = null,
+    val actionMessage: UiText? = null,
     val closed: Boolean = false,
 ) {
     val photo: Photo? get() = photos.getOrNull(index)
@@ -106,13 +116,13 @@ data class PhotoViewerUiState(
 }
 
 /** The Options menu's rows; a group header goes on the first row of each group. */
-internal fun photoOptionRows(state: PhotoViewerUiState): List<PspMenuRow> {
+internal fun photoOptionRows(state: PhotoViewerUiState, res: Resources): List<PspMenuRow> {
     val actions = state.optionsActions
     return actions.mapIndexed { index, action ->
         PspMenuRow(
-            label = action.label,
+            label = res.getString(action.labelRes),
             isDestructive = action == PhotoViewerAction.REMOVE,
-            header = action.group.takeIf { it != actions.getOrNull(index - 1)?.group },
+            header = action.group.takeIf { it != actions.getOrNull(index - 1)?.group }?.let { res.getString(it.titleRes) },
         )
     }
 }
@@ -237,7 +247,7 @@ class PhotoViewerViewModel @Inject constructor(
             PhotoViewerAction.INFO          -> _uiState.update { it.copy(infoVisible = true) }
             PhotoViewerAction.LOCATION      -> {
                 val p = _uiState.value.photo
-                showMessage(p?.relativePath?.let { "In: $it" } ?: p?.displayName ?: "")
+                showMessage(p?.relativePath?.let { UiText.res(R.string.xmbu_photo_in_folder, it) } ?: UiText.raw(p?.displayName ?: ""))
             }
             PhotoViewerAction.REMOVE        -> _uiState.update { it.copy(confirmRemove = true) }
         }
@@ -296,7 +306,7 @@ class PhotoViewerViewModel @Inject constructor(
             val imported = withContext(Dispatchers.IO) { importWallpaper(photo, rotation) }
             if (imported == null) {
                 _uiState.update {
-                    it.copy(applyingWallpaper = false, actionMessage = "Could not set wallpaper — the image couldn't be read")
+                    it.copy(applyingWallpaper = false, actionMessage = UiText.res(R.string.xmbu_photo_wallpaper_unreadable))
                 }
                 return@launch
             }
@@ -322,7 +332,7 @@ class PhotoViewerViewModel @Inject constructor(
                 poster.parentFile?.listFiles()?.forEach { if (it.name !in keepNames) it.delete() }
             }
             _uiState.update {
-                it.copy(applyingWallpaper = false, wallpaperPreviewVisible = false, actionMessage = "Wallpaper applied")
+                it.copy(applyingWallpaper = false, wallpaperPreviewVisible = false, actionMessage = UiText.res(R.string.xmbu_photo_wallpaper_applied))
             }
         }
     }
@@ -490,21 +500,20 @@ class PhotoViewerViewModel @Inject constructor(
                     }
                 }.getOrNull()
             }
-            val result = if (bytes == null) {
-                com.playfieldportal.core.data.repository.LockScreenImage.Result.Failed("That photo could not be read")
-            } else {
-                lockScreen.set(bytes, com.playfieldportal.core.data.repository.LockScreenImage.Source.USER)
-            }
             showMessage(
-                when (result) {
-                    com.playfieldportal.core.data.repository.LockScreenImage.Result.Set -> "Lock screen set"
-                    is com.playfieldportal.core.data.repository.LockScreenImage.Result.Failed -> result.reason
+                if (bytes == null) {
+                    UiText.res(R.string.xmbu_photo_unreadable)
+                } else {
+                    when (val result = lockScreen.set(bytes, com.playfieldportal.core.data.repository.LockScreenImage.Source.USER)) {
+                        com.playfieldportal.core.data.repository.LockScreenImage.Result.Set -> UiText.res(R.string.xmbu_photo_lock_screen_set)
+                        is com.playfieldportal.core.data.repository.LockScreenImage.Result.Failed -> UiText.raw(result.reason)
+                    }
                 },
             )
         }
     }
 
-    private fun showMessage(msg: String) = _uiState.update { it.copy(actionMessage = msg) }
+    private fun showMessage(msg: UiText) = _uiState.update { it.copy(actionMessage = msg) }
 }
 
 private const val LOCKSCREEN_MAX_BYTES = 32L * 1024 * 1024

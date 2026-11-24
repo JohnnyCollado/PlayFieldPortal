@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Backup failures -->
+    <string name="bak_no_folder">未设置备份文件夹。请在“设置 → 备份与恢复 → 备份文件夹”中选择。</string>
+    <string name="bak_too_large">此备份过大，无法恢复（最多 20,000 个文件、2 GB）。请删除不用的图片或媒体后重试。</string>
+    <string name="bak_write_failed">无法写入备份文件夹。请在“设置 ▸ 系统 ▸ 备份与恢复”中重新选择备份文件夹。</string>
+    <string name="bak_unknown_error">未知错误</string>
+
+    <!-- Restore failures -->
+    <string name="bak_open_failed">无法打开备份文件</string>
+    <string name="bak_missing_manifest">备份缺少清单文件</string>
+    <string name="bak_format_too_new">备份格式 v%1$d 比此应用支持的版本（v%2$d）更新</string>
+    <string name="bak_no_uri">未提供 URI</string>
+
+    <!-- Notification titles -->
+    <string name="bak_task_created">已创建备份</string>
+    <string name="bak_task_failed">备份失败</string>
+    <string name="bak_task_restored">已恢复备份</string>
+    <string name="bak_task_restore_failed">恢复失败</string>
+    <string name="bak_results_restored">已恢复</string>
+    <plurals name="bak_items_skipped">
+        <item quantity="other">已跳过 %d 项</item>
+    </plurals>
+
+    <!-- Items turned away during restore -->
+    <string name="bak_refused_out_of_root">已拒绝“%1$s”: 不在可恢复的文件夹内</string>
+    <string name="bak_refused_profiles_unparseable">已拒绝模拟器配置文件: 无法解析文件</string>
+    <string name="bak_refused_profile">已拒绝模拟器配置文件“%1$s”: %2$s</string>
+</resources>

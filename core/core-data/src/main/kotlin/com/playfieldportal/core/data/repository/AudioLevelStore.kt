@@ -43,7 +43,7 @@ class AudioLevelStore @Inject constructor(
             .map { prefs ->
                 AudioLevels.taper(
                     masterPercent = prefs.readLevel(masterKey),
-                    channelPercent = prefs.readLevel(channel.levelKey),
+                    channelPercent = prefs.readChannelLevel(channel),
                 )
             }
             .distinctUntilChanged()
@@ -52,7 +52,7 @@ class AudioLevelStore @Inject constructor(
         context.pfpDataStore.data.map { it.readLevel(masterKey) }.distinctUntilChanged()
 
     override fun percentFor(channel: AudioChannel): Flow<Float> =
-        context.pfpDataStore.data.map { it.readLevel(channel.levelKey) }.distinctUntilChanged()
+        context.pfpDataStore.data.map { it.readChannelLevel(channel) }.distinctUntilChanged()
 
     /** Writes the master level, clamped. The settings screen's only master seam. */
     suspend fun setMaster(percent: Float) {
@@ -64,11 +64,18 @@ class AudioLevelStore @Inject constructor(
         context.pfpDataStore.edit { it[channel.levelKey] = percent.coerceIn(0f, 1f) }
     }
 
-    /** "Reset Sound to Defaults" — every level back to full, master included. */
+    /**
+     * "Reset Sound to Defaults" — every level back to full, master included. A channel that
+     * follows another ([AudioChannel.fallback]) is cleared rather than written, so it goes back
+     * to following Navigation instead of freezing at full.
+     */
     suspend fun resetAll() {
         context.pfpDataStore.edit { prefs ->
             prefs[masterKey] = DEFAULT_LEVEL
-            for (channel in AudioChannel.entries) prefs[channel.levelKey] = DEFAULT_LEVEL
+            for (channel in AudioChannel.entries) {
+                if (channel.fallback != null) prefs.remove(channel.levelKey)
+                else prefs[channel.levelKey] = DEFAULT_LEVEL
+            }
         }
     }
 
@@ -76,6 +83,10 @@ class AudioLevelStore @Inject constructor(
     // silent launcher to every install that has not opened the screen.
     private fun Preferences.readLevel(key: Preferences.Key<Float>): Float =
         (this[key] ?: DEFAULT_LEVEL).coerceIn(0f, 1f)
+
+    /** [channel]'s level: its own stored value, else the channel it follows, else full. */
+    private fun Preferences.readChannelLevel(channel: AudioChannel): Float =
+        (channel.resolveLevel { this[it.levelKey] } ?: DEFAULT_LEVEL).coerceIn(0f, 1f)
 
     companion object {
         /** Full volume. Every channel and the master start here. */

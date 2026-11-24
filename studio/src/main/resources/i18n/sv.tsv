@@ -1,0 +1,330 @@
+# Theme Studio in sv. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	Nytt
+Open…	Öppna…
+Upgrade folder…	Uppgradera mapp…
+Convert .ptf…	Konvertera .ptf…
+Batch convert…	Batchkonvertera…
+Unpack assets…	Packa upp resurser…
+Undo	Ångra
+Redo	Gör om
+Export .pfptheme…	Exportera .pfptheme…
+Import PSP theme ▾	Importera PSP-tema ▾
+Working…	Arbetar…
+Open ▾	Öppna ▾
+Open: {0} ▾	Öppna: {0} ▾
+XMB (back to the crossbar)	XMB (tillbaka till raden)
+Stop {0}	Stoppa {0}
+Play {0}	Spela {0}
+Video only — sound plays on the device	Endast video — ljudet spelas på enheten
+This theme uses an older format. Saving upgrades it to the current one.	Det här temat använder ett äldre format. När du sparar uppgraderas det till det aktuella.
+See changes	Visa ändringar
+Something went wrong	Något gick fel
+OK	OK
+Cancel	Avbryt
+Open theme	Öppna tema
+PSP theme to convert	PSP-tema att konvertera
+Export theme	Exportera tema
+Info	Info
+Color	Färg
+Background	Bakgrund
+Legibility	Läsbarhet
+Layout	Layout
+Icons	Ikoner
+Sounds	Ljud
+Boot & Game Boot	Boot och Game Boot
+Export check	Exportkontroll
+Untitled	Namnlöst
+Video	Video
+Image	Bild
+Wave	Våg
+Not set	Inte angett
+Set	Angett
+Preview only	Endast förhandsvisning
+None custom	Inga egna
+{0} custom	{0} egna
+None set	Inga angivna
+{0} set	{0} angivna
+{0} of 2	{0} av 2
+Ready	Klar
+Untitled Theme	Namnlöst tema
+App Drawer	Applåda
+Settings	Inställningar
+App Picker	Appväljare
+Game Picker	Spelväljare
+Artwork Studio	Artwork Studio
+Game Detail Screen	Speldetaljer
+Achievement Screen	Prestationer
+Per-Game Achievement Screen	Prestationer per spel
+Lock Screen	Låsskärm
+Boot	Boot
+Game Boot	Game Boot
+In this file	I den här filen
+Nothing embedded yet	Inget inbäddat än
+Theme name	Temanamn
+Author	Skapare
+Short description	Kort beskrivning
+New theme — not saved yet	Nytt tema — inte sparat än
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	Sparat: namn, skapare och beskrivning följer med i .pfptheme. Uppdateringsdatumet sätts när du exporterar.
+Accent color	Accentfärg
+Auto (from the wallpaper)	Automatisk (från bakgrundsbilden)
+Custom	Egen
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	Varje ny bakgrundsbild eller video anger accenten. Välj en färg för att behålla din egen.
+Your accent stays when the wallpaper or video changes.	Din accent finns kvar när bakgrundsbilden eller videon ändras.
+Custom accent	Egen accent
+Icon color	Ikonfärg
+Auto (follows the theme)	Automatisk (följer temat)
+White	Vit
+Main text color	Huvudtextens färg
+Titles and labels: the crossbar, list rows and status strip, and every screen.	Titlar och etiketter: raden, listrader, statusraden och alla skärmar.
+Auto (built-in colors)	Automatisk (inbyggda färger)
+Use my exact color	Använd min exakta färg
+Subtext color	Undertextens färg
+Subtitles, sublabels and values.	Undertitlar, underetiketter och värden.
+Same as main text	Samma som huvudtexten
+Source	Källa
+Wave motion	Vågrörelse
+Video playback	Videouppspelning
+Moving	Rörlig
+Moving, dim	Rörlig, dämpad
+Still	Stilla
+Still, dim	Stilla, dämpad
+None — live wave background	Ingen — rörlig vågbakgrund
+Replace…	Ersätt…
+Re-crop…	Beskär igen…
+Clear	Rensa
+Clear video	Rensa video
+Pick frame…	Välj bildruta…
+The preview always shows a frozen wave; the style plays on the device.	Förhandsvisningen visar alltid en fryst våg; stilen spelas på enheten.
+Lock screen	Låsskärm
+None — the theme leaves the device lock screen alone	Ingen — temat lämnar enhetens låsskärm orörd
+Choose Image…	Välj bild…
+Use Poster	Använd affisch
+Use Wallpaper	Använd bakgrundsbild
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	Endast en stillbild. Enheten beskär den till sin egen skärm och ställer bara in den om användaren godkänner det vid tillämpning.
+Crop	Beskär
+Zoom	Zoom
+Center	Centrera
+Apply	Tillämpa
+Reset	Återställ
+Text	Text
+Automatic	Automatisk
+None	Ingen
+Drop shadow	Skugga
+Outline	Kontur
+Contrast plate	Kontrastplatta
+Offset shadow (dark)	Förskjuten skugga (mörk)
+Offset shadow (light)	Förskjuten skugga (ljus)
+Contour dark	Kontur mörk
+Contour light	Kontur ljus
+Contour auto	Kontur automatisk
+Solid unfocused icons	Solida ofokuserade ikoner
+Older launchers ignore these and show plain text and icons.	Äldre startprogram ignorerar detta och visar vanlig text och vanliga ikoner.
+Preview with my layout	Förhandsvisa med min layout
+Preview only — never saved in the theme. Remembered on this computer.	Endast förhandsvisning — sparas aldrig i temat. Sparas på den här datorn.
+Use my layout in the preview	Använd min layout i förhandsvisningen
+Scale — {0}	Skala — {0}
+Horizontal — {0}	Vågrätt — {0}
+Vertical — {0}	Lodrätt — {0}
+Biblically Accurate preview	Originaltrogen förhandsvisning
+Adjust on preview	Justera i förhandsvisningen
+All {0}	Alla {0}
+Crossbar {0}	Raden {0}
+Items {0}	Objekt {0}
+Consoles {0}	Konsoler {0}
+Physical Media {0}	Fysiska medier {0}
+On screen	På skärmen
+Customized {0}	Anpassade {0}
+Showing {0} of {1}	Visar {0} av {1}
+Select a slot to see it at real size, replace it, or export its template.	Välj en plats för att se den i verklig storlek, ersätta den eller exportera dess mall.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	Släpp en bildfil (png, gif, jpg, bmp, webp) på en plats för att ersätta dess ikon.
+Import icon pack… ▾	Importera ikonpaket… ▾
+Export templates…	Exportera mallar…
+Reset all	Återställ alla
+Local file…	Lokal fil…
+From theme…	Från tema…
+Export template	Exportera mall
+Menu sounds	Menyljud
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	Det du lämnar tomt behåller det inbyggda ljudet. Klipp måste rymmas inom varje rads gräns.
+Navigation	Navigering
+Category change	Kategoribyte
+Options panel	Alternativpanel
+Back / cancel	Tillbaka / avbryt
+Confirm / apply	Bekräfta / tillämpa
+Error / invalid	Fel / ogiltigt
+Notification	Avisering
+Ambience (loops)	Bakgrundsljud (loop)
+Built-in	Inbyggt
+Up to {0}	Upp till {0}
+Choose…	Välj…
+▶ Play	▶ Spela
+■ Stop	■ Stoppa
+Boot sequences	Startsekvenser
+Choose the built-in sequence or your own MP4 for each.	Välj den inbyggda sekvensen eller din egen MP4 för var och en.
+The launcher's own {0} sequence.	Startprogrammets egen {0}-sekvens.
+Your own MP4 (H.264).	Din egen MP4 (H.264).
+Choose MP4…	Välj MP4…
+Play in preview	Spela i förhandsvisningen
+Use built-in	Använd inbyggd
+All media is within limits	Alla medier ligger inom gränserna
+Opens on older launchers	Öppnas i äldre startprogram
+Fix the items marked ✕ before exporting.	Åtgärda punkterna markerade med ✕ innan du exporterar.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	En förhandsbild av det färdiga temat skapas när du exporterar och visas som miniatyr i startprogrammets temagalleri.
+Opened {0}	{0} öppnades
+Exported {0}	{0} exporterades
+Folder of .pfptheme files to upgrade	Mapp med .pfptheme-filer att uppdatera
+Folder with .ptf files	Mapp med .ptf-filer
+Output folder for .pfptheme files	Utdatamapp för .pfptheme-filer
+PSP theme to unpack	PSP-tema att packa upp
+Folder for unpacked assets	Mapp för uppackade filer
+Converting {0}  ({1}/{2})	Konverterar {0}  ({1}/{2})
+This theme was made by a newer version (format v{0}). Parts this version doesn't know are kept when you save.	Temat skapades med en nyare version (format v{0}). Delar som den här versionen inte känner till behålls när du sparar.
+CXMB theme	CXMB-tema
+This file is a CXMB custom firmware theme (.ctf). Those replace PSP system files rather than describing wallpaper and colors, so they can't be converted. Official PSP themes (.ptf) open fine.	Filen är ett CXMB-tema för anpassad firmware (.ctf). Sådana teman ersätter PSP:ns systemfiler i stället för att beskriva bakgrund och färger, så de kan inte konverteras. Officiella PSP-teman (.ptf) går bra att öppna.
+Batch conversion finished	Batchkonvertering klar
+Converted: {0}	Konverterade: {0}
+Converted with caveats: {0}	Konverterade med förbehåll: {0}
+Skipped (CXMB): {0} — {1}	Hoppade över (CXMB): {0} — {1}
+Failed: {0}	Misslyckades: {0}
+Theme upgrade finished	Temauppdatering klar
+Upgraded: {0} (originals kept as .bak)	Uppdaterade: {0} (original sparade som .bak)
+Already current: {0}	Redan aktuella: {0}
+Made by a newer version, left alone: {0}	Från en nyare version, lämnade orörda: {0}
+Report: {0}	Rapport: {0}
+Background motion	Bakgrundsrörelse
+Still: frame at {0}	Stillbild: bildruta vid {0}
+Still: baked into the theme	Stillbild: inbakad i temat
+Import wallpaper	Importera bakgrund
+Import video	Importera video
+Lock screen image	Bild för låsskärmen
+(embedded image)	(inbäddad bild)
+Fit	Anpassning
+Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.	Rörig bakgrund — etiketterna kan bli svåra att läsa. Mjuka bilder med låg kontrast fungerar bäst.
+The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, a Still style, or Motion set to Static on the device).	Stillbilden är videons affisch — den visas när uppspelningen står still (batterisparläge, ett spel, en Stilla-stil eller Rörelse satt till Statisk på enheten).
+The theme offers this image for the device lock screen	Temat erbjuder den här bilden för enhetens låsskärm
+Output {0}×{1}	Utdata {0}×{1}
+{0}–{1} recommended, {2} max, {3} MB max	{0}–{1} rekommenderas, {2} max, {3} MB max
+Whether the boot video and Game Boot play at all is a device setting: {0}	Om startvideon och Game Boot spelas alls är en enhetsinställning: {0}
+This clip is longer than the cap — the launcher will refuse it.	Klippet är längre än gränsen — launchern kommer att neka det.
+Choose a {0} video	Välj en {0}-video
+Dark icon color — icons may be hard to see over the wallpaper scrim.	Mörk ikonfärg — ikonerna kan bli svåra att se över bakgrundens slöja.
+Saved in the theme for a later update. The launcher currently shows the color exactly as picked.	Sparas i temat inför en senare uppdatering. Launchern visar just nu färgen exakt som den valdes.
+Original	Original
+Classic Blue	Klassisk blå
+Sunset Orange	Solnedgångsorange
+Fresh Green	Frisk grön
+Royal Purple	Kunglig lila
+Crimson Red	Karmosinröd
+Silver	Silver
+Sakura Pink	Sakurarosa
+Golden Amber	Gyllene bärnsten
+Aqua Teal	Akvaturkos
+Midnight Navy	Midnattsblå
+Charcoal	Kolgrå
+Format: schema {0} → {1}	Format: schema {0} → {1}
+Format: new theme → {0}	Format: nytt tema → {0}
+Kept	Behålls
+Added	Tillagt
+Repaired	Reparerat
+Can't recover	Kan inte återställas
+What saving does	Vad sparandet gör
+Motion has a still poster	Rörelsen har en stillbild som affisch
+Motion needs a still wallpaper as its poster - add one or remove the video	Rörelsen behöver en stillbild som affisch - lägg till en eller ta bort videon
+Media outside limits: {0}	Media utanför gränserna: {0}
+This wallpaper is busy behind the labels - pick a text legibility style so they stay readable	Bakgrunden är rörig bakom etiketterna - välj en textläsbarhetsstil så att de förblir läsbara
+Text should read clearly on this wallpaper	Texten bör vara lätt att läsa på den här bakgrunden
+{0} - launchers from before this format refuse files over 64 MB	{0} - launchers från före det här formatet nekar filer över 64 MB
+Opens on older launchers, which ignore sounds, boot clips, legibility and crop	Öppnas i äldre launchers, som ignorerar ljud, startklipp, läsbarhet och beskärning
+{0} is over the {1} MB limit for a theme file	{0} är över gränsen på {1} MB för en temafil
+Saving upgrades this theme from {0}; {1} part(s) can't be recovered	Sparandet uppdaterar temat från {0}; {1} del(ar) kan inte återställas
+Saving upgrades this theme from {0}	Sparandet uppdaterar temat från {0}
+an older format	ett äldre format
+Imported from {0}	Importerat från {0}
+Imported from {0} — firmware {1}	Importerat från {0} — firmware {1}
+a PSP theme	ett PSP-tema
+Created {0}	Skapat {0}
+On the device these live in {0}.	På enheten finns de under {0}.
+Scale	Skala
+Horizontal	Horisontell
+Vertical	Vertikal
+This wallpaper is busy behind the labels — a text style helps them stay readable.	Bakgrunden är rörig bakom etiketterna — en textstil hjälper dem att förbli läsbara.
+Settings › Interface › Display › Adjust XMB Layout	Inställningar › Gränssnitt › Skärm › Justera XMB-layout
+Settings › Interface › Sound	Inställningar › Gränssnitt › Ljud
+Settings › Interface › Display › Show Boot Sequence / Game Boot	Inställningar › Gränssnitt › Skärm › Visa startsekvens / Game Boot
+Battery Saver and Thermal Throttle (Settings › Interface › Display) freeze the animated wave on the device.	Batterisparläge och Termisk strypning (Inställningar › Gränssnitt › Skärm) fryser den animerade vågen på enheten.
+Pick…	Välj…
+Plays on the device	Spelas på enheten
+Length unknown	Okänd längd
+Volumes stay on the device: {0}	Volymen stannar på enheten: {0}
+Couldn't play {0} here — it will play on the device.	Kunde inte spela {0} här — det spelas på enheten.
+Choose a sound for {0}	Välj ett ljud för {0}
+Icon image for {0}	Ikonbild för {0}
+Template for {0}	Mall för {0}
+Template written to {0}	Mallen sparades som {0}
+Template export failed: {0}	Det gick inte att exportera mallen: {0}
+Search {0} slots: battery, PS3, voice…	Sök bland {0} platser: batteri, PS3, röst…
+No slot matches. Clear the search or a filter.	Ingen plats matchar. Rensa sökningen eller ett filter.
+Pack folder…	Paketmapp…
+Icon pack folder	Mapp med ikonpaket
+Pack .zip…	Paket-.zip…
+Icon pack zip	Ikonpaket-.zip
+Folder for icon templates	Mapp för ikonmallar
+Packs are folders or zips of <slot key>.png / .gif, the names the templates use. Multi-frame GIFs animate on the launcher when focused; they must stay within 512px, 120 frames and 10 seconds.	Paket är mappar eller zip-filer med <platsnyckel>.png / .gif, namnen som mallarna använder. GIF:ar med flera bildrutor animeras i launchern när de är i fokus; de får vara högst 512 px, 120 bildrutor och 10 sekunder.
+Icon pack imported	Ikonpaketet importerades
+Icon pack refused	Ikonpaketet nekades
+{0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	{0}: {1} tillagda, {2} ersatta, {3} utan matchning, {4} nekade
+Icon pack {0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	Ikonpaket {0}: {1} tillagda, {2} ersatta, {3} utan matchning, {4} nekade
+{0} - did you mean {1}?	{0} - menade du {1}?
+{0} - no matching slot	{0} - ingen matchande plats
+{0} error	{0} fel
+{0} errors	{0} fel
+{0} warning	{0} varning
+{0} warnings	{0} varningar
+{0} of {1} MB	{0} av {1} MB
+{0} of {1} MB - older launchers refuse over 64 MB	{0} av {1} MB - äldre launchers nekar över 64 MB
+Wallpaper	Bakgrund
+Preview	Förhandsvisning
+Motion	Rörelse
+Ambience	Stämning
+Other files	Andra filer
+{0} is too large to be a theme file	{0} är för stor för att vara en temafil
+Imported {0}	{0} importerat
+Imported with a caveat	Importerat med ett förbehåll
+{0} is not a valid .pfptheme bundle	{0} är inte ett giltigt .pfptheme-paket
+{0} — {1} icon(s) for parts themes don't customize were left out	{0} — {1} ikon(er) för delar som teman inte anpassar utelämnades
+Motion wallpaper: {0}	Rörlig bakgrund: {0}
+Could not keep: {0}	Kunde inte behålla: {0}
+Parts of the theme not kept	Delar av temat behölls inte
+Motion wallpaper not kept	Rörlig bakgrund behölls inte
+{0} is not a readable image	{0} är ingen läsbar bild
+{0} converted to H.264 for Android ({1})	{0} konverterades till H.264 för Android ({1})
+Couldn't read that frame of the video	Det gick inte att läsa den bildrutan i videon
+The crop does not match this image	Beskärningen passar inte den här bilden
+Wallpaper: {0} ({1}×{2})	Bakgrund: {0} ({1}×{2})
+Added {0} — converted to H.264 for Android ({1})	{0} tillagd — konverterad till H.264 för Android ({1})
+Added {0}	{0} tillagd
+Export failed: {0}	Exporten misslyckades: {0}
+{0} is not a PSP theme file	{0} är ingen PSP-temafil
+Unpack failed: {0}	Uppackningen misslyckades: {0}
+Theme unpacked	Temat uppackat
+{0} images written to {1} (see report.txt).	{0} bilder skrivna till {1} (se report.txt).
+{0} images and {1} data files written to {2} (see report.txt).	{0} bilder och {1} datafiler skrivna till {2} (se report.txt).
+Unpacked {0}: {1} images	{0} uppackat: {1} bilder
+Templates exported to {0} ({1} icons)	Mallar exporterade till {0} ({1} ikoner)
+WebM clips can't be checked in the Studio (it reads MP4/H.264 only) — convert the clip to MP4	WebM-klipp kan inte kontrolleras i Studio (den läser bara MP4/H.264) — konvertera klippet till MP4
+That isn't a media slot this import can fill	Det är ingen mediaplats som den här importen kan fylla
+That file is too large for a theme — {0} MB or less	Filen är för stor för ett tema — högst {0} MB
+Unsupported video — use an MP4 (H.264)	Video som inte stöds — använd en MP4 (H.264)
+{0} video isn't guaranteed to play on Android	En {0}-video spelas inte garanterat på Android
+H.264 {0} doesn't play on Android	H.264 {0} spelas inte på Android
+{0} video doesn't play on Android	En {0}-video spelas inte på Android
+Couldn't convert this video for Android ({0}). Re-encode it as MP4 H.264 and try again.	Det gick inte att konvertera videon för Android ({0}). Koda om den som MP4 H.264 och försök igen.
+{0} is not a folder or .zip	{0} är varken en mapp eller en .zip
+Pack refused: {0}	Paketet nekades: {0}
+Pack could not be read	Paketet kunde inte läsas
+Pack could not be read: {0}	Paketet kunde inte läsas: {0}
+Pack has more than {0} files	Paketet har fler än {0} filer
+Not a PSP theme file	Ingen PSP-temafil
+Corrupt or truncated PTF	Skadad eller avkortad PTF
+This theme contains no wallpaper image.	Det här temat innehåller ingen bakgrundsbild.
+The wallpaper could not be extracted: this theme uses a compression method this importer doesn't recognize. The theme was imported without its wallpaper.	Bakgrunden kunde inte extraheras: temat använder en komprimeringsmetod som den här importen inte känner igen. Temat importerades utan bakgrund.
+The wallpaper data in this theme is damaged and could not be decoded. The theme was imported without its wallpaper.	Bakgrundsdata i det här temat är skadade och kunde inte avkodas. Temat importerades utan bakgrund.

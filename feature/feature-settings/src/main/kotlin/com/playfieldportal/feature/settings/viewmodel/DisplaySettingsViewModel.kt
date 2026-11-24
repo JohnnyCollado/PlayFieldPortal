@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import com.playfieldportal.core.domain.model.BackdropBlur
+import com.playfieldportal.core.domain.text.LimitMessages
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
@@ -33,11 +35,13 @@ import com.playfieldportal.core.domain.model.TouchSensitivity
 import com.playfieldportal.core.domain.model.XYLayout
 import com.playfieldportal.core.domain.model.XmbListMotion
 import com.playfieldportal.core.domain.model.UmdSlotMode
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.theme.TextContrastRole
 import com.playfieldportal.core.ui.theme.composite
 import com.playfieldportal.core.ui.theme.solveScrimColor
 import com.playfieldportal.core.ui.wave.WaveStyle
 import com.playfieldportal.themekit.MotionLimits
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.themekit.UiMediaLimits
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -68,6 +72,8 @@ private val KEY_SCREEN_ORIENTATION = ScreenOrientationPreferences.KEY_MODE
 private val KEY_TOUCH_NAV_BUTTON   = InterfaceHintPrefs.KEY_TOUCH_NAV_BUTTON
 private val KEY_CONTEXT_MENU_HINT  = InterfaceHintPrefs.KEY_CONTEXT_MENU_HINT
 private val KEY_CONTEXT_MENU_HINT_DELAY_SECONDS = InterfaceHintPrefs.KEY_CONTEXT_MENU_HINT_DELAY_SECONDS
+// Read at the app root (MainActivity) to drive the blur behind prompts and the options panel.
+private val KEY_BACKDROP_BLUR = androidx.datastore.preferences.core.floatPreferencesKey(BackdropBlur.PREFERENCE_KEY)
 // Must match XMBViewModel.KEY_TOUCH_SENSITIVITY — both read/write this same pref.
 private val KEY_TOUCH_SENSITIVITY  = stringPreferencesKey("interface_touch_sensitivity")
 // Must match GameLaunchPreferences.KEY_DIRECT_LAUNCH — both read/write this same pref.
@@ -80,6 +86,10 @@ private val KEY_TEXT_SHADOW = booleanPreferencesKey("display_text_shadow")
 private val KEY_ITEM_LIST_MOTION = stringPreferencesKey("display_item_list_motion")
 // Must match XMBViewModel.KEY_UMD_SLOT_MODE — both read/write this same pref.
 private val KEY_UMD_SLOT_MODE = stringPreferencesKey("display_umd_slot_mode")
+// Display ▸ Motion. The key is the one Artwork ▸ Animated images always used (IconDisplayPreferences),
+// so the setting moved screens and gained a name without anyone's stored choice moving.
+private val KEY_MOTION = stringPreferencesKey("pref_image_motion")
+private val KEY_FOCUS_GLOW = stringPreferencesKey(com.playfieldportal.core.domain.model.FocusGlowMode.PREFERENCE_KEY)
 // ── Font colour (Display ▸ Font Colour) ──────────────────────────────────────
 // Absent = inherit the theme's own text colour (white on every preset).
 private val KEY_TEXT_COLOR = ThemePrefKeys.TEXT_COLOR
@@ -124,27 +134,27 @@ internal fun isMotionWallpaper(mime: String?, header: ByteArray): Boolean = when
 }
 
 private val TOUCH_NAV_BUTTON_LABELS = mapOf(
-    TouchNavButtonMode.AUTO        to "Auto",
-    TouchNavButtonMode.ALWAYS_SHOW to "Always Show",
-    TouchNavButtonMode.ALWAYS_HIDE to "Always Hide",
+    TouchNavButtonMode.AUTO        to UiText.res(R.string.setd_touch_nav_auto),
+    TouchNavButtonMode.ALWAYS_SHOW to UiText.res(R.string.setd_touch_nav_show),
+    TouchNavButtonMode.ALWAYS_HIDE to UiText.res(R.string.setd_touch_nav_hide),
 )
 
 private val SCREEN_ORIENTATION_LABELS = mapOf(
-    ScreenOrientationMode.LANDSCAPE     to "Landscape",
-    ScreenOrientationMode.FOLLOW_DEVICE to "Follow Device",
+    ScreenOrientationMode.LANDSCAPE     to UiText.res(R.string.setd_orientation_landscape),
+    ScreenOrientationMode.FOLLOW_DEVICE to UiText.res(R.string.setd_orientation_follow),
 )
 
 private val TOUCH_SENSITIVITY_LABELS = mapOf(
-    TouchSensitivity.LOW    to "Low",
-    TouchSensitivity.NORMAL to "Normal",
-    TouchSensitivity.HIGH   to "High",
+    TouchSensitivity.LOW    to UiText.res(R.string.setd_touch_sens_low),
+    TouchSensitivity.NORMAL to UiText.res(R.string.setd_touch_sens_normal),
+    TouchSensitivity.HIGH   to UiText.res(R.string.setd_touch_sens_high),
 )
 
 private val WAVE_STYLE_LABELS = mapOf(
-    WaveStyle.ANIMATED       to "Animated",
-    WaveStyle.REDUCED        to "Reduced",
-    WaveStyle.STATIC         to "Static",
-    WaveStyle.REDUCED_STATIC to "Reduced + Static",
+    WaveStyle.ANIMATED       to UiText.res(R.string.setd_motion_animated),
+    WaveStyle.REDUCED        to UiText.res(R.string.setd_motion_reduced),
+    WaveStyle.STATIC         to UiText.res(R.string.setd_motion_static),
+    WaveStyle.REDUCED_STATIC to UiText.res(R.string.setd_motion_reduced_static),
 )
 
 /**
@@ -152,7 +162,7 @@ private val WAVE_STYLE_LABELS = mapOf(
  * most five typed sources, and the outer one is already full of DataStore and import state.
  */
 private data class Transient(
-    val textContrastNotice: String?,
+    val textContrastNotice: UiText?,
     val xyLayout: XYLayout,
 )
 
@@ -185,16 +195,20 @@ data class DisplaySettingsUiState(
     val textLegibility: TextLegibilityStyle = TextLegibilityStyle.DEFAULT,
     val textContrastNoticeSuppressed: Boolean = false,
     /** Transient "we adjusted your colour" notice; null when there is nothing to say. */
-    val textContrastNotice: String? = null,
+    val textContrastNotice: UiText? = null,
     // Show the idle "Options" hint pill over XMB items with a context menu. Default on.
     val contextMenuHintDelaySeconds: Float = 2.5f,
+    // Blur behind prompts and the options panel: 0 (off) to 1 (the ceiling). See BackdropBlur.
+    val backdropBlurStrength: Float = BackdropBlur.DEFAULT_STRENGTH,
+    val motion: com.playfieldportal.core.domain.model.ImageMotion = com.playfieldportal.core.domain.model.ImageMotion.DEFAULT,
+    val focusGlow: com.playfieldportal.core.domain.model.FocusGlowMode = com.playfieldportal.core.domain.model.FocusGlowMode.DEFAULT,
     val touchSensitivity: TouchSensitivity = TouchSensitivity.NORMAL,
     // Confirm on a game launches it directly (true) or opens Game Detail first (false).
     val directLaunch: Boolean = false,
     val customWallpaperPath: String? = null,
     // Absolute path of the looping motion file, when one is set (and its poster exists).
     val motionWallpaperPath: String? = null,
-    val wallpaperMessage: String? = null,
+    val wallpaperMessage: UiText? = null,
     val contextMenuHintEnabled: Boolean = true,
     val wallpaperImporting: Boolean = false,
     val wallpaperPreviewVisible: Boolean = false,
@@ -202,12 +216,12 @@ data class DisplaySettingsUiState(
     // ONE field, exactly like GameBoot: the boot sequence is the built-in logo animation until
     // the user replaces the whole thing with a clip of their own. Boot SOUND is not here — it is
     // the seventh row of Interface ▸ Sound, which owns every sound in the app.
-    val bootVideoLabel: String = PFP_DEFAULT_LABEL,
+    val bootVideoLabel: UiText = UiText.res(R.string.setd_pfp_default),
     val bootVideoAssigned: Boolean = false,
     // ── GameBoot (Display ▸ GameBoot) ────────────────────────────────────────
     // One switch and one replaceable asset: on/off, plus the user's own clip when they have one.
     val gameBootEnabled: Boolean = true,
-    val gameBootVideoLabel: String = PFP_DEFAULT_LABEL,
+    val gameBootVideoLabel: UiText = UiText.res(R.string.setd_pfp_default),
     val gameBootVideoAssigned: Boolean = false,
     /**
      * Which physical face button does what on a focused media row — the north/west shortcuts are
@@ -217,7 +231,7 @@ data class DisplaySettingsUiState(
     /** The layout saved for this screen size is the PSP preset, so Biblically Accurate PSP XMB greys out. */
     val pspLayoutApplied: Boolean = false,
 ) {
-    val waveStyleLabel: String get() = WAVE_STYLE_LABELS[waveStyle] ?: waveStyle.name
+    val waveStyleLabel: UiText get() = WAVE_STYLE_LABELS[waveStyle] ?: UiText.raw(waveStyle.name)
 }
 
 @HiltViewModel
@@ -229,14 +243,14 @@ class DisplaySettingsViewModel @Inject constructor(
     private val controllerLayout: ControllerLayoutRepository,
 ) : ViewModel() {
 
-    private val _wallpaperMessage  = MutableStateFlow<String?>(null)
+    private val _wallpaperMessage  = MutableStateFlow<UiText?>(null)
     private val _wallpaperImporting = MutableStateFlow(false)
     private val _wallpaperPreviewVisible = MutableStateFlow(false)
     /**
      * Transient font-colour notice, on the same channel idiom as [_wallpaperMessage]: raised by a
      * pick that had to be adjusted, cleared by Dismiss or by "Don't warn again".
      */
-    private val _textContrastNotice = MutableStateFlow<String?>(null)
+    private val _textContrastNotice = MutableStateFlow<UiText?>(null)
 
     /** The slot the UI-media picker was launched for, read back when the Uri arrives. */
     private var pendingUiMediaSlot: UiMediaSlot? = null
@@ -259,11 +273,13 @@ class DisplaySettingsViewModel @Inject constructor(
         // listing, so the rows follow an import or a clear without a second flow.
         val assigned = uiMediaStore.assignments()
         val themed = uiMediaStore.themeAssignments()
-        fun label(slot: UiMediaSlot): String = UiMediaRowText.label(
+        fun label(slot: UiMediaSlot): UiText = UiMediaRowText.label(
             userName = prefs[UiMediaStore.displayNameKey(slot)],
             userAssigned = slot in assigned,
             themeSupplied = slot in themed,
-            fallback = if (slot.kind == UiMediaKind.VIDEO) "Custom video" else "Custom sound",
+            fallback = UiText.res(
+                if (slot.kind == UiMediaKind.VIDEO) R.string.setd_custom_video else R.string.setd_custom_sound,
+            ),
         )
         DisplaySettingsUiState(
             waveStyle            = runCatching {
@@ -287,6 +303,10 @@ class DisplaySettingsViewModel @Inject constructor(
             textContrastNotice   = transient.textContrastNotice,
             contextMenuHintEnabled = prefs[KEY_CONTEXT_MENU_HINT] ?: true,
             contextMenuHintDelaySeconds = (prefs[KEY_CONTEXT_MENU_HINT_DELAY_SECONDS] ?: 2.5f).coerceIn(1f, 5f),
+            backdropBlurStrength = BackdropBlur.coerce(prefs[KEY_BACKDROP_BLUR]),
+            motion = com.playfieldportal.core.domain.model.ImageMotion.fromName(prefs[KEY_MOTION])
+                ?: com.playfieldportal.core.domain.model.ImageMotion.DEFAULT,
+            focusGlow = com.playfieldportal.core.domain.model.FocusGlowMode.fromStored(prefs[KEY_FOCUS_GLOW]),
             touchSensitivity     = TouchSensitivity.fromName(prefs[KEY_TOUCH_SENSITIVITY]),
             directLaunch         = prefs[KEY_DIRECT_LAUNCH]   ?: false,
             customWallpaperPath  = prefs[KEY_CUSTOM_WALLPAPER],
@@ -337,7 +357,7 @@ class DisplaySettingsViewModel @Inject constructor(
                 // A refused import is an ERROR event, not just a dialog — the user did
                 // something and the launcher said no.
                 menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.ERROR)
-                _wallpaperMessage.value = result.message
+                _wallpaperMessage.value = result.message?.let(LimitMessages::textFor)
             }
         }
     }
@@ -359,6 +379,7 @@ class DisplaySettingsViewModel @Inject constructor(
     /** The row of [option]'s dialog that is the value in use, so the dialog opens on it. */
     fun selectedChoice(option: DisplayOption): Int = uiState.value.let { state ->
         when (option) {
+            DisplayOption.MOTION -> state.motion.ordinal
             DisplayOption.WAVE_STYLE, DisplayOption.BACKGROUND_MOTION -> state.waveStyle.ordinal
             DisplayOption.ICON_LEGIBILITY -> state.iconLegibility.ordinal
             DisplayOption.ITEM_LIST_MOTION -> state.itemListMotion.ordinal
@@ -376,6 +397,8 @@ class DisplaySettingsViewModel @Inject constructor(
      */
     fun choose(option: DisplayOption, index: Int) {
         val (key, name) = when (option) {
+            DisplayOption.MOTION ->
+                KEY_MOTION to com.playfieldportal.core.domain.model.ImageMotion.entries.getOrNull(index)?.name
             DisplayOption.WAVE_STYLE, DisplayOption.BACKGROUND_MOTION ->
                 KEY_WAVE_STYLE to WaveStyle.entries.getOrNull(index)?.name
             DisplayOption.ICON_LEGIBILITY -> KEY_ICON_LEGIBILITY to IconLegibilityStyle.entries.getOrNull(index)?.name
@@ -474,7 +497,7 @@ class DisplaySettingsViewModel @Inject constructor(
      * The notice text for [argb], or null when there is nothing to say — no pick, the notice
      * suppressed, or the colour simply passes.
      */
-    private suspend fun noticeFor(argb: Long?): String? {
+    private suspend fun noticeFor(argb: Long?): UiText? {
         if (argb == null) return null
         val prefs = context.pfpDataStore.data.first()
         if (prefs[KEY_TEXT_NOTICE_SUPPRESSED] == true) return null
@@ -486,8 +509,7 @@ class DisplaySettingsViewModel @Inject constructor(
         // The colour is drawn exactly as picked — nothing lightens it or puts a plate behind it —
         // so this warns rather than claiming an adjustment (survey L18).
         if (ratio >= TextContrastRole.BODY.threshold) return null
-        return "This colour reads at " + String.format(java.util.Locale.US, "%.1f:1", ratio) +
-            " against this background, below the 4.5:1 readability guide. Text in it may be hard to read."
+        return UiText.res(R.string.setd_text_contrast_notice, String.format(java.util.Locale.US, "%.1f:1", ratio))
     }
 
     /**
@@ -532,6 +554,14 @@ class DisplaySettingsViewModel @Inject constructor(
     fun setRespectBatterySaver(v: Boolean)   = save { it[KEY_RESPECT_BATTERY] = v }
     fun setDirectLaunch(v: Boolean)          = save { it[KEY_DIRECT_LAUNCH]   = v }
     fun setContextMenuHintEnabled(v: Boolean) = save { it[KEY_CONTEXT_MENU_HINT] = v }
+    fun setBackdropBlurStrength(v: Float) = save { it[KEY_BACKDROP_BLUR] = BackdropBlur.snap(v) }
+
+    /** Cycles the focus glow: Steady → Pulsing → Off → Steady, persisting the enum name. */
+    fun cycleFocusGlow() {
+        val modes = com.playfieldportal.core.domain.model.FocusGlowMode.entries
+        val next = modes[(modes.indexOf(uiState.value.focusGlow) + 1) % modes.size]
+        save { it[KEY_FOCUS_GLOW] = next.name }
+    }
     fun setContextMenuHintDelaySeconds(v: Float) = save {
         it[KEY_CONTEXT_MENU_HINT_DELAY_SECONDS] = v.coerceIn(1f, 5f)
     }
@@ -542,16 +572,16 @@ class DisplaySettingsViewModel @Inject constructor(
         save { it[KEY_TOUCH_NAV_BUTTON] = next.name }
     }
 
-    fun touchNavButtonLabel(): String =
-        TOUCH_NAV_BUTTON_LABELS[uiState.value.touchNavButtonMode] ?: uiState.value.touchNavButtonMode.name
+    fun touchNavButtonLabel(): UiText =
+        TOUCH_NAV_BUTTON_LABELS[uiState.value.touchNavButtonMode] ?: UiText.raw(uiState.value.touchNavButtonMode.name)
 
     fun cycleScreenOrientation() {
         val next = uiState.value.screenOrientation.next()
         save { it[KEY_SCREEN_ORIENTATION] = next.name }
     }
 
-    fun screenOrientationLabel(): String =
-        SCREEN_ORIENTATION_LABELS[uiState.value.screenOrientation] ?: uiState.value.screenOrientation.name
+    fun screenOrientationLabel(): UiText =
+        SCREEN_ORIENTATION_LABELS[uiState.value.screenOrientation] ?: UiText.raw(uiState.value.screenOrientation.name)
 
     fun cycleTouchSensitivity() {
         val levels = TouchSensitivity.entries
@@ -559,8 +589,8 @@ class DisplaySettingsViewModel @Inject constructor(
         save { it[KEY_TOUCH_SENSITIVITY] = next.name }
     }
 
-    fun touchSensitivityLabel(): String =
-        TOUCH_SENSITIVITY_LABELS[uiState.value.touchSensitivity] ?: uiState.value.touchSensitivity.name
+    fun touchSensitivityLabel(): UiText =
+        TOUCH_SENSITIVITY_LABELS[uiState.value.touchSensitivity] ?: UiText.raw(uiState.value.touchSensitivity.name)
 
     // ── Wallpaper ─────────────────────────────────────────────────────────────
 
@@ -568,7 +598,7 @@ class DisplaySettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val mime = context.contentResolver.getType(uri)
             if (mime != null && mime !in SUPPORTED_WALLPAPER_MIME) {
-                _wallpaperMessage.value = "Unsupported format — use PNG, JPG, WEBP, MP4, WEBM, or GIF"
+                _wallpaperMessage.value = UiText.res(R.string.setd_wallpaper_unsupported)
                 return@launch
             }
             _wallpaperImporting.value = true
@@ -630,10 +660,10 @@ class DisplaySettingsViewModel @Inject constructor(
                 it.setWallpaperLuma(luma)
             }
             pruneWallpaperDir(keep = listOf(dest))
-            _wallpaperMessage.value = "Wallpaper applied"
+            _wallpaperMessage.value = UiText.res(R.string.setd_wallpaper_applied)
         } else {
             runCatching { dest.delete() }
-            _wallpaperMessage.value = "Couldn't read that file — try a different one"
+            _wallpaperMessage.value = UiText.res(R.string.setd_wallpaper_unreadable)
         }
     }
 
@@ -664,7 +694,7 @@ class DisplaySettingsViewModel @Inject constructor(
             context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length }
         }.getOrNull()?.takeIf { it > 0 }
         if (knownSize != null && knownSize > MotionLimits.MAX_BYTES) {
-            _wallpaperMessage.value = MotionLimits.MSG_TOO_LARGE_BYTES
+            _wallpaperMessage.value = LimitMessages.textFor(MotionLimits.MSG_TOO_LARGE_BYTES)
             return
         }
 
@@ -675,7 +705,7 @@ class DisplaySettingsViewModel @Inject constructor(
         }.getOrDefault(false)
         if (!copied) {
             runCatching { motionDest.delete() }
-            _wallpaperMessage.value = MotionLimits.MSG_UNDECODABLE
+            _wallpaperMessage.value = LimitMessages.textFor(MotionLimits.MSG_UNDECODABLE)
             return
         }
 
@@ -684,7 +714,7 @@ class DisplaySettingsViewModel @Inject constructor(
         val rejection = probe?.let { MotionLimits.validate(it) }
         if (probe == null || rejection != null) {
             runCatching { motionDest.delete() }
-            _wallpaperMessage.value = rejection ?: MotionLimits.MSG_UNDECODABLE
+            _wallpaperMessage.value = LimitMessages.textFor(rejection ?: MotionLimits.MSG_UNDECODABLE)
             return
         }
 
@@ -695,7 +725,7 @@ class DisplaySettingsViewModel @Inject constructor(
         val poster = extractPoster(motionDest, mime)
         if (poster == null) {
             runCatching { motionDest.delete() }
-            _wallpaperMessage.value = MotionLimits.MSG_UNDECODABLE
+            _wallpaperMessage.value = LimitMessages.textFor(MotionLimits.MSG_UNDECODABLE)
             return
         }
         val posterOk = runCatching {
@@ -705,7 +735,7 @@ class DisplaySettingsViewModel @Inject constructor(
         poster.recycle()
         if (!posterOk) {
             runCatching { motionDest.delete() }
-            _wallpaperMessage.value = MotionLimits.MSG_UNDECODABLE
+            _wallpaperMessage.value = LimitMessages.textFor(MotionLimits.MSG_UNDECODABLE)
             return
         }
 
@@ -726,7 +756,7 @@ class DisplaySettingsViewModel @Inject constructor(
             it.setWallpaperLuma(luma)
         }
         pruneWallpaperDir(keep = listOf(motionDest, posterDest))
-        _wallpaperMessage.value = "Motion wallpaper applied"
+        _wallpaperMessage.value = UiText.res(R.string.setd_wallpaper_motion_applied)
     }
 
     /**
@@ -820,7 +850,7 @@ class DisplaySettingsViewModel @Inject constructor(
                 poster?.let { runCatching { File(it).delete() } }
                 motion?.let { runCatching { File(it).delete() } }
             }
-            _wallpaperMessage.value = "Wallpaper reset to default"
+            _wallpaperMessage.value = UiText.res(R.string.setd_wallpaper_reset)
         }
     }
 
@@ -835,7 +865,7 @@ class DisplaySettingsViewModel @Inject constructor(
         if (uiState.value.customWallpaperPath != null) {
             _wallpaperPreviewVisible.value = true
         } else {
-            _wallpaperMessage.value = "No wallpaper selected yet"
+            _wallpaperMessage.value = UiText.res(R.string.setd_wallpaper_none)
         }
     }
 

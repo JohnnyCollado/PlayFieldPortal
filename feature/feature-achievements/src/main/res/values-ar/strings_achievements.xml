@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Achievement update notifications. "Games" are the installed games being checked. -->
+    <string name="ach_upd_running">جارٍ تحديث إنجازات الألعاب المثبّتة</string>
+    <string name="ach_upd_running_stop_note">سيتم الاحتفاظ بالإنجازات التي حُدّثت بالفعل.</string>
+    <string name="ach_upd_progress">جارٍ فحص %1$d من %2$d لعبة</string>
+    <string name="ach_upd_stopped">توقف تحديث الإنجازات</string>
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="zero">لم تُفحص أي لعبة؛ تم الاحتفاظ بالتقدّم المحفوظ</item>
+        <item quantity="one">تم فحص لعبة واحدة؛ تم الاحتفاظ بالتقدّم المحفوظ</item>
+        <item quantity="two">تم فحص لعبتين؛ تم الاحتفاظ بالتقدّم المحفوظ</item>
+        <item quantity="few">تم فحص %d ألعاب؛ تم الاحتفاظ بالتقدّم المحفوظ</item>
+        <item quantity="many">تم فحص %d لعبة؛ تم الاحتفاظ بالتقدّم المحفوظ</item>
+        <item quantity="other">تم فحص %d لعبة؛ تم الاحتفاظ بالتقدّم المحفوظ</item>
+    </plurals>
+    <string name="ach_upd_some_failed">تعذّر تحديث بعض الإنجازات</string>
+    <plurals name="ach_upd_failed_message">
+        <item quantity="zero">%1$d من %2$d لعبة تحتاج إلى محاولة أخرى</item>
+        <item quantity="one">%1$d من %2$d لعبة تحتاج إلى محاولة أخرى</item>
+        <item quantity="two">%1$d من %2$d لعبة تحتاج إلى محاولة أخرى</item>
+        <item quantity="few">%1$d من %2$d ألعاب تحتاج إلى محاولة أخرى</item>
+        <item quantity="many">%1$d من %2$d لعبة تحتاج إلى محاولة أخرى</item>
+        <item quantity="other">%1$d من %2$d لعبة تحتاج إلى محاولة أخرى</item>
+    </plurals>
+    <string name="ach_upd_results_done">تم التحديث</string>
+    <string name="ach_upd_updated">تم تحديث الإنجازات</string>
+    <plurals name="ach_upd_updated_message">
+        <item quantity="zero">لم تُحدَّث أي لعبة · %2$d دون تغيير</item>
+        <item quantity="one">تم تحديث لعبة واحدة · %2$d دون تغيير</item>
+        <item quantity="two">تم تحديث لعبتين · %2$d دون تغيير</item>
+        <item quantity="few">تم تحديث %1$d ألعاب · %2$d دون تغيير</item>
+        <item quantity="many">تم تحديث %1$d لعبة · %2$d دون تغيير</item>
+        <item quantity="other">تم تحديث %1$d لعبة · %2$d دون تغيير</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">الإنجازات محدّثة</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="zero">لم تُفحص أي لعبة مثبّتة</item>
+        <item quantity="one">تم فحص لعبة مثبّتة واحدة</item>
+        <item quantity="two">تم فحص لعبتين مثبّتتين</item>
+        <item quantity="few">تم فحص %d ألعاب مثبّتة</item>
+        <item quantity="many">تم فحص %d لعبة مثبّتة</item>
+        <item quantity="other">تم فحص %d لعبة مثبّتة</item>
+    </plurals>
+    <string name="ach_upd_paused">تم إيقاف تحديث الإنجازات مؤقتًا</string>
+    <string name="ach_upd_fact_service">الخدمة</string>
+    <string name="ach_upd_pause_offline">اتصل بالإنترنت</string>
+    <string name="ach_upd_pause_reconnect">أعِد ربط %1$s</string>
+    <string name="ach_upd_pause_steam_private">تفاصيل الألعاب في Steam غير متاحة</string>
+
+    <!-- Auto-match notifications -->
+    <string name="ach_match_running">جارٍ مطابقة الألعاب تلقائيًا</string>
+    <string name="ach_match_running_stop_note">تبقى الألعاب التي تمت مطابقتها مرتبطة.</string>
+    <string name="ach_match_stopped_note">تبقى الألعاب التي تمت مطابقتها مرتبطة</string>
+    <string name="ach_match_stopped">توقفت المطابقة التلقائية</string>
+    <string name="ach_match_recognized">تم التعرّف على الألعاب</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="zero">لم تتم مطابقة أي لعبة مثبّتة.</item>
+        <item quantity="one">تمت مطابقة لعبة مثبّتة واحدة. جارٍ تحديث إنجازاتها.</item>
+        <item quantity="two">تمت مطابقة لعبتين مثبّتتين. جارٍ تحديث إنجازاتهما.</item>
+        <item quantity="few">تمت مطابقة %d ألعاب مثبّتة. جارٍ تحديث إنجازاتها.</item>
+        <item quantity="many">تمت مطابقة %d لعبة مثبّتة. جارٍ تحديث إنجازاتها.</item>
+        <item quantity="other">تمت مطابقة %d لعبة مثبّتة. جارٍ تحديث إنجازاتها.</item>
+    </plurals>
+
+    <!-- Clearing achievement records -->
+    <string name="ach_clear_done">تم مسح سجلات الإنجازات</string>
+    <string name="ach_clear_done_message">يجب إعادة مزامنة الألعاب المثبّتة لعرض الإنجازات مجددًا</string>
+    <string name="ach_clear_failed">تعذّر مسح الإنجازات</string>
+    <string name="ach_clear_failed_message">لم تتم إزالة أي شيء. حاول مجددًا من الإعدادات ▸ الإنجازات</string>
+
+    <string name="ach_ls_unavail_store">تعذّر الاستعلام من المتجر</string>
+    <string name="ach_ls_unavail_steam">Steam غير متاح حاليًا</string>
+    <string name="ach_ls_steam_unreachable">تعذّر الوصول إلى Steam</string>
+    <string name="ach_ls_steam_rate_limited">يحدّ Steam من عدد الطلبات</string>
+    <string name="ach_ls_steam_error">أعاد Steam خطأً</string>
+    <string name="ach_ls_steam_needs_key">يحتاج Steam إلى مفتاح Web API الخاص بك</string>
+
+    <!-- Local Steam: linking a picked game folder -->
+    <!-- %1$s is the folder name -->
+    <string name="ach_link_no_match">لا توجد لعبة في Steam تطابق \"%1$s\". أعِد تسمية المجلد إلى اسم اللعبة في Steam، أو اربطه أولاً من تفاصيل اللعبة ▸ مطابقة اللعبة.</string>
+    <string name="ach_link_unavailable">%1$s، لذا تعذّر تحديد app id لهذا المجلد. لم يتغير شيء — حاول مجددًا عند عودة الاتصال.</string>
+    <string name="ach_link_marker_failed">تعذّر إنشاء steam_appid.txt في ذلك المجلد — ربما يملك PFP صلاحية القراءة فقط.</string>
+    <string name="ach_link_not_recorded">تعذّر تسجيل المطابقة المختارة.</string>
+    <string name="ach_link_installer_off">فعّل «تثبيت Goldberg وتحويل الألعاب» في إعدادات الإنجازات قبل أن يكتب PFP في مجلد لعبة.</string>
+    <string name="ach_link_no_app_id">لم يعد ذلك المجلد يحدد app id — اختره مجددًا.</string>
+    <string name="ach_link_need_key">أضِف مفتاح Steam Web API من الإعدادات ▸ الإنجازات ▸ بيانات اعتماد المزوّدين — منه تأتي قائمة الإنجازات.</string>
+    <string name="ach_link_no_achievements">لا يسرد Steam أي إنجازات لـ app id %1$s، لذا لا يوجد ما يمكن تتبّعه.</string>
+    <string name="ach_link_kit_failed">تعذّرت كتابة حزمة الإنجازات: %1$s</string>
+    <string name="ach_link_read_back_failed">تعذّرت إعادة قراءة ذلك المجلد. إذا كان على وحدة تخزين قابلة للإزالة، فأعِد تركيبها واختره مجددًا.</string>
+    <string name="ach_link_not_steam_build">لا يوجد ملف مكتبة Steam (steam_api64.dll) في أي مكان داخل ذلك المجلد، لذا فهو ليس إصدار Steam ولا يوجد ما يتتبعه المحاكي. اختر المجلد الذي يوجد فيه ملف .exe الخاص باللعبة.</string>
+
+    <!-- Local Steam: convert picker rows. %2$s / %1$s is a Steam app id; the dots separate the two parts of the note. -->
+    <string name="ach_pick_checking">جارٍ التحقق من Steam…</string>
+    <plurals name="ach_pick_coins">
+        <item quantity="zero">لا عملات  ·  appid %2$s</item>
+        <item quantity="one">عملة واحدة  ·  appid %2$s</item>
+        <item quantity="two">عملتان  ·  appid %2$s</item>
+        <item quantity="few">%1$d عملات  ·  appid %2$s</item>
+        <item quantity="many">%1$d عملة  ·  appid %2$s</item>
+        <item quantity="other">%1$d عملة  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">لا توجد قائمة في Steam  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">يحتاج إلى مفتاح Steam Web API  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">لم يستجب Steam  ·  appid %1$s</string>
+
+    <!-- Local Steam: batch match summary -->
+    <string name="ach_batch_already_running">هناك مطابقة جماعية قيد التشغيل بالفعل.</string>
+    <string name="ach_batch_no_folders">لا توجد مجلدات ألعاب هنا. اختر المجلد الذي يحتوي على مجلدات ألعابك، لا مجلد لعبة واحدة.</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="zero">لم يُعثر على أي مجلد.</item>
+        <item quantity="one">تم العثور على مجلد واحد، لكنه ليس إصدار Steam — لا توجد مكتبة steam_api، لذا لا يوجد ما يتتبعه المحاكي.</item>
+        <item quantity="two">تم العثور على مجلدين، لكن لا أحد منهما إصدار Steam — لا توجد مكتبة steam_api، لذا لا يوجد ما يتتبعه المحاكي.</item>
+        <item quantity="few">تم العثور على %d مجلدات، لكن لا أحد منها إصدار Steam — لا توجد مكتبة steam_api، لذا لا يوجد ما يتتبعه المحاكي.</item>
+        <item quantity="many">تم العثور على %d مجلدًا، لكن لا أحد منها إصدار Steam — لا توجد مكتبة steam_api، لذا لا يوجد ما يتتبعه المحاكي.</item>
+        <item quantity="other">تم العثور على %d مجلد، لكن لا أحد منها إصدار Steam — لا توجد مكتبة steam_api، لذا لا يوجد ما يتتبعه المحاكي.</item>
+    </plurals>
+    <string name="ach_batch_linked">%1$d مرتبطة بألعاب المكتبة</string>
+    <string name="ach_batch_tracked">%1$d تُتتبَّع بمفردها</string>
+    <string name="ach_batch_converting">%1$d بانتظار التحويل</string>
+    <plurals name="ach_batch_matched">
+        <item quantity="zero">تمت مطابقة %1$d من %2$d مجلد.</item>
+        <item quantity="one">تمت مطابقة %1$d من %2$d مجلد.</item>
+        <item quantity="two">تمت مطابقة %1$d من %2$d مجلد.</item>
+        <item quantity="few">تمت مطابقة %1$d من %2$d مجلدات.</item>
+        <item quantity="many">تمت مطابقة %1$d من %2$d مجلدًا.</item>
+        <item quantity="other">تمت مطابقة %1$d من %2$d مجلد.</item>
+    </plurals>
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="zero">تمت مطابقة %1$d من %2$d مجلد: %3$s.</item>
+        <item quantity="one">تمت مطابقة %1$d من %2$d مجلد: %3$s.</item>
+        <item quantity="two">تمت مطابقة %1$d من %2$d مجلد: %3$s.</item>
+        <item quantity="few">تمت مطابقة %1$d من %2$d مجلدات: %3$s.</item>
+        <item quantity="many">تمت مطابقة %1$d من %2$d مجلدًا: %3$s.</item>
+        <item quantity="other">تمت مطابقة %1$d من %2$d مجلد: %3$s.</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="zero">%1$d لم يمكن التعرّف عليها من أسمائها.</item>
+        <item quantity="one">تعذّر التعرّف على مجلد واحد من اسمه — افتح صفحة Shiba Coins للعبة واستخدم المطابقة التلقائية لاختيار مجلدها.</item>
+        <item quantity="two">تعذّر التعرّف على مجلدين من اسميهما — افتح صفحة Shiba Coins لكل لعبة واستخدم المطابقة التلقائية لاختيار مجلدها.</item>
+        <item quantity="few">تعذّر التعرّف على %1$d مجلدات من أسمائها — افتح صفحة Shiba Coins لكل لعبة واستخدم المطابقة التلقائية لاختيار مجلدها.</item>
+        <item quantity="many">تعذّر التعرّف على %1$d مجلدًا من أسمائها — افتح صفحة Shiba Coins لكل لعبة واستخدم المطابقة التلقائية لاختيار مجلدها.</item>
+        <item quantity="other">تعذّر التعرّف على %1$d مجلد من أسمائها — افتح صفحة Shiba Coins لكل لعبة واستخدم المطابقة التلقائية لاختيار مجلدها.</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="zero">%1$d ليست في مكتبتك.</item>
+        <item quantity="one">لعبة واحدة ليست في مكتبتك — أضِفها إلى بطاقة Windows أولاً، ثم طابِق مجددًا.</item>
+        <item quantity="two">لعبتان ليستا في مكتبتك — أضِفهما إلى بطاقة Windows أولاً، ثم طابِق مجددًا.</item>
+        <item quantity="few">%1$d ألعاب ليست في مكتبتك — أضِفها إلى بطاقة Windows أولاً، ثم طابِق مجددًا.</item>
+        <item quantity="many">%1$d لعبة ليست في مكتبتك — أضِفها إلى بطاقة Windows أولاً، ثم طابِق مجددًا.</item>
+        <item quantity="other">%1$d لعبة ليست في مكتبتك — أضِفها إلى بطاقة Windows أولاً، ثم طابِق مجددًا.</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="zero">%1$d ليست إصدارات Steam.</item>
+        <item quantity="one">مجلد واحد ليس إصدار Steam.</item>
+        <item quantity="two">مجلدان ليسا إصدارَي Steam.</item>
+        <item quantity="few">%1$d مجلدات ليست إصدارات Steam.</item>
+        <item quantity="many">%1$d مجلدًا ليست إصدارات Steam.</item>
+        <item quantity="other">%1$d مجلد ليست إصدارات Steam.</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="zero">فشل %1$d — راجع السجل.</item>
+        <item quantity="one">فشل مجلد واحد — راجع السجل.</item>
+        <item quantity="two">فشل مجلدان — راجع السجل.</item>
+        <item quantity="few">فشلت %1$d مجلدات — راجع السجل.</item>
+        <item quantity="many">فشل %1$d مجلدًا — راجع السجل.</item>
+        <item quantity="other">فشل %1$d مجلد — راجع السجل.</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">تعذّر فتح ذلك المجلد.</string>
+    <string name="ach_batch_fail_read_back">‏%1$s: تعذّرت إعادة قراءته بعد التعرّف عليه.</string>
+    <string name="ach_batch_fail_reason">‏%1$s: %2$s.</string>
+    <string name="ach_batch_fail_marker">‏%1$s: تعذّر إنشاء steam_appid.txt.</string>
+
+    <!-- Vita3K library scan results -->
+    <string name="ach_vita_set_folder">عيّن مجلد بيانات Vita3K (ux0) أولاً.</string>
+    <string name="ach_vita_link_invalid">رابط مجلد Vita3K غير صالح — امنح الإذن مجددًا.</string>
+    <string name="ach_vita_no_ux0">تعذّر العثور على ux0/app في المجلد الممنوح — اختر مجلد ux0 الخاص بـ Vita3K (أو المجلد الذي يحتويه).</string>
+    <string name="ach_vita_no_app">لا يوجد مجلد app/ داخل ux0 — تحقّق من المجلد الممنوح.</string>
+    <string name="ach_vita_none_installed">لم يتم العثور على ألعاب Vita مثبّتة داخل ux0/app. ثبّت لعبة في Vita3K أولاً.</string>
+    <plurals name="ach_vita_no_new">
+        <item quantity="zero">لا توجد ألعاب Vita جديدة.</item>
+        <item quantity="one">لا توجد ألعاب Vita جديدة — لعبة واحدة موجودة بالفعل في مكتبتك.</item>
+        <item quantity="two">لا توجد ألعاب Vita جديدة — لعبتان موجودتان بالفعل في مكتبتك.</item>
+        <item quantity="few">لا توجد ألعاب Vita جديدة — %d ألعاب موجودة بالفعل في مكتبتك.</item>
+        <item quantity="many">لا توجد ألعاب Vita جديدة — %d لعبة موجودة بالفعل في مكتبتك.</item>
+        <item quantity="other">لا توجد ألعاب Vita جديدة — %d لعبة موجودة بالفعل في مكتبتك.</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="zero">لم يتم استيراد أي لعبة Vita.</item>
+        <item quantity="one">تم استيراد لعبة Vita واحدة.</item>
+        <item quantity="two">تم استيراد لعبتَي Vita.</item>
+        <item quantity="few">تم استيراد %d ألعاب Vita.</item>
+        <item quantity="many">تم استيراد %d لعبة Vita.</item>
+        <item quantity="other">تم استيراد %d لعبة Vita.</item>
+    </plurals>
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="zero">تم استيراد %1$d لعبة Vita، وتحديث %2$d.</item>
+        <item quantity="one">تم استيراد لعبة Vita واحدة، وتحديث %2$d.</item>
+        <item quantity="two">تم استيراد لعبتَي Vita، وتحديث %2$d.</item>
+        <item quantity="few">تم استيراد %1$d ألعاب Vita، وتحديث %2$d.</item>
+        <item quantity="many">تم استيراد %1$d لعبة Vita، وتحديث %2$d.</item>
+        <item quantity="other">تم استيراد %1$d لعبة Vita، وتحديث %2$d.</item>
+    </plurals>
+</resources>

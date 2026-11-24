@@ -1,6 +1,8 @@
 package com.playfieldportal.feature.achievements.provider.localsteam
 
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.achievements.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,7 +39,7 @@ class LocalSteamConvertPickerController(
         /** True when the row cannot be converted at all, with [note] saying why. */
         val unselectable: Boolean = false,
         /** The quiet second line: the coin count, or the reason this row is greyed out. */
-        val note: String,
+        val note: UiText,
     )
 
     /** The open picker. Null when idle. */
@@ -94,7 +96,7 @@ class LocalSteamConvertPickerController(
         running = true
         // Rows first with no counts, so the panel appears immediately; the probe then fills them in.
         _picker.value = Picker(
-            rows = convertible.map { Row(it.folderName, it.appId, selected = true, note = "Checking Steam…") },
+            rows = convertible.map { Row(it.folderName, it.appId, selected = true, note = UiText.res(R.string.ach_pick_checking)) },
             loading = true,
         )
         scope.launch { probeRows(convertible) }
@@ -111,22 +113,22 @@ class LocalSteamConvertPickerController(
                     rows[index] = when (probe) {
                         is LocalSteamSchemaGenerator.Probe.Count -> row.copy(
                             achievementCount = probe.count,
-                            note = "${probe.count} coin${if (probe.count == 1) "" else "s"}  ·  appid ${game.appId}",
+                            note = UiText.plural(R.plurals.ach_pick_coins, probe.count, probe.count, game.appId),
                         )
                         // Not a failure, and not the user's to fix: Steam simply has no list.
                         LocalSteamSchemaGenerator.Probe.NoAchievements -> row.copy(
                             selected = false,
                             unselectable = true,
-                            note = "No list on Steam  ·  appid ${game.appId}",
+                            note = UiText.res(R.string.ach_pick_no_list, game.appId),
                         )
                         LocalSteamSchemaGenerator.Probe.NoKey -> row.copy(
                             selected = false,
                             unselectable = true,
-                            note = "Needs your Steam Web API key  ·  appid ${game.appId}",
+                            note = UiText.res(R.string.ach_pick_needs_key, game.appId),
                         )
                         // Temporary, so the row stays selectable — trying again is reasonable.
                         LocalSteamSchemaGenerator.Probe.Unavailable ->
-                            row.copy(note = "Steam didn't answer  ·  appid ${game.appId}")
+                            row.copy(note = UiText.res(R.string.ach_pick_no_answer, game.appId))
                     }
                 },
             )

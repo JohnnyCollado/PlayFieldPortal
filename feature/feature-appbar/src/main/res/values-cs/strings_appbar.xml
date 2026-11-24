@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App context menu: group headings -->
+    <string name="apps_menu_group_library">Knihovna</string>
+    <string name="apps_menu_group_arrange">Uspořádat</string>
+    <string name="apps_menu_group_manage">Spravovat</string>
+
+    <!-- App context menu: rows -->
+    <string name="apps_menu_launch">Spustit</string>
+    <string name="apps_menu_edit_details">Upravit údaje aplikace</string>
+    <string name="apps_menu_mark_game">Označit jako hru</string>
+    <string name="apps_menu_unmark_game">Zrušit označení hry</string>
+    <string name="apps_menu_favorite">Oblíbené</string>
+    <string name="apps_menu_add_to_card">Přidat na kartu</string>
+    <string name="apps_menu_pin_to_top">Připnout nahoru</string>
+    <string name="apps_menu_move">Přesunout</string>
+    <string name="apps_menu_move_to_category">Přesunout do kategorie</string>
+    <string name="apps_menu_add_to_category">Přidat do kategorie</string>
+    <string name="apps_menu_remove_from_category">Odebrat z kategorie</string>
+    <string name="apps_menu_rename_shortcut">Přejmenovat zástupce</string>
+    <string name="apps_menu_hide_from">Skrýt v: %1$s</string>
+    <string name="apps_menu_hide_everywhere">Skrýt všude</string>
+    <string name="apps_menu_app_info">Informace o aplikaci</string>
+    <string name="apps_menu_uninstall">Odinstalovat</string>
+    <string name="apps_value_on">Zap.</string>
+    <string name="apps_value_off">Vyp.</string>
+
+    <!-- Uninstall confirmation -->
+    <string name="apps_uninstall_title">Odinstalovat %1$s?</string>
+    <string name="apps_uninstall_message">Tímto odeberete %1$s ze zařízení. Android vás požádá o potvrzení.</string>
+
+    <!-- Category tabs and header title -->
+    <string name="apps_filter_all">Všechny aplikace</string>
+    <string name="apps_filter_games">Hry</string>
+    <string name="apps_filter_emulators">Emulátory</string>
+    <string name="apps_filter_recent">Nedávno použité</string>
+
+    <!-- Header search -->
+    <string name="apps_search_placeholder">Hledat…</string>
+    <string name="apps_search_button">Hledat</string>
+
+    <!-- Empty states -->
+    <string name="apps_empty_no_match">Hledání neodpovídají žádné aplikace</string>
+    <string name="apps_empty_no_games">Nebyly nalezeny žádné hry</string>
+    <string name="apps_empty_no_emulators">Nejsou nainstalovány žádné emulátory</string>
+    <string name="apps_empty_usage_access">Je potřeba přístup k využití</string>
+    <string name="apps_empty_no_recent">Zatím žádné nedávno použité aplikace</string>
+    <string name="apps_empty_no_apps">Nejsou nainstalovány žádné aplikace</string>
+    <string name="apps_hint_try_search">Zkuste jiný hledaný výraz</string>
+    <string name="apps_hint_games">Zde se zobrazí aplikace označené v Obchodě Play jako hry</string>
+    <string name="apps_hint_emulators">Nainstalujte RetroArch, PPSSPP nebo jiný emulátor</string>
+    <string name="apps_hint_usage_access">Udělte přístup, aby PFP mohl řadit aplikace podle posledního použití</string>
+    <string name="apps_open_usage_access">Otevřít přístup k využití</string>
+
+    <!-- Controller hint bar -->
+    <string name="apps_hint_prev">Předch.</string>
+    <string name="apps_hint_next">Další</string>
+    <string name="apps_hint_back">Zpět</string>
+    <string name="apps_hint_launch">Spustit</string>
+    <string name="apps_hint_options">Možnosti</string>
+    <string name="apps_hint_search">Hledat</string>
+    <string name="apps_drawer_title">Zásuvka aplikací</string>
+    <string name="apps_drawer_subtitle">Aplikace v tomto zařízení</string>
+</resources>

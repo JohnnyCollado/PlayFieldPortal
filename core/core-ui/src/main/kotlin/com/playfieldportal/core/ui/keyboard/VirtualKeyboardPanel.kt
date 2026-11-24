@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
@@ -25,6 +26,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.selected
@@ -36,6 +38,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.R
 import com.playfieldportal.core.ui.components.ControllerHintBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.preview.PfpPreview
@@ -43,14 +46,12 @@ import com.playfieldportal.core.ui.theme.menuCursor
 
 // ── Approved look (Virtual Keyboard plan section 4) ─────────────────────────────
 
-private val PanelPadding = 8.dp
+private val PanelPadding = VirtualKeyboardMetrics.PanelPadding
 private val PanelCorner = 10.dp
 // Near-opaque: at the mockup's 86% the screen behind (an app grid's icons and names) read through
 // the keys on device (2026-10-01).
 private val PanelFill = Color.Black.copy(alpha = 0.96f)
-private val KeyHeight = 32.dp
-private val KeyGap = 3.dp
-private val KeyUnit = 34.dp // (383 − 2×8 padding − 9×3 gaps) / 10 columns
+private val KeyGap = VirtualKeyboardMetrics.KeyGap
 private val KeyCorner = 6.dp
 // Key fills raised from the mockup's 10% / 5% / 34% after the device pass (2026-10-01): the keys
 // read too faint to scan. Function keys stay a step quieter than letters; a lit Shift a step louder.
@@ -60,44 +61,85 @@ private val FunctionKeyFill = Color.White.copy(alpha = 0.14f)
 private val ShiftOnFill = Color.White.copy(alpha = 0.45f)
 private const val DISABLED_KEY_ALPHA = 0.35f
 
+/**
+ * Key sizing, derived from the width a host offers. One size serves touch and controller alike, so
+ * the panel never jumps when input switches mid-typing. Every host that reserves room for the panel
+ * ([MaxPanelHeight], via `VirtualKeyboardBottomReserve`) derives from these same numbers.
+ */
+internal data class VirtualKeyboardMetrics(val keyUnit: Dp, val keyHeight: Dp) {
+    companion object {
+        val PanelPadding = 8.dp
+        val KeyGap = 3.dp
+        const val COLUMNS = 10
+        const val ROWS = 5
+        private val MaxKeyUnit = 48.dp   // Android's touch-target guideline
+        private val MinKeyHeight = 44.dp
+        private const val HEIGHT_PER_UNIT = 32f / 34f // the original compact key's proportions
+
+        private fun heightFor(unit: Dp): Dp = maxOf(MinKeyHeight, unit * HEIGHT_PER_UNIT)
+
+        /** The key unit that fits ten columns, gaps and padding in [availableWidth], capped at 48 dp. */
+        fun forWidth(availableWidth: Dp): VirtualKeyboardMetrics {
+            val fit = (availableWidth - PanelPadding * 2 - KeyGap * (COLUMNS - 1)) / COLUMNS
+            val unit = minOf(MaxKeyUnit, maxOf(fit, 0.dp))
+            return VirtualKeyboardMetrics(unit, heightFor(unit))
+        }
+
+        /** The tallest the panel gets (a 48 dp unit); what a host reserves. */
+        val MaxPanelHeight: Dp =
+            heightFor(MaxKeyUnit) * ROWS + KeyGap * (ROWS - 1) + PanelPadding * 2
+    }
+}
+
 /** Width of a key spanning [span] columns, gaps between its columns included. */
-private fun keyWidth(span: Int): Dp = KeyUnit * span + KeyGap * (span - 1)
+private fun keyWidth(unit: Dp, span: Int): Dp = unit * span + KeyGap * (span - 1)
 
 const val VIRTUAL_KEY_TAG_PREFIX = "vk_key"
 
 fun virtualKeyTag(row: Int, cell: Int) = "${VIRTUAL_KEY_TAG_PREFIX}_${row}_$cell"
 
 /** The keyboard's prompt pill, in the approved order — plus START as Done (plan §10 Q3, 2026-10-01). */
-val VirtualKeyboardPrompts: List<ControllerPromptItem> = listOf(
-    ControllerPromptItem(GamepadAction.SELECT, "Type"),
-    ControllerPromptItem(GamepadAction.CHANGE_SORT, "Delete"),
-    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Space"),
-    ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Cursor"),
-    ControllerPromptItem(GamepadAction.SHIFT, "Shift"),
-    ControllerPromptItem(GamepadAction.CAPS_LOCK, "Caps"),
-    ControllerPromptItem(GamepadAction.HOME, "Done"),
-    ControllerPromptItem(GamepadAction.BACK, "Close"),
+@Composable
+fun virtualKeyboardPrompts(): List<ControllerPromptItem> = listOf(
+    ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.core_vk_prompt_type)),
+    ControllerPromptItem(GamepadAction.CHANGE_SORT, stringResource(R.string.core_vk_prompt_delete)),
+    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, stringResource(R.string.core_vk_key_space)),
+    ControllerPromptItem(
+        listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY),
+        stringResource(R.string.core_vk_prompt_cursor),
+    ),
+    ControllerPromptItem(GamepadAction.SHIFT, stringResource(R.string.core_vk_key_shift)),
+    ControllerPromptItem(GamepadAction.CAPS_LOCK, stringResource(R.string.core_vk_prompt_caps)),
+    ControllerPromptItem(GamepadAction.HOME, stringResource(R.string.core_vk_key_done)),
+    ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.core_close)),
 )
 
-/** The keyboard panel: 383 × 188 dp, five rows of ten columns, the focused key under the menu cursor. */
+/**
+ * The keyboard panel: five rows of ten columns, the focused key under the menu cursor. Keys scale
+ * with the width on offer up to 48 dp ([VirtualKeyboardMetrics]), at most [VirtualKeyboardMetrics.MaxPanelHeight] tall.
+ */
 @Composable
 fun VirtualKeyboardPanel(state: VirtualKeyboardState, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(PanelCorner))
-            .background(PanelFill)
-            .padding(PanelPadding),
-        verticalArrangement = Arrangement.spacedBy(KeyGap),
-    ) {
-        VirtualKeyboardLayout.rows(state.layer).forEachIndexed { row, keys ->
-            Row(horizontalArrangement = Arrangement.spacedBy(KeyGap)) {
-                keys.forEachIndexed { cell, key ->
-                    KeyCap(
-                        key = key,
-                        shift = state.shift,
-                        focused = state.focus.row == row && state.focus.cell == cell,
-                        modifier = Modifier.testTag(virtualKeyTag(row, cell)),
-                    )
+    BoxWithConstraints(modifier) {
+        val metrics = VirtualKeyboardMetrics.forWidth(if (constraints.hasBoundedWidth) maxWidth else 960.dp)
+        Column(
+            modifier = Modifier
+                .clip(RoundedCornerShape(PanelCorner))
+                .background(PanelFill)
+                .padding(PanelPadding),
+            verticalArrangement = Arrangement.spacedBy(KeyGap),
+        ) {
+            VirtualKeyboardLayout.rows(state.layer).forEachIndexed { row, keys ->
+                Row(horizontalArrangement = Arrangement.spacedBy(KeyGap)) {
+                    keys.forEachIndexed { cell, key ->
+                        KeyCap(
+                            key = key,
+                            shift = state.shift,
+                            focused = state.focus.row == row && state.focus.cell == cell,
+                            metrics = metrics,
+                            modifier = Modifier.testTag(virtualKeyTag(row, cell)),
+                        )
+                    }
                 }
             }
         }
@@ -107,11 +149,11 @@ fun VirtualKeyboardPanel(state: VirtualKeyboardState, modifier: Modifier = Modif
 /** The prompt pill under the panel. */
 @Composable
 fun VirtualKeyboardHintBar(modifier: Modifier = Modifier, background: Color = Color.Black.copy(alpha = 0.92f)) {
-    ControllerHintBar(items = VirtualKeyboardPrompts, modifier = modifier, background = background)
+    ControllerHintBar(items = virtualKeyboardPrompts(), modifier = modifier, background = background)
 }
 
 @Composable
-private fun KeyCap(key: VirtualKey, shift: ShiftMode, focused: Boolean, modifier: Modifier) {
+private fun KeyCap(key: VirtualKey, shift: ShiftMode, focused: Boolean, metrics: VirtualKeyboardMetrics, modifier: Modifier) {
     val enabled = key !is VirtualKey.Shift || key.enabled
     val isFunctionKey = key !is VirtualKey.Character && key != VirtualKey.Space
     val shiftLit = key is VirtualKey.Shift && enabled && shift != ShiftMode.OFF
@@ -122,16 +164,26 @@ private fun KeyCap(key: VirtualKey, shift: ShiftMode, focused: Boolean, modifier
     }
     val shape = RoundedCornerShape(KeyCorner)
     val description = when (key) {
-        is VirtualKey.Shift -> "Shift"
-        VirtualKey.Space -> "Space"
-        VirtualKey.Backspace -> "Backspace"
-        VirtualKey.Done -> "Done"
+        is VirtualKey.Shift -> stringResource(R.string.core_vk_key_shift)
+        VirtualKey.Space -> stringResource(R.string.core_vk_key_space)
+        VirtualKey.Backspace -> stringResource(R.string.core_vk_key_backspace)
+        VirtualKey.Done -> stringResource(R.string.core_vk_key_done)
         else -> null
+    }
+    val shiftStateDescription = (key as? VirtualKey.Shift)?.let {
+        stringResource(
+            when (shift) {
+                ShiftMode.OFF -> R.string.core_vk_shift_off
+                ShiftMode.ONCE -> R.string.core_vk_shift_once
+                ShiftMode.HELD -> R.string.core_vk_shift_held
+                ShiftMode.LOCKED -> R.string.core_vk_shift_locked
+            },
+        )
     }
     Box(
         modifier = modifier
-            .width(keyWidth(key.span))
-            .height(KeyHeight)
+            .width(keyWidth(metrics.keyUnit, key.span))
+            .height(metrics.keyHeight)
             .clip(shape)
             .background(fill)
             .menuCursor(selected = focused, shape = shape)
@@ -139,14 +191,7 @@ private fun KeyCap(key: VirtualKey, shift: ShiftMode, focused: Boolean, modifier
             .semantics {
                 selected = focused
                 if (description != null) contentDescription = description
-                if (key is VirtualKey.Shift) {
-                    stateDescription = when (shift) {
-                        ShiftMode.OFF -> "Off"
-                        ShiftMode.ONCE -> "On for the next letter"
-                        ShiftMode.HELD -> "On while held"
-                        ShiftMode.LOCKED -> "Caps lock on"
-                    }
-                }
+                if (shiftStateDescription != null) stateDescription = shiftStateDescription
                 if (!enabled) disabled()
             },
         contentAlignment = Alignment.Center,
@@ -155,7 +200,7 @@ private fun KeyCap(key: VirtualKey, shift: ShiftMode, focused: Boolean, modifier
             is VirtualKey.Character ->
                 KeyLabel(if (shift != ShiftMode.OFF) key.char.uppercaseChar().toString() else key.char.toString(), small = false)
             is VirtualKey.LayerSwitch -> KeyLabel(key.label, small = true)
-            VirtualKey.Done -> KeyLabel("Done", small = true)
+            VirtualKey.Done -> KeyLabel(stringResource(R.string.core_vk_key_done), small = true)
             is VirtualKey.Shift -> KeyGlyph { shiftArrow(locked = shift == ShiftMode.LOCKED && key.enabled) }
             VirtualKey.Space -> KeyGlyph { spaceBracket() }
             VirtualKey.Backspace -> KeyGlyph { backspaceTag() }

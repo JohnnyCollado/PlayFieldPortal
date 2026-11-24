@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import com.playfieldportal.feature.settings.R
+import com.playfieldportal.core.domain.text.UiText
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
@@ -14,6 +16,8 @@ import com.playfieldportal.feature.backup.BackupInfo
 import com.playfieldportal.feature.backup.BackupManager
 import com.playfieldportal.feature.backup.BackupWorker
 import com.playfieldportal.feature.backup.RestoreWorker
+import com.playfieldportal.core.ui.text.PfpDateFormat
+import com.playfieldportal.core.ui.text.PfpDateStyle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.firstOrNull
@@ -23,9 +27,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import javax.inject.Inject
 
 data class BackupSettingsUiState(
@@ -33,8 +34,8 @@ data class BackupSettingsUiState(
     val backupFolder: String? = null,   // display name of the chosen SAF folder; null = not set
     val backups: List<BackupInfo> = emptyList(),
     val isWorking: Boolean = false,
-    val workingMessage: String = "",
-    val errorMessage: String? = null,
+    val workingMessage: UiText = UiText.raw(""),
+    val errorMessage: UiText? = null,
 ) {
     val backupFolderSet: Boolean get() = backupFolder != null
 }
@@ -45,6 +46,13 @@ class BackupSettingsViewModel @Inject constructor(
     private val backupManager: BackupManager,
     private val backupFolderRepository: BackupFolderRepository,
 ) : ViewModel() {
+
+    /**
+     * How a backup's date is shown: the device's language and 12/24-hour setting, read at the moment
+     * of use. A seam so plain JVM tests, which have no Android date formatting, can pin it.
+     */
+    internal var formatBackupDate: (Long) -> String =
+        { millis -> PfpDateFormat.format(context, PfpDateStyle.DateTime, millis) }
 
     private val workManager = WorkManager.getInstance(context)
     private val _uiState = MutableStateFlow(BackupSettingsUiState())
@@ -65,7 +73,7 @@ class BackupSettingsViewModel @Inject constructor(
 
     fun backupNow() {
         if (!_uiState.value.backupFolderSet) {
-            _uiState.update { it.copy(errorMessage = "Choose a backup folder first.") }
+            _uiState.update { it.copy(errorMessage = UiText.res(R.string.sets_backup_choose_folder_first_error)) }
             return
         }
         val request = OneTimeWorkRequestBuilder<BackupWorker>()
@@ -76,7 +84,7 @@ class BackupSettingsViewModel @Inject constructor(
         workManager.enqueue(request)
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isWorking = true, workingMessage = "Creating backup…", errorMessage = null) }
+            _uiState.update { it.copy(isWorking = true, workingMessage = UiText.res(R.string.sets_backup_creating), errorMessage = null) }
             // Stops at the first finished state: `return@collect` only skipped one emission, so the
             // watcher outlived its job and a later re-emission could undo the result shown.
             val info = workManager.getWorkInfoByIdFlow(request.id).firstOrNull { it?.state?.isFinished == true }
@@ -84,14 +92,14 @@ class BackupSettingsViewModel @Inject constructor(
                 WorkInfo.State.SUCCEEDED -> {
                     val path = info.outputData.getString(BackupWorker.KEY_OUTPUT_PATH)
                     Timber.i("Backup succeeded: $path")
-                    _uiState.update { it.copy(isWorking = false, workingMessage = "") }
+                    _uiState.update { it.copy(isWorking = false, workingMessage = UiText.raw("")) }
                     refreshBackupList()
                 }
                 WorkInfo.State.FAILED -> {
-                    val err = info.outputData.getString(BackupWorker.KEY_ERROR) ?: "Unknown error"
-                    _uiState.update { it.copy(isWorking = false, workingMessage = "", errorMessage = err) }
+                    val err = info.outputData.getString(BackupWorker.KEY_ERROR) ?.let { UiText.raw(it) } ?: UiText.res(R.string.sets_backup_unknown_error)
+                    _uiState.update { it.copy(isWorking = false, workingMessage = UiText.raw(""), errorMessage = err) }
                 }
-                else -> _uiState.update { it.copy(isWorking = false, workingMessage = "") }
+                else -> _uiState.update { it.copy(isWorking = false, workingMessage = UiText.raw("")) }
             }
         }
     }
@@ -105,19 +113,19 @@ class BackupSettingsViewModel @Inject constructor(
         workManager.enqueue(request)
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isWorking = true, workingMessage = "Restoring backup…", errorMessage = null) }
+            _uiState.update { it.copy(isWorking = true, workingMessage = UiText.res(R.string.sets_backup_restoring), errorMessage = null) }
             // Stops at the first finished state (see backupNow).
             val info = workManager.getWorkInfoByIdFlow(request.id).firstOrNull { it?.state?.isFinished == true }
             when (info?.state) {
                 WorkInfo.State.SUCCEEDED -> {
                     Timber.i("Restore succeeded")
-                    _uiState.update { it.copy(isWorking = false, workingMessage = "") }
+                    _uiState.update { it.copy(isWorking = false, workingMessage = UiText.raw("")) }
                 }
                 WorkInfo.State.FAILED -> {
-                    val err = info.outputData.getString(RestoreWorker.KEY_ERROR) ?: "Unknown error"
-                    _uiState.update { it.copy(isWorking = false, workingMessage = "", errorMessage = err) }
+                    val err = info.outputData.getString(RestoreWorker.KEY_ERROR) ?.let { UiText.raw(it) } ?: UiText.res(R.string.sets_backup_unknown_error)
+                    _uiState.update { it.copy(isWorking = false, workingMessage = UiText.raw(""), errorMessage = err) }
                 }
-                else -> _uiState.update { it.copy(isWorking = false, workingMessage = "") }
+                else -> _uiState.update { it.copy(isWorking = false, workingMessage = UiText.raw("")) }
             }
         }
     }
@@ -130,7 +138,7 @@ class BackupSettingsViewModel @Inject constructor(
             }.getOrDefault(false)
             if (!deleted) {
                 Timber.w("Could not delete backup %s", info.name)
-                _uiState.update { it.copy(errorMessage = "Could not delete ${info.name}.") }
+                _uiState.update { it.copy(errorMessage = UiText.res(R.string.sets_backup_delete_failed, info.name)) }
             }
             refreshBackupList()
         }
@@ -142,11 +150,10 @@ class BackupSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val folderUri = backupFolderRepository.get()
             val backups   = backupManager.listBackups()
-            val fmt       = SimpleDateFormat("MMM d, yyyy  HH:mm", Locale.getDefault())
             _uiState.update {
                 it.copy(
                     backups        = backups,
-                    lastBackupDate = backups.firstOrNull()?.let { b -> fmt.format(Date(b.lastModified)) },
+                    lastBackupDate = backups.firstOrNull()?.let { b -> formatBackupDate(b.lastModified) },
                     backupFolder   = folderUri?.let(::backupFolderDisplayName),
                 )
             }

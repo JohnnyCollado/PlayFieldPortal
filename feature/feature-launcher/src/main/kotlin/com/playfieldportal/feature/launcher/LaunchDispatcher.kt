@@ -131,16 +131,16 @@ class LaunchDispatcher @Inject constructor(
             LaunchDispatchResult.Accepted
         } catch (e: android.content.ActivityNotFoundException) {
             Timber.w(e, "Launch startActivity failed: emulator activity not found (gameId=${game.id})")
-            settleImmediateFailure(game, resolved, "Emulator not found. Is it installed?", PfpErrorCode.LN_4001)
+            settleImmediateFailure(game, resolved, context.getString(R.string.launch_err_emulator_not_found), PfpErrorCode.LN_4001)
         } catch (e: SecurityException) {
             Timber.w(e, "Launch startActivity failed: permission denied (gameId=${game.id})")
-            settleImmediateFailure(game, resolved, "Permission denied launching emulator", PfpErrorCode.LN_4002)
+            settleImmediateFailure(game, resolved, context.getString(R.string.launch_err_permission_denied), PfpErrorCode.LN_4002)
         } catch (e: kotlinx.coroutines.CancellationException) {
             // The caller went away after the intent was handed off; that is not a failed launch.
             throw e
         } catch (e: Exception) {
             Timber.w(e, "Launch startActivity failed (gameId=${game.id})")
-            settleImmediateFailure(game, resolved, "Could not open emulator: ${e.message}", PfpErrorCode.LN_9001)
+            settleImmediateFailure(game, resolved, context.getString(R.string.launch_err_open_emulator, e.message), PfpErrorCode.LN_9001)
         } finally {
             // Abandoned during GameBoot, refused by the system: the user is still in the launcher.
             if (!handedOff) releaseAmbience()
@@ -260,14 +260,13 @@ class LaunchDispatcher @Inject constructor(
                 outcomeRecorder.record(
                     outcomeFor(
                         p.game, p.resolved, LaunchOutcomeStatus.NEVER_FOREGROUNDED,
-                        "The emulator never came to the foreground after launch.",
+                        context.getString(R.string.launch_never_foreground),
                         PfpErrorCode.LN_4003,
                     )
                 )
                 emitRecovery(
                     p.game, p.resolved,
-                    "The emulator never appeared. Check that it is installed and up to date, " +
-                        "then try launching again.",
+                    context.getString(R.string.launch_never_appeared),
                 )
             }
         }
@@ -291,14 +290,13 @@ class LaunchDispatcher @Inject constructor(
                 outcomeRecorder.record(
                     outcomeFor(
                         p.game, p.resolved, LaunchOutcomeStatus.NEVER_FOREGROUNDED,
-                        "The emulator never came to the foreground after launch.",
+                        context.getString(R.string.launch_never_foreground),
                         PfpErrorCode.LN_4003,
                     )
                 )
                 emitRecovery(
                     p.game, p.resolved,
-                    "The emulator never appeared. Check that it is installed and up to date, " +
-                        "then try launching again.",
+                    context.getString(R.string.launch_never_appeared),
                 )
             }
         }
@@ -342,7 +340,7 @@ class LaunchDispatcher @Inject constructor(
         val historyLine = when {
             recent.isEmpty() -> null
             recentFailures == 0 -> null
-            else -> "$recentFailures of the last ${recent.size} launches for this game failed."
+            else -> context.resources.getQuantityString(R.plurals.launch_history_failed, recent.size, recentFailures, recent.size)
         }
         _recoveryRequests.value = LaunchRecoveryRequest(
             gameId          = game.id,

@@ -1,0 +1,968 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Library slice: Library Manager, categories, collections, emulators, PC games, hidden items -->
+
+    <!-- Settings ▸ Hidden Items -->
+    <string name="lib_hidden_items_title">Скривене ставке</string>
+    <string name="lib_hidden_items_group">Скривене ставке</string>
+    <string name="lib_hidden_items_help">Апликације и игре које сте сакрили, груписане по ставци са местима на којима је свака скривена. Сакријте ставке из њиховог менија опција; овде их поново прикажите.</string>
+    <string name="lib_hidden_items_empty">Ништа није скривено.</string>
+    <!-- Button on a row: puts the item back in the place named on the left. -->
+    <string name="lib_hidden_unhide">Прикажи</string>
+    <string name="lib_hidden_all_locations">Сва места</string>
+    <!-- Button: puts the item back in every place it was hidden from. -->
+    <string name="lib_hidden_unhide_all">Прикажи све</string>
+    <!-- The place an app is hidden from when it is hidden everywhere. -->
+    <string name="lib_hidden_everywhere">Свуда</string>
+
+    <!-- Default music / video player picker -->
+    <!-- Button: confirms the highlighted player app as the default. -->
+    <string name="lib_player_use_this">Користи овај плејер</string>
+    <!-- Button: closes the player picker without changing anything. -->
+    <string name="lib_player_close">Затвори</string>
+
+    <!-- Settings ▸ Categories -->
+    <string name="lib_cat_title">Категорије</string>
+    <string name="lib_cat_scaffold_title">Категорија</string>
+    <string name="lib_cat_group_manage">Управљање</string>
+    <string name="lib_cat_create">Направи категорију</string>
+    <string name="lib_cat_create_sub">Додај нову категорију на XMB траку</string>
+    <string name="lib_cat_group_xmb">XMB категорије</string>
+    <!-- %1$s is a category name; the double space is intentional. -->
+    <string name="lib_cat_row_hidden">"%1$s  (скривено)"</string>
+    <!-- Row subtitle. %1$s is the name of the category's icon; the double spaces around the dot are intentional. -->
+    <string name="lib_cat_row_sub_builtin">"Иконица: %1$s  ·  Уграђена"</string>
+    <string name="lib_cat_row_sub_custom">"Иконица: %1$s  ·  Прилагођена"</string>
+    <string name="lib_cat_home_game">Игра</string>
+    <string name="lib_cat_home_app_store">Продавница апликација</string>
+    <string name="lib_cat_created_image_failed">Категорија је направљена, али њену слику није било могуће сачувати</string>
+    <!-- Name entry dialog -->
+    <string name="lib_cat_rename_title">Преименуј категорију</string>
+    <string name="lib_cat_new_title">Нова категорија</string>
+    <string name="lib_cat_name_placeholder">Назив категорије</string>
+    <string name="lib_cat_save">Сачувај</string>
+    <!-- Button: continues the new-category flow to the next step (picking an icon). -->
+    <string name="lib_cat_next">Даље</string>
+    <!-- Delete dialog -->
+    <string name="lib_cat_delete_title">Избриши категорију</string>
+    <!-- Button in the delete dialog. -->
+    <string name="lib_cat_delete">Избриши</string>
+    <!-- %1$s is a category name. -->
+    <string name="lib_cat_delete_games_message">„%1$s“ ће бити избрисана. Њене игре остају у библиотеци.</string>
+    <string name="lib_cat_delete_apps_message">„%1$s“ ће бити избрисана. Њене апликације неће бити деинсталиране.</string>
+    <!-- %1$s is a category name, %2$d the number of custom memory cards in it. -->
+    <plurals name="lib_cat_delete_cards_games_message">
+        <item quantity="one">„%1$s“ ће бити избрисана. Њене игре остају у библиотеци. Шта да се деси са њеном %2$d прилагођеном меморијском картицом?</item>
+        <item quantity="few">„%1$s“ ће бити избрисана. Њене игре остају у библиотеци. Шта да се деси са њене %2$d прилагођене меморијске картице?</item>
+        <item quantity="other">„%1$s“ ће бити избрисана. Њене игре остају у библиотеци. Шта да се деси са њених %2$d прилагођених меморијских картица?</item>
+    </plurals>
+    <plurals name="lib_cat_delete_cards_apps_message">
+        <item quantity="one">„%1$s“ ће бити избрисана. Њене апликације неће бити деинсталиране. Шта да се деси са њеном %2$d прилагођеном меморијском картицом?</item>
+        <item quantity="few">„%1$s“ ће бити избрисана. Њене апликације неће бити деинсталиране. Шта да се деси са њене %2$d прилагођене меморијске картице?</item>
+        <item quantity="other">„%1$s“ ће бити избрисана. Њене апликације неће бити деинсталиране. Шта да се деси са њених %2$d прилагођених меморијских картица?</item>
+    </plurals>
+    <!-- Option: %1$s is the name of the column the custom cards move to. -->
+    <string name="lib_cat_delete_move_cards">Премести прилагођене картице у: %1$s</string>
+    <string name="lib_cat_delete_cards_too">Избриши и прилагођене картице</string>
+    <!-- Pick icon -->
+    <string name="lib_cat_choose_icon">Изабери иконицу</string>
+    <string name="lib_cat_change_icon_title">Промени иконицу</string>
+    <string name="lib_cat_group_device">Са вашег уређаја</string>
+    <string name="lib_cat_choose_image">Изабери слику…</string>
+    <string name="lib_cat_choose_image_sub">PNG, JPG, WEBP, BMP, HEIC или GIF · анимирани GIF-ови се репродукују</string>
+    <string name="lib_cat_your_image_row">Ваша слика</string>
+    <string name="lib_cat_image_animated_in_use">Анимирано · у употреби</string>
+    <string name="lib_cat_image_in_use">У употреби</string>
+    <!-- Value shown for a category icon that is a picture from the device; also an accessibility description. -->
+    <string name="lib_cat_your_image">Ваша слика</string>
+    <string name="lib_cat_replace_image">Замени слику…</string>
+    <string name="lib_cat_replace_image_sub">Изаберите другу датотеку</string>
+    <string name="lib_cat_remove_image">Уклони слику</string>
+    <!-- %1$s is the name of the built-in icon that comes back. -->
+    <string name="lib_cat_remove_image_sub">Врати се на уграђену иконицу (%1$s)</string>
+    <!-- Group title. %1$s is a category name, or "Icon" when none is known yet. -->
+    <string name="lib_cat_group_builtin">Уграђено · %1$s</string>
+    <string name="lib_cat_icon_fallback">Иконица</string>
+    <!-- Pick type -->
+    <string name="lib_cat_content_type">Тип садржаја</string>
+    <string name="lib_cat_type_group">Тип категорије</string>
+    <string name="lib_cat_type_gaming">Игре</string>
+    <string name="lib_cat_type_gaming_sub">За игре и прилагођене меморијске картице</string>
+    <string name="lib_cat_type_non_gaming">Остало</string>
+    <string name="lib_cat_type_non_gaming_sub">За апликације као што су видео, музика, фотографије</string>
+    <!-- Category detail -->
+    <string name="lib_cat_group_edit">Измене</string>
+    <string name="lib_cat_rename">Преименуј категорију</string>
+    <string name="lib_cat_change_icon">Промени иконицу</string>
+    <string name="lib_cat_show_on_bar_sub">Сакриј или прикажи ову категорију у XMB-у</string>
+    <string name="lib_cat_type">Тип</string>
+    <!-- Value: a category that holds apps rather than games. -->
+    <string name="lib_cat_type_apps">Апликације</string>
+    <string name="lib_cat_type_gaming_note">Садржи игре и прилагођене меморијске картице. Одређује се при прављењу категорије.</string>
+    <string name="lib_cat_type_apps_note">Садржи апликације и прилагођене меморијске картице. Одређује се при прављењу категорије.</string>
+    <string name="lib_cat_group_order">Редослед</string>
+    <!-- Row label: reorders the category along the XMB bar. -->
+    <string name="lib_cat_move">Премести</string>
+    <string name="lib_cat_move_sub">Померајте је дуж XMB-а лево и десно, па потврдите да бисте је поставили</string>
+    <string name="lib_cat_move_disabled_sub">Укључите „Прикажи на траци“ да бисте преместили ову категорију</string>
+    <string name="lib_cat_group_danger">Опасна зона</string>
+    <string name="lib_cat_delete_row">Избриши категорију</string>
+    <string name="lib_cat_delete_row_sub">Уклања ову прилагођену категорију. Игре и апликације остају у библиотеци.</string>
+
+    <!-- Settings ▸ Custom Memory Cards -->
+    <string name="lib_coll_title">Прилагођене меморијске картице</string>
+    <string name="lib_coll_group_manage">Управљање</string>
+    <string name="lib_coll_new">Нова прилагођена меморијска картица</string>
+    <string name="lib_coll_new_sub">За игре или апликације, нпр. RPG, Тренутно играм, Пословне апликације</string>
+    <string name="lib_coll_group_yours">Ваше прилагођене меморијске картице</string>
+    <string name="lib_coll_none">Још нема прилагођених меморијских картица</string>
+    <string name="lib_coll_none_sub">Направите је изнад или користите „Додај на картицу“ у менију опција игре или апликације.</string>
+    <!-- What a custom card holds: the number of games or apps on it. -->
+    <plurals name="lib_coll_games_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игре</item>
+        <item quantity="other">%d игара</item>
+    </plurals>
+    <plurals name="lib_coll_apps_count">
+        <item quantity="one">%d апликација</item>
+        <item quantity="few">%d апликације</item>
+        <item quantity="other">%d апликација</item>
+    </plurals>
+    <!-- Name entry dialog -->
+    <string name="lib_coll_new_title">Нова прилагођена меморијска картица</string>
+    <string name="lib_coll_rename_title">Преименуј прилагођену меморијску картицу</string>
+    <string name="lib_coll_name_placeholder">Назив картице</string>
+    <string name="lib_coll_save">Сачувај</string>
+    <!-- Button: continues the new-card flow to the next step (picking a category). -->
+    <string name="lib_coll_next">Даље</string>
+    <!-- Delete dialog. %1$s is the card name. -->
+    <string name="lib_coll_delete_title">Избриши прилагођену картицу</string>
+    <string name="lib_coll_delete_apps_message">„%1$s“ ће бити избрисана. Апликације на њој остају инсталиране.</string>
+    <string name="lib_coll_delete_games_message">„%1$s“ ће бити избрисана. Игре на њој остају у библиотеци.</string>
+    <string name="lib_coll_delete">Избриши</string>
+    <!-- Menu on a game inside a custom card -->
+    <string name="lib_coll_menu_view_details">Прикажи детаље игре</string>
+    <string name="lib_coll_menu_remove">Уклони са картице</string>
+    <!-- Card detail -->
+    <string name="lib_coll_group_card">Прилагођена меморијска картица</string>
+    <string name="lib_coll_rename">Преименуј</string>
+    <string name="lib_coll_change_icon">Промени иконицу</string>
+    <string name="lib_coll_default_icon">Подразумевана (меморијска картица)</string>
+    <string name="lib_coll_move_up">Помери нагоре</string>
+    <string name="lib_coll_move_down">Помери надоле</string>
+    <string name="lib_coll_delete_row">Избриши прилагођену картицу</string>
+    <string name="lib_coll_delete_row_apps_sub">Уклања картицу; њене апликације остају инсталиране</string>
+    <string name="lib_coll_delete_row_games_sub">Уклања картицу; њене игре остају у библиотеци</string>
+    <!-- Group titles: %1$d is how many apps or games are on the card. -->
+    <string name="lib_coll_group_apps">Апликације (%1$d)</string>
+    <string name="lib_coll_group_games">Игре (%1$d)</string>
+    <string name="lib_coll_no_apps">На овој картици нема апликација</string>
+    <string name="lib_coll_no_apps_sub">Додајте апликације помоћу „Додај на картицу“ у њиховом менију опција.</string>
+    <string name="lib_coll_no_games">На овој картици нема игара</string>
+    <string name="lib_coll_no_games_sub">Додајте игре помоћу „Додај на картицу“ у њиховом менију опција.</string>
+    <!-- Category picker for a new card -->
+    <string name="lib_coll_card_kind_game">Картица игара</string>
+    <string name="lib_coll_card_kind_app">Картица апликација</string>
+    <string name="lib_coll_pick_category_title">Додај у категорију</string>
+    <!-- %1$s is the card name. -->
+    <string name="lib_coll_pick_category_message">У којој колони треба да се појави „%1$s“?</string>
+    <!-- Button: creates the card in the chosen category. -->
+    <string name="lib_coll_create">Направи</string>
+    <!-- Card icon step -->
+    <string name="lib_coll_icon_title">Иконица картице · %1$s</string>
+    <string name="lib_coll_group_device">Са вашег уређаја</string>
+    <string name="lib_coll_group_theme">Из примењене теме</string>
+    <!-- Subtitle of a theme icon that is an animation. -->
+    <string name="lib_coll_animated">Анимирано</string>
+    <string name="lib_coll_group_builtin">Уграђено</string>
+    <string name="lib_coll_image_unusable">Ту слику није могуће користити.</string>
+
+    <!-- Settings ▸ Emulators -->
+    <string name="lib_emu_title">Емулатори</string>
+    <string name="lib_emu_subtitle_installed">Емулатор · Инсталирано</string>
+    <string name="lib_emu_subtitle_custom">Емулатор · Прилагођено</string>
+    <string name="lib_emu_subtitle_retroarch">Емулатор · RetroArch</string>
+    <string name="lib_emu_add_title">Додај емулатор</string>
+    <string name="lib_emu_detecting">Откривање…</string>
+    <string name="lib_emu_inspecting">Провера инсталираних апликација…</string>
+    <string name="lib_emu_reset_title">Вратити конфигурацију емулатора?</string>
+    <string name="lib_emu_reset_message">Ово ће обрисати сва аутоматски откривена и прилагођена подешавања покретања емулатора, па вратити приложене подразумеване вредности.\n\nВаша библиотека игара, ROM путање, графика, метаподаци и сачуване позиције нису погођени.</string>
+    <!-- Button in the reset confirmation. -->
+    <string name="lib_emu_reset">Врати</string>
+    <string name="lib_emu_group_installed">Инсталирано</string>
+    <string name="lib_emu_none_installed">На овом уређају нису откривени подржани емулатори</string>
+    <string name="lib_emu_group_available">Доступно (није инсталирано)</string>
+    <string name="lib_emu_all_installed">Сви познати емулатори су инсталирани</string>
+    <string name="lib_emu_group_custom">Прилагођени профили</string>
+    <string name="lib_emu_none_custom">Још нема прилагођених профила</string>
+    <string name="lib_emu_add_custom">Додај прилагођени емулатор</string>
+    <string name="lib_emu_add_custom_sub">Изаберите апликацију — аутоматски откривамо њена подешавања покретања</string>
+    <string name="lib_emu_group_ra_detection">Откривање RetroArch језгара</string>
+    <string name="lib_emu_ra_scanning">Тражење инсталираних језгара у RetroArch-у…</string>
+    <!-- %d is the number of RetroArch cores found. -->
+    <plurals name="lib_emu_ra_linked">
+        <item quantity="one">Повезано — откривено је %d језгро. Нуде се само инсталирана језгра, па језгро које недостаје не може да изазове црни екран.</item>
+        <item quantity="few">Повезано — откривена су %d језгра. Нуде се само инсталирана језгра, па језгро које недостаје не може да изазове црни екран.</item>
+        <item quantity="other">Повезано — откривено је %d језгара. Нуде се само инсталирана језгра, па језгро које недостаје не може да изазове црни екран.</item>
+    </plurals>
+    <string name="lib_emu_ra_access_lost">Повезано, али је приступ изгубљен (нпр. после поновне инсталације). Поново повежите RetroArch да бисте поново открили језгра.</string>
+    <string name="lib_emu_ra_not_linked">Није повезано. PFP не види која RetroArch језгра су инсталирана, па нуди сва — покретање неинсталираног језгра приказује црни екран. Повежите RetroArch да бисте открили инсталирана језгра.</string>
+    <string name="lib_emu_ra_relink">Поново повежи RetroArch фасциклу</string>
+    <string name="lib_emu_ra_link">Повежи RetroArch за откривање језгара</string>
+    <string name="lib_emu_ra_link_sub">У бирачу изаберите RetroArch фасциклу (доделите приступ) како би PFP могао да прочита инсталирана језгра</string>
+    <string name="lib_emu_group_cores">Доступна језгра</string>
+    <string name="lib_emu_ra_no_cores">Још нису откривена RetroArch језгра.</string>
+    <string name="lib_emu_ra_core_available">Доступно у RetroArch-у</string>
+    <string name="lib_emu_ra_rescan">Поново скенирај инсталирана језгра</string>
+    <string name="lib_emu_ra_rescan_sub">Покрените након преузимања нових језгара у RetroArch Core Downloader-у</string>
+    <string name="lib_emu_ra_unlink">Прекини везу са RetroArch-ом</string>
+    <string name="lib_emu_ra_unlink_sub">Врати се на нуђење свих језгара без провере</string>
+    <string name="lib_emu_group_maintenance">Одржавање</string>
+    <string name="lib_emu_reset_row">Врати конфигурацију емулатора</string>
+    <string name="lib_emu_reset_row_sub">Обриши подешавања покретања и врати подразумеване вредности. Игре, графика и сачуване позиције нису погођени.</string>
+    <!-- Add emulator wizard -->
+    <string name="lib_emu_pick_app">Изаберите апликацију</string>
+    <string name="lib_emu_group_apps">Инсталиране апликације</string>
+    <string name="lib_emu_no_apps">Нису пронађене апликације које могу да се покрену.</string>
+    <!-- Test launch -->
+    <string name="lib_emu_test_title">Пробно покретање</string>
+    <string name="lib_emu_test_pick_rom">Изаберите ROM</string>
+    <string name="lib_emu_test_group_roms">Ваши ROM-ови</string>
+    <string name="lib_emu_test_no_roms">Нема скенираних ROM-ова за тест. Прво скенирајте конзолу или само сачувајте и пробајте у библиотеци.</string>
+    <string name="lib_emu_preview_group">Преглед intent-а</string>
+    <!-- Labels of a read-only technical preview; shown in capitals. -->
+    <string name="lib_emu_preview_package">Пакет</string>
+    <string name="lib_emu_preview_activity">Активност</string>
+    <string name="lib_emu_preview_activity_default">(одређује пакет)</string>
+    <string name="lib_emu_preview_action">Радња</string>
+    <string name="lib_emu_preview_mime">MIME</string>
+    <string name="lib_emu_preview_uri_mode">URI режим</string>
+    <string name="lib_emu_preview_rom">ROM</string>
+    <string name="lib_emu_preview_extras">Додаци</string>
+    <string name="lib_emu_preview_flags">Ознаке</string>
+    <string name="lib_emu_none">(ништа)</string>
+    <string name="lib_emu_uri_mode_raw_path">сирова путања (емулатор сам отвара датотеку)</string>
+    <string name="lib_emu_uri_mode_saf">content:// (FileProvider, дозвољено читање)</string>
+    <string name="lib_emu_uri_mode_file">file:// (content:// на API 24+)</string>
+    <string name="lib_emu_action_unsupported">(није подржано)</string>
+    <string name="lib_emu_action_shortcut">(пречица)</string>
+    <string name="lib_emu_result_group">Резултат</string>
+    <string name="lib_emu_actions_group">Радње</string>
+    <string name="lib_emu_launch_now">Покрени сада</string>
+    <string name="lib_emu_launch_now_sub">Пошаљи intent апликацији</string>
+    <string name="lib_emu_pick_other_rom">Изабери други ROM</string>
+    <string name="lib_emu_test_rom_unloadable">Учитавање тог ROM-а није успело.</string>
+    <string name="lib_emu_test_resolves_ok">Разрешава се исправно — притисните „Покрени сада“ да пробате.</string>
+    <string name="lib_emu_test_launched">Покренуто — проверите емулатор.</string>
+    <string name="lib_emu_error_activity_not_found">Тај екран апликације није пронађен или апликација не дозвољава да се отвори споља. Проверите назив екрана или пробајте начин покретања „Отвори ROM апликацијом“.</string>
+    <string name="lib_emu_error_permission_denied">Дозвола је одбијена — апликација је одбила URI ROM-а. Пробајте да промените SAF (content://) и file URI.</string>
+    <!-- %1$s is the error text the emulator or launcher reported. -->
+    <string name="lib_emu_error_rom_not_accepted">%1$s Апликација није прихватила овај MIME тип / URI режим — пробајте други URI режим.</string>
+    <string name="lib_emu_error_unknown">Покретање није успело из непознатог разлога.</string>
+    <string name="lib_emu_error_name_required">Назив је обавезан</string>
+    <string name="lib_emu_error_package_required">Назив пакета је обавезан</string>
+    <!-- Profile list rows. %1$s is a package name, %2$s a launch type. Double spaces around the dots are intentional. -->
+    <string name="lib_emu_row_sub">"%1$s  ·  %2$s"</string>
+    <string name="lib_emu_row_sub_retroarch_core">"%1$s  ·  %2$s  ·  RetroArch језгро"</string>
+    <string name="lib_emu_row_sub_auto">"%1$s  ·  %2$s  ·  аутоматски откривено"</string>
+    <!-- Small badges beside a profile row. -->
+    <string name="lib_emu_badge_unavailable">Недоступно</string>
+    <string name="lib_emu_badge_auto">Аутоматски</string>
+    <string name="lib_emu_badge_edited">Измењено</string>
+    <!-- Label on a row: opens the profile editor. -->
+    <string name="lib_emu_edit">Измени</string>
+
+    <!-- Emulator profile editor -->
+    <string name="lib_prof_new">Нови профил</string>
+    <string name="lib_prof_edit">Измени профил</string>
+    <string name="lib_prof_group_templates">Препоручени шаблони</string>
+    <!-- Launch templates: technical names of how an emulator is started. -->
+    <string name="lib_emu_template_view_content">Отвори ROM апликацијом (content:// веза)</string>
+    <string name="lib_emu_template_view_content_desc">Већина модерних емулатора (Eden, Azahar, PPSSPP) · ACTION_VIEW</string>
+    <string name="lib_emu_template_view_file">Отвори ROM апликацијом (путања датотеке)</string>
+    <string name="lib_emu_template_view_file_desc">Старији емулатори који читају сирову путању датотеке · ACTION_VIEW</string>
+    <string name="lib_emu_template_component">Отвори екран апликације са путањом покретања</string>
+    <string name="lib_emu_template_component_desc">У стилу DuckStation / AetherSX2 · COMPONENT</string>
+    <string name="lib_emu_template_retroarch">RetroArch језгро (ROM + LIBRETRO)</string>
+    <string name="lib_emu_template_retroarch_desc">Подесите путању језгра у LIBRETRO</string>
+    <string name="lib_prof_group_required">Обавезно</string>
+    <string name="lib_prof_display_name">Назив за приказ</string>
+    <string name="lib_prof_display_name_hint">нпр. Мој емулатор</string>
+    <string name="lib_prof_package">Назив пакета</string>
+    <string name="lib_prof_package_hint">нпр. com.example.emulator</string>
+    <string name="lib_prof_group_launch">Начин покретања</string>
+    <string name="lib_prof_type_view">Отвори ROM апликацијом — већина емулатора (PPSSPP, Dolphin, DuckStation…). Android назив: ACTION_VIEW</string>
+    <string name="lib_prof_type_component">Отвори екран апликације — RetroArch и апликације којима је потребан одређени екран. Android назив: COMPONENT</string>
+    <string name="lib_prof_type_shortcut">Пречица на почетном екрану — Winlator, GameHub и прилагођени лаунчери</string>
+    <string name="lib_prof_type_custom">Није подржано — прилагођене команде се одбијају при покретању</string>
+    <string name="lib_prof_group_optional">Опционално</string>
+    <string name="lib_prof_activity">Екран апликације (Activity класа)</string>
+    <string name="lib_prof_activity_hint">нпр. com.example.emulator.MainActivity (оставите празно за подразумевано)</string>
+    <string name="lib_prof_platforms">Подржане платформе</string>
+    <string name="lib_prof_platforms_hint">psx,psp,ps2  (ID-јеви платформи раздвојени зарезима)</string>
+    <string name="lib_prof_mime">MIME тип</string>
+    <string name="lib_prof_mime_hint">нпр. application/octet-stream</string>
+    <string name="lib_prof_notes">Белешке</string>
+    <string name="lib_prof_notes_hint">Опционалне белешке за овај профил</string>
+    <string name="lib_prof_group_uri">URI ознаке</string>
+    <string name="lib_prof_use_file_uri">Користи file URI</string>
+    <string name="lib_prof_use_file_uri_sub">Проследи путању ROM-а као file:// URI (већина емулатора)</string>
+    <string name="lib_prof_use_saf_uri">Користи SAF URI</string>
+    <string name="lib_prof_use_saf_uri_sub">Проследи SAF content:// URI уместо путање датотеке</string>
+    <string name="lib_prof_group_advanced">Напредно</string>
+    <string name="lib_prof_intent_help">Како функционишу прилагођени intent-и</string>
+    <string name="lib_prof_intent_help_hide">Притисните да сакријете водич за поља</string>
+    <string name="lib_prof_intent_help_show">Задржите показивач или притисните да прикажете водич за поља</string>
+    <string name="lib_prof_intent_action">Intent радња</string>
+    <string name="lib_prof_intent_action_hint">нпр. me.magnum.melonds.LAUNCH_ROM (празно = подразумевано)</string>
+    <string name="lib_prof_intent_extras">Intent extras</string>
+    <!-- Placeholder text in a field. Keep the {tokens} exactly as written: they are replaced at launch. -->
+    <string name="lib_prof_intent_extras_hint">кључ=вредност у сваком реду. Токени {rom_path}, {rom_uri}, {core_path}. true/false = boolean.</string>
+    <string name="lib_prof_intent_flags">Intent ознаке</string>
+    <string name="lib_prof_intent_flags_hint">CLEAR_TASK, CLEAR_TOP, NEW_TASK (раздвојено зарезима)</string>
+    <string name="lib_prof_intent_category">Intent категорија</string>
+    <string name="lib_prof_intent_category_hint">нпр. android.intent.category.LEANBACK_LAUNCHER</string>
+    <string name="lib_prof_core_path">Путања RetroArch језгра</string>
+    <string name="lib_prof_extensions">Подржани наставци</string>
+    <string name="lib_prof_extensions_hint">iso,cso,chd  (информативно)</string>
+    <string name="lib_prof_group_test">Тест</string>
+    <string name="lib_prof_test">Пробно покретање са ROM-ом</string>
+    <string name="lib_prof_test_sub">Изаберите скенирани ROM, прегледајте intent и пробајте покретање</string>
+    <string name="lib_prof_group_actions">Радње</string>
+    <string name="lib_prof_saving">Чување…</string>
+    <string name="lib_prof_save">Сачувај профил</string>
+    <string name="lib_prof_save_new_sub">Додај у прилагођене профиле</string>
+    <string name="lib_prof_save_edit_sub">Ажурирај овај профил</string>
+    <string name="lib_prof_delete">Избриши профил</string>
+    <string name="lib_prof_delete_sub">Трајно уклони овај прилагођени профил</string>
+    <!-- Label on the delete row (a button). -->
+    <string name="lib_prof_delete_button">Избриши</string>
+    <!-- Field guide shown in the profile editor. Keep {tokens}, key names and intent constants exactly as written. -->
+    <string name="lib_help_launch_method">Начин покретања</string>
+    <string name="lib_help_launch_view">Отвори ROM апликацијом — ROM се прослеђује као веза ка датотеци (ACTION_VIEW). Већина емулатора.</string>
+    <string name="lib_help_launch_component">Отвори екран апликације — покреће одређени екран апликације са додатним подешавањима (COMPONENT). RetroArch, DuckStation.</string>
+    <string name="lib_help_action">Intent радња</string>
+    <string name="lib_help_action_line">Радња коју очекује активност емулатора. Празно = подразумевано (VIEW / MAIN).</string>
+    <string name="lib_help_action_examples">"нпр. me.magnum.melonds.LAUNCH_ROM   или   android.nfc.action.TECH_DISCOVERED"</string>
+    <string name="lib_help_extras">"Intent extras  (један кључ=вредност по реду)"</string>
+    <string name="lib_help_extras_tokens">Токени се замењују при покретању:</string>
+    <string name="lib_help_extras_rom_uri">"   {rom_uri} — content:// URI  (препоручено; ради са ограниченим складиштем)"</string>
+    <string name="lib_help_extras_rom_path">"   {rom_path} — сирова путања датотеке      {core_path}   {package}   {platform}"</string>
+    <string name="lib_help_extras_boolean">Вредност true или false шаље се као boolean extra.</string>
+    <string name="lib_help_extras_examples">"нпр.   bootPath={rom_uri}      resumeState=false"</string>
+    <string name="lib_help_flags">Intent ознаке</string>
+    <string name="lib_help_flags_line">"Раздвојено зарезима:  CLEAR_TASK, CLEAR_TOP, NEW_TASK"</string>
+    <string name="lib_help_category">Intent категорија</string>
+    <string name="lib_help_category_line">нпр. android.intent.category.LEANBACK_LAUNCHER</string>
+    <string name="lib_help_tip">Савет</string>
+    <string name="lib_help_tip_line1">Користите {rom_uri} уз укључено „Користи SAF URI“ — емулатор добија приступ за читање</string>
+    <string name="lib_help_tip_line2">само том ROM-у, без потребе за дозволом за целу меморију.</string>
+
+    <!-- Settings ▸ Emulators ▸ Per-System Defaults -->
+    <string name="lib_assign_title">Подразумевано по систему</string>
+    <!-- Heading of a notification row about emulator defaults. -->
+    <string name="lib_assign_task_label">Додела емулатора</string>
+    <!-- Notification text. %1$s is a console name, %2$s an emulator name. -->
+    <string name="lib_assign_default_set">%1$s: подразумевани емулатор је подешен на %2$s</string>
+    <string name="lib_assign_using_recommended">%1$s: користи се препоручени емулатор</string>
+    <!-- Notification text. %1$s is a console name, %2$d how many per-game overrides were cleared. -->
+    <plurals name="lib_assign_overrides_cleared">
+        <item quantity="one">%1$s: обрисано је %2$d посебно подешавање за игру — те игре сада прате подразумевано за платформу</item>
+        <item quantity="few">%1$s: обрисана су %2$d посебна подешавања за игре — те игре сада прате подразумевано за платформу</item>
+        <item quantity="other">%1$s: обрисано је %2$d посебних подешавања за игре — те игре сада прате подразумевано за платформу</item>
+    </plurals>
+    <string name="lib_assign_group_consoles">Конзоле са играма</string>
+    <string name="lib_assign_none">Још нема конзола са играма — прво скенирајте конзолу, па овде подесите њен подразумевани емулатор и језгро.</string>
+    <!-- Small label on a console row: %1$d games on it use their own emulator. -->
+    <string name="lib_assign_overridden">Посебно подешено: %1$d</string>
+    <!-- Warning badges (capitals on purpose). -->
+    <string name="lib_assign_badge_core_missing">НЕМА ЈЕЗГРА</string>
+    <string name="lib_assign_badge_no_emulator">НЕМА ЕМУЛАТОРА</string>
+    <string name="lib_assign_badge_active">АКТИВНО</string>
+    <string name="lib_assign_badge_default">ПОДРАЗУМЕВАНО</string>
+    <string name="lib_assign_badge_recommended">ПРЕПОРУЧЕНО</string>
+    <!-- Parts of a console row's subtitle; they are joined with " · ". %1$s is an emulator or core name. -->
+    <string name="lib_assign_default_is">Подразумевано: %1$s</string>
+    <string name="lib_assign_no_emulator">Нема емулатора</string>
+    <string name="lib_assign_core_is">Језгро: %1$s</string>
+    <plurals name="lib_assign_game_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игре</item>
+        <item quantity="other">%d игара</item>
+    </plurals>
+    <!-- Clear-overrides dialog. -->
+    <plurals name="lib_assign_clear_title">
+        <item quantity="one">Обрисати %d посебно подешавање?</item>
+        <item quantity="few">Обрисати %d посебна подешавања?</item>
+        <item quantity="other">Обрисати %d посебних подешавања?</item>
+    </plurals>
+    <!-- %1$s is a console name. -->
+    <string name="lib_assign_clear_message">Ове игре за %1$s имају сопствени закачени емулатор и занемарују подразумевани за ову платформу. Обришите их да би све игре за %1$s користиле подразумевани.</string>
+    <!-- Button in the dialog. -->
+    <string name="lib_assign_clear">Обриши</string>
+    <string name="lib_assign_group_current">Тренутно подразумевано</string>
+    <string name="lib_assign_emulator">Емулатор</string>
+    <string name="lib_assign_none_value">Ниједан</string>
+    <string name="lib_assign_ra_core">RetroArch језгро</string>
+    <string name="lib_assign_group_choose">Изаберите подразумевано</string>
+    <string name="lib_assign_automatic">Аутоматски (препоручено)</string>
+    <string name="lib_assign_automatic_sub">Први инсталирани емулатор — самостални пре RetroArch језгара</string>
+    <string name="lib_assign_no_candidates">Ниједан инсталирани емулатор не може да покреће ову платформу. Инсталирајте један — или повежите RetroArch и пустите да откривање језгара направи профиле — и покретања ће се решавати аутоматски.</string>
+    <string name="lib_assign_group_overrides">Посебно за игру</string>
+    <string name="lib_assign_overrides_label">Игре са прилагођеним емулатором</string>
+    <!-- Value: %1$d of %2$d games on this console. -->
+    <string name="lib_assign_overrides_value">%1$d од %2$d</string>
+    <string name="lib_assign_overrides_none">Ниједна — све игре прате подразумевано изнад</string>
+    <string name="lib_assign_overrides_some">Ове игре се покрећу са сопственим закаченим емулатором и занемарују подразумевани</string>
+    <plurals name="lib_assign_clear_all">
+        <item quantity="one">Обриши %d посебно подешавање</item>
+        <item quantity="few">Обриши сва %d посебна подешавања</item>
+        <item quantity="other">Обриши свих %d посебних подешавања</item>
+    </plurals>
+    <string name="lib_assign_clear_all_sub">Врати ове игре да прате подразумевано за платформу</string>
+    <string name="lib_assign_source_card">Подразумевано за конзолу — подешава се овде или у менаџеру библиотеке</string>
+    <string name="lib_assign_source_platform">Подразумевано за платформу</string>
+    <string name="lib_assign_source_game">Посебно за игру</string>
+    <string name="lib_assign_source_auto">Аутоматски — први инсталирани емулатор</string>
+    <!-- %1$s is an emulator name. -->
+    <string name="lib_assign_source_stored_missing">Сачувани подразумевани (%1$s) није инсталиран или не може да покреће ову платформу</string>
+    <string name="lib_assign_source_platform_missing">Подразумевани за платформу није инсталиран или не може да покреће ову платформу</string>
+    <string name="lib_assign_source_none">За ову платформу није инсталиран ниједан емулатор</string>
+
+    <!-- Settings ▸ Emulators ▸ Emulator knowledge -->
+    <string name="lib_kb_title">База знања о емулаторима</string>
+    <!-- Status line. "Built-in" means the emulator list that ships inside the app. -->
+    <string name="lib_kb_status_builtin">Само уграђено</string>
+    <string name="lib_kb_status_not_configured">Уграђено · ажурирања нису подешена</string>
+    <string name="lib_kb_status_official">Званично</string>
+    <!-- %1$s is a version label such as 2026.10.02. -->
+    <string name="lib_kb_status_official_version">Званично v%1$s</string>
+    <string name="lib_kb_status_verified">проверено</string>
+    <!-- Counted nouns used inside status lines and button labels. -->
+    <plurals name="lib_kb_emulators_count">
+        <item quantity="one">%d емулатор</item>
+        <item quantity="few">%d емулатора</item>
+        <item quantity="other">%d емулатора</item>
+    </plurals>
+    <plurals name="lib_kb_consoles_count">
+        <item quantity="one">%d конзола</item>
+        <item quantity="few">%d конзоле</item>
+        <item quantity="other">%d конзола</item>
+    </plurals>
+    <plurals name="lib_kb_console_updates_count">
+        <item quantity="one">%d ажурирање конзоле</item>
+        <item quantity="few">%d ажурирања конзола</item>
+        <item quantity="other">%d ажурирања конзола</item>
+    </plurals>
+    <!-- Part of the status line: when the update server was last asked. %1$s is a time such as 09:14. -->
+    <string name="lib_kb_checked_today">проверено данас %1$s</string>
+    <string name="lib_kb_checked_yesterday">проверено јуче %1$s</string>
+    <!-- %1$s is a date such as 30 Sep, %2$s a time such as 08:00. -->
+    <string name="lib_kb_checked_on">проверено %1$s %2$s</string>
+    <!-- Buttons whose %1$s is a counted phrase, e.g. "2 emulators". -->
+    <string name="lib_kb_import_label">Увези: %1$s</string>
+    <string name="lib_kb_update_label">Ажурирај: %1$s</string>
+    <string name="lib_kb_import_and_update_label">Увези: %1$s и %2$s</string>
+    <string name="lib_kb_export_label">Извези: %1$s</string>
+    <string name="lib_kb_group_status">Статус</string>
+    <string name="lib_kb_new_file_types">Нови типови датотека</string>
+    <!-- %1$s is a list such as "PlayStation 2: chd, cso; Nintendo Switch: nsz." -->
+    <string name="lib_kb_new_file_types_sub">%1$s Поново скенирајте библиотеку да бисте их обухватили.</string>
+    <string name="lib_kb_group_updates">Ажурирања</string>
+    <string name="lib_kb_check">Провери ажурирања</string>
+    <string name="lib_kb_check_sub">Само потписане датотеке од PlayFieldPortal-а</string>
+    <string name="lib_kb_checking">Провера…</string>
+    <string name="lib_kb_not_available">Није доступно у овој верзији</string>
+    <string name="lib_kb_auto_update">Аутоматска ажурирања</string>
+    <string name="lib_kb_auto_update_sub">Највише једном дневно</string>
+    <string name="lib_kb_check_failed">Провера није могла да се заврши.</string>
+    <string name="lib_kb_group_files">Датотеке</string>
+    <string name="lib_kb_import">Увези датотеку базе знања</string>
+    <string name="lib_kb_import_sub">.json на овом уређају, прво се прегледа</string>
+    <string name="lib_kb_group_your_files">Ваше датотеке</string>
+    <string name="lib_kb_file_unreadable_sub">Не може да се прочита · није потписано</string>
+    <!-- Subtitle of an imported file: %d emulators it contains. "Not signed" means it has no digital signature. -->
+    <plurals name="lib_kb_file_sub">
+        <item quantity="one">%d емулатор · није потписано</item>
+        <item quantity="few">%d емулатора · није потписано</item>
+        <item quantity="other">%d емулатора · није потписано</item>
+    </plurals>
+    <!-- %1$s is a file name. -->
+    <string name="lib_kb_remove_file">Уклони %1$s</string>
+    <string name="lib_kb_badge_custom">Прилагођено</string>
+    <string name="lib_kb_badge_unreadable">Нечитљиво</string>
+    <string name="lib_kb_export">Извези своје емулаторе</string>
+    <string name="lib_kb_export_sub">Поделите прилагођене и измењене емулаторе као један .json</string>
+    <string name="lib_kb_group_reset">Враћање</string>
+    <string name="lib_kb_reset_row">Врати на уграђено</string>
+    <string name="lib_kb_reset_row_sub">Одбацује ажурирања и ваше датотеке</string>
+    <!-- Remove file dialog. %1$s is a file name. -->
+    <string name="lib_kb_remove_title">Уклонити датотеку?</string>
+    <string name="lib_kb_remove_message">„%1$s“ ће бити уклоњена са овог уређаја. Уграђена и званична база знања о емулаторима није погођена.</string>
+    <!-- Button -->
+    <string name="lib_kb_remove">Уклони</string>
+    <string name="lib_kb_remove_failed_title">Уклањање датотеке није успело</string>
+    <string name="lib_kb_remove_failed_message">Датотеку није могуће уклонити.</string>
+    <!-- Reset dialog -->
+    <string name="lib_kb_reset_title">Вратити на уграђено?</string>
+    <string name="lib_kb_reset_message">Преузета ажурирања и ваше увезене датотеке биће одбачене. База знања о емулаторима која долази уз PlayField Portal се задржава.</string>
+    <!-- Button -->
+    <string name="lib_kb_reset">Врати</string>
+    <string name="lib_kb_reset_failed_title">Враћање није успело</string>
+    <string name="lib_kb_reset_failed_message">Базу знања о емулаторима није могуће вратити.</string>
+    <!-- Import problems -->
+    <string name="lib_kb_import_failed_title">Увоз те датотеке није успео</string>
+    <string name="lib_kb_import_too_large">Та датотека је превелика да би била датотека базе знања о емулаторима.</string>
+    <string name="lib_kb_import_unreadable">Читање те датотеке није успело.</string>
+    <!-- %1$s is a short technical reason in English, e.g. "has an unknown key \"x\"". -->
+    <string name="lib_kb_import_nothing">Та датотека нема ништа за увоз на овом уређају.</string>
+    <string name="lib_kb_import_save_failed">Датотеку није могуће сачувати на овом уређају.</string>
+    <string name="lib_kb_import_refresh_failed">Датотека је сачувана, али освежавање откривања емулатора није успело.</string>
+    <!-- Import review -->
+    <!-- %1$s is a file name. -->
+    <string name="lib_kb_review_title">Преглед: %1$s</string>
+    <string name="lib_kb_review_unsigned">Није потписано · из датотеке на овом уређају</string>
+    <string name="lib_kb_review_unsigned_sub">Увозите само датотеке којима верујете: оне говоре PFP-у која апликација отвара ваше игре.</string>
+    <string name="lib_kb_badge_unsigned">Непотписано</string>
+    <string name="lib_kb_group_new">Нови емулатори</string>
+    <!-- Row label: adds an emulator. %1$s is the emulator name. -->
+    <string name="lib_kb_review_add">Додај %1$s</string>
+    <string name="lib_kb_group_existing">Већ на овом уређају</string>
+    <string name="lib_kb_review_override">Замени %1$s</string>
+    <string name="lib_kb_badge_overrides_official">Замењује званично</string>
+    <string name="lib_kb_badge_your_edit">Ваша измена</string>
+    <string name="lib_kb_group_consoles">Конзоле</string>
+    <!-- %1$s is a console name. -->
+    <string name="lib_kb_review_update">Ажурирај %1$s</string>
+    <!-- %1$s is a list of file extensions. -->
+    <string name="lib_kb_review_extensions">+ наставци: %1$s</string>
+    <string name="lib_kb_group_blocked">Блокирано</string>
+    <!-- %1$d is the entry\'s position in the file, used when it has no name. -->
+    <string name="lib_kb_review_entry">Унос %1$d</string>
+    <!-- %1$d entries in the file are already on this device and unchanged. -->
+    <string name="lib_kb_review_unchanged">Већ ажурно: %1$d</string>
+    <string name="lib_kb_group_finish">Крај</string>
+    <string name="lib_kb_cancel">Откажи</string>
+    <!-- Controller prompts at the bottom of the screen. -->
+    <string name="lib_kb_prompt_toggle">Укључи/искључи</string>
+    <string name="lib_kb_prompt_cancel">Откажи</string>
+    <string name="lib_kb_opens_game_file">Отвара датотеку игре</string>
+    <string name="lib_kb_opens_own_activity">Отвара преко сопствене активности</string>
+    <string name="lib_kb_opens_shortcut">Отвара преко пречице</string>
+    <string name="lib_kb_opens_custom_command">Отвара прилагођеном командом</string>
+    <string name="lib_kb_intent_view">Отвара ROM датотеку</string>
+    <string name="lib_kb_intent_component">Отвара одређени екран</string>
+    <string name="lib_kb_intent_shortcut">Отвара преко пречице</string>
+    <!-- Export picker -->
+    <string name="lib_kb_export_title_sub">Чува се као један .json који можете да делите</string>
+    <string name="lib_kb_export_select_all">Изабери све</string>
+    <!-- %1$d of %2$d emulators are ticked. -->
+    <string name="lib_kb_export_selected">Изабрано: %1$d од %2$d</string>
+    <string name="lib_kb_group_custom">Прилагођени емулатори</string>
+    <string name="lib_kb_group_edited">Измењени званични емулатори</string>
+    <!-- %1$s is a list of console names. -->
+    <string name="lib_kb_export_changes_only">Само ваше измене · %1$s</string>
+    <string name="lib_kb_export_privacy">Чувају се само подешавања покретања. Без листе игара, ROM путања или података о налогу.</string>
+    <string name="lib_kb_group_cant_share">Не може да се дели</string>
+    <string name="lib_kb_export_nothing_title">Нема шта да се извезе</string>
+    <string name="lib_kb_export_none_message">Још немате прилагођених или измењених емулатора за дељење.</string>
+    <string name="lib_kb_export_none_shareable">Ниједан ваш емулатор не може да се дели</string>
+    <!-- %1$s is the reason the first emulator cannot be shared. -->
+    <string name="lib_kb_exported_title">Извезено</string>
+    <plurals name="lib_kb_exported_message">
+        <item quantity="one">Извезен је %d емулатор</item>
+        <item quantity="few">Извезена су %d емулатора</item>
+        <item quantity="other">Извезено је %d емулатора</item>
+    </plurals>
+    <string name="lib_kb_export_failed_title">Извоз није успео</string>
+    <string name="lib_kb_export_failed_message">Датотеку није могуће сачувати.</string>
+
+    <!-- Windows ▸ Game List -->
+    <string name="lib_win_title">Windows игре</string>
+    <plurals name="lib_win_game_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игре</item>
+        <item quantity="other">%d игара</item>
+    </plurals>
+    <string name="lib_win_empty">Још нема Windows игара — прво их увезите у „Увоз PC игара“.</string>
+    <!-- Shown at the right of a row while its label or folder is being saved. -->
+    <string name="lib_win_working">Обрада…</string>
+    <!-- Marks the label a game already has in the label menu. -->
+    <string name="lib_win_current">Тренутно</string>
+    <!-- Accessibility names of the folder button on a game row. -->
+    <string name="lib_win_link_folder">Повежи фасциклу</string>
+    <string name="lib_win_change_folder">Промени повезану фасциклу</string>
+    <!-- Labels a Windows game can have. "Steam" is a store name and is not translated. -->
+    <string name="lib_win_label_non_steam">Није са Steam-а (у власништву)</string>
+    <string name="lib_win_label_local">Локално</string>
+    <!-- Value on a game row: %1$s is the label the app guessed. -->
+    <string name="lib_win_auto_value">Аутоматски: %1$s</string>
+    <!-- Menu option: let the app choose the label; %1$s is its guess. -->
+    <string name="lib_win_auto_option">Аутоматски (%1$s)</string>
+    <string name="lib_win_auto">Аутоматски</string>
+    <string name="lib_win_not_set">Није подешено</string>
+    <string name="lib_win_label_save_failed">Ознаку није могуће сачувати.</string>
+    <string name="lib_win_label_steam_not_found">Означено као Steam, али није пронађена одговарајућа Steam игра, па ништа није повезано.</string>
+    <string name="lib_win_folder_unreadable">Читање те фасцикле није успело. Изаберите је поново или поново монтирајте меморију на којој се налази.</string>
+    <!-- %1$s is a folder name. -->
+    <string name="lib_win_several_matches">Више Steam игара одговара називу „%1$s“. Завршите повезивање ове фасцикле на страници Shiba Coins те игре, где можете изабрати праву.</string>
+    <!-- Choice shown after picking a folder with no achievement list. %1$s is a folder name. -->
+    <string name="lib_win_kit_title">Нема листе достигнућа у „%1$s“</string>
+    <string name="lib_win_kit_message_installer">Ова фасцикла још нема податке о достигнућима емулатора. Повежите је оваква каква је или прво у њу инсталирајте пакет емулатора.</string>
+    <string name="lib_win_kit_message_no_installer">Ова фасцикла још нема податке о достигнућима емулатора. Повежите је оваква каква је или укључите „Инсталирај Goldberg и конвертуј игре“ у Подешавања ▸ Достигнућа ▸ Локални Windows да бисте инсталирали пакет.</string>
+    <string name="lib_win_kit_link_only">Само повежи</string>
+    <string name="lib_win_kit_install_and_link">Инсталирај пакет и повежи</string>
+    <!-- Button: links the folder. -->
+    <string name="lib_win_kit_link">Повежи</string>
+
+    <!-- PC games: scan and export messages (shown in notifications and Library Manager) -->
+    <string name="lib_pc_scan_no_root">Прво додајте ROM фасциклу — PFP прави &lt;ROM фасцикла&gt;/windows/import за извезене игре.</string>
+    <string name="lib_pc_scan_folder_unreadable">Читање те фасцикле није успело. Изаберите фасциклу у коју ваш лаунчер извози игре.</string>
+    <string name="lib_pc_scan_none_found">У изабраној фасцикли нису пронађене извезене PC игре.</string>
+    <!-- Scan summary, first sentence. %1$d is the number of PC games imported. -->
+    <plurals name="lib_pc_scan_imported">
+        <item quantity="one">Увезена је %1$d PC игра.</item>
+        <item quantity="few">Увезене су %1$d PC игре.</item>
+        <item quantity="other">Увезено је %1$d PC игара.</item>
+    </plurals>
+    <!-- Same sentence when some entries were skipped: %2$d is how many. -->
+    <plurals name="lib_pc_scan_imported_skipped">
+        <item quantity="one">Увезена је %1$d PC игра, прескочено: %2$d (није инсталиран одговарајући лаунчер).</item>
+        <item quantity="few">Увезене су %1$d PC игре, прескочено: %2$d (није инсталиран одговарајући лаунчер).</item>
+        <item quantity="other">Увезено је %1$d PC игара, прескочено: %2$d (није инсталиран одговарајући лаунчер).</item>
+    </plurals>
+    <!-- Restored from .pfpgame files (a game export file). %1$d created, %2$d matched an existing game. -->
+    <plurals name="lib_pc_scan_restored">
+        <item quantity="one">Враћено: %1$d, повезано: %2$d игра из .pfpgame датотека.</item>
+        <item quantity="few">Враћено: %1$d, повезано: %2$d игре из .pfpgame датотека.</item>
+        <item quantity="other">Враћено: %1$d, повезано: %2$d игара из .pfpgame датотека.</item>
+    </plurals>
+    <plurals name="lib_pc_scan_restore_skipped">
+        <item quantity="one">Прескочена је %d .pfpgame датотека: лаунчер није инсталиран, двосмислено је или закачена ставка није у библиотеци.</item>
+        <item quantity="few">Прескочене су %d .pfpgame датотеке: лаунчер није инсталиран, двосмислено је или закачена ставка није у библиотеци.</item>
+        <item quantity="other">Прескочено је %d .pfpgame датотека: лаунчер није инсталиран, двосмислено је или закачена ставка није у библиотеци.</item>
+    </plurals>
+    <plurals name="lib_pc_scan_restore_untrusted">
+        <item quantity="one">%d .pfpgame датотека је занемарена као нечитљива или непоуздана.</item>
+        <item quantity="few">%d .pfpgame датотеке су занемарене као нечитљиве или непоуздане.</item>
+        <item quantity="other">%d .pfpgame датотека је занемарено као нечитљиво или непоуздано.</item>
+    </plurals>
+    <plurals name="lib_pc_scan_relinked">
+        <item quantity="one">Извезена графика је поново повезана по називу (ажурирана је %d игра).</item>
+        <item quantity="few">Извезена графика је поново повезана по називу (ажуриране су %d игре).</item>
+        <item quantity="other">Извезена графика је поново повезана по називу (ажурирано је %d игара).</item>
+    </plurals>
+    <string name="lib_pc_scan_relink_no_folder">Повежите фасциклу за графику, па поново скенирајте да бисте поново повезали извезену графику.</string>
+    <string name="lib_pc_scan_relink_failed">Поновно повезивање извезене графике није успело — погледајте дневник.</string>
+    <plurals name="lib_pc_scan_pins_reconciled">
+        <item quantity="one">Усклађена је %d закачена пречица.</item>
+        <item quantity="few">Усклађене су %d закачене пречице.</item>
+        <item quantity="other">Усклађено је %d закачених пречица.</item>
+    </plurals>
+    <string name="lib_pc_export_game_gone">Та игра више није у библиотеци.</string>
+    <string name="lib_pc_export_pc_only">Могу да се извезу само PC игре.</string>
+    <!-- %1$s is a game title. -->
+    <string name="lib_pc_export_no_launcher">%1$s нема лаунчер помоћу ког би се вратила, па не може да се извезе.</string>
+    <!-- %1$s is a game title, %2$s a file name. -->
+    <string name="lib_pc_export_one_done">%1$s је извезена у windows/import као %2$s.</string>
+    <!-- %1$s is a file name. -->
+    <string name="lib_pc_export_one_failed">Уписивање %1$s у windows/import није успело.</string>
+    <string name="lib_pc_export_no_root">Прво додајте ROM фасциклу — PFP извози PC игре у &lt;ROM фасцикла&gt;/windows/import.</string>
+    <string name="lib_pc_export_no_folder">Отварање &lt;windows&gt;/import није успело. Поново повежите ROM фасциклу и покушајте поново.</string>
+    <string name="lib_pc_export_nothing_needed">Ниједној PC игри није потребна датотека за извоз: извози из лаунчера и закачене ставке без графике враћају се сами.</string>
+    <!-- Bulk export summary, built as: first part · second part · third part. The parts after the first are optional. -->
+    <plurals name="lib_pc_export_bulk_done">
+        <item quantity="one">Извезена је %d PC игра у windows/import</item>
+        <item quantity="few">Извезене су %d PC игре у windows/import</item>
+        <item quantity="other">Извезено је %d PC игара у windows/import</item>
+    </plurals>
+    <string name="lib_pc_export_bulk_skipped">Није потребна датотека: %1$d</string>
+    <string name="lib_pc_export_bulk_failed">Није могуће уписати: %1$d</string>
+
+    <!-- Settings ▸ Library Manager -->
+    <string name="lib_lm_title">Менаџер библиотеке</string>
+    <string name="lib_lm_library_title">Библиотека</string>
+    <string name="lib_lm_root_group">Приступ ROM фасциклама</string>
+    <string name="lib_lm_root_add">Додај ROM фасциклу</string>
+    <string name="lib_lm_root_add_sub">Доделите ROM фасциклу (нпр. /Roms) — или другу локацију, као што је SD картица</string>
+    <string name="lib_lm_root_scan">Скенирај ROM фасцикле</string>
+    <string name="lib_lm_root_scan_sub">Пронађи фасцикле конзола у ROM фасциклама и додај њихове игре</string>
+    <string name="lib_lm_group_consoles">Конзоле</string>
+    <string name="lib_lm_no_consoles">Нема подешених конзола. Додајте конзолу да бисте направили меморијску картицу која се појављује у Играма.</string>
+    <!-- %1$s is a console name; the double space is intentional. -->
+    <string name="lib_lm_card_hidden">"%1$s  (скривено)"</string>
+    <!-- Badge on a console row that is pinned to the top. -->
+    <string name="lib_lm_pinned">ЗАКАЧЕНО</string>
+    <string name="lib_lm_group_manage">Управљање</string>
+    <string name="lib_lm_add_console">Додај конзолу</string>
+    <string name="lib_lm_add_console_sub">Изаберите платформу — њене игре се налазе у одговарајућој фасцикли у главној ROM фасцикли</string>
+    <string name="lib_lm_setup_folders">Подеси ROM фасцикле (ES-DE)</string>
+    <string name="lib_lm_setup_folders_sub">Изаберите празну фасциклу — PFP прави стандардне ES-DE системске фасцикле (gba, snes, psx…) у које копирате игре. Без погађања назива фасцикли</string>
+    <string name="lib_lm_scan_all">Скенирај све конзоле</string>
+    <!-- %1$d is how many consoles are being scanned right now. -->
+    <string name="lib_lm_scanning_count">Скенирање %1$d…</string>
+    <string name="lib_lm_configure_first">Прво подесите ROM фасциклу</string>
+    <string name="lib_lm_scan_all_sub">Скенирај фасциклу сваке омогућене конзоле</string>
+    <string name="lib_lm_rescan_all">Поново скенирај све (означи недостајуће)</string>
+    <string name="lib_lm_rescan_all_sub">Такође означава као недостајуће игре чија ROM датотека више не постоји. Остају у библиотеци</string>
+    <string name="lib_lm_rescan_confirm">Потврдите: поново скенирати и означити недостајуће игре?</string>
+    <string name="lib_lm_rescan_confirm_sub">Означава као недостајуће игре чија ROM датотека више не постоји; омиљене, време играња и графика се задржавају. Са великом библиотеком ово може да потраје</string>
+    <string name="lib_lm_cancel">Откажи</string>
+    <!-- Add console flow -->
+    <string name="lib_lm_add_console_title">Додај конзолу</string>
+    <string name="lib_lm_choose_platform">Изаберите платформу</string>
+    <string name="lib_lm_group_platforms">Подржане платформе</string>
+    <string name="lib_lm_assign_emulator">Додели емулатор</string>
+    <string name="lib_lm_emulator">Емулатор</string>
+    <string name="lib_lm_no_emulators">За ову платформу нису откривени инсталирани емулатори. Можете га доделити касније на екрану детаља конзоле.</string>
+    <!-- Option: skip choosing an emulator for now. -->
+    <string name="lib_lm_decide_later">Одлучи касније</string>
+    <string name="lib_lm_scan_now_title">Скенирати сада?</string>
+    <string name="lib_lm_new_console">Нова конзола</string>
+    <string name="lib_lm_rom_directory">ROM фасцикла</string>
+    <string name="lib_lm_not_set">Није подешено</string>
+    <!-- Button -->
+    <string name="lib_lm_scan_now">Скенирај сада</string>
+    <string name="lib_lm_scan_now_sub">Направи меморијску картицу и одмах скенирај њену фасциклу</string>
+    <string name="lib_lm_add_no_scan">Додај без скенирања</string>
+    <string name="lib_lm_add_no_scan_sub">Направи меморијску картицу сада, скенирај касније</string>
+    <!-- Console (Memory Card) detail -->
+    <string name="lib_lm_rename_title">Преименуј меморијску картицу</string>
+    <string name="lib_lm_rename_placeholder">Назив меморијске картице</string>
+    <!-- %1$s is a console or app name. -->
+    <string name="lib_lm_remove_card_title">Уклонити %1$s?</string>
+    <string name="lib_lm_remove_card_message">Ово уклања конзолу и њене скениране игре из библиотеке. ROM датотеке остају на уређају.</string>
+    <string name="lib_lm_remove_app_message">Ово уклања апликацију из ове библиотеке. Сама апликација остаје инсталирана.</string>
+    <!-- Button -->
+    <string name="lib_lm_remove">Уклони</string>
+    <string name="lib_lm_group_library">Библиотека</string>
+    <string name="lib_lm_games_directory">Фасцикла игара</string>
+    <string name="lib_lm_windows_no_root">Додајте ROM фасциклу — PFP аутоматски прави и користи &lt;ROM фасцикла&gt;/windows</string>
+    <string name="lib_lm_games">Игре</string>
+    <string name="lib_lm_group_actions">Радње</string>
+    <string name="lib_lm_game_list">Windows игре</string>
+    <string name="lib_lm_game_list_sub">Означите сваку Windows игру као Steam, Није са Steam-а или Локално и повежите локалне фасцикле</string>
+    <string name="lib_lm_import_pc">Увоз PC игара</string>
+    <string name="lib_lm_import_pc_sub">Извезене игре, додавање по ID-ју и статус лаунчера</string>
+    <string name="lib_lm_vita_folder">Фасцикла са подацима за Vita3K</string>
+    <string name="lib_lm_vita_folder_set">Читање инсталираних наслова из ове фасцикле ux0</string>
+    <string name="lib_lm_vita_folder_unset">Изаберите Vita3K фасциклу ux0 (нпр. Roms/vita/ux0) како би PFP могао да пронађе игре</string>
+    <string name="lib_lm_scan_vita">Тражи Vita игре</string>
+    <string name="lib_lm_scan_vita_sub">Чита инсталиране наслове из ux0/app у фасцикли са подацима за Vita3K</string>
+    <string name="lib_lm_group_apps">Апликације</string>
+    <string name="lib_lm_add_apps">Додај апликације</string>
+    <string name="lib_lm_add_apps_sub">Изаберите инсталиране апликације које ћете додати у ову библиотеку</string>
+    <string name="lib_lm_no_apps">Још нема апликација — користите „Додај апликације“ да изаберете инсталиране апликације за ову библиотеку.</string>
+    <string name="lib_lm_rom_directory_default">Скенира фасциклу ове конзоле у главној ROM фасцикли</string>
+    <string name="lib_lm_none">Ниједан</string>
+    <!-- Title of the menu that picks the console\'s emulator. -->
+    <string name="lib_lm_set_emulator">Подеси емулатор</string>
+    <!-- Marks the emulator that is already chosen. -->
+    <string name="lib_lm_current">Тренутно</string>
+    <string name="lib_lm_group_files">Подржане датотеке</string>
+    <string name="lib_lm_no_extensions">Нису подешени наставци — додајте бар један како би скенирање могло да препозна ROM-ове ове конзоле.</string>
+    <string name="lib_lm_remove_extension">Уклони наставак</string>
+    <string name="lib_lm_remove_from_library">Уклони из библиотеке</string>
+    <string name="lib_lm_add_extension">Додај наставак</string>
+    <string name="lib_lm_extension_hint">нпр. iso, chd, zip</string>
+    <string name="lib_lm_extension_helper">При скенирању се не прави разлика између великих и малих слова.</string>
+    <!-- Controller prompt: the button that starts typing. -->
+    <string name="lib_lm_prompt_type">Унеси</string>
+    <!-- Button: %1$s is a file extension without the dot. -->
+    <string name="lib_lm_add_extension_named">Додај „.%1$s“</string>
+    <string name="lib_lm_scan_console">Скенирај ову конзолу</string>
+    <string name="lib_lm_scanning_ellipsis">Скенирање…</string>
+    <string name="lib_lm_rom_dir_unconfigured">ROM фасцикла није подешена</string>
+    <string name="lib_lm_scan_console_sub">Скенирај само фасциклу ове конзоле</string>
+    <string name="lib_lm_group_achievements">Достигнућа</string>
+    <string name="lib_lm_ps3_folder">Фасцикла са PS3 подацима</string>
+    <string name="lib_lm_ps3_folder_set_sub">Читање трофеја из ове ARMSX3 PS3 фасцикле</string>
+    <string name="lib_lm_ps3_folder_unset">Изаберите ARMSX3 PS3 фасциклу како би PFP могао да чита трофеје</string>
+    <string name="lib_lm_ps3_hint">Доделите ARMSX3 PS3 фасциклу (ону која садржи config/dev_hdd0), па покрените аутоматско повезивање у Подешавања ▸ Достигнућа ▸ Ажурирај достигнућа. ID-јеви трофеја долазе са диска сваке игре, па игра може да се повеже и пре него што сте је икада покренули.</string>
+    <string name="lib_lm_x360_folder">Фасцикла са подацима за X360 Mobile</string>
+    <string name="lib_lm_x360_folder_set_sub">Читање достигнућа из профила у X360 Mobile</string>
+    <string name="lib_lm_x360_folder_unset">Изаберите X360 Mobile у бочном менију бирача фасцикли</string>
+    <string name="lib_lm_xendroid_folder">Фасцикла са подацима за XenDroid</string>
+    <string name="lib_lm_xendroid_folder_set_sub">Читање достигнућа из профила у XenDroid-у</string>
+    <string name="lib_lm_xendroid_folder_unset">Изаберите Android/data/xendroid.compose</string>
+    <string name="lib_lm_x360_hint">Доделите фасциклу са подацима емулатора у ком играте, па покрените аутоматско повезивање у Подешавања ▸ Достигнућа ▸ Ажурирај достигнућа. ID-јеви наслова долазе из датотеке сваке игре, па игра може да се повеже и пре него што сте је икада покренули.</string>
+    <string name="lib_lm_rename_card">Преименуј меморијску картицу</string>
+    <string name="lib_lm_show_in_games_sub">Омогући или сакриј ову меморијску картицу</string>
+    <string name="lib_lm_move_up">Помери нагоре</string>
+    <string name="lib_lm_move_down">Помери надоле</string>
+    <string name="lib_lm_group_danger">Опасна зона</string>
+    <string name="lib_lm_remove_card">Уклони меморијску картицу</string>
+    <string name="lib_lm_remove_card_sub">Уклања ову конзолу и њене игре. ROM датотеке остају на уређају.</string>
+    <!-- Row subtitle: %1$s is a folder path or "No ROM directory", %2$s the game count. The double spaces around the dot are intentional. -->
+    <string name="lib_lm_card_sub">"%1$s  ·  %2$s"</string>
+    <string name="lib_lm_no_rom_directory">Нема ROM фасцикле</string>
+    <plurals name="lib_lm_game_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игре</item>
+        <item quantity="other">%d игара</item>
+    </plurals>
+    <string name="lib_lm_tap_dismiss">Изаберите да одбаците</string>
+    <!-- Import PC games -->
+    <string name="lib_lm_import_pc_title">Увоз PC игара</string>
+    <string name="lib_lm_group_home">Хватање „Додај на почетни екран“</string>
+    <string name="lib_lm_home_label">Play Field Portal као почетни екран</string>
+    <string name="lib_lm_home_active">Активно</string>
+    <!-- Value: a button that opens the system screen to make this app the Home app. -->
+    <string name="lib_lm_home_set">Подеси…</string>
+    <string name="lib_lm_home_active_sub">Коришћење опције „Додај на почетни екран“ у подржаном лаунчеру аутоматски увози игру овде</string>
+    <string name="lib_lm_home_set_sub">Подесите PFP као почетну апликацију како би опција „Додај на почетни екран“ у лаунчеру увозила игру у PFP</string>
+    <string name="lib_lm_group_exported">Извезене игре</string>
+    <string name="lib_lm_scan_import">Скенирај фасциклу за увоз</string>
+    <string name="lib_lm_scan_import_sub">Свако скенирање већ само чита &lt;ROM фасцикла&gt;/windows/import. Овај ред служи за једнократан избор фасцикле на другом месту — PFP у њој тражи GameNative / Winlator извозе (.steam · .epic · .gog · .amazon · .pcgame · .desktop) и сопствене .pfpgame извозе и увози их</string>
+    <string name="lib_lm_export_manual">Извези ручно додате игре</string>
+    <string name="lib_lm_export_manual_sub">Уписује .pfpgame датотеку у &lt;windows&gt;/import за сваку игру додату по ID-ју или ухваћену и за сваку закачену ставку са графиком, како би их нова инсталација могла вратити са графиком</string>
+    <string name="lib_lm_group_local">Локални Windows</string>
+    <string name="lib_lm_batch_match">Групно повежи локалне игре</string>
+    <string name="lib_lm_batch_match_sub">Изаберите фасциклу која САДРЖИ фасцикле игара. Свака која је већ у Windows библиотеци биће препозната, запамћена и повезана; остале остају непромењене</string>
+    <!-- %1$d is how many folders are registered. -->
+    <string name="lib_lm_matched_local">Повезане локалне игре (%1$d)</string>
+    <string name="lib_lm_none_yet">Још ниједна</string>
+    <string name="lib_lm_matched_local_empty">Још ништа није повезано — користите групно повезивање изнад или аутоматски повежите једну игру на њеној страници Shiba Coins</string>
+    <string name="lib_lm_matched_local_forget_note">„Заборави“ уклања само PFP белешку о томе где је фасцикла; освојени новчићи остају</string>
+    <!-- Goldberg is the name of a Steam emulator. -->
+    <string name="lib_lm_goldberg">Goldberg инсталатер</string>
+    <string name="lib_lm_on">Укључено</string>
+    <string name="lib_lm_off">Искључено</string>
+    <string name="lib_lm_goldberg_sub">Омогућава PFP-у да упише листу достигнућа у фасциклу игре и замени приложени Steam емулатор. Исти прекидач као Подешавања ▸ Достигнућа ▸ Локални Windows</string>
+    <string name="lib_lm_goldberg_backup">Пре конверзије направите резервну копију сачуваних позиција сваке игре коју сте већ играли — емулатор почиње да чита са нове локације за чување, а PFP не може да вам врати стару.</string>
+    <string name="lib_lm_group_launchers">PC лаунчери</string>
+    <string name="lib_lm_not_installed">Није инсталирано</string>
+    <!-- Value on a launcher row: pressing it lets you add a game by typing its ID. -->
+    <string name="lib_lm_add_by_id">Додај по ID-ју…</string>
+    <string name="lib_lm_add_by_id_sub">Додајте игру по њеном ID-ју — или користите опцију „Додај на почетни екран“ саме апликације</string>
+    <string name="lib_lm_installed">Инсталирано</string>
+    <string name="lib_lm_no_add_by_id">Додавање по ID-ју није подржано — уместо тога извезите игру у &lt;windows&gt;/import</string>
+    <string name="lib_lm_group_unknown">Непознати Windows емулатори</string>
+    <!-- Value of an unknown app that is not yet classified; the row cycles through choices. -->
+    <string name="lib_lm_unknown_choose">Изабери…</string>
+    <string name="lib_lm_show_hidden">Прикажи скривене апликације</string>
+    <!-- %d is how many apps were marked "Not a launcher". -->
+    <plurals name="lib_lm_show_hidden_sub">
+        <item quantity="one">%d апликација је означена са „Није лаунчер“ — вратите је да бисте поново изабрали</item>
+        <item quantity="few">%d апликације су означене са „Није лаунчер“ — вратите их да бисте поново изабрали</item>
+        <item quantity="other">%d апликација је означено са „Није лаунчер“ — вратите их да бисте поново изабрали</item>
+    </plurals>
+    <!-- Group title: %1$d is how many PC games were found. -->
+    <string name="lib_lm_group_found">Пронађене игре (%1$d)</string>
+    <string name="lib_lm_no_found">Још нису ухваћене PC игре.</string>
+    <!-- Value on a row: a button that moves this game into the library. -->
+    <string name="lib_lm_import">Увези</string>
+    <string name="lib_lm_import_all">Увези све</string>
+    <string name="lib_lm_import_all_sub">Премести све пронађене игре на меморијску картицу Windows игре</string>
+    <!-- Local Windows folder row: a button that forgets the folder. -->
+    <string name="lib_lm_forget">Заборави</string>
+    <!-- Add a game by its ID -->
+    <!-- %1$s is a launcher name. -->
+    <string name="lib_lm_add_game_title">Додај игру за %1$s</string>
+    <string name="lib_lm_group_game">Игра</string>
+    <string name="lib_lm_game_id">ID игре</string>
+    <string name="lib_lm_game_name">Назив игре</string>
+    <string name="lib_lm_source">Извор</string>
+    <string name="lib_lm_source_sub">Притисните да промените продавницу</string>
+    <string name="lib_lm_group_add">Додавање</string>
+    <string name="lib_lm_test_launch">Пробно покретање</string>
+    <string name="lib_lm_test_launch_sub">Отворите игру у %1$s да проверите ID</string>
+    <string name="lib_lm_add_game">Додај игру</string>
+    <string name="lib_lm_add_game_sub">Додајте је у Windows библиотеку</string>
+    <string name="lib_lm_add_game_blocked">Прво унесите ID игре и назив</string>
+    <!-- Messages and notifications. %1$s is an app, console or game name unless noted. -->
+    <string name="lib_lm_all_platforms_added">Свака подржана платформа већ има меморијску картицу.</string>
+    <string name="lib_lm_android_added_title">Android библиотека је додата</string>
+    <string name="lib_lm_android_added_message">Отворите је у Игре → Пронађи игре да бисте додали апликације.</string>
+    <string name="lib_lm_need_rom_root">Прво подесите ROM фасциклу — доделите јој приступ у „Приступ ROM фасциклама“, па додајте конзоле.</string>
+    <string name="lib_lm_ps3_folder_set">Фасцикла са PS3 подацима је подешена. Покрените аутоматско повезивање у Подешавања ▸ Достигнућа ▸ Ажурирај достигнућа да бисте повезали PS3 трофеје.</string>
+    <!-- %1$s is an emulator name. -->
+    <string name="lib_lm_x360_folder_set">Фасцикла са подацима за %1$s је подешена. Покрените аутоматско повезивање у Подешавања ▸ Достигнућа ▸ Ажурирај достигнућа да бисте повезали Xbox 360 достигнућа.</string>
+    <string name="lib_lm_invalid_game_id">Унесите важећи ID игре — број или local_… ID копиран са странице игре у лаунчеру.</string>
+    <string name="lib_lm_test_launch_failed">Пробно покретање није успело: %1$s. Лаунчер можда блокира спољна покретања.</string>
+    <string name="lib_lm_enter_game_name">Унесите назив игре — приказује се поред ID-ја у %1$s.</string>
+    <!-- Task heading in the notification list. -->
+    <string name="lib_lm_windows_games">Windows игре</string>
+    <string name="lib_lm_pc_game_added">„%1$s“ је додата у Windows игре.</string>
+    <!-- %1$s is the error text. -->
+    <string name="lib_lm_pc_add_failed">Додавање игре није успело: %1$s</string>
+    <!-- %1$s is a game title, %2$s the error text. -->
+    <string name="lib_lm_pc_import_failed">Увоз „%1$s“ није успео: %2$s</string>
+    <string name="lib_lm_game_not_found">Игра није пронађена</string>
+    <string name="lib_lm_scanning">Скенирање: %1$s</string>
+    <string name="lib_lm_scanning_vita">Скенирање PS Vita</string>
+    <string name="lib_lm_scanning_windows">Скенирање Windows игара</string>
+    <string name="lib_lm_scanning_rom_root">Скенирање ROM фасцикле</string>
+    <string name="lib_lm_stop_note_games">Досад пронађене игре се задржавају.</string>
+    <string name="lib_lm_rom_root_stop_note">Већ скенирани системи задржавају своје нове игре.</string>
+    <string name="lib_lm_matching_stop_note">Већ повезане игре остају повезане.</string>
+    <string name="lib_lm_stopped">Заустављено пре завршетка</string>
+    <string name="lib_lm_scan_stopped">Скенирање је заустављено: %1$s</string>
+    <string name="lib_lm_scan_finished">Скенирање је завршено: %1$s</string>
+    <string name="lib_lm_scan_failed">Скенирање није успело: %1$s</string>
+    <string name="lib_lm_scan_skipped">Скенирање је прескочено: %1$s</string>
+    <string name="lib_lm_vita_finished">Скенирање PS Vita је завршено</string>
+    <string name="lib_lm_vita_failed">Скенирање PS Vita није успело</string>
+    <string name="lib_lm_vita_failed_message">Скенирање Vita није успело</string>
+    <string name="lib_lm_vita_stopped">Скенирање PS Vita је заустављено</string>
+    <string name="lib_lm_windows_scan_stopped">Скенирање Windows игара је заустављено</string>
+    <string name="lib_lm_windows_scan_failed">Скенирање Windows игара није успело</string>
+    <string name="lib_lm_windows_scan_finished">Скенирање Windows игара је завршено</string>
+    <string name="lib_lm_pc_scan_failed_message">Скенирање PC игара није успело</string>
+    <string name="lib_lm_rom_root_stopped">Скенирање ROM фасцикле је заустављено</string>
+    <string name="lib_lm_rom_root_finished">Скенирање ROM фасцикле је завршено</string>
+    <string name="lib_lm_matching">Повезивање локалних Windows игара</string>
+    <string name="lib_lm_match_stopped">Повезивање Windows достигнућа је заустављено</string>
+    <string name="lib_lm_match_failed">Повезивање Windows достигнућа није успело</string>
+    <string name="lib_lm_match_failed_message">Групно повезивање није успело</string>
+    <string name="lib_lm_match_finished">Повезивање Windows достигнућа је завршено</string>
+    <string name="lib_lm_convert_label">Goldberg конверзија</string>
+    <!-- %1$d is how many games were linked to library games. -->
+    <string name="lib_lm_convert_linked">Повезано са играма из библиотеке: %1$d.</string>
+    <!-- Parts of a summary joined with commas: "Converted 3 games, 1 had no achievements, ...". %1$d is a count. -->
+    <plurals name="lib_lm_converted">
+        <item quantity="one">Конвертована је %d игра</item>
+        <item quantity="few">Конвертоване су %d игре</item>
+        <item quantity="other">Конвертовано је %d игара</item>
+    </plurals>
+    <string name="lib_lm_convert_no_achievements">Без достигнућа: %1$d</string>
+    <string name="lib_lm_convert_no_key">Потребан Steam Web API кључ: %1$d</string>
+    <string name="lib_lm_convert_failed">Неуспешно: %1$d</string>
+    <string name="lib_lm_convert_play_note">Играјте сваку игру преко емулатора да бисте почели да зарађујете новчиће.</string>
+    <string name="lib_lm_export_label">Извоз ручно додатих игара</string>
+    <string name="lib_lm_export_failed">Извоз није успео — погледајте дневник.</string>
+    <string name="lib_lm_rom_root_ready">ROM фасцикла је спремна</string>
+    <!-- Parts of a summary joined with commas: "3 folders created, 2 already there". -->
+    <plurals name="lib_lm_folders_created">
+        <item quantity="one">Направљена је %d фасцикла</item>
+        <item quantity="few">Направљене су %d фасцикле</item>
+        <item quantity="other">Направљено је %d фасцикли</item>
+    </plurals>
+    <string name="lib_lm_folders_existing">Већ постоји: %1$d</string>
+    <string name="lib_lm_rom_root_next">Копирајте игре у одговарајуће фасцикле, па изаберите „Скенирај ROM фасцикле“.</string>
+    <!-- Import All summary. %1$d games imported, %2$d failed. -->
+    <plurals name="lib_lm_import_all_done">
+        <item quantity="one">%d PC игра је увезена у Windows игре.</item>
+        <item quantity="few">%d PC игре су увезене у Windows игре.</item>
+        <item quantity="other">%d PC игара је увезено у Windows игре.</item>
+    </plurals>
+    <plurals name="lib_lm_import_all_none">
+        <item quantity="one">Ниједна од %d PC игре није могла да се увезе.</item>
+        <item quantity="few">Ниједна од %d PC игре није могла да се увезе.</item>
+        <item quantity="other">Ниједна од %d PC игара није могла да се увезе.</item>
+    </plurals>
+    <plurals name="lib_lm_import_all_some">
+        <item quantity="one">%1$d PC игра је увезена у Windows игре. Није могло да се увезе: %2$d.</item>
+        <item quantity="few">%1$d PC игре су увезене у Windows игре. Није могло да се увезе: %2$d.</item>
+        <item quantity="other">%1$d PC игара је увезено у Windows игре. Није могло да се увезе: %2$d.</item>
+    </plurals>
+    <!-- Local Steam folder detail line, joined with " · ": "appid 620 · from steam_appid.txt · tracking". -->
+    <string name="lib_lm_local_appid">appid %1$s</string>
+    <string name="lib_lm_local_from_marker">из steam_appid.txt</string>
+    <string name="lib_lm_local_from_stored">из сачуваног Steam подударања</string>
+    <string name="lib_lm_local_by_title">повезано по наслову</string>
+    <string name="lib_lm_local_tracking">праћење</string>
+    <string name="lib_lm_local_no_list">још нема листе достигнућа</string>
+    <string name="lib_kb_import_invalid">Датотека није PlayFieldPortal датотека знања о емулаторима или је оштећена.</string>
+    <string name="lib_kb_import_too_many">Датотека наводи више емулатора или конзола него што PlayFieldPortal може да увезе.</string>
+</resources>

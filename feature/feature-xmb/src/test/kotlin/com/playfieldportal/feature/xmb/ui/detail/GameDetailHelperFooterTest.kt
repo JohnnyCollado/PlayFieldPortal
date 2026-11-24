@@ -6,15 +6,26 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
 /**
  * The helper footer is the page's only controller documentation, so what it claims must follow the
  * overlay that actually owns input. [gameDetailHelperItems] is a pure function of the state for
  * exactly this reason: the footer's contract is testable without a composition.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class GameDetailHelperFooterTest {
 
+    private val res get() = RuntimeEnvironment.getApplication().resources
+
+
     private val baseState = GameDetailUiState(isLoading = false, game = Game(id = 1L, title = "Crash Bandicoot", platformId = "psx"))
+
+    private fun gameDetailHelperItems(state: GameDetailUiState) = gameDetailHelperItems(state, res)
 
     private fun labels(state: GameDetailUiState) =
         gameDetailHelperItems(state).flatMap { item -> listOf(item.label) }

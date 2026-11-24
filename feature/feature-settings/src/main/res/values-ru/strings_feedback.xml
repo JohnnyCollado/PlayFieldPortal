@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="fb_sound_slot_category">Категория</string>
+    <string name="fb_sound_channel_category">Категория</string>
+    <string name="fb_sound_slot_options">Параметры</string>
+    <string name="fb_sound_channel_options">Параметры</string>
+    <string name="fb_haptic_feedback">Виброотклик</string>
+    <string name="fb_haptic_feedback_help">Лёгкий отклик на каждый шаг и более сильный при подтверждении — на этом устройстве и на контроллере с вибрацией.</string>
+</resources>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="launch_err_custom_command">Profiler med anpassade kommandon stöds inte längre. Byt emulatorn till startmetoden ”Öppna ROM-filen med appen” eller ”Öppna en appskärm”.</string>
+    <string name="launch_err_shortcut_unsupported">Start via genväg stöds inte från den här skärmen</string>
+    <string name="launch_err_no_package">Inget Android-paket har registrerats för %1$s</string>
+    <string name="launch_err_app_not_launchable">Android-appen är inte installerad eller kan inte startas: %1$s</string>
+    <string name="launch_err_emulator_not_installed">Emulatorn är inte installerad: %1$s (%2$s)</string>
+    <string name="launch_err_wrong_build">%1$s (%2$s) är inte den förväntade versionen: signeringscertifikatet stämmer inte. Installera om emulatorn från den officiella källan.</string>
+    <string name="launch_err_no_activity_for_path">%1$s har ingen registrerad startaktivitet och kan därför inte ta emot en filsökväg. Importera dess kunskapspost igen eller identifiera emulatorn på nytt.</string>
+    <string name="launch_err_activity_required">Startmetoden kräver namnet på en appskärm – profil: %1$s</string>
+    <string name="launch_err_activity_gone">%1$s tillhandahåller inte längre sin startaktivitet (%2$s). Uppdatera emulatorn eller välj en annan emulator för plattformen.</string>
+    <string name="launch_err_no_launch_id">Inget start-id har registrerats för %1$s. Sök igenom biblioteket igen.</string>
+    <string name="launch_err_rom_link_invalid">Spelets ROM-länk är ogiltig. Sök igenom biblioteket igen.</string>
+    <string name="launch_err_lost_access">Play Field Portal förlorade åtkomsten till spelets fil. Anslut lagringen igen och sök igenom biblioteket på nytt.</string>
+    <string name="launch_err_rom_path_required">En ROM-sökväg krävs för att starta %1$s</string>
+    <string name="launch_err_rom_not_found">ROM-filen hittades inte: %1$s</string>
+    <string name="launch_err_no_core">Ingen RetroArch-kärna har konfigurerats för plattformen \'%1$s\' i profilen \'%2$s\'. Öppna RetroArch → Core Downloader för att installera en kärna för systemet.</string>
+    <string name="launch_err_cannot_open_rom_type">%1$s kan inte öppna den här ROM-typen. Prova att installera om emulatorn eller kontrollera appens behörigheter i Androids inställningar.</string>
+    <string name="launch_err_no_file_path">%1$s har ingen filsökväg på enheten, så %2$s kan inte få veta vilket spel som ska startas.</string>
+    <string name="launch_err_not_in_rom_folder">%1$s ligger inte i en konfigurerad ROM-mapp och kan därför inte lämnas över till %2$s. Kontrollera mappen som angetts för minneskortet i Inställningar.</string>
+    <string name="launch_err_configured_missing">Emulatorn %1$s är inte installerad eller tillgänglig: %2$s</string>
+    <string name="launch_err_core_not_installed">%1$s är angiven som %2$s, men kärnan är inte installerad i RetroArch. Installera den eller välj en annan emulator.</string>
+    <string name="launch_err_no_longer_available">%1$s är angiven som %2$s men är inte längre tillgänglig. Välj en annan emulator.</string>
+    <string name="launch_err_not_configured_for_platform">%1$s är inte konfigurerad för %2$s</string>
+    <string name="launch_err_no_emulator_for_platform">Ingen emulator har konfigurerats för %1$s. Välj en emulator för spelet eller ange en standard för plattformen.</string>
+    <string name="launch_source_per_game">Åsidosättning per spel</string>
+    <string name="launch_source_per_game_lower">åsidosättning per spel</string>
+    <string name="launch_source_memory_card">Standard för minneskortet</string>
+    <string name="launch_source_memory_card_lower">standard för minneskortet</string>
+    <string name="launch_source_platform">Standard för plattformen</string>
+    <string name="launch_source_platform_lower">standard för plattformen</string>
+    <string name="launch_source_recommended">Rekommenderad</string>
+    <string name="launch_source_recommended_lower">rekommenderad</string>
+    <string name="launch_phrase_per_game">åsidosättning per spel</string>
+    <string name="launch_phrase_memory_card">emulator för minneskortet</string>
+    <string name="launch_phrase_platform">standard för plattformen</string>
+    <!-- Launch hand-off failures -->
+    <string name="launch_err_emulator_not_found">Emulatorn hittades inte. Är den installerad?</string>
+    <string name="launch_err_permission_denied">Behörighet nekades vid start av emulatorn</string>
+    <string name="launch_err_open_emulator">Det gick inte att öppna emulatorn: %1$s</string>
+    <string name="launch_never_foreground">Emulatorn kom aldrig i förgrunden efter starten.</string>
+    <string name="launch_never_appeared">Emulatorn visades aldrig. Kontrollera att den är installerad och uppdaterad och försök sedan starta igen.</string>
+    <plurals name="launch_history_failed">
+        <item quantity="one">%1$d av den senaste %2$d starten av spelet misslyckades.</item>
+        <item quantity="other">%1$d av de senaste %2$d starterna av spelet misslyckades.</item>
+    </plurals>
+    <!-- Launch failure notification -->
+    <string name="launch_rec_title">Det gick inte att starta %1$s</string>
+    <string name="launch_rec_could_not_start">Emulatorn kunde inte startas</string>
+    <string name="launch_rec_never_foreground">Emulatorn kom aldrig i förgrunden</string>
+    <string name="launch_fact_emulator">Emulator</string>
+    <string name="launch_fact_core">Kärna</string>
+    <string name="launch_fact_platform">Plattform</string>
+    <string name="launch_fact_recent">Senaste starter</string>
+    <string name="launch_fact_recent_value">%1$d av de senaste %2$d misslyckades</string>
+    <string name="launch_shortcut_request_title">Begäran om genväg: %1$s (öppnar %2$s)</string>
+    <string name="launch_shortcut_request_message">Lägg bara till den om du själv precis skapade genvägen.</string>
+    <string name="launch_shortcut_added_title">Genväg tillagd: %1$s</string>
+    <string name="launch_shortcut_ignored_title">Genväg ignorerad: %1$s</string>
+    <string name="launch_shortcut_from">Från %1$s</string>
+    <string name="launch_windows_added_title">\"%1$s\" har lagts till i Windows-spel</string>
+    <string name="launch_windows_added_message">Slutför konfigurationen av ditt Windows-bibliotek för att söka igenom dess mapp</string>
+    <!-- First-run setup prompts -->
+    <string name="launch_setup_add_rom_folder">Lägg till en ROM-mapp för att starta ditt bibliotek</string>
+    <string name="launch_setup_add_console_card">Lägg till ett minneskort för en konsol att söka in i</string>
+    <string name="launch_setup_install_emulator">Installera en emulator för att spela dina spel</string>
+    <!-- Emulator detection notes -->
+    <string name="launch_inspect_known">Ifyllt automatiskt från den inbyggda profilen för %1$s. Bekräfta plattformarna och spara.</string>
+    <string name="launch_inspect_best_guess">Bästa gissning utifrån hur appen öppnar ROM-filer. Ange plattformarna och testa sedan en ROM innan du sparar.</string>
+    <string name="launch_inspect_minimal">Det gick inte att avgöra hur appen tar emot ROM-filer. Fyll i aktivitets-/intent-inställningarna manuellt och testa sedan en ROM.</string>
+    <!-- Emulator knowledge file updates -->
+    <string name="launch_kb_too_many_files">Högst %1$d kunskapsfiler kan importeras; ta först bort en</string>
+    <string name="launch_kb_installed">Uppdaterat</string>
+    <string name="launch_kb_not_configured">Uppdateringar är inte konfigurerade i den här versionen</string>
+    <string name="launch_kb_offline">Det gick inte att nå uppdateringsservern</string>
+    <string name="launch_kb_too_large">Uppdateringsfilen är för stor</string>
+    <string name="launch_kb_signature_invalid">Uppdateringens signatur är ogiltig</string>
+    <string name="launch_kb_needs_app_update">Uppdateringen kräver en nyare version av appen</string>
+    <string name="launch_kb_older">Uppdateringen är äldre än den som redan är installerad</string>
+    <string name="launch_kb_invalid_content">Uppdateringsfilen har ogiltigt innehåll</string>
+    <string name="launch_kb_storage_failed">Uppdateringen kunde inte sparas</string>
+    <string name="launch_kb_skipped">Ingen kontroll behövdes</string>
+    <string name="launch_unknown_gamehub_or_bannerhub">kan vara GameHub eller BannerHub</string>
+    <string name="launch_unknown_gamehublite_or_bannerhub">kan vara GameHub Lite eller BannerHub</string>
+    <string name="launch_unknown_not_in_list">finns inte i PFP:s lista</string>
+    <string name="launch_choice_not_a_launcher">Inte ett startprogram</string>
+    <string name="launch_id_prompt_gamehub">Spel-ID – på spelets sida: tryck på Kopiera bredvid Local Game ID, eller ⋮ → Banner Tools → Show Game ID</string>
+    <string name="launch_id_prompt_gamenative">Steam App ID (eller butikens app-id) för det installerade spelet</string>
+</resources>

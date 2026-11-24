@@ -1,9 +1,11 @@
 package com.playfieldportal.feature.settings.viewmodel
 
 import android.net.Uri
+import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.WindowsGameLabel
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.achievements.provider.localsteam.AppIdSource
 import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamFolderLinker
 import com.playfieldportal.feature.achievements.provider.steam.WindowsGameLabeler
@@ -27,9 +29,17 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+// Robolectric: the texts are string-resource references, read here as their English wording.
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 @OptIn(ExperimentalCoroutinesApi::class)
 class WindowsGameListViewModelTest {
+
+    private fun UiText?.en(): String? = this?.resolve(ApplicationProvider.getApplicationContext<android.content.Context>())
 
     private val dispatcher = StandardTestDispatcher()
 
@@ -83,8 +93,8 @@ class WindowsGameListViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        assertEquals("Auto: Steam", labelValueText(vm.row(1)))
-        assertEquals("Auto: Local", labelValueText(vm.row(2)))
+        assertEquals("Auto: Steam", labelValueText(vm.row(1)).en())
+        assertEquals("Auto: Local", labelValueText(vm.row(2)).en())
     }
 
     @Test
@@ -93,7 +103,7 @@ class WindowsGameListViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        assertEquals("Not set", labelValueText(vm.row(1)))
+        assertEquals("Not set", labelValueText(vm.row(1)).en())
     }
 
     @Test
@@ -103,9 +113,9 @@ class WindowsGameListViewModelTest {
         val vm = createVm()
         advanceUntilIdle()
 
-        assertEquals("Steam", labelValueText(vm.row(1)))
-        assertEquals("Non-Steam (owned)", labelValueText(vm.row(2)))
-        assertEquals("Local", labelValueText(vm.row(3)))
+        assertEquals("Steam", labelValueText(vm.row(1)).en())
+        assertEquals("Non-Steam (owned)", labelValueText(vm.row(2)).en())
+        assertEquals("Local", labelValueText(vm.row(3)).en())
     }
 
     @Test
@@ -133,11 +143,11 @@ class WindowsGameListViewModelTest {
         advanceUntilIdle()
 
         val labelled = labelPickerItems(vm.row(1))
-        assertEquals(listOf("Auto", "Steam", "Non-Steam (owned)", "Local"), labelled.map { it.text })
+        assertEquals(listOf("Auto", "Steam", "Non-Steam (owned)", "Local"), labelled.map { it.text.en() })
         assertEquals(listOf(WindowsGameLabel.NON_STEAM), labelled.filter { it.isCurrent }.map { it.label })
 
         val auto = labelPickerItems(vm.row(2))
-        assertEquals("Auto (Steam)", auto.first().text)
+        assertEquals("Auto (Steam)", auto.first().text.en())
         assertEquals(listOf(null), auto.filter { it.isCurrent }.map { it.label })
     }
 
@@ -237,7 +247,7 @@ class WindowsGameListViewModelTest {
         coEvery { folderLinker.link(1, treeUri) } returns
             LocalSteamFolderLinker.LinkOutcome.NeedsKit("220", "A", installerEnabled = true, source = AppIdSource.MARKER)
         coEvery { folderLinker.installKitAndLink(1, treeUri, "220", AppIdSource.MARKER) } returns
-            LocalSteamFolderLinker.LinkOutcome.Failed("Could not write the achievement kit: nope")
+            LocalSteamFolderLinker.LinkOutcome.Failed(UiText.raw("Could not write the achievement kit: nope"))
         vm.beginFolderPick(1)
         vm.onFolderPicked(treeUri)
         advanceUntilIdle()
@@ -248,7 +258,7 @@ class WindowsGameListViewModelTest {
 
         coVerify(exactly = 1) { folderLinker.installKitAndLink(1, treeUri, "220", AppIdSource.MARKER) }
         assertNull(vm.uiState.value.kitChoice)
-        assertEquals("Could not write the achievement kit: nope", vm.uiState.value.notice)
+        assertEquals("Could not write the achievement kit: nope", vm.uiState.value.notice.en())
     }
 
     @Test
@@ -281,7 +291,7 @@ class WindowsGameListViewModelTest {
         vm.onFolderPicked(treeUri)
         advanceUntilIdle()
 
-        val notice = vm.uiState.value.notice
+        val notice = vm.uiState.value.notice.en()
         assertNotNull(notice)
         assertTrue(notice!!.contains("Shiba Coins"))
         assertNull(vm.uiState.value.kitChoice)
@@ -297,13 +307,13 @@ class WindowsGameListViewModelTest {
         games = listOf(game(1, "A", WindowsGameLabel.LOCAL))
         val vm = createVm()
         advanceUntilIdle()
-        coEvery { folderLinker.link(1, treeUri) } returns LocalSteamFolderLinker.LinkOutcome.NoEmuData("No app id here")
+        coEvery { folderLinker.link(1, treeUri) } returns LocalSteamFolderLinker.LinkOutcome.NoEmuData(UiText.raw("No app id here"))
 
         vm.beginFolderPick(1)
         vm.onFolderPicked(treeUri)
         advanceUntilIdle()
 
-        assertEquals("No app id here", vm.uiState.value.notice)
+        assertEquals("No app id here", vm.uiState.value.notice.en())
 
         coEvery { folderLinker.link(1, treeUri) } throws IllegalStateException("boom")
         vm.beginFolderPick(1)

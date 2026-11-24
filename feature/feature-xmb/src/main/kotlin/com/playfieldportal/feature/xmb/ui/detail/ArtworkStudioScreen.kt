@@ -43,7 +43,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.CircularProgressIndicator
+import com.playfieldportal.core.ui.components.PfpBusyRing
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -98,7 +98,16 @@ import com.playfieldportal.core.ui.theme.menuCursor
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
+import android.content.res.Resources
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.core.ui.text.asString
 import com.playfieldportal.feature.artwork.store.ArtworkKind
+import com.playfieldportal.feature.xmb.R
+import com.playfieldportal.feature.xmb.ui.uiResources
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
@@ -150,6 +159,7 @@ fun ArtworkStudioScreen(
             state = state,
             onConfirm = viewModel::confirmDestructive,
             onCancel = viewModel::cancelDestructive,
+            res = uiResources(),
         ),
         // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
         showHints = !showTouchControls,
@@ -205,17 +215,18 @@ internal fun studioDestructiveModalSpec(
     state: ArtworkStudioUiState,
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
+    res: Resources,
 ): PfpModalSpec? {
     val game = state.game ?: return null
     return when (state.destructiveConfirm) {
         StudioDestructive.CLEAR_ARTWORK -> {
-            val label = STUDIO_TABS.getOrNull(state.tabIndex)?.label ?: "artwork"
+            val tab = STUDIO_TABS.getOrNull(state.tabIndex)
+            val label = tab?.label?.resolve(res) ?: res.getString(R.string.det_studio_artwork_word)
             PfpModalSpec.Confirm(
-                key = "clear_artwork:${game.id}:$label",
-                title = "Clear Artwork?",
-                message = "The $label artwork for ${game.displayTitle} is deleted, along with its " +
-                    "backup and the original copy. This can't be undone.",
-                confirmLabel = "Clear",
+                key = "clear_artwork:${game.id}:${tab?.kind?.name}",
+                title = res.getString(R.string.det_clear_title),
+                message = res.getString(R.string.det_clear_message, label, game.displayTitle),
+                confirmLabel = res.getString(R.string.det_clear),
                 destructive = true,
                 onConfirm = onConfirm,
                 onCancel = onCancel,
@@ -223,10 +234,13 @@ internal fun studioDestructiveModalSpec(
         }
         StudioDestructive.FORGET_MATCH -> PfpModalSpec.Confirm(
             key = "forget_match:${game.id}",
-            title = "Forget Match?",
-            message = "${state.matchProvider?.label ?: "The provider"} will be asked about " +
-                "${game.displayTitle} afresh. Your artwork and metadata are left alone.",
-            confirmLabel = "Forget",
+            title = res.getString(R.string.det_forget_title),
+            message = res.getString(
+                R.string.det_forget_message,
+                state.matchProvider?.label ?: res.getString(R.string.det_forget_the_provider),
+                game.displayTitle,
+            ),
+            confirmLabel = res.getString(R.string.det_forget),
             destructive = true,
             onConfirm = onConfirm,
             onCancel = onCancel,
@@ -288,18 +302,16 @@ internal fun ArtworkStudioContent(
                     )
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
-                            state.game?.displayTitle ?: "Artwork Studio",
+                            state.game?.displayTitle ?: stringResource(R.string.det_studio_title),
                             color = themedText(Color.White), fontSize = 18.sp, fontWeight = FontWeight.Bold,
                             maxLines = 1, overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.widthIn(max = 320.dp),
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            buildString {
-                                append("Artwork Studio")
-                                state.game?.platformId?.takeIf { it.isNotBlank() }
-                                    ?.let { append(" · ${it.uppercase()}") }
-                            },
+                            state.game?.platformId?.takeIf { it.isNotBlank() }
+                                ?.let { stringResource(R.string.det_studio_title_platform, it.uppercase()) }
+                                ?: stringResource(R.string.det_studio_title),
                             color = themedSubText(Color.White.copy(alpha = 0.55f)), fontSize = 11.sp,
                             maxLines = 1,
                         )
@@ -348,7 +360,7 @@ internal fun ArtworkStudioContent(
                     Spacer(Modifier.weight(1f))
                     if (state.queryIsCustom) {
                         Text(
-                            "Reset",
+                            stringResource(R.string.det_studio_reset),
                             color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 10.sp,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
@@ -357,7 +369,7 @@ internal fun ArtworkStudioContent(
                         )
                     } else {
                         Text(
-                            "game title",
+                            stringResource(R.string.det_studio_game_title_chip),
                             color = themedSubText(Color.White.copy(alpha = 0.45f)), fontSize = 9.sp,
                         )
                     }
@@ -409,7 +421,7 @@ internal fun ArtworkStudioContent(
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                tab.label,
+                                tab.label.asString(),
                                 color = themedText(if (selected) Color.White else Color.White.copy(alpha = 0.62f)),
                                 fontSize = 10.5.sp,
                                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
@@ -448,13 +460,13 @@ internal fun ArtworkStudioContent(
                         // The category and its display rule both live here now, so the header and tab
                         // bands stay one line each (AD-16).
                         Text(
-                            STUDIO_TABS[state.tabIndex].label,
+                            STUDIO_TABS[state.tabIndex].label.asString(),
                             color = themedText(Color.White), fontSize = 13.sp, fontWeight = FontWeight.Bold,
                         )
                         // L.6: an explicit line height, or the theme's 24 sp bodyLarge spaces a wrapped
                         // caption ("XMB tile (Physical Media mode) · natural aspect") like two paragraphs.
                         Text(
-                            STUDIO_TABS[state.tabIndex].contract,
+                            STUDIO_TABS[state.tabIndex].contract.asString(),
                             color = themedSubText(Color.White.copy(alpha = 0.55f)), fontSize = 9.5.sp, lineHeight = 12.sp,
                         )
                         Spacer(Modifier.height(6.dp))
@@ -476,9 +488,9 @@ internal fun ArtworkStudioContent(
                             when {
                                 state.currentUri != null && curKindName in setOf("MANUAL", "VIDEO", "ICON1") -> Text(
                                     when (curKindName) {
-                                        "MANUAL" -> "PDF stored"
-                                        "ICON1"  -> "Icon video stored"
-                                        else     -> "Video stored"
+                                        "MANUAL" -> stringResource(R.string.det_studio_pdf_stored)
+                                        "ICON1"  -> stringResource(R.string.det_studio_icon_video_stored)
+                                        else     -> stringResource(R.string.det_studio_video_stored)
                                     },
                                     color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp,
                                 )
@@ -492,14 +504,14 @@ internal fun ArtworkStudioContent(
                                         modifier = Modifier.fillMaxSize().padding(6.dp),
                                     )
                                 }
-                                else -> Text("No artwork set", color = Color.White.copy(alpha = 0.4f), fontSize = 12.sp)
+                                else -> Text(stringResource(R.string.det_studio_no_artwork), color = Color.White.copy(alpha = 0.4f), fontSize = 12.sp)
                             }
                         }
                     }
                     // L.5: paging moved to the page line under the grid.
                     state.message?.let {
                         Text(
-                            it, color = accent, fontSize = 11.sp,
+                            it.asString(), color = accent, fontSize = 11.sp,
                             modifier = Modifier.clickable(onClick = actions::dismissMessage),
                         )
                     }
@@ -543,8 +555,10 @@ internal fun ArtworkStudioContent(
                             ) {
                                 Text(
                                     // ● marks a source whose filters are narrower than its defaults.
-                                    (if (badge == null) source.label else "${source.label} · $badge") +
-                                        if (state.sourceFiltered(source)) " ●" else "",
+                                    (
+                                        if (badge == null) source.label.asString()
+                                        else stringResource(R.string.det_source_with_badge, source.label.asString(), badge.asString())
+                                    ) + if (state.sourceFiltered(source)) " ●" else "",
                                     color = when {
                                         !available -> Color.White.copy(alpha = 0.28f)
                                         selected   -> Color.White
@@ -571,7 +585,7 @@ internal fun ArtworkStudioContent(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
-                                    if (state.includeNsfw) "Mature on" else "Mature off",
+                                    stringResource(if (state.includeNsfw) R.string.det_mature_on else R.string.det_mature_off),
                                     color = if (state.includeNsfw) Color(0xFFE57373) else themedText(Color.White.copy(alpha = 0.6f)),
                                     fontSize = 9.sp, lineHeight = 12.sp,
                                     maxLines = 1,
@@ -612,25 +626,34 @@ internal fun ArtworkStudioContent(
                                 modifier = Modifier.weight(1f),
                             ) {
                                 if (matched != null && !state.matchResolving) {
+                                    // One sentence, so a translation can place the title where its grammar
+                                    // wants it; the title alone is picked out in white and semibold.
+                                    val sentence = stringResource(R.string.det_studio_matched_as, matched)
+                                    val titleColor = themedText(Color.White)
+                                    val titleStart = sentence.lastIndexOf(matched)
                                     Text(
-                                        "Matched as ",
+                                        buildAnnotatedString {
+                                            append(sentence)
+                                            if (titleStart >= 0) {
+                                                addStyle(
+                                                    SpanStyle(color = titleColor, fontWeight = FontWeight.SemiBold),
+                                                    titleStart,
+                                                    titleStart + matched.length,
+                                                )
+                                            }
+                                        },
                                         color = themedSubText(Color.White.copy(alpha = 0.75f)), fontSize = 10.5.sp,
-                                        maxLines = 1,
-                                    )
-                                    Text(
-                                        matched,
-                                        color = themedText(Color.White), fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold,
                                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.weight(1f, fill = false),
                                     )
                                 } else {
                                     Text(
                                         when {
-                                            state.matchResolving -> "Matching on ${state.matchProvider.label}…"
-                                            state.matchFailed    -> "${state.matchProvider.label} didn't answer"
+                                            state.matchResolving -> stringResource(R.string.det_studio_matching_on, state.matchProvider.label)
+                                            state.matchFailed    -> stringResource(R.string.det_studio_no_answer, state.matchProvider.label)
                                             // A dead end is stated plainly rather than left blank — it is
                                             // the exact case Change Match exists to rescue.
-                                            else                 -> "No ${state.matchProvider.label} match"
+                                            else                 -> stringResource(R.string.det_studio_no_match, state.matchProvider.label)
                                         },
                                         color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 10.5.sp,
                                         maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -640,7 +663,7 @@ internal fun ArtworkStudioContent(
                                 if (state.matchIsConfirmed) {
                                     Spacer(Modifier.width(7.dp))
                                     Text(
-                                        "Confirmed",
+                                        stringResource(R.string.det_studio_confirmed),
                                         color = Color(0xFF66BB6A), fontSize = 9.sp,
                                         maxLines = 1,
                                         modifier = Modifier
@@ -665,7 +688,7 @@ internal fun ArtworkStudioContent(
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Text(
-                                        "FORGET",
+                                        stringResource(R.string.det_studio_forget_btn),
                                         color = themedSubText(Color.White.copy(alpha = 0.5f)), fontSize = 9.5.sp,
                                         maxLines = 1,
                                     )
@@ -685,7 +708,7 @@ internal fun ArtworkStudioContent(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
-                                    "CHANGE MATCH",
+                                    stringResource(R.string.det_studio_change_match_btn),
                                     color = themedText(if (canChange) Color.White else Color.White.copy(alpha = 0.35f)),
                                     fontSize = 9.5.sp,
                                     fontWeight = FontWeight.SemiBold,
@@ -718,7 +741,7 @@ internal fun ArtworkStudioContent(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                if (state.selectsMultiple) "+  Add files from this device" else "+  Choose a file from this device",
+                                stringResource(if (state.selectsMultiple) R.string.det_studio_add_files else R.string.det_studio_choose_file),
                                 color = themedText(if (barFocused) Color.White else Color.White.copy(alpha = 0.75f)),
                                 fontSize = 11.sp,
                                 maxLines = 1,
@@ -776,9 +799,12 @@ internal fun ArtworkStudioContent(
                                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                     Text(
                                         if (state.selectsMultiple) {
-                                            "No ${STUDIO_TABS[state.tabIndex].label.lowercase()}s stored yet"
+                                            stringResource(
+                                                if (STUDIO_TABS[state.tabIndex].kind == ArtworkKind.VIDEO) R.string.det_studio_none_videos
+                                                else R.string.det_studio_none_screenshots,
+                                            )
                                         } else {
-                                            "The file you choose replaces this ${STUDIO_TABS[state.tabIndex].label}"
+                                            stringResource(R.string.det_studio_replaces_this, STUDIO_TABS[state.tabIndex].label.asString())
                                         },
                                         color = themedSubText(Color.White.copy(alpha = 0.45f)), fontSize = 12.sp,
                                     )
@@ -787,7 +813,7 @@ internal fun ArtworkStudioContent(
                             state.filtersHideEverything -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
-                                        "Nothing matches these filters · ${state.unfilteredTotal} hidden",
+                                        stringResource(R.string.det_studio_filters_hide_all, state.unfilteredTotal),
                                         color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 12.sp,
                                     )
                                     Spacer(Modifier.height(8.dp))
@@ -797,13 +823,13 @@ internal fun ArtworkStudioContent(
                             state.results.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text(
                                     when {
-                                        activeSource != StudioSource.SCREENSCRAPER -> "No results"
+                                        activeSource != StudioSource.SCREENSCRAPER -> stringResource(R.string.det_studio_no_results)
                                         // ScreenScraper art is fetched per game, so with no match there
                                         // was nothing to ask for, which is not the same as having none.
-                                        state.matchResolving -> "Looking for this game on ScreenScraper…"
-                                        state.matchFailed    -> "ScreenScraper didn't answer. Use Change Match to search again."
-                                        state.match == null  -> "No ScreenScraper match for this game. Use Change Match to pick one."
-                                        else                 -> "ScreenScraper has nothing of this type for this game"
+                                        state.matchResolving -> stringResource(R.string.det_studio_ss_looking)
+                                        state.matchFailed    -> stringResource(R.string.det_studio_ss_no_answer)
+                                        state.match == null  -> stringResource(R.string.det_studio_ss_no_match)
+                                        else                 -> stringResource(R.string.det_studio_ss_nothing)
                                     },
                                     color = themedSubText(Color.White.copy(alpha = 0.45f)), fontSize = 12.sp,
                                 )
@@ -855,7 +881,7 @@ internal fun ArtworkStudioContent(
                                                     modifier = Modifier.fillMaxSize(),
                                                 )
                                                 art.isVideo -> Text(
-                                                    "▶ VIDEO",
+                                                    stringResource(R.string.det_studio_tile_video),
                                                     color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp,
                                                 )
                                                 STUDIO_TABS[state.tabIndex].kind ==
@@ -877,7 +903,7 @@ internal fun ArtworkStudioContent(
                                             // plays so it never covers the preview.
                                             if (!previewing) art.label?.let {
                                                 Text(
-                                                    it, color = Color.White.copy(alpha = 0.85f), fontSize = 9.sp,
+                                                    it.asString(), color = Color.White.copy(alpha = 0.85f), fontSize = 9.sp,
                                                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                                                     modifier = Modifier
                                                         .align(Alignment.BottomStart)
@@ -940,18 +966,21 @@ internal fun ArtworkStudioContent(
                 items = buildList {
                     when (state.zone) {
                         StudioZone.SOURCES -> {
-                            add(ControllerPromptItem(GamepadAction.SELECT, "Browse / Pick File"))
-                            add(ControllerPromptItem(GamepadAction.BACK, "Close"))
+                            add(ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.det_studio_prompt_browse)))
+                            add(ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.det_close)))
                         }
                         StudioZone.GRID -> {
-                            add(ControllerPromptItem(GamepadAction.SELECT, if (state.selectsMultiple) "Check" else "Preview / Apply"))
-                            add(ControllerPromptItem(GamepadAction.BACK, "Back"))
+                            add(ControllerPromptItem(
+                                GamepadAction.SELECT,
+                                stringResource(if (state.selectsMultiple) R.string.det_studio_prompt_check else R.string.det_studio_prompt_preview_apply),
+                            ))
+                            add(ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.det_back)))
                         }
                     }
                     // START applies from any level, so its hint shows whenever this tab has changes waiting.
-                    if (state.queueSummary.hasChanges) add(ControllerPromptItem(GamepadAction.HOME, "Apply"))
-                    add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"))
-                    add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
+                    if (state.queueSummary.hasChanges) add(ControllerPromptItem(GamepadAction.HOME, stringResource(R.string.det_picks_apply)))
+                    add(ControllerPromptItem(GamepadAction.CHANGE_SORT, stringResource(R.string.det_search_prompt_search)))
+                    add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, stringResource(R.string.det_options)))
                 },
                 // PFP's keyboard brings its own prompts while it is up.
                 modifier = Modifier.padding(top = 6.dp).alpha(if (isVirtualKeyboardOverlayOpen()) 0f else 1f),
@@ -973,9 +1002,9 @@ internal fun ArtworkStudioContent(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     if (state.manualDownloading) {
-                        CircularProgressIndicator(color = accent)
+                        PfpBusyRing(color = accent)
                         Spacer(Modifier.height(10.dp))
-                        Text("Downloading manual…", color = themedSubText(Color.White.copy(alpha = 0.7f)), fontSize = 12.sp)
+                        Text(stringResource(R.string.det_studio_downloading_manual), color = themedSubText(Color.White.copy(alpha = 0.7f)), fontSize = 12.sp)
                     } else if (state.candidateManualPath != null) {
                         StudioPdfPage(
                             path = state.candidateManualPath,
@@ -992,7 +1021,7 @@ internal fun ArtworkStudioContent(
                             onNextPage = actions::manualNextPage,
                         )
                     } else if (art.isVideo) {
-                        Text("Video snap from ${art.provider}", color = themedText(Color.White), fontSize = 14.sp)
+                        Text(stringResource(R.string.det_studio_video_snap_from, art.provider), color = themedText(Color.White), fontSize = 14.sp)
                     } else {
                         com.playfieldportal.core.ui.motion.ArtworkImage(
                             model = art.url,
@@ -1003,13 +1032,13 @@ internal fun ArtworkStudioContent(
                     }
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        listOfNotNull(art.provider, art.label).joinToString("  ·  "),
+                        listOfNotNull(art.provider, art.label?.asString()).joinToString("  ·  "),
                         color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 11.sp,
                     )
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                         Text(
-                            if (state.applying) "Applying…" else "Ⓐ  APPLY",
+                            stringResource(if (state.applying) R.string.det_meta_applying else R.string.det_studio_candidate_apply),
                             color = Color(0xFF45C46A), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
@@ -1018,7 +1047,7 @@ internal fun ArtworkStudioContent(
                                 .padding(horizontal = 18.dp, vertical = 9.dp),
                         )
                         Text(
-                            "Ⓑ  CANCEL",
+                            stringResource(R.string.det_studio_candidate_cancel),
                             color = themedText(Color.White.copy(alpha = 0.7f)), fontSize = 14.sp,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
@@ -1108,12 +1137,12 @@ internal fun ArtworkStudioContent(
                         .padding(18.dp),
                 ) {
                     Text(
-                        "Change match on ${state.matchProvider?.label.orEmpty()}",
+                        stringResource(R.string.det_cm_title, state.matchProvider?.label.orEmpty()),
                         color = themedText(Color.White), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Tells the provider which game this is. Your artwork and metadata are left alone.",
+                        stringResource(R.string.det_cm_help),
                         color = themedSubText(Color.White.copy(alpha = 0.5f)), fontSize = 11.sp,
                     )
                     Spacer(Modifier.height(12.dp))
@@ -1146,7 +1175,7 @@ internal fun ArtworkStudioContent(
                                     .padding(horizontal = 12.dp, vertical = 10.dp),
                             ) {
                                 if (state.changeMatchDraft.isEmpty()) Text(
-                                    state.game?.displayTitle ?: "Game title",
+                                    state.game?.displayTitle ?: stringResource(R.string.det_studio_game_title_placeholder),
                                     color = themedSubText(Color.White.copy(alpha = 0.35f)), fontSize = 15.sp,
                                 )
                                 inner()
@@ -1165,24 +1194,23 @@ internal fun ArtworkStudioContent(
                     // not be what this game uses, so say where the list came from.
                     if (state.changeMatchAcrossPlatforms && !state.changeMatchLoading) {
                         Text(
-                            "Includes other platforms. Check the platform before you pick.",
+                            stringResource(R.string.det_cm_other_platforms),
                             color = Color(0xFFE0A030), fontSize = 11.sp,
                         )
                         Spacer(Modifier.height(8.dp))
                     }
                     when {
                         state.changeMatchLoading -> Text(
-                            if (state.changeMatchSearchingEveryPlatform)
-                                "Searching every platform. ScreenScraper can take about 10 seconds…"
-                            else "Searching…",
+                            if (state.changeMatchSearchingEveryPlatform) stringResource(R.string.det_cm_searching_every)
+                            else stringResource(R.string.det_rematch_searching),
                             color = themedSubText(Color.White.copy(alpha = 0.5f)), fontSize = 12.sp,
                         )
                         state.changeMatchError != null -> Text(
-                            state.changeMatchError.orEmpty(),
+                            state.changeMatchError.asString(),
                             color = Color(0xFFE0A030), fontSize = 12.sp,
                         )
                         state.changeMatchResults.isEmpty() -> Text(
-                            "No games found. Try a shorter title, or the title without its edition.",
+                            stringResource(R.string.det_cm_no_games),
                             color = themedSubText(Color.White.copy(alpha = 0.5f)), fontSize = 12.sp,
                         )
                         // Weighted without fill, so the Column measures the fixed rows (Search / Cancel and
@@ -1215,7 +1243,7 @@ internal fun ArtworkStudioContent(
                                     listOfNotNull(
                                         candidate.platformName,
                                         candidate.releaseYear?.toString(),
-                                        candidate.gameArtCount?.let { if (it == 0) "no media" else "$it media" },
+                                        candidate.gameArtCount?.let { if (it == 0) stringResource(R.string.det_cm_no_media) else stringResource(R.string.det_cm_media, it) },
                                     )
                                         .joinToString(" · ")
                                         .takeIf { it.isNotEmpty() }
@@ -1232,7 +1260,7 @@ internal fun ArtworkStudioContent(
                     Spacer(Modifier.height(14.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "Search",
+                            stringResource(R.string.det_rematch_search),
                             color = themedText(Color.White), fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
@@ -1242,7 +1270,7 @@ internal fun ArtworkStudioContent(
                         )
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            "Cancel",
+                            stringResource(R.string.det_cancel),
                             color = themedSubText(Color.White.copy(alpha = 0.65f)), fontSize = 12.sp,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
@@ -1253,7 +1281,7 @@ internal fun ArtworkStudioContent(
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Up/Down  Move  •  A  Select  •  X  Edit title  •  B  Back",
+                        stringResource(R.string.det_cm_hint),
                         color = themedSubText(Color.White.copy(alpha = 0.4f)), fontSize = 10.sp,
                     )
                 }
@@ -1301,12 +1329,12 @@ internal fun ArtworkStudioContent(
                         .padding(18.dp),
                 ) {
                     Text(
-                        "Search artwork providers",
+                        stringResource(R.string.det_sq_title),
                         color = themedText(Color.White), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Changes what the providers are asked for. It never renames the game.",
+                        stringResource(R.string.det_sq_help),
                         color = themedSubText(Color.White.copy(alpha = 0.5f)), fontSize = 11.sp,
                     )
                     Spacer(Modifier.height(12.dp))
@@ -1331,7 +1359,7 @@ internal fun ArtworkStudioContent(
                                     .padding(horizontal = 12.dp, vertical = 10.dp),
                             ) {
                                 if (state.queryDraft.isEmpty()) Text(
-                                    state.game?.displayTitle ?: "Game title",
+                                    state.game?.displayTitle ?: stringResource(R.string.det_studio_game_title_placeholder),
                                     color = themedSubText(Color.White.copy(alpha = 0.35f)), fontSize = 15.sp,
                                 )
                                 inner()
@@ -1346,7 +1374,7 @@ internal fun ArtworkStudioContent(
                     Spacer(Modifier.height(14.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "Search",
+                            stringResource(R.string.det_rematch_search),
                             color = themedText(Color.White), fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
@@ -1357,7 +1385,7 @@ internal fun ArtworkStudioContent(
                         )
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            "Use game title",
+                            stringResource(R.string.det_sq_use_title),
                             color = themedSubText(Color.White.copy(alpha = 0.65f)), fontSize = 12.sp,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
@@ -1368,7 +1396,7 @@ internal fun ArtworkStudioContent(
                         )
                         Spacer(Modifier.weight(1f))
                         Text(
-                            "Cancel",
+                            stringResource(R.string.det_cancel),
                             color = themedSubText(Color.White.copy(alpha = 0.5f)), fontSize = 12.sp,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
@@ -1387,9 +1415,9 @@ internal fun ArtworkStudioContent(
         // and each list inside it (Style, Region, …) replaces it while open.
         if (state.actionsOpen && !state.showFileInfo && state.filterGroup != null) {
             com.playfieldportal.core.ui.components.PspContextMenuOverlay(
-                title = state.filterGroup.title,
+                title = stringResource(state.filterGroup.titleRes),
                 rows = state.filterGroupRows.map {
-                    com.playfieldportal.core.ui.components.PspMenuRow(it.label, value = it.value, checked = it.checked)
+                    com.playfieldportal.core.ui.components.PspMenuRow(it.label.asString(), value = it.value?.asString(), checked = it.checked)
                 },
                 selectedIndex = state.filterGroupIndex,
                 onRowActivated = actions::activateFilterRow,
@@ -1398,12 +1426,12 @@ internal fun ArtworkStudioContent(
             )
         } else if (state.actionsOpen && !state.showFileInfo) {
             val filterRows = state.filterRootRows.map {
-                com.playfieldportal.core.ui.components.PspMenuRow(it.label, value = it.value)
+                com.playfieldportal.core.ui.components.PspMenuRow(it.label.asString(), value = it.value?.asString())
             }
             com.playfieldportal.core.ui.components.PspContextMenuOverlay(
-                title = STUDIO_TABS[state.tabIndex].label,
+                title = STUDIO_TABS[state.tabIndex].label.asString(),
                 rows = filterRows + state.availableActions.map {
-                    com.playfieldportal.core.ui.components.PspMenuRow(it.label, isDestructive = it == StudioAction.CLEAR)
+                    com.playfieldportal.core.ui.components.PspMenuRow(stringResource(it.labelRes), isDestructive = it == StudioAction.CLEAR)
                 },
                 selectedIndex = state.resolvedActionsIndex,
                 onRowActivated = actions::activateMenuItem,
@@ -1417,9 +1445,9 @@ internal fun ArtworkStudioContent(
         // Both are described by state.confirmPrompt, so a further one needs no block of its own.
         state.confirmPrompt?.let { prompt ->
             com.playfieldportal.core.ui.components.PspContextMenuOverlay(
-                title = prompt.title,
+                title = prompt.title.asString(),
                 rows = prompt.rows.map {
-                    com.playfieldportal.core.ui.components.PspMenuRow(it.label, isDestructive = it.isDestructive)
+                    com.playfieldportal.core.ui.components.PspMenuRow(it.label.asString(), isDestructive = it.isDestructive)
                 },
                 selectedIndex = prompt.selectedIndex,
                 onRowActivated = actions::resolveConfirm,
@@ -1432,9 +1460,9 @@ internal fun ArtworkStudioContent(
         if (state.leavePromptOpen) {
             val waiting = state.selection.size + state.removals.size
             com.playfieldportal.core.ui.components.PspContextMenuOverlay(
-                title = if (waiting == 1) "1 change not applied" else "$waiting changes not applied",
+                title = pluralStringResource(R.plurals.det_leave_changes_waiting, waiting, waiting),
                 rows = StudioLeaveChoice.entries.map {
-                    com.playfieldportal.core.ui.components.PspMenuRow(it.label, isDestructive = it == StudioLeaveChoice.DISCARD)
+                    com.playfieldportal.core.ui.components.PspMenuRow(stringResource(it.labelRes), isDestructive = it == StudioLeaveChoice.DISCARD)
                 },
                 selectedIndex = state.leavePromptIndex,
                 onRowActivated = { index -> actions.resolveLeavePrompt(StudioLeaveChoice.entries[index]) },
@@ -1459,28 +1487,37 @@ internal fun ArtworkStudioContent(
                         .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(14.dp))
                         .padding(20.dp),
                 ) {
-                    Text("FILE INFORMATION", color = themedText(Color.White), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.det_fi_title), color = themedText(Color.White), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(12.dp))
                     if (info == null) {
                         Text(
-                            "No stored record for this slot (available once the artwork lives in a linked library).",
+                            stringResource(R.string.det_fi_no_record),
                             color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 12.sp,
                         )
                     } else {
-                        StudioInfoRow("Type", STUDIO_TABS[state.tabIndex].label)
-                        StudioInfoRow("Provider", info.provider ?: "—")
-                        StudioInfoRow("Source", info.source)
-                        StudioInfoRow("Pinned", if (info.userAssigned) "Yes (locked)" else "No")
-                        StudioInfoRow("Dimensions", if (info.width != null && info.height != null) "${info.width} × ${info.height}" else "—")
-                        StudioInfoRow("Size", formatBytes(info.sizeBytes))
-                        StudioInfoRow("Cropped", if (info.cropRect != null) "Yes" else "No")
-                        StudioInfoRow("Previous version", if (info.hasPrevious) "Available" else "—")
-                        StudioInfoRow("Path", info.relativePath ?: "—")
-                        info.originUrl?.let { StudioInfoRow("Origin", LogRedaction.redact(it)) }
+                        StudioInfoRow(stringResource(R.string.det_fi_type), STUDIO_TABS[state.tabIndex].label.asString())
+                        StudioInfoRow(stringResource(R.string.det_fi_provider), info.provider ?: "—")
+                        StudioInfoRow(stringResource(R.string.det_fi_source), info.source)
+                        StudioInfoRow(
+                            stringResource(R.string.det_fi_pinned),
+                            stringResource(if (info.userAssigned) R.string.det_fi_pinned_yes else R.string.det_no),
+                        )
+                        StudioInfoRow(stringResource(R.string.det_fi_dimensions), if (info.width != null && info.height != null) "${info.width} × ${info.height}" else "—")
+                        StudioInfoRow(stringResource(R.string.det_fi_size), formatBytes(info.sizeBytes))
+                        StudioInfoRow(
+                            stringResource(R.string.det_fi_cropped),
+                            stringResource(if (info.cropRect != null) R.string.det_yes else R.string.det_no),
+                        )
+                        StudioInfoRow(
+                            stringResource(R.string.det_fi_previous),
+                            if (info.hasPrevious) stringResource(R.string.det_disc_available) else "—",
+                        )
+                        StudioInfoRow(stringResource(R.string.det_fi_path), info.relativePath ?: "—")
+                        info.originUrl?.let { StudioInfoRow(stringResource(R.string.det_fi_origin), LogRedaction.redact(it)) }
                     }
                     Spacer(Modifier.height(14.dp))
                     Text(
-                        "Ⓑ  CLOSE", color = themedText(Color.White.copy(alpha = 0.7f)), fontSize = 13.sp,
+                        stringResource(R.string.det_studio_close_btn), color = themedText(Color.White.copy(alpha = 0.7f)), fontSize = 13.sp,
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(Color.White.copy(alpha = 0.08f))
@@ -1494,7 +1531,7 @@ internal fun ArtworkStudioContent(
         // ── Stored-assets manager (task 5.4) ──────────────────────────────────
         if (state.managerOpen) {
             StudioAssetManagerPanel(
-                kindLabel = STUDIO_TABS[state.tabIndex].label,
+                kindLabel = STUDIO_TABS[state.tabIndex].label.asString(),
                 assets = state.managedAssets,
                 focusedIndex = state.managerIndex,
                 busy = state.managerBusy,
@@ -1529,10 +1566,10 @@ internal fun ArtworkStudioContent(
             if (state.cropOptionsOpen) {
                 val currentShape = CropShapeChoice.of(state.cropProfileOverride)
                 com.playfieldportal.core.ui.components.PspContextMenuOverlay(
-                    title = STUDIO_CROP_OPTIONS_TITLE,
+                    title = STUDIO_CROP_OPTIONS_TITLE.asString(),
                     rows = state.cropOptionRows.map { option ->
                         val row = studioCropRow(option, state.cropPreviewEnabled, currentShape)
-                        com.playfieldportal.core.ui.components.PspMenuRow(row.label, checked = row.checked, value = row.value)
+                        com.playfieldportal.core.ui.components.PspMenuRow(row.label.asString(), checked = row.checked, value = row.value.asString())
                     },
                     selectedIndex = state.cropOptionsIndex,
                     onRowActivated = actions::activateCropOption,
@@ -1544,7 +1581,7 @@ internal fun ArtworkStudioContent(
 
         if (state.cropPreparing) {
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.6f)), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = accent)
+                PfpBusyRing(color = accent)
             }
         }
     }
@@ -1588,7 +1625,7 @@ private fun StudioTileBadge(
             modifier.size(size).background(Color.Black.copy(alpha = 0.55f), circle),
             contentAlignment = Alignment.Center,
         ) {
-            CircularProgressIndicator(color = accent, strokeWidth = 2.dp, modifier = Modifier.size(12.dp))
+            PfpBusyRing(size = 12.dp, color = accent)
         }
         StudioTileMark.ADDED -> com.playfieldportal.core.ui.components.PfpCheckBadge(
             fill = Color(0xFF66BB6A),
@@ -1625,7 +1662,7 @@ private fun StudioInfoRow(label: String, value: String) {
 @Composable
 internal fun StudioClearFiltersButton(showTouchControls: Boolean, onClick: () -> Unit) {
     if (showTouchControls) {
-        XmbHeaderPill(label = "Clear Filters", onClick = onClick)
+        XmbHeaderPill(label = stringResource(R.string.det_filter_clear), onClick = onClick)
     } else {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -1637,7 +1674,7 @@ internal fun StudioClearFiltersButton(showTouchControls: Boolean, onClick: () ->
         ) {
             ControllerPrompt(
                 action = GamepadAction.SELECT,
-                label = "Clear Filters",
+                label = stringResource(R.string.det_filter_clear),
                 glyphSize = 14.dp,
                 labelColor = themedText(Color.White),
             )
@@ -1753,7 +1790,7 @@ private fun StudioCropEditor(
             }
         } else if (image == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = accent)
+                PfpBusyRing(color = accent)
             }
         } else {
             androidx.compose.foundation.Canvas(
@@ -1778,14 +1815,14 @@ private fun StudioCropEditor(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                if (shape == CropShapeChoice.PLATFORM_DEFAULT) "ADJUST CROP / POSITION"
-                else "ADJUST CROP / POSITION  ·  ${shape.label.uppercase()}",
+                if (shape == CropShapeChoice.PLATFORM_DEFAULT) stringResource(R.string.det_crop_title)
+                else stringResource(R.string.det_crop_title_shape, stringResource(shape.labelRes).uppercase()),
                 color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold,
             )
             Spacer(Modifier.weight(1f))
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text(
-                    if (applying) "Baking…" else "Ⓐ  APPLY CROP",
+                    stringResource(if (applying) R.string.det_crop_baking else R.string.det_crop_apply),
                     color = Color(0xFF45C46A), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.55f))
@@ -1793,7 +1830,7 @@ private fun StudioCropEditor(
                         .padding(horizontal = 18.dp, vertical = 9.dp),
                 )
                 Text(
-                    "Ⓑ  CANCEL", color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp,
+                    stringResource(R.string.det_studio_candidate_cancel), color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp,
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.55f))
                         .clickable(onClick = onCancel)
@@ -1804,7 +1841,7 @@ private fun StudioCropEditor(
                 // Square opens search everywhere else in the Studio and START means Apply Changes,
                 // so there was no third button to give Crop Shape.
                 Text(
-                    "Ⓨ  OPTIONS",
+                    stringResource(R.string.det_crop_options_btn),
                     color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp,
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.55f))
@@ -1813,7 +1850,7 @@ private fun StudioCropEditor(
                 )
             }
             Text(
-                "drag to move the image   ·   pinch to zoom   ·   D-Pad move   ·   LB / RB zoom",
+                stringResource(R.string.det_crop_hint),
                 color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp,
                 modifier = Modifier.padding(top = 8.dp),
             )
@@ -1824,7 +1861,7 @@ private fun StudioCropEditor(
         // pan onto it are untouched. It reads the bitmap layer 1 already decoded and the same crop
         // window, so it costs no decode and holds no state; kinds with no XMB tile get no inset.
         val chrome = cropPreviewChromeFor(kind).takeIf { previewEnabled }
-        val caption = cropPreviewCaptionFor(kind)
+        val caption = cropPreviewCaptionFor(kind)?.let { stringResource(it) }
         val insetModifier = Modifier
             .align(Alignment.TopEnd)
             .padding(top = 42.dp, end = 20.dp)
@@ -1984,7 +2021,7 @@ private fun StudioVideoTilePreview(url: String, modifier: Modifier = Modifier) {
     }
     if (failed) {
         Box(modifier, contentAlignment = Alignment.Center) {
-            Text("▶ VIDEO", color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp)
+            Text(stringResource(R.string.det_studio_tile_video), color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp)
         }
         return
     }
@@ -2082,12 +2119,12 @@ private fun StudioPdfPage(
         if (bmp != null) {
             androidx.compose.foundation.Image(
                 bitmap = bmp.asImageBitmap(),
-                contentDescription = "Manual page",
+                contentDescription = stringResource(R.string.det_studio_manual_page_cd),
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
-            CircularProgressIndicator(color = Color.White.copy(alpha = 0.5f))
+            PfpBusyRing(color = Color.White.copy(alpha = 0.5f))
         }
     }
 }

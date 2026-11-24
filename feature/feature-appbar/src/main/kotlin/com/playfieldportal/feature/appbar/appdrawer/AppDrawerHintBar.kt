@@ -3,9 +3,11 @@ package com.playfieldportal.feature.appbar.appdrawer
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerHintBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.feature.appbar.R
 
 // ── Controller hint bar (idle pill) ───────────────────────────────────────────
 //
@@ -24,12 +26,12 @@ internal fun AppDrawerHintBar(
 ) {
     ControllerHintBar(
         items = listOf(
-            ControllerPromptItem(GamepadAction.PREV_CATEGORY, "Prev"),
-            ControllerPromptItem(GamepadAction.NEXT_CATEGORY, "Next"),
-            ControllerPromptItem(GamepadAction.BACK, "Back"),
-            ControllerPromptItem(GamepadAction.SELECT, "Launch"),
-            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
-            ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"),
+            ControllerPromptItem(GamepadAction.PREV_CATEGORY, stringResource(R.string.apps_hint_prev)),
+            ControllerPromptItem(GamepadAction.NEXT_CATEGORY, stringResource(R.string.apps_hint_next)),
+            ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.apps_hint_back)),
+            ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.apps_hint_launch)),
+            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, stringResource(R.string.apps_hint_options)),
+            ControllerPromptItem(GamepadAction.CHANGE_SORT, stringResource(R.string.apps_hint_search)),
         ),
         // Darker than the shared pill's default (black @ 50%) so the drawer's brighter
         // background and busy artwork don't wash the fill out into a pale grey — but still

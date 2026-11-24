@@ -91,7 +91,7 @@ class RestoreArchiveTest {
 
         assertFalse(File(filesDir, "datastore/pfp.preferences_pb").exists())
         assertTrue(File(filesDir, "artwork/cover.png").exists())
-        assertTrue(bundle.refusals.any { it.contains("datastore") })
+        assertTrue(bundle.refusals.any { it.toString().contains("datastore") })
     }
 
     @Test
@@ -162,7 +162,7 @@ class RestoreArchiveTest {
             File(filesDir, "emulator_profiles/custom_profiles.json").readText(),
         )
         assertEquals(listOf("good"), written.map { it.id })
-        assertTrue(bundle.refusals.any { it.contains("Hostile") })
+        assertTrue(bundle.refusals.any { it.toString().contains("Hostile") })
     }
 
     @Test

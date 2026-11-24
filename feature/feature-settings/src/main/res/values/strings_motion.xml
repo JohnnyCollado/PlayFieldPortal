@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings ▸ Interface ▸ Display ▸ Motion: one setting for everything that moves on its own. -->
+    <string name="motion_title">Motion</string>
+    <string name="motion_summary">How much moves on its own.</string>
+    <string name="motion_detail_animated">Everything moves</string>
+    <string name="motion_detail_reduced">Only what is selected</string>
+    <string name="motion_detail_static">Nothing on its own</string>
+    <string name="motion_sub_animated">Everything that can move does: artwork, icons, wallpapers, the background and the glow. Uses the most battery.</string>
+    <string name="motion_sub_reduced">Only what is selected moves: its artwork, its video snap and its glow. The background keeps moving.</string>
+    <string name="motion_sub_static">Nothing moves on its own. Menus still slide when you move through them.</string>
+    <string name="motion_holds_background">Held still while Motion is Static.</string>
+    <string name="motion_holds_glow">Held steady while Motion is Static.</string>
+</resources>

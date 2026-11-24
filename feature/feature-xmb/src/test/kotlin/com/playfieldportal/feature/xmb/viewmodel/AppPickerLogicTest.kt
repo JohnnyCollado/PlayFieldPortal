@@ -1,8 +1,7 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.domain.model.GamepadAction
-import com.playfieldportal.core.domain.model.TouchGesture
-import com.playfieldportal.core.ui.components.TouchPromptItem
 import com.playfieldportal.core.ui.sound.MenuSound
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -32,7 +31,7 @@ class AppPickerLogicTest {
         focusedIndex: Int = 0,
         query: String = "",
     ) = AppPickerState(
-        title = "Add Apps",
+        title = UiText.raw("Add Apps"),
         target = AppPickerTarget.AndroidGames("android"),
         apps = packages.map { app(it) },
         selected = selected,
@@ -328,24 +327,10 @@ class AppPickerLogicTest {
         assertEquals(null, appPickerSound(state(), null))
     }
 
-    @Test
-    fun `the removal question names what the apps leave - a card, or the library`() {
-        assertEquals("Remove 2 app(s) from this card?", removalQuestion(AppPickerTarget.CardApps(7), 2))
-        assertEquals("Remove 1 app(s) from this library?", removalQuestion(AppPickerTarget.CategoryShortcuts("network"), 1))
-        assertEquals("Remove 3 app(s) from this library?", removalQuestion(AppPickerTarget.AndroidGames("android"), 3))
-    }
+    // The removal question's wording and the touch prompts' labels read string resources, so those
+    // tests live in AppPickerTextTest (Robolectric).
 
     // ── Touch mode (issue #20): a finger must see how to finish, not a HOME-button glyph ──
-
-    @Test
-    fun `touch prompts name the tap the grid binds`() {
-        assertEquals(listOf(TouchPromptItem(TouchGesture.TAP, "Toggle")), appPickerTouchPrompts(confirmingRemovals = false))
-    }
-
-    @Test
-    fun `touch prompts step aside for the removal panel, whose buttons are labelled`() {
-        assertTrue(appPickerTouchPrompts(confirmingRemovals = true).isEmpty())
-    }
 
     @Test
     fun `header Search and Done pills show only in touch mode with no modal up`() {

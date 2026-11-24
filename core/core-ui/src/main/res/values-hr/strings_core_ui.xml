@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared button and prompt labels -->
+    <string name="core_cancel">Odustani</string>
+    <string name="core_ok">U redu</string>
+    <string name="core_save">Spremi</string>
+    <string name="core_apply">Primijeni</string>
+    <string name="core_select">Odaberi</string>
+    <string name="core_close">Zatvori</string>
+    <string name="core_back">Natrag</string>
+
+    <!-- Modals (text entry) -->
+    <string name="core_modal_name_label">Naziv</string>
+    <string name="core_modal_counter">%1$d / %2$d</string>
+
+    <!-- Convert-to-achievement-tracking picker -->
+    <string name="core_steam_convert_title">Instalirati praćenje postignuća?</string>
+    <string name="core_steam_convert_selected_count">%1$d od %2$d</string>
+    <string name="core_steam_convert_found_count">Pronađeno: %1$d</string>
+    <string name="core_steam_convert_hints">"Gore/Dolje  Retci  •  Select  Uklj./Isklj.  •  △  Sve/Ništa  •  Start  Instaliraj  •  B  Odustani"</string>
+    <string name="core_steam_convert_loading">Čitanje popisa postignuća svake igre sa Steama…</string>
+    <string name="core_steam_convert_install">Instaliraj (%1$d)</string>
+    <string name="core_steam_convert_none">Ništa</string>
+    <string name="core_steam_convert_all">Sve</string>
+    <string name="core_steam_convert_skip_sync">Preskoči i sinkroniziraj</string>
+    <string name="core_steam_convert_write_notice">U mapu svake označene igre PFP zapisuje achievements.json, stats.json i configs.user.ini, stvara mapu saves te preimenuje steam_api64.dll u steam_api64_o.dll kako bi se priloženi emulator mogao učitati kroz nju.</string>
+    <string name="core_steam_convert_backup_warning">Prije pretvaranja napravite sigurnosnu kopiju spremljenih podataka svake igre koju ste već igrali — emulator će ih početi čitati s nove lokacije.</string>
+
+    <!-- Shiba player card -->
+    <string name="core_shiba_xp">%1$s XP</string>
+    <string name="core_shiba_progress_next_bone">%1$s / %2$s do sljedeće kosti (Bone)</string>
+    <string name="core_shiba_progress_next_level">%1$s / %2$s do razine %3$d</string>
+    <string name="core_shiba_level_abbrev">RAZ</string>
+
+    <!-- Colour picker -->
+    <string name="core_hsv_hex">Hex</string>
+    <string name="core_hsv_hue">Nijansa</string>
+    <string name="core_hsv_saturation">Zasićenje</string>
+    <string name="core_hsv_brightness">Svjetlina</string>
+    <string name="core_hsv_hint_move">Pomakni</string>
+    <string name="core_hsv_hint_type_hex">Upiši hex</string>
+    <string name="core_hsv_hint_adjust">Prilagodi</string>
+    <string name="core_hsv_sample_text">Primjer teksta</string>
+    <string name="core_color_default">Zadano</string>
+    <string name="core_color_pink">Ružičasta</string>
+    <string name="core_color_gold">Zlatna</string>
+    <string name="core_color_aqua">Akvamarin</string>
+    <string name="core_color_sky_blue">Nebeskoplava</string>
+    <string name="core_color_green">Zelena</string>
+    <string name="core_color_coral">Koraljna</string>
+    <string name="core_color_slate">Škriljevac</string>
+    <string name="core_color_custom">Prilagođeno</string>
+
+    <!-- Notification detail sheets -->
+    <string name="core_sheet_copied">Kopirano</string>
+    <string name="core_sheet_copy_details">Kopiraj pojedinosti</string>
+    <string name="core_sheet_copy_list">Kopiraj popis</string>
+    <string name="core_sheet_filter">Filtar</string>
+    <string name="core_sheet_what_happened">Što se dogodilo</string>
+    <string name="core_sheet_diagnostic_open">"▾  Dijagnostičke pojedinosti"</string>
+    <string name="core_sheet_diagnostic_closed">"▸  Dijagnostičke pojedinosti"</string>
+    <string name="core_sheet_diagnostic_heading">Dijagnostika</string>
+    <string name="core_sheet_summary_chip">%1$d %2$s</string>
+    <string name="core_sheet_filter_all">Sve</string>
+    <string name="core_sheet_more">+%1$d više</string>
+    <string name="core_sheet_what_you_can_do">Što možete učiniti</string>
+
+    <!-- On-screen keyboard -->
+    <string name="core_vk_prompt_type">Upiši</string>
+    <string name="core_vk_prompt_delete">Izbriši</string>
+    <string name="core_vk_prompt_cursor">Pokazivač</string>
+    <string name="core_vk_prompt_caps">Caps</string>
+    <string name="core_vk_key_space">Razmak</string>
+    <string name="core_vk_key_shift">Shift</string>
+    <string name="core_vk_key_backspace">Backspace</string>
+    <string name="core_vk_key_done">Gotovo</string>
+    <string name="core_vk_shift_off">Isključeno</string>
+    <string name="core_vk_shift_once">Uključeno za sljedeće slovo</string>
+    <string name="core_vk_shift_held">Uključeno dok se drži</string>
+    <string name="core_vk_shift_locked">Caps Lock uključen</string>
+
+    <!-- Background tasks -->
+    <string name="core_task_failed">Zadatak nije uspio</string>
+    <string name="core_task_done">Gotovo</string>
+
+    <!-- Detail screens -->
+    <string name="core_detail_favorite_badge">FAVORIT</string>
+    <string name="core_detail_video_badge">VIDEO</string>
+    <string name="core_detail_confirm_collapse">Potvrdite za sažimanje</string>
+    <string name="core_detail_confirm_read_more">Potvrdite za više</string>
+
+    <!-- Rotate-to-landscape prompt -->
+    <string name="core_rotate_title">Okrenite u vodoravni položaj</string>
+    <string name="core_rotate_message">PlayField Portal radi u vodoravnom položaju. Okrenite uređaj bočno za nastavak.</string>
+    <string name="core_rotate_switch_launcher">Promijeni launcher</string>
+</resources>

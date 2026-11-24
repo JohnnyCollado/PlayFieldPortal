@@ -66,6 +66,10 @@ class ControllerSettingsViewModel @Inject constructor(
         viewModelScope.launch { layoutRepository.setVirtualKeyboard(enabled) }
     }
 
+    fun setHapticFeedback(enabled: Boolean) {
+        viewModelScope.launch { layoutRepository.setHapticFeedback(enabled) }
+    }
+
     fun cycleDisplayType() {
         val types = listOf(
             ControllerDisplayType.XBOX,

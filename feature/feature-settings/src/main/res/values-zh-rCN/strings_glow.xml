@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_title">焦点光晕</string>
+    <string name="glow_sub_off">所选图标周围不显示光晕。</string>
+    <string name="glow_sub_steady">所选图标周围显示柔和的光。保持静止。</string>
+    <string name="glow_sub_pulsing">所选图标周围的光缓慢增强再减弱。当“动态”设为“静态”时保持静止。</string>
+    <string name="glow_value_off">关闭</string>
+    <string name="glow_value_steady">静止</string>
+    <string name="glow_value_pulsing">脉动</string>
+</resources>

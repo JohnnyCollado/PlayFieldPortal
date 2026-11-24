@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Paramètres</string>
+    <string name="sound_title">Son</string>
+    <string name="sound_group_master">Général</string>
+    <string name="sound_group_levels">Niveaux</string>
+    <string name="sound_group_sounds">Sons</string>
+    <string name="sound_master_volume">Volume général</string>
+    <string name="sound_master_volume_help">Règle tous les sons du launcher. À 0, le launcher est muet.</string>
+    <string name="sound_ambience_help">Tourne en boucle pendant que vous naviguez. L\'OGG boucle sans coupure ; le MP3 peut produire un clic.</string>
+    <string name="sound_rejected_title">Impossible d\'utiliser ce son</string>
+    <string name="sound_reset_confirm_title">Rétablir le son par défaut ?</string>
+    <string name="sound_reset_confirm_message">Chaque son de menu revient à l\'échantillon PFP fourni et chaque niveau, général compris, revient au maximum. Votre piste d\'ambiance et les médias de Boot Video et de Game Boot ne sont pas modifiés.</string>
+    <string name="sound_reset_confirm_action">Rétablir</string>
+    <string name="sound_reset_row">Rétablir le son par défaut</string>
+    <string name="sound_reset_row_help">Rétablit chaque son de menu sur l\'échantillon PFP fourni et chaque niveau au maximum. Conserve votre piste d\'ambiance.</string>
+    <string name="sound_channel_navigation">Navigation</string>
+    <string name="sound_channel_back">Retour / Annuler</string>
+    <string name="sound_channel_confirm">Confirmer / Appliquer</string>
+    <string name="sound_channel_error">Erreur / Non valide</string>
+    <string name="sound_channel_notification">Notification</string>
+    <string name="sound_channel_boot">Séquence de démarrage</string>
+    <string name="sound_channel_ambience">Ambiance</string>
+    <string name="sound_slot_navigation">Navigation</string>
+    <string name="sound_slot_back">Retour / Annuler</string>
+    <string name="sound_slot_confirm">Confirmer / Appliquer</string>
+    <string name="sound_slot_error">Erreur / Non valide</string>
+    <string name="sound_slot_notification">Notification</string>
+    <string name="sound_slot_ambience">Piste d\'ambiance</string>
+</resources>

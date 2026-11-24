@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Scan error messages -->
+    <string name="scan_error_card_not_found">Карта памяти не найдена.</string>
+    <string name="scan_error_scan_failed">Ошибка сканирования — см. журнал.</string>
+    <string name="scan_error_library_unreadable">Не удалось прочитать библиотеку.</string>
+    <string name="scan_error_save_failed">Не удалось сохранить найденную игру.</string>
+    <string name="scan_error_rom_dir_not_found">Папка ROM не найдена: %1$s</string>
+    <string name="scan_error_folder_link_invalid">Ссылка на папку этой библиотеки недействительна. Добавьте папку заново.</string>
+    <string name="scan_error_root_unreadable">Не удалось прочитать папку ROM. Если она на SD-карте, проверьте, что карта вставлена.</string>
+    <string name="scan_error_permission_lost">Доступ потерян, выберите папку заново.</string>
+    <string name="scan_error_partial_read">Часть папки не прочитана, поэтому ничего не изменено. Повторите чуть позже.</string>
+    <string name="scan_outcome_line">%1$s: %2$s</string>
+    <string name="scan_outcome_no_source">Папка ROM не настроена.</string>
+    <string name="scan_outcome_busy">сканирование уже идёт.</string>
+    <string name="scan_outcome_failed">ошибка сканирования.</string>
+    <string name="scan_outcome_no_new">новых ROM нет</string>
+    <string name="scan_outcome_no_new_none_missing">новых ROM нет, пропавших нет</string>
+    <string name="scan_outcome_no_new_marked_missing">новых ROM нет, пропавшими отмечено: %1$d</string>
+    <plurals name="scan_outcome_added">
+        <item quantity="one">добавлен %1$d новый ROM</item>
+        <item quantity="few">добавлено %1$d новых ROM</item>
+        <item quantity="many">добавлено %1$d новых ROM</item>
+        <item quantity="other">добавлено %1$d нового ROM</item>
+    </plurals>
+    <plurals name="scan_outcome_added_none_missing">
+        <item quantity="one">добавлен %1$d новый ROM, пропавших нет</item>
+        <item quantity="few">добавлено %1$d новых ROM, пропавших нет</item>
+        <item quantity="many">добавлено %1$d новых ROM, пропавших нет</item>
+        <item quantity="other">добавлено %1$d нового ROM, пропавших нет</item>
+    </plurals>
+    <plurals name="scan_outcome_added_marked_missing">
+        <item quantity="one">добавлен %1$d новый ROM, пропавшими отмечено: %2$d</item>
+        <item quantity="few">добавлено %1$d новых ROM, пропавшими отмечено: %2$d</item>
+        <item quantity="many">добавлено %1$d новых ROM, пропавшими отмечено: %2$d</item>
+        <item quantity="other">добавлено %1$d нового ROM, пропавшими отмечено: %2$d</item>
+    </plurals>
+    <string name="scan_with_error_note">%1$s (%2$s)</string>
+
+    <!-- Per-card line in the scan results list -->
+    <string name="scan_badge_no_new">Нет новых</string>
+    <string name="scan_reason_no_new">Новых игр нет</string>
+    <string name="scan_reason_no_new_marked_missing">Новых игр нет, пропавшими отмечено: %1$d</string>
+    <plurals name="scan_reason_added">
+        <item quantity="one">Добавлена %1$d новая игра</item>
+        <item quantity="few">Добавлено %1$d новые игры</item>
+        <item quantity="many">Добавлено %1$d новых игр</item>
+        <item quantity="other">Добавлено %1$d новой игры</item>
+    </plurals>
+    <plurals name="scan_reason_added_marked_missing">
+        <item quantity="one">Добавлена %1$d новая игра, пропавшими отмечено: %2$d</item>
+        <item quantity="few">Добавлено %1$d новые игры, пропавшими отмечено: %2$d</item>
+        <item quantity="many">Добавлено %1$d новых игр, пропавшими отмечено: %2$d</item>
+        <item quantity="other">Добавлено %1$d новой игры, пропавшими отмечено: %2$d</item>
+    </plurals>
+</resources>

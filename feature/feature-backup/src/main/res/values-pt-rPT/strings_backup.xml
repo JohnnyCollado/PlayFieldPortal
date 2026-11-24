@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Backup failures -->
+    <string name="bak_no_folder">Nenhuma pasta de backup definida. Escolha uma em Definições → Backup e restauro → Pasta de backup.</string>
+    <string name="bak_too_large">Este backup seria demasiado grande para restaurar (suporta até 20 000 ficheiros e 2 GB). Remova artes ou multimédia que não use e tente novamente.</string>
+    <string name="bak_write_failed">Não foi possível gravar na pasta de backup. Escolha novamente a pasta de backup em Definições ▸ Sistema ▸ Backup e restauro.</string>
+    <string name="bak_unknown_error">Erro desconhecido</string>
+
+    <!-- Restore failures -->
+    <string name="bak_open_failed">Não foi possível abrir o ficheiro de backup</string>
+    <string name="bak_missing_manifest">O backup não tem o manifesto</string>
+    <string name="bak_format_too_new">O formato de backup v%1$d é mais recente do que esta app suporta (v%2$d)</string>
+    <string name="bak_no_uri">Nenhum URI indicado</string>
+
+    <!-- Notification titles -->
+    <string name="bak_task_created">Backup criado</string>
+    <string name="bak_task_failed">Falha no backup</string>
+    <string name="bak_task_restored">Backup restaurado</string>
+    <string name="bak_task_restore_failed">Falha no restauro</string>
+    <string name="bak_results_restored">Restaurados</string>
+    <plurals name="bak_items_skipped">
+        <item quantity="one">%d item ignorado</item>
+        <item quantity="many">%d itens ignorados</item>
+        <item quantity="other">%d itens ignorados</item>
+    </plurals>
+    <string name="bak_refused_out_of_root">Recusado \'%1$s\': não está dentro de uma pasta restaurável</string>
+    <string name="bak_refused_profiles_unparseable">Perfis de emulador recusados: não foi possível interpretar o ficheiro</string>
+    <string name="bak_refused_profile">Perfil de emulador recusado \'%1$s\': %2$s</string>
+</resources>

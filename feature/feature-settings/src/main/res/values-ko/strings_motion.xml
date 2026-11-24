@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">모션</string>
+    <string name="motion_summary">스스로 움직이는 것의 양입니다.</string>
+    <string name="motion_detail_animated">모두 움직임</string>
+    <string name="motion_detail_reduced">선택한 항목만</string>
+    <string name="motion_detail_static">스스로 움직이지 않음</string>
+    <string name="motion_sub_animated">움직일 수 있는 모든 것이 움직입니다(아트워크, 아이콘, 배경화면, 배경, 글로우). 배터리를 가장 많이 사용합니다.</string>
+    <string name="motion_sub_reduced">선택한 항목만 움직입니다(아트워크, 비디오 스냅, 글로우). 배경은 계속 움직입니다.</string>
+    <string name="motion_sub_static">스스로 움직이는 것이 없습니다. 메뉴는 이동할 때 계속 슬라이드됩니다.</string>
+    <string name="motion_holds_background">‘모션’이(가) ‘정지’인 동안 멈춥니다.</string>
+    <string name="motion_holds_glow">‘모션’이(가) ‘정지’인 동안 고정됩니다.</string>
+</resources>

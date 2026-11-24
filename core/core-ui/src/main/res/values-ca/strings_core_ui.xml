@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Botons i indicacions compartits -->
+    <string name="core_cancel">Cancel·la</string>
+    <string name="core_ok">D\'acord</string>
+    <string name="core_save">Desa</string>
+    <string name="core_apply">Aplica</string>
+    <string name="core_select">Selecciona</string>
+    <string name="core_close">Tanca</string>
+    <string name="core_back">Enrere</string>
+
+    <!-- Diàlegs (entrada de text) -->
+    <string name="core_modal_name_label">Nom</string>
+    <string name="core_modal_counter">%1$d / %2$d</string>
+
+    <!-- Selector de conversió per al seguiment d'assoliments -->
+    <string name="core_steam_convert_title">Vols instal·lar el seguiment d\'assoliments?</string>
+    <string name="core_steam_convert_selected_count">%1$d de %2$d</string>
+    <string name="core_steam_convert_found_count">%1$d trobats</string>
+    <string name="core_steam_convert_hints">"Amunt/Avall  Files  •  Select  Marca  •  △  Tots/Cap  •  Start  Instal·la  •  B  Cancel·la"</string>
+    <string name="core_steam_convert_loading">S\'està llegint de Steam la llista d\'assoliments de cada joc…</string>
+    <string name="core_steam_convert_install">Instal·la (%1$d)</string>
+    <string name="core_steam_convert_none">Cap</string>
+    <string name="core_steam_convert_all">Tots</string>
+    <string name="core_steam_convert_skip_sync">Omet i sincronitza</string>
+    <string name="core_steam_convert_write_notice">A la carpeta de cada joc marcat, PFP escriu achievements.json, stats.json i configs.user.ini, crea una carpeta saves i canvia el nom de steam_api64.dll a steam_api64_o.dll perquè l\'emulador inclòs pugui carregar-se a través seu.</string>
+    <string name="core_steam_convert_backup_warning">Fes una còpia de seguretat de les partides desades de qualsevol joc que ja hagis jugat abans de convertir-lo — l\'emulador començarà a llegir des de la nova ubicació de les partides.</string>
+
+    <!-- Targeta de jugador Shiba -->
+    <string name="core_shiba_xp">%1$s XP</string>
+    <string name="core_shiba_progress_next_bone">%1$s / %2$s fins al pròxim Bone</string>
+    <string name="core_shiba_progress_next_level">%1$s / %2$s fins al nivell %3$d</string>
+    <string name="core_shiba_level_abbrev">NV</string>
+
+    <!-- Selector de color -->
+    <string name="core_hsv_hex">Hex</string>
+    <string name="core_hsv_hue">To</string>
+    <string name="core_hsv_saturation">Saturació</string>
+    <string name="core_hsv_brightness">Brillantor</string>
+    <string name="core_hsv_hint_move">Mou</string>
+    <string name="core_hsv_hint_type_hex">Escriu hex</string>
+    <string name="core_hsv_hint_adjust">Ajusta</string>
+    <string name="core_hsv_sample_text">Text de mostra</string>
+
+    <!-- Noms dels colors predefinits -->
+    <string name="core_color_default">Per defecte</string>
+    <string name="core_color_pink">Rosa</string>
+    <string name="core_color_gold">Daurat</string>
+    <string name="core_color_aqua">Aiguamarina</string>
+    <string name="core_color_sky_blue">Blau cel</string>
+    <string name="core_color_green">Verd</string>
+    <string name="core_color_coral">Corall</string>
+    <string name="core_color_slate">Pissarra</string>
+    <string name="core_color_custom">Personalitzat</string>
+
+    <!-- Fulls de detall de notificacions -->
+    <string name="core_sheet_copied">Copiat</string>
+    <string name="core_sheet_copy_details">Copia els detalls</string>
+    <string name="core_sheet_copy_list">Copia la llista</string>
+    <string name="core_sheet_filter">Filtra</string>
+    <string name="core_sheet_what_happened">Què ha passat</string>
+    <string name="core_sheet_diagnostic_open">"▾  Detalls de diagnòstic"</string>
+    <string name="core_sheet_diagnostic_closed">"▸  Detalls de diagnòstic"</string>
+    <string name="core_sheet_diagnostic_heading">Diagnòstic</string>
+    <string name="core_sheet_summary_chip">%1$d %2$s</string>
+    <string name="core_sheet_filter_all">Tots</string>
+    <string name="core_sheet_more">+%1$d més</string>
+    <string name="core_sheet_what_you_can_do">Què pots fer</string>
+
+    <!-- Teclat en pantalla -->
+    <string name="core_vk_prompt_type">Escriu</string>
+    <string name="core_vk_prompt_delete">Suprimeix</string>
+    <string name="core_vk_prompt_cursor">Cursor</string>
+    <string name="core_vk_prompt_caps">Maj.</string>
+    <string name="core_vk_key_space">Espai</string>
+    <string name="core_vk_key_shift">Maj.</string>
+    <string name="core_vk_key_backspace">Retrocés</string>
+    <string name="core_vk_key_done">Fet</string>
+    <string name="core_vk_shift_off">Desactivat</string>
+    <string name="core_vk_shift_once">Activat per a la lletra següent</string>
+    <string name="core_vk_shift_held">Activat mentre es manté premut</string>
+    <string name="core_vk_shift_locked">Bloqueig de majúscules activat</string>
+
+    <!-- Tasques en segon pla -->
+    <string name="core_task_failed">La tasca ha fallat</string>
+    <string name="core_task_done">Fet</string>
+
+    <!-- Pantalles de detall -->
+    <string name="core_detail_favorite_badge">PREFERIT</string>
+    <string name="core_detail_video_badge">VÍDEO</string>
+    <string name="core_detail_confirm_collapse">Confirma per replegar</string>
+    <string name="core_detail_confirm_read_more">Confirma per llegir-ne més</string>
+
+    <!-- Indicació per girar a horitzontal -->
+    <string name="core_rotate_title">Gira a horitzontal</string>
+    <string name="core_rotate_message">PlayField Portal funciona en horitzontal. Posa el dispositiu de costat per continuar.</string>
+    <string name="core_rotate_switch_launcher">Canvia de launcher</string>
+</resources>

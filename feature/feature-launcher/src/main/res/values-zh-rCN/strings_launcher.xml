@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launch refusals shown before an emulator starts -->
+    <string name="launch_err_custom_command">已不再支持自定义命令配置文件。请将此模拟器的启动方式切换为“用应用打开 ROM”或“打开应用界面”。</string>
+    <string name="launch_err_shortcut_unsupported">此界面不支持通过快捷方式启动</string>
+    <string name="launch_err_no_package">未记录 %1$s 的 Android 软件包</string>
+    <string name="launch_err_app_not_launchable">Android 应用未安装或无法启动：%1$s</string>
+    <string name="launch_err_emulator_not_installed">未安装模拟器：%1$s（%2$s）</string>
+    <string name="launch_err_wrong_build">%1$s（%2$s）不是预期的版本：其签名证书不匹配。请从官方来源重新安装该模拟器。</string>
+    <string name="launch_err_no_activity_for_path">%1$s 未记录启动 Activity，因此无法向其传递文件路径。请重新导入其知识条目，或重新检测该模拟器。</string>
+    <string name="launch_err_activity_required">此启动方式需要应用界面名称。配置文件：%1$s</string>
+    <string name="launch_err_activity_gone">%1$s 已不再提供其启动 Activity（%2$s）。请更新该模拟器，或为此平台选择其他模拟器。</string>
+    <string name="launch_err_no_launch_id">未记录 %1$s 的启动 ID。请重新扫描其所在的库。</string>
+    <string name="launch_err_rom_link_invalid">此游戏的 ROM 链接无效。请重新扫描其所在的库。</string>
+    <string name="launch_err_lost_access">Play Field Portal 已失去此游戏文件的访问权限。请重新连接存储设备并重新扫描其所在的库。</string>
+    <string name="launch_err_rom_path_required">启动 %1$s 需要 ROM 路径</string>
+    <string name="launch_err_rom_not_found">找不到 ROM 文件：%1$s</string>
+    <string name="launch_err_no_core">配置文件“%2$s”中未为平台“%1$s”配置 RetroArch 核心。请打开 RetroArch → 核心下载器，为此系统安装核心。</string>
+    <string name="launch_err_cannot_open_rom_type">%1$s 无法打开此类 ROM。请尝试重新安装该模拟器，或在 Android 设置中检查其应用权限。</string>
+    <string name="launch_err_no_file_path">%1$s 在此设备上没有文件路径，因此无法告知 %2$s 要启动哪个游戏。</string>
+    <string name="launch_err_not_in_rom_folder">%1$s 不在已配置的 ROM 文件夹内，因此无法交给 %2$s。请在设置中检查为此记忆卡设置的文件夹。</string>
+
+    <!-- Emulator choice problems -->
+    <string name="launch_err_configured_missing">%1$s模拟器未安装或不可用：%2$s</string>
+    <string name="launch_err_core_not_installed">%1$s 已设为模拟器（%2$s），但 RetroArch 中未安装该核心。请安装该核心，或选择其他模拟器。</string>
+    <string name="launch_err_no_longer_available">%1$s 已设为模拟器（%2$s），但已不再可用。请选择其他模拟器。</string>
+    <string name="launch_err_not_configured_for_platform">%1$s 未针对 %2$s 进行配置</string>
+    <string name="launch_err_no_emulator_for_platform">未为 %1$s 配置模拟器。请为此游戏选择模拟器，或设置平台默认模拟器。</string>
+
+    <!-- Where an emulator choice came from -->
+    <string name="launch_source_per_game">单独游戏设置</string>
+    <string name="launch_source_per_game_lower">单独游戏设置</string>
+    <string name="launch_source_memory_card">记忆卡默认</string>
+    <string name="launch_source_memory_card_lower">记忆卡默认</string>
+    <string name="launch_source_platform">平台默认</string>
+    <string name="launch_source_platform_lower">平台默认</string>
+    <string name="launch_source_recommended">推荐</string>
+    <string name="launch_source_recommended_lower">推荐</string>
+    <string name="launch_phrase_per_game">单独游戏设置的</string>
+    <string name="launch_phrase_memory_card">记忆卡的</string>
+    <string name="launch_phrase_platform">平台默认</string>
+
+    <!-- Launch hand-off failures -->
+    <string name="launch_err_emulator_not_found">找不到模拟器。是否已安装？</string>
+    <string name="launch_err_permission_denied">启动模拟器时权限被拒绝</string>
+    <string name="launch_err_open_emulator">无法打开模拟器：%1$s</string>
+    <string name="launch_never_foreground">模拟器启动后始终未切换到前台。</string>
+    <string name="launch_never_appeared">模拟器始终未出现。请检查它是否已安装且为最新版本，然后再次尝试启动。</string>
+    <plurals name="launch_history_failed">
+        <item quantity="other">此游戏最近 %2$d 次启动中有 %1$d 次失败。</item>
+    </plurals>
+
+    <!-- Launch failure notification -->
+    <string name="launch_rec_title">无法启动 %1$s</string>
+    <string name="launch_rec_could_not_start">无法启动模拟器</string>
+    <string name="launch_rec_never_foreground">模拟器始终未切换到前台</string>
+    <string name="launch_fact_emulator">模拟器</string>
+    <string name="launch_fact_core">核心</string>
+    <string name="launch_fact_platform">平台</string>
+    <string name="launch_fact_recent">最近启动</string>
+    <string name="launch_fact_recent_value">最近 %2$d 次中失败 %1$d 次</string>
+
+    <!-- Shortcut requests -->
+    <string name="launch_shortcut_request_title">快捷方式请求：%1$s（打开 %2$s）</string>
+    <string name="launch_shortcut_request_message">仅在此快捷方式是你刚刚亲自创建的情况下才添加。</string>
+    <string name="launch_shortcut_added_title">已添加快捷方式：%1$s</string>
+    <string name="launch_shortcut_ignored_title">已忽略快捷方式：%1$s</string>
+    <string name="launch_shortcut_from">来自 %1$s</string>
+    <string name="launch_windows_added_title">“%1$s”已添加到 Windows 游戏</string>
+    <string name="launch_windows_added_message">完成 Windows 库的设置后即可扫描其文件夹</string>
+
+    <!-- First-run setup prompts -->
+    <string name="launch_setup_add_rom_folder">添加 ROM 文件夹，开始建立你的库</string>
+    <string name="launch_setup_add_console_card">添加一张主机记忆卡用于扫描</string>
+    <string name="launch_setup_install_emulator">安装模拟器来玩你的游戏</string>
+
+    <!-- Emulator detection notes for an app being added -->
+    <string name="launch_inspect_known">已根据 %1$s 的内置配置文件自动填写。请确认平台后保存。</string>
+    <string name="launch_inspect_best_guess">根据此应用打开 ROM 文件的方式推测得出。请设置平台，并在保存前测试一个 ROM。</string>
+    <string name="launch_inspect_minimal">无法检测此应用接收 ROM 的方式。请手动填写 Activity / intent 设置，然后测试一个 ROM。</string>
+
+    <!-- Emulator knowledge file updates -->
+    <string name="launch_kb_too_many_files">最多只能导入 %1$d 个知识文件，请先移除一个</string>
+    <string name="launch_kb_installed">已更新</string>
+    <string name="launch_kb_not_configured">此版本未设置更新功能</string>
+    <string name="launch_kb_offline">无法连接到更新服务器</string>
+    <string name="launch_kb_too_large">更新文件过大</string>
+    <string name="launch_kb_signature_invalid">更新的签名无效</string>
+    <string name="launch_kb_needs_app_update">此更新需要更新版本的应用</string>
+    <string name="launch_kb_older">此更新比已安装的版本更旧</string>
+    <string name="launch_kb_invalid_content">更新文件的内容无效</string>
+    <string name="launch_kb_storage_failed">无法保存更新</string>
+    <string name="launch_kb_skipped">无需检查</string>
+
+    <!-- Windows game launchers -->
+    <string name="launch_unknown_gamehub_or_bannerhub">可能是 GameHub 或 BannerHub</string>
+    <string name="launch_unknown_gamehublite_or_bannerhub">可能是 GameHub Lite 或 BannerHub</string>
+    <string name="launch_unknown_not_in_list">不在 PFP 的列表中</string>
+    <string name="launch_choice_not_a_launcher">不是启动器</string>
+    <string name="launch_id_prompt_gamehub">游戏 ID：在游戏页面中点按“本地游戏 ID”旁的“复制”，或点按 ⋮ → Banner Tools → Show Game ID</string>
+    <string name="launch_id_prompt_gamenative">已安装游戏的 Steam App ID（或商店应用 ID）</string>
+</resources>

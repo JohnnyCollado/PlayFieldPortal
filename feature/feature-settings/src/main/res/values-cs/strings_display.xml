@@ -1,0 +1,640 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared labels -->
+    <string name="setd_apply">Použít</string>
+    <string name="setd_cancel">Zrušit</string>
+    <string name="setd_select">Vybrat</string>
+    <string name="setd_close">Zavřít</string>
+    <string name="setd_tap_to_dismiss">Výběrem zavřete</string>
+    <string name="setd_unavailable">Nedostupné</string>
+    <string name="setd_loading">Načítání…</string>
+    <string name="setd_error">Chyba</string>
+    <string name="setd_error_tap_to_dismiss">"%1$s  (výběrem zavřete)"</string>
+    <string name="setd_testing">Testování…</string>
+    <string name="setd_key_replace_placeholder">"••••••••  (výběrem nahradíte)"</string>
+    <string name="setd_pfp_default">Výchozí PFP</string>
+    <string name="setd_from_theme">Z motivu</string>
+    <string name="setd_custom_video">Vlastní video</string>
+    <string name="setd_custom_sound">Vlastní zvuk</string>
+
+    <!-- ===== Display ===== -->
+    <string name="setd_display_title">Zobrazení</string>
+    <string name="setd_group_appearance">Vzhled</string>
+    <string name="setd_group_lock_screen">Zamykací obrazovka</string>
+    <string name="setd_group_xmb_layout">Rozložení XMB</string>
+    <string name="setd_group_boot_sequence">Spouštěcí sekvence</string>
+    <string name="setd_group_game_boot">Game Boot</string>
+    <string name="setd_group_orientation">Orientace</string>
+    <string name="setd_group_interface">Rozhraní</string>
+    <string name="setd_group_performance">Výkon</string>
+    <string name="setd_group_games">Hry</string>
+
+    <!-- Wallpaper -->
+    <string name="setd_wallpaper_title">Tapeta</string>
+    <string name="setd_wallpaper_choose">Vybrat tapetu</string>
+    <string name="setd_wallpaper_choose_motion_set">Nastavena pohyblivá tapeta — vlnu nahrazuje smyčka videa</string>
+    <string name="setd_wallpaper_choose_custom_set">Nastavena vlastní tapeta — nahrazuje vlnu</string>
+    <string name="setd_wallpaper_choose_none">Vyberte obrázek nebo krátké video (PNG, JPG, WEBP, MP4, WEBM, GIF) — nahradí vlnu</string>
+    <string name="setd_wallpaper_preview">Náhled tapety</string>
+    <string name="setd_wallpaper_preview_sublabel">Zobrazit vybranou tapetu na celé obrazovce</string>
+    <string name="setd_wallpaper_reset_row">Obnovit tapetu</string>
+    <string name="setd_wallpaper_reset_row_sublabel">Odebrat vlastní tapetu a obnovit výchozí pozadí</string>
+    <string name="setd_wallpaper_preview_cd">Náhled tapety</string>
+    <string name="setd_wallpaper_unsupported">Nepodporovaný formát — použijte PNG, JPG, WEBP, MP4, WEBM nebo GIF</string>
+    <string name="setd_wallpaper_applied">Tapeta použita</string>
+    <string name="setd_wallpaper_unreadable">Soubor nelze přečíst — zkuste jiný</string>
+    <string name="setd_wallpaper_motion_applied">Pohyblivá tapeta použita</string>
+    <string name="setd_wallpaper_reset">Tapeta obnovena na výchozí</string>
+    <string name="setd_wallpaper_none">Zatím není vybrána žádná tapeta</string>
+
+    <!-- Lock screen image -->
+    <string name="setd_lock_choose">Vybrat obrázek zamykací obrazovky</string>
+    <string name="setd_lock_choose_busy">Nastavování zamykací obrazovky…</string>
+    <string name="setd_lock_choose_from_theme">Nastaveno použitým motivem — vyberte obrázek pro vlastní</string>
+    <string name="setd_lock_choose_set">Váš obrázek je na zamykací obrazovce</string>
+    <string name="setd_lock_choose_none">Vyberte obrázek (PNG, JPG, WEBP) pro zamykací obrazovku zařízení</string>
+    <string name="setd_lock_use_wallpaper">Použít tapetu launcheru</string>
+    <string name="setd_lock_use_wallpaper_motion">Použije statický snímek pohyblivé tapety</string>
+    <string name="setd_lock_use_wallpaper_still">Použije tapetu za XMB</string>
+    <string name="setd_lock_reset_row">Obnovit zamykací obrazovku</string>
+    <string name="setd_lock_reset_row_sublabel">Zpět na výchozí zamykací obrazovku zařízení</string>
+    <string name="setd_lock_tray_label">Zamykací obrazovka</string>
+    <string name="setd_lock_unreadable">Obrázek nelze přečíst</string>
+    <string name="setd_lock_no_wallpaper">Launcher nemá obrázek tapety k použití</string>
+    <string name="setd_lock_reset_done">Zamykací obrazovka obnovena na výchozí zařízení</string>
+    <string name="setd_lock_reset_failed">Zařízení zamykací obrazovku neobnovilo. Stále zobrazuje aktuální obrázek.</string>
+    <string name="setd_lock_set_done">Obrázek zamykací obrazovky nastaven</string>
+
+    <!-- Pick-one options -->
+    <string name="setd_opt_wave_style_title">Styl vlny</string>
+    <string name="setd_opt_wave_style_summary">Jak živá je vlna na pozadí.</string>
+    <string name="setd_opt_background_motion_title">Pohyb pozadí</string>
+    <string name="setd_opt_background_motion_summary">Jak živá je pohyblivá tapeta.</string>
+    <string name="setd_motion_animated">Pohyblivé</string>
+    <string name="setd_motion_animated_detail">Plný pohyb</string>
+    <string name="setd_motion_reduced">Pohyblivé, ztlumené</string>
+    <string name="setd_wave_reduced_detail">Tlumenější, klidnější</string>
+    <string name="setd_bgmotion_reduced_detail">Pomalejší, klidnější</string>
+    <string name="setd_motion_static">Nehybné</string>
+    <string name="setd_wave_static_detail">Zmrazená</string>
+    <string name="setd_bgmotion_static_detail">Statický obrázek</string>
+    <string name="setd_motion_reduced_static">Nehybné, ztlumené</string>
+    <string name="setd_opt_icon_legibility_title">Čitelnost ikon</string>
+    <string name="setd_opt_icon_legibility_summary">Jak se ikony XMB oddělují od pozadí.</string>
+    <string name="setd_icon_legibility_light_detail">Pro tmavé ikony</string>
+    <string name="setd_icon_legibility_auto_detail">Podle barvy ikony</string>
+    <string name="setd_opt_item_list_motion_title">Pohyb seznamu položek</string>
+    <string name="setd_opt_item_list_motion_summary">Jak se seznam položek pohybuje při procházení. Přetočení zasune vybranou položku za ikonu kategorie a směrem nahoru hraje pozpátku; Klouzání posouvá celý seznam najednou.</string>
+    <string name="setd_opt_umd_slot_title">Slot UMD</string>
+    <string name="setd_opt_umd_slot_summary">Která hra je ve slotu UMD.</string>
+    <string name="setd_umd_inserted_detail">Jen hra, kterou jste vložili</string>
+    <string name="setd_umd_recent_detail">Jinak naposledy hraná hra</string>
+    <string name="setd_opt_text_legibility_title">Čitelnost textu</string>
+    <string name="setd_opt_text_legibility_summary">Zatím se nepoužívá. Ukládá se s motivy a zálohami pro budoucí aktualizaci.</string>
+    <string name="setd_opt_orientation_title">Orientace obrazovky</string>
+    <string name="setd_opt_orientation_summary">Zda se PFP otáčí se zařízením. Podle zařízení zobrazí na výšku výzvu k otočení (pro Tasker / přepínání launcherů).</string>
+    <string name="setd_orientation_landscape">Na šířku</string>
+    <string name="setd_orientation_landscape_detail">PFP zůstane na šířku</string>
+    <string name="setd_orientation_follow">Podle zařízení</string>
+    <string name="setd_orientation_follow_detail">Otáčí se se zařízením</string>
+    <string name="setd_opt_touch_nav_title">Dotykové navigační tlačítko</string>
+    <string name="setd_opt_touch_nav_summary">Tlačítko Seznam aplikací / Zpět na obrazovce.</string>
+    <string name="setd_touch_nav_auto">Automaticky</string>
+    <string name="setd_touch_nav_auto_detail">Jen při používání dotyku</string>
+    <string name="setd_touch_nav_show">Vždy zobrazit</string>
+    <string name="setd_touch_nav_hide">Vždy skrýt</string>
+    <string name="setd_touch_nav_hide_detail">Jen ovladač</string>
+    <string name="setd_opt_touch_sens_title">Citlivost dotyku</string>
+    <string name="setd_opt_touch_sens_summary">Jak dlouhé přejetí odpovídá jednomu kroku XMB.</string>
+    <string name="setd_touch_sens_low">Nízká</string>
+    <string name="setd_touch_sens_low_detail">Stabilnější</string>
+    <string name="setd_touch_sens_normal">Normální</string>
+    <string name="setd_touch_sens_high">Vysoká</string>
+    <string name="setd_touch_sens_high_detail">Rychlejší posun</string>
+
+    <!-- Appearance toggles -->
+    <string name="setd_solid_icons">Plné nevybrané ikony</string>
+    <string name="setd_solid_icons_sublabel">Kreslit nevybrané ikony s plnou neprůhledností — výběr je stále poznat podle velikosti a popisku</string>
+    <string name="setd_text_shadow">Stín textu</string>
+    <string name="setd_text_shadow_sublabel">Vržený stín za pomocným textem řádků — zachová čitelnost na světlých částech tapety</string>
+
+    <!-- Font colour -->
+    <string name="setd_font_colour">Barva písma</string>
+    <string name="setd_font_colour_sublabel">Barva popisků a textu v celém rozhraní</string>
+    <string name="setd_font_colour_theme_default">Výchozí motivu</string>
+    <string name="setd_sub_font_colour">Vedlejší barva písma</string>
+    <string name="setd_sub_font_colour_sublabel">Barva podtitulků, popisků a hodnot. Dokud ji nenastavíte, řídí se Barvou písma</string>
+    <string name="setd_sub_font_colour_same">Stejná jako Barva písma</string>
+    <string name="setd_sub_font_colour_reset">Obnovit vedlejší barvu písma</string>
+    <string name="setd_sub_font_colour_reset_sublabel">Znovu se řídit Barvou písma</string>
+    <string name="setd_font_colour_reset">Obnovit barvu písma</string>
+    <string name="setd_font_colour_reset_sublabel">Vrátit barvu, kterou dodává aktuální motiv</string>
+    <string name="setd_picker_font_title">Barva písma</string>
+    <string name="setd_picker_sub_font_title">Vedlejší barva písma</string>
+    <string name="setd_contrast_title">Barva písma může být špatně čitelná</string>
+    <string name="setd_text_contrast_notice">Tato barva má na tomto pozadí kontrast %1$s, méně než doporučených 4,5:1. Text v ní může být špatně čitelný.</string>
+    <string name="setd_contrast_ok">OK</string>
+    <string name="setd_contrast_dont_warn">Už neupozorňovat</string>
+
+    <!-- XMB layout -->
+    <string name="setd_xmb_layout_intro">Umístěte XMB živě pro tuto obrazovku — změňte měřítko a posuňte křížovou lištu nahoru/dolů a doleva/doprava — přímo nad skutečným rozhraním. Každá velikost obrazovky (handheld, skládací, tablet) má vlastní nastavení.</string>
+    <string name="setd_xmb_adjust">Upravit rozložení XMB</string>
+    <string name="setd_xmb_adjust_sublabel">Živý editor — měřítko a umístění křížové lišty D-padem nebo posuvníky</string>
+    <string name="setd_psp_row">Biblicky přesné XMB z PSP</string>
+    <string name="setd_psp_row_applied">Použito na tuto obrazovku. Po změně rozložení v Upravit rozložení XMB jej lze použít znovu</string>
+    <string name="setd_psp_row_apply">Použít na tuto obrazovku vlastní proporce PSP</string>
+    <string name="setd_psp_confirm_title">Použít Biblicky přesné XMB z PSP?</string>
+    <string name="setd_psp_confirm_message">Nastaví měřítko XMB a polohu křížové lišty této obrazovky na proporce PSP. Vaše aktuální rozložení pro tuto velikost obrazovky bude nahrazeno; ostatní velikosti si ponechají svá.</string>
+
+    <!-- Boot sequence -->
+    <string name="setd_boot_show">Zobrazit spouštěcí sekvenci</string>
+    <string name="setd_boot_show_sublabel">Spouštěcí animace ve stylu PSP při každém spuštění</string>
+    <string name="setd_boot_resume">Zobrazit spouštěcí sekvenci při návratu</string>
+    <string name="setd_boot_resume_sublabel">Přehrát i při návratu ze hry</string>
+    <string name="setd_boot_video">Spouštěcí video</string>
+    <string name="setd_boot_video_sublabel">Přehrát vlastní video místo animace loga PFP %1$s</string>
+    <string name="setd_gameboot">Game Boot</string>
+    <string name="setd_gameboot_sublabel">"Krátká prezentace mezi potvrzením hry a otevřením emulátoru — vestavěná trvá pět sekund, s vlastním klipem až deset — lze přeskočit tlačítkem Potvrdit nebo Zpět.  Vypnuto znamená tiché spuštění — bez animace a bez zvuku."</string>
+    <string name="setd_gameboot_video">Video Game Boot</string>
+    <string name="setd_gameboot_video_sublabel">Nahradit vestavěnou sekvenci vlastním klipem, který hraje s vlastním zvukem na úrovni Game Boot ve Zvuk ▸ Úrovně %1$s</string>
+    <plurals name="setd_video_cap">
+        <item quantity="one">(MP4 nebo WebM, nejvýše %1$d sekunda)</item>
+        <item quantity="few">(MP4 nebo WebM, nejvýše %1$d sekundy)</item>
+        <item quantity="many">(MP4 nebo WebM, nejvýše %1$d sekundy)</item>
+        <item quantity="other">(MP4 nebo WebM, nejvýše %1$d sekund)</item>
+    </plurals>
+
+    <!-- Media rows -->
+    <string name="setd_media_preview">Náhled</string>
+    <string name="setd_media_default">Výchozí</string>
+    <string name="setd_media_use_default_prompt">Použít výchozí</string>
+    <string name="setd_media_preview_cd">Náhled: %1$s</string>
+    <string name="setd_media_use_default_cd">Použít výchozí PFP pro %1$s</string>
+
+    <!-- Interface / performance / games -->
+    <string name="setd_options_hint_sublabel">Zobrazovat při nečinnosti štítek „Možnosti“ nad položkami XMB s kontextovou nabídkou</string>
+    <string name="setd_hint_delay">Prodleva nápovědy</string>
+    <string name="setd_hint_delay_sublabel">Zobrazit po %1$s nečinnosti (1–5 sekund)</string>
+    <string name="setd_thermal">Ohled na tepelné omezení</string>
+    <string name="setd_thermal_sublabel">Zmrazit pozadí (vlnu nebo pohyblivou tapetu), když zařízení hlásí přehřívání</string>
+    <string name="setd_battery_saver">Režim úspory baterie</string>
+    <string name="setd_battery_saver_sublabel">Zmrazit pozadí (vlnu nebo pohyblivou tapetu), když je aktivní Spořič baterie</string>
+    <string name="setd_direct_launch">Spouštět hry přímo</string>
+    <string name="setd_direct_launch_sublabel">Potvrzení spustí hru okamžitě místo otevření Podrobností hry — k úpravám použijte „Zobrazit podrobnosti hry“ v nabídce Možnosti hry</string>
+
+    <!-- Dropped-clip report -->
+    <string name="setd_slot_boot_video">Spouštěcí video</string>
+    <string name="setd_slot_gameboot_video">Video Game Boot</string>
+    <string name="setd_slot_sound_name">Zvuk: %1$s</string>
+    <string name="setd_dropped_header">Z tohoto motivu nebylo nainstalováno:</string>
+    <string name="setd_dropped_item">%1$s — %2$s</string>
+
+    <!-- ===== Themes ===== -->
+    <string name="setd_themes_title">Motivy</string>
+    <string name="setd_color_scheme">Barevné schéma</string>
+    <string name="setd_color_scheme_custom_active">Aktivní vlastní barva motivu — výběr předvolby ji nahradí</string>
+    <string name="setd_color_scheme_sublabel">Barvy pozadí ve stylu PSP — živý náhled</string>
+    <string name="setd_custom_theme_color">Vlastní barva motivu</string>
+    <string name="setd_custom_theme_color_sublabel">Z importovaného motivu — výběrem ji odeberete a vrátíte se k barevnému schématu</string>
+    <string name="setd_group_icon_color">Barva ikon</string>
+    <string name="setd_custom_icon_color_title">Vlastní barva ikon</string>
+    <string name="setd_group_icons">Ikony</string>
+    <string name="setd_customize_icons">Přizpůsobit ikony XMB</string>
+    <string name="setd_customize_icons_sublabel">Křížová lišta, položky, konzole a fyzická média — v pořadí XMB, živě nad XMB</string>
+    <string name="setd_custom_icons_none">Žádné vlastní</string>
+    <string name="setd_custom_icons_count">Vlastní: %1$d</string>
+    <string name="setd_group_my_themes">Moje motivy</string>
+    <string name="setd_new_from_photo">Nový motiv z fotky</string>
+    <string name="setd_new_from_photo_sublabel">Vyberte obrázek — nastaví se z něj tapeta a barva</string>
+    <string name="setd_group_active_theme">Aktivní motiv</string>
+    <string name="setd_current_theme">Aktuální motiv</string>
+    <string name="setd_theme_default_name">Výchozí</string>
+    <string name="setd_reset_to_default">Obnovit výchozí</string>
+    <string name="setd_reset_to_default_sublabel">Odebrat použitou tapetu, barvy motivu a vlastní ikony</string>
+    <string name="setd_group_install">Instalace</string>
+    <string name="setd_save_look_row">Uložit aktuální vzhled jako motiv</string>
+    <string name="setd_save_look_row_sublabel">Zabalit ikony, tapetu, barvy a pohyb do sdílitelného souboru .pfptheme</string>
+    <string name="setd_save_look_title">Uložit aktuální vzhled jako motiv</string>
+    <string name="setd_theme_name_placeholder">Název motivu</string>
+    <string name="setd_import_ptf">Importovat motiv PSP (.ptf)</string>
+    <string name="setd_import_ptf_sublabel">Použije tapetu, barvu a odpovídající ikony motivu</string>
+    <string name="setd_import_pfptheme">Importovat motiv (.pfptheme)</string>
+    <string name="setd_import_pfptheme_sublabel">Motiv sdílený z PlayFieldPortal</string>
+
+    <!-- Saved theme cards and menu -->
+    <string name="setd_theme_older_format">Starší formát</string>
+    <string name="setd_theme_share">Sdílet</string>
+    <string name="setd_theme_update">Aktualizovat</string>
+    <string name="setd_theme_update_file">Aktualizovat soubor motivu</string>
+    <string name="setd_theme_rename">Přejmenovat motiv</string>
+    <string name="setd_theme_delete">Smazat motiv</string>
+    <string name="setd_theme_delete_title">Smazat motiv?</string>
+    <string name="setd_theme_delete_message">„%1$s“ bude smazán. Tuto akci nelze vrátit zpět.</string>
+    <string name="setd_theme_delete_confirm">Smazat</string>
+    <string name="setd_theme_share_chooser">Sdílet motiv</string>
+
+    <!-- Apply-theme question -->
+    <string name="setd_apply_theme_title">Použít „%1$s“?</string>
+    <string name="setd_apply_base_message">Změní barvy, ikony a pozadí launcheru.</string>
+    <string name="setd_apply_use_themes">Použít z motivu</string>
+    <string name="setd_apply_keep_mine">Ponechat moje</string>
+    <string name="setd_apply_turn_on">Zapnout</string>
+    <string name="setd_apply_leave_off">Nechat vypnuté</string>
+    <string name="setd_apply_replace_icons">Tento motiv má vlastní ikony pro %1$s, ale vaše jsou nastavené a zobrazují se místo nich. Použít ikony motivu? Vaše budou pro tyto položky odebrány.</string>
+    <string name="setd_apply_replace_media">Tento motiv má vlastní %1$s, ale vaše je nastavené a hraje místo nich. Použít média motivu? Vaše budou pro tyto položky odebrána.</string>
+    <string name="setd_apply_boot_off">Spouštěcí sekvence je vypnutá — zapněte ji, aby se přehrálo spouštěcí video motivu.</string>
+    <string name="setd_apply_gameboot_off">Game Boot je vypnutý — zapněte jej, aby se přehrálo video Game Boot motivu.</string>
+    <string name="setd_apply_lock_screen">Obsahuje také obrázek zamykací obrazovky — po použití se vás zeptáme.</string>
+    <string name="setd_lock_offer_title">Nastavit zamykací obrazovku?</string>
+    <string name="setd_lock_offer_message">„%1$s“ obsahuje obrázek zamykací obrazovky. Použít jej jako zamykací obrazovku zařízení? Obnovení motivu zamykací obrazovku vrátí.</string>
+    <string name="setd_lock_offer_confirm">Nastavit zamykací obrazovku</string>
+    <string name="setd_lock_offer_cancel">Teď ne</string>
+
+    <!-- Notification-tray messages about themes -->
+    <string name="setd_theme_reset_done">Motiv obnoven — zpět na výchozí vzhled</string>
+    <string name="setd_theme_created">Vytvořeno „%1$s“</string>
+    <string name="setd_theme_created_derived">Vytvořeno „%1$s“ — barva odvozena z fotky</string>
+    <string name="setd_theme_image_unreadable">Obrázek nelze přečíst</string>
+    <string name="setd_theme_apply_failed">Motiv nelze použít</string>
+    <string name="setd_theme_lock_unreadable">Obrázek zamykací obrazovky tohoto motivu nelze přečíst</string>
+    <string name="setd_theme_lock_set">Zamykací obrazovka nastavena z „%1$s“</string>
+    <string name="setd_theme_saved">Uloženo „%1$s“</string>
+    <string name="setd_theme_save_failed">Motiv nelze uložit</string>
+    <string name="setd_theme_fallback_name">motiv</string>
+    <string name="setd_theme_updated">„%1$s“ aktualizován na aktuální formát motivu</string>
+    <string name="setd_theme_update_failed">„%1$s“ nelze aktualizovat — původní soubor zůstal beze změny</string>
+    <string name="setd_theme_export_failed">Motiv nelze exportovat</string>
+    <string name="setd_theme_imported">Importováno „%1$s“</string>
+    <string name="setd_theme_import_unreadable">Soubor nelze otevřít</string>
+    <string name="setd_theme_import_too_large">Tento motiv je příliš velký na import</string>
+    <string name="setd_theme_import_out_of_memory">Nedostatek paměti pro import motivu — jeho pohyblivá tapeta je příliš velká</string>
+    <string name="setd_theme_import_not_a_bundle">Neplatný soubor .pfptheme</string>
+    <string name="setd_theme_import_damaged_wallpaper">Tapeta tohoto motivu je poškozená</string>
+    <string name="setd_theme_import_not_saved">Importovaný motiv nelze uložit</string>
+
+    <!-- ===== Artwork ===== -->
+    <string name="setd_artwork_title">Grafika</string>
+    <string name="setd_group_artwork_library">Knihovna grafiky</string>
+    <string name="setd_artwork_folder_row">Složka grafiky a import</string>
+    <string name="setd_artwork_folder_sublabel">Vyberte, kam se grafika ukládá, a importujte stávající grafiku z ES-DE</string>
+    <string name="setd_artwork_folder_unavailable_sublabel">Nedostupné. Znovu propojte pro pokračování nové grafiky</string>
+    <string name="setd_group_artwork_status">Stav grafiky knihovny</string>
+    <string name="setd_status_total">Celkem her</string>
+    <string name="setd_status_complete">Kompletní</string>
+    <string name="setd_status_missing">Chybí</string>
+    <string name="setd_status_stale">Zastaralé / neplatné</string>
+    <string name="setd_refresh_status">Obnovit stav</string>
+    <string name="setd_refresh_checking">Kontrola souborů…</string>
+    <string name="setd_refresh_sublabel">Znovu zkontrolovat grafiku na disku</string>
+    <string name="setd_group_scrape">Stahování grafiky</string>
+    <string name="setd_scrape_progress">"%1$d / %2$d  —  %3$s"</string>
+    <string name="setd_scrape_counts">Úspěšně %1$d · neúspěšně %2$d</string>
+    <string name="setd_scrape_background">Běží na pozadí — tuto obrazovku můžete opustit.</string>
+    <string name="setd_scrape_starting">Spouštění…</string>
+    <string name="setd_scrape_cancel">Zrušit stahování</string>
+    <string name="setd_scrape_cancel_sublabel">Zastaví se po aktuální hře — dosud stažená grafika zůstane zachována</string>
+    <string name="setd_scrape_all">Znovu stáhnout grafiku všech her</string>
+    <string name="setd_scrape_all_sublabel">Vymaže a znovu stáhne grafiku každé hry</string>
+    <string name="setd_scrape_missing">Stáhnout jen chybějící</string>
+    <string name="setd_scrape_missing_sublabel">Stáhne jen hry s chybějící nebo neplatnou grafikou — platnou ponechá</string>
+    <string name="setd_scrape_done_all">Grafika všech her znovu stažena: úspěšně %1$d, neúspěšně %2$d z %3$d</string>
+    <string name="setd_scrape_done_missing">Chybějící grafika stažena: úspěšně %1$d, neúspěšně %2$d z %3$d</string>
+    <string name="setd_scrape_cancelled">Stahování zrušeno — dosud stažená grafika zůstane zachována</string>
+    <string name="setd_scrape_failed">Stahování selhalo: %1$s</string>
+    <string name="setd_scrape_unknown_error">neznámá chyba</string>
+    <string name="setd_rescrape_title">Znovu stáhnout grafiku všech her?</string>
+    <string name="setd_rescrape_confirm">Znovu stáhnout vše</string>
+    <plurals name="setd_rescrape_message">
+        <item quantity="one">Grafika %1$d hry bude vymazána a znovu stažena. Stávající grafika bude nahrazena. Pokračovat?</item>
+        <item quantity="few">Grafika všech %1$d her bude vymazána a znovu stažena. Stávající grafika bude nahrazena. Pokračovat?</item>
+        <item quantity="many">Grafika všech %1$d hry bude vymazána a znovu stažena. Stávající grafika bude nahrazena. Pokračovat?</item>
+        <item quantity="other">Grafika všech %1$d her bude vymazána a znovu stažena. Stávající grafika bude nahrazena. Pokračovat?</item>
+    </plurals>
+    <string name="setd_group_source_priority">Priorita zdrojů</string>
+    <string name="setd_source_primary">Hlavní</string>
+    <string name="setd_source_fallback">Záložní %1$d</string>
+    <string name="setd_source_screenscraper_hash">ScreenScraper (hash ROM)</string>
+    <string name="setd_source_steamgriddb_artwork">SteamGridDB (grafika)</string>
+    <string name="setd_group_art_preferences">Předvolby grafiky</string>
+    <string name="setd_icon_display">Zobrazení ikon her</string>
+    <string name="setd_icon_display_sublabel">Výchozí pro všechny konzole — lze přepsat pro konzoli nebo hru v jejich nabídkách Možnosti</string>
+    <string name="setd_animated_icons">Animované ikony</string>
+    <string name="setd_animated_icons_sublabel">Po chvíli na hře přehrát v její ikoně videoukázku (režim Vlastní ikona; při slabé baterii se přeskočí)</string>
+    <string name="setd_snap_delay">Prodleva videoukázky</string>
+    <string name="setd_snap_delay_sublabel">Zůstaňte na hře %1$s, než se přehraje její videoukázka (1–5 sekund) — delší prodleva zabrání probliknutím při procházení</string>
+    <string name="setd_crop_preview">Náhled oříznutí</string>
+    <string name="setd_crop_preview_sublabel">Při ořezávání grafiky zobrazit v rohu hotovou dlaždici (v editoru oříznutí ji přepíná i Ⓨ)</string>
+    <string name="setd_prefer_sgdb_heroes">Preferovat hero ze SteamGridDB</string>
+    <string name="setd_prefer_sgdb_heroes_sublabel">Pro hero/banner zkusit nejprve SteamGridDB</string>
+    <string name="setd_download_heroes">Stahovat obrázky hero</string>
+    <string name="setd_download_heroes_sublabel">Široký banner zobrazený v podrobnostech hry</string>
+    <string name="setd_download_logos">Stahovat průhledná loga</string>
+    <string name="setd_download_logos_sublabel">Průhledná loga PNG přes grafiku hero</string>
+    <string name="setd_download_manuals">Stahovat manuály her</string>
+    <string name="setd_download_manuals_sublabel">Manuály PDF ze ScreenScraperu — otevírají se z nabídky Možnosti hry</string>
+    <string name="setd_download_video_snaps">Stahovat videoukázky</string>
+    <string name="setd_download_video_snaps_sublabel">Krátké herní klipy ze ScreenScraperu — velké soubory</string>
+    <string name="setd_artwork_region">Region grafiky (%1$s)</string>
+    <string name="setd_artwork_region_sublabel">Obaly a loga kterého regionu preferovat, když jich hra má více</string>
+    <string name="setd_region_no_preference">Bez preference</string>
+
+    <!-- Provider keys -->
+    <string name="setd_api_key">Klíč API</string>
+    <string name="setd_api_key_saved">Klíč API (uložen)</string>
+    <string name="setd_group_sgdb_api">SteamGridDB API</string>
+    <string name="setd_sgdb_key_placeholder">Vložte klíč SteamGridDB</string>
+    <string name="setd_sgdb_key_helper">Bezplatný klíč získáte na steamgriddb.com/api</string>
+    <string name="setd_save_api_key">Uložit klíč API</string>
+    <string name="setd_remove_api_key">Odebrat klíč API</string>
+    <string name="setd_remove_api_key_sublabel">Grafika ze SteamGridDB bude vypnuta</string>
+    <string name="setd_group_tgdb_api">TheGamesDB API</string>
+    <string name="setd_tgdb_key_placeholder">Vložte klíč TheGamesDB</string>
+    <string name="setd_tgdb_key_helper">Požádejte o klíč TheGamesDB na thegamesdb.net</string>
+    <string name="setd_save_tgdb_key">Uložit klíč TheGamesDB</string>
+    <string name="setd_remove_tgdb_key">Odebrat klíč TheGamesDB</string>
+    <string name="setd_remove_tgdb_key_sublabel">TheGamesDB bude jako zdroj přeskočen</string>
+    <string name="setd_group_igdb">Přihlašovací údaje IGDB (volitelné)</string>
+    <string name="setd_igdb_client_id">Client ID</string>
+    <string name="setd_igdb_client_id_saved">Client ID (uloženo)</string>
+    <string name="setd_igdb_client_id_placeholder">Twitch Client ID</string>
+    <string name="setd_igdb_client_secret">Client Secret</string>
+    <string name="setd_igdb_client_secret_placeholder">Twitch Client Secret</string>
+    <string name="setd_igdb_helper">Vytvořte aplikaci na dev.twitch.tv — zlepší záložní pokrytí moderních her</string>
+    <string name="setd_test_credentials">Otestovat údaje</string>
+    <string name="setd_save_credentials">Uložit údaje</string>
+    <string name="setd_clear_igdb">Vymazat údaje IGDB</string>
+    <string name="setd_clear_igdb_sublabel">IGDB bude jako záložní zdroj přeskočen</string>
+    <string name="setd_ss_status">Stav</string>
+    <string name="setd_ss_status_active_sublabel">Stahování podle hashe je aktivní (vestavěný vývojářský pár)</string>
+    <string name="setd_ss_status_inactive_sublabel">ScreenScraper v tomto sestavení není dostupný — nebyl přiložen vývojářský pár</string>
+    <string name="setd_ss_active">Aktivní</string>
+    <string name="setd_ss_inactive">Neaktivní</string>
+    <string name="setd_group_ss_account">Účet ScreenScraper (volitelné)</string>
+    <string name="setd_ss_username_saved">Uživatelské jméno (uloženo: %1$s)</string>
+    <string name="setd_ss_username">Uživatelské jméno</string>
+    <string name="setd_ss_tap_to_replace">Výběrem nahradíte</string>
+    <string name="setd_ss_username_placeholder">Uživatelské jméno ScreenScraper</string>
+    <string name="setd_ss_password">Heslo</string>
+    <string name="setd_ss_password_placeholder">Heslo ScreenScraper</string>
+    <string name="setd_ss_password_helper">Bezplatný účet na screenscraper.fr — zvyšuje limit stahování a denní kvótu. Ukládá se šifrovaně v tomto zařízení (Android Keystore).</string>
+    <string name="setd_test_account">Otestovat účet</string>
+    <string name="setd_save_account">Uložit účet</string>
+    <string name="setd_clear_ss_account">Vymazat účet ScreenScraper</string>
+    <string name="setd_clear_ss_account_sublabel">Stahování pokračuje s anonymními limity</string>
+    <string name="setd_secret_sgdb_key">Klíč SteamGridDB</string>
+    <string name="setd_secret_tgdb_key">Klíč TheGamesDB</string>
+    <string name="setd_secret_igdb_secret">Client Secret IGDB</string>
+    <string name="setd_secret_ss_password">Heslo ScreenScraper</string>
+    <string name="setd_secret_unprotected">%1$s bylo uloženo, ale zabezpečené úložiště klíčů tohoto zařízení nebylo dostupné, takže je uloženo nešifrovaně. Pozdější vymazání a nové zadání to zkusí znovu.</string>
+
+    <!-- Cache -->
+    <string name="setd_group_cache">Mezipaměť</string>
+    <string name="setd_cache_size">Velikost uložené grafiky</string>
+    <string name="setd_cache_size_sublabel">Mezipaměť obrázků + grafika uložená v tomto zařízení (vaše složka grafiky se nezapočítává)</string>
+    <string name="setd_clear_ss_cache">Vymazat mezipaměť URL ScreenScraper</string>
+    <string name="setd_clear_ss_cache_sublabel">Zapomenout uložené URL grafiky — další stahování se ScreenScraperu zeptá znovu u každé hry. Neškodné; grafiku nikdy nesmaže</string>
+    <string name="setd_ss_cache_cleared">Mezipaměť URL ScreenScraper vymazána</string>
+    <string name="setd_clear_all_artwork">Vymazat veškerou grafiku</string>
+    <string name="setd_clear_all_artwork_sublabel">Nový začátek: odebere obrázky v mezipaměti, uloženou grafiku a odkazy na grafiku všech her. Soubory ve složce grafiky zůstanou — obnovíte je znovupropojením nebo novým stažením</string>
+
+    <!-- ===== Artwork Folder & Import ===== -->
+    <string name="setd_import_title">Složka grafiky a import</string>
+    <string name="setd_import_group_folder">Složka grafiky</string>
+    <string name="setd_import_change_folder">Změnit složku grafiky</string>
+    <string name="setd_import_choose_folder">Vybrat složku grafiky</string>
+    <string name="setd_import_folder_not_set">Nenastaveno — výběrem zvolíte, kde PFP uchovává grafiku</string>
+    <string name="setd_import_group_existing">Importovat stávající grafiku</string>
+    <string name="setd_import_no_launchers">Nebyly nalezeny žádné launchery</string>
+    <string name="setd_import_no_launchers_sublabel">Nejprve zkopírujte nebo přesuňte média jiného launcheru do složky, např. import/ES-DE/downloaded_media. Přesun uvolní místo, ale odebere grafiku z daného launcheru.</string>
+    <plurals name="setd_import_source_systems">
+        <item quantity="one">Rozpoznána %1$d složka systému — výběrem zobrazíte náhled importu</item>
+        <item quantity="few">Rozpoznány %1$d složky systémů — výběrem zobrazíte náhled importu</item>
+        <item quantity="many">Rozpoznáno %1$d složky systémů — výběrem zobrazíte náhled importu</item>
+        <item quantity="other">Rozpoznáno %1$d složek systémů — výběrem zobrazíte náhled importu</item>
+    </plurals>
+    <string name="setd_import_unrecognized">Nerozpoznané uspořádání — očekává se struktura downloaded_media z ES-DE</string>
+    <string name="setd_import_scanning">Prohledávání…</string>
+    <string name="setd_import_rescan">Znovu prohledat složku importu</string>
+    <string name="setd_import_rescan_sublabel">Znovu zkontrolovat import/ kvůli složkám launcherů</string>
+    <string name="setd_import_relinking">Prohledávání knihovny…</string>
+    <string name="setd_import_relink">Prohledat a znovu propojit knihovnu</string>
+    <string name="setd_import_relink_sublabel">Znovu připojí grafiku ve složce k vašim hrám, obnoví přesunuté či změněné soubory a vyčistí odkazy na smazané</string>
+    <string name="setd_import_unmatched">Nepřiřazená grafika (%1$d)</string>
+    <string name="setd_import_unmatched_sublabel">Soubory ve složce, které neodpovídají žádné hře — propojte je ručně</string>
+    <string name="setd_import_group_storage">Úložiště aplikace</string>
+    <string name="setd_import_moving">Přesouvání grafiky do vaší složky…</string>
+    <string name="setd_import_moving_progress">%1$d / %2$d — běží na pozadí</string>
+    <string name="setd_import_moving_background">Běží na pozadí — tuto obrazovku můžete opustit</string>
+    <string name="setd_import_cancel_move">Zrušit přesun</string>
+    <string name="setd_import_cancel_move_sublabel">Již přesunutá grafika zůstane ve složce</string>
+    <string name="setd_import_move_in">Přesunout do složky</string>
+    <plurals name="setd_import_move_in_sublabel">
+        <item quantity="one">%1$d soubor grafiky (%2$s) byl uložen před propojením této složky a je v úložišti aplikace. Přesunem bude přenosný a uvolní místo v aplikaci. Zamčená a ručně vybraná grafika ve složce se nikdy nepřepíše.</item>
+        <item quantity="few">%1$d soubory grafiky (%2$s) byly uloženy před propojením této složky a jsou v úložišti aplikace. Přesunem budou přenosné a uvolní místo v aplikaci. Zamčená a ručně vybraná grafika ve složce se nikdy nepřepíše.</item>
+        <item quantity="many">%1$d souboru grafiky (%2$s) bylo uloženo před propojením této složky a je v úložišti aplikace. Přesunem bude přenosné a uvolní místo v aplikaci. Zamčená a ručně vybraná grafika ve složce se nikdy nepřepíše.</item>
+        <item quantity="other">%1$d souborů grafiky (%2$s) bylo uloženo před propojením této složky a je v úložišti aplikace. Přesunem budou přenosné a uvolní místo v aplikaci. Zamčená a ručně vybraná grafika ve složce se nikdy nepřepíše.</item>
+    </plurals>
+    <string name="setd_import_group_export">Export</string>
+    <string name="setd_import_export">Exportovat pro ES-DE</string>
+    <string name="setd_import_export_sublabel">Zkopíruje grafiku do vybrané složky (např. downloaded_media z ES-DE) — přírůstkově, knihovna se nikdy nemění</string>
+    <string name="setd_import_group_preview">Náhled importu</string>
+    <string name="setd_import_building">Sestavování náhledu…</string>
+    <string name="setd_import_building_sublabel">Přiřazování grafiky k vašim hrám</string>
+    <string name="setd_import_preview_group">Náhled importu — %1$s</string>
+    <string name="setd_import_games_matched">Přiřazené hry</string>
+    <string name="setd_import_files_to_import">Soubory k importu</string>
+    <string name="setd_import_estimated_size">Odhadovaná velikost</string>
+    <string name="setd_import_details_found">Nalezené podrobnosti her</string>
+    <string name="setd_import_details_none_sublabel">Zkopírujte složku gamelists z ES-DE do složky importu launcheru a přeneste i popisy, vývojáře a roky vydání</string>
+    <string name="setd_import_details_some_sublabel">Popisy a podrobnosti z gamelist.xml — stávající data nikdy nepřepíše</string>
+    <string name="setd_import_already_present">Již existuje</string>
+    <string name="setd_import_needs_review">Vyžaduje kontrolu</string>
+    <string name="setd_import_unmatched_artwork">Nepřiřazená grafika</string>
+    <string name="setd_import_skipped_folders">Přeskočené složky systémů</string>
+    <string name="setd_import_no_games">V knihovně nejsou žádné hry</string>
+    <string name="setd_import_no_games_sublabel">Grafika nalezena pro %1$s, ale vaše knihovna nemá hry pro tyto systémy — nejprve přidejte hry a pak spusťte import znovu.</string>
+    <string name="setd_import_move_files">Přesunout soubory (rychlejší, uvolní místo)</string>
+    <string name="setd_import_move_files_sublabel">Grafika se ze složky launcheru přesune místo kopírování. Druhý launcher tyto soubory ztratí.</string>
+    <string name="setd_import_review_group">Zkontrolovat nejednoznačné shody (%1$d)</string>
+    <plurals name="setd_import_possible_games">
+        <item quantity="one">%1$d možná hra — výběrem zvolíte</item>
+        <item quantity="few">%1$d možné hry — výběrem zvolíte</item>
+        <item quantity="many">%1$d možné hry — výběrem zvolíte</item>
+        <item quantity="other">%1$d možných her — výběrem zvolíte</item>
+    </plurals>
+    <string name="setd_import_game_number">Hra č. %1$d</string>
+    <string name="setd_import_assign_sublabel">Přiřadit tuto grafiku této hře</string>
+    <string name="setd_import_skip_file">Přeskočit tento soubor</string>
+    <string name="setd_import_start">Spustit import</string>
+    <plurals name="setd_import_start_move">
+        <item quantity="one">Přesune %1$d soubor do knihovny grafiky</item>
+        <item quantity="few">Přesune %1$d soubory do knihovny grafiky</item>
+        <item quantity="many">Přesune %1$d souboru do knihovny grafiky</item>
+        <item quantity="other">Přesune %1$d souborů do knihovny grafiky</item>
+    </plurals>
+    <plurals name="setd_import_start_copy">
+        <item quantity="one">Zkopíruje %1$d soubor do knihovny grafiky</item>
+        <item quantity="few">Zkopíruje %1$d soubory do knihovny grafiky</item>
+        <item quantity="many">Zkopíruje %1$d souboru do knihovny grafiky</item>
+        <item quantity="other">Zkopíruje %1$d souborů do knihovny grafiky</item>
+    </plurals>
+    <string name="setd_import_cancel_preview">Zrušit náhled</string>
+    <string name="setd_import_group_importing">Import</string>
+    <string name="setd_import_cancel">Zrušit import</string>
+    <string name="setd_import_cancel_sublabel">Již importovaná grafika zůstane zachována</string>
+    <string name="setd_import_group_report">Zpráva o importu</string>
+    <string name="setd_import_clear_reports">Vymazat zprávy</string>
+    <string name="setd_kind_icon">Obaly</string>
+    <string name="setd_kind_hero">Mix obrázky</string>
+    <string name="setd_kind_background">Fanart</string>
+    <string name="setd_kind_logo">Marquee</string>
+    <string name="setd_kind_screenshot">Snímky obrazovky</string>
+    <string name="setd_kind_titlescreen">Titulní obrazovky</string>
+    <string name="setd_kind_physical_media">Fyzická média</string>
+    <string name="setd_kind_manual">Manuály</string>
+    <string name="setd_import_link_failed">V této složce nelze založit knihovnu grafiky — může být jen pro čtení.</string>
+    <string name="setd_import_library_reconnected">Stávající knihovna grafiky PFP znovu připojena.</string>
+    <string name="setd_import_library_created">Knihovna grafiky vytvořena.</string>
+    <plurals name="setd_import_games_linked">
+        <item quantity="one">%1$d hra propojena z %2$d souborů, které již ve složce jsou.</item>
+        <item quantity="few">%1$d hry propojeny z %2$d souborů, které již ve složce jsou.</item>
+        <item quantity="many">%1$d hry propojeno z %2$d souborů, které již ve složce jsou.</item>
+        <item quantity="other">%1$d her propojeno z %2$d souborů, které již ve složce jsou.</item>
+    </plurals>
+    <string name="setd_import_place_media">Umístěte média jiných launcherů do import/.</string>
+    <plurals name="setd_import_internal_files">
+        <item quantity="one">%1$d soubor grafiky je stále v úložišti aplikace — viz Přesunout do složky níže.</item>
+        <item quantity="few">%1$d soubory grafiky jsou stále v úložišti aplikace — viz Přesunout do složky níže.</item>
+        <item quantity="many">%1$d souboru grafiky je stále v úložišti aplikace — viz Přesunout do složky níže.</item>
+        <item quantity="other">%1$d souborů grafiky je stále v úložišti aplikace — viz Přesunout do složky níže.</item>
+    </plurals>
+    <plurals name="setd_import_upgraded">
+        <item quantity="one">Knihovna grafiky převedena na nové uspořádání — reorganizován %1$d soubor.</item>
+        <item quantity="few">Knihovna grafiky převedena na nové uspořádání — reorganizovány %1$d soubory.</item>
+        <item quantity="many">Knihovna grafiky převedena na nové uspořádání — reorganizováno %1$d souboru.</item>
+        <item quantity="other">Knihovna grafiky převedena na nové uspořádání — reorganizováno %1$d souborů.</item>
+    </plurals>
+    <string name="setd_import_scan_failed">Složku importu nelze prohledat.</string>
+    <string name="setd_import_source_unreadable">Tento zdroj nelze přečíst.</string>
+    <string name="setd_import_preview_failed">Náhled selhal — viz protokoly.</string>
+    <string name="setd_import_nothing">Není co importovat — vše již existuje.</string>
+    <string name="setd_import_export_started">Export spuštěn — průběh v oznámení; výsledek najdete ve Zprávě o importu.</string>
+    <plurals name="setd_relink_files">
+        <item quantity="one">Prohledáno: %1$d soubor</item>
+        <item quantity="few">Prohledáno: %1$d soubory</item>
+        <item quantity="many">Prohledáno: %1$d souboru</item>
+        <item quantity="other">Prohledáno: %1$d souborů</item>
+    </plurals>
+    <plurals name="setd_relink_linked">
+        <item quantity="one">propojena %1$d hra</item>
+        <item quantity="few">propojeny %1$d hry</item>
+        <item quantity="many">propojeno %1$d hry</item>
+        <item quantity="other">propojeno %1$d her</item>
+    </plurals>
+    <string name="setd_relink_orphans">nepřiřazeno %1$d — viz Nepřiřazená grafika</string>
+    <string name="setd_relink_failed">Prohledání knihovny selhalo — viz protokoly.</string>
+    <string name="setd_relink_cancelled">Prohledání knihovny zrušeno.</string>
+    <string name="setd_report_title">%1$s — %2$s</string>
+    <string name="setd_report_unreadable">Zprávu nelze přečíst</string>
+    <string name="setd_report_imported">importováno %1$d</string>
+    <string name="setd_report_skipped">přeskočeno %1$d</string>
+    <string name="setd_report_failed">selhalo %1$d</string>
+    <plurals name="setd_report_game_details">
+        <item quantity="one">%1$d podrobnost hry</item>
+        <item quantity="few">%1$d podrobnosti her</item>
+        <item quantity="many">%1$d podrobnosti her</item>
+        <item quantity="other">%1$d podrobností her</item>
+    </plurals>
+    <string name="setd_report_need_review">ke kontrole %1$d</string>
+    <string name="setd_report_unmatched">nepřiřazeno %1$d</string>
+    <string name="setd_report_cancelled">zrušeno</string>
+
+    <!-- ===== Unmatched Artwork ===== -->
+    <string name="setd_orphan_title">Nepřiřazená grafika</string>
+    <string name="setd_orphan_link_title">Propojit „%1$s“</string>
+    <string name="setd_orphan_none">Nic nepřiřazeného</string>
+    <string name="setd_orphan_none_sublabel">Všechny soubory grafiky ve složce jsou propojeny s hrou. Po přidání souborů spusťte Prohledat a znovu propojit.</string>
+    <plurals name="setd_orphan_count">
+        <item quantity="one">%1$d soubor neodpovídá žádné hře</item>
+        <item quantity="few">%1$d soubory neodpovídají žádné hře</item>
+        <item quantity="many">%1$d souboru neodpovídá žádné hře</item>
+        <item quantity="other">%1$d souborů neodpovídá žádné hře</item>
+    </plurals>
+    <string name="setd_orphan_group_file">Soubor</string>
+    <string name="setd_orphan_group_search">Hledat ve vašich hrách</string>
+    <string name="setd_orphan_title_field">Název</string>
+    <string name="setd_orphan_searching">Hledání…</string>
+    <string name="setd_orphan_search">Hledat</string>
+    <string name="setd_orphan_search_sublabel">Hledá jen ve vašich hrách pro %1$s — nic se nestahuje</string>
+    <string name="setd_orphan_no_search">Zatím nehledáno</string>
+    <string name="setd_orphan_no_search_sublabel">Upravte název výše a stiskněte Hledat pro zobrazení odpovídajících her</string>
+    <string name="setd_orphan_no_match">Žádné odpovídající hry</string>
+    <string name="setd_orphan_no_match_sublabel">Zkuste kratší název — obvykle stačí jedno výrazné slovo</string>
+    <plurals name="setd_orphan_matches">
+        <item quantity="one">%1$d shoda — vyberte vlastníka</item>
+        <item quantity="few">%1$d shody — vyberte vlastníka</item>
+        <item quantity="many">%1$d shody — vyberte vlastníka</item>
+        <item quantity="other">%1$d shod — vyberte vlastníka</item>
+    </plurals>
+
+    <!-- ===== Achievements ===== -->
+    <string name="setd_ach_subtitle_credentials">Achievementy · Přihlašovací údaje poskytovatelů</string>
+    <string name="setd_ach_subtitle_local_windows">Achievementy · Místní Windows</string>
+    <string name="setd_ach_subtitle_update">Achievementy · Aktualizovat achievementy</string>
+    <string name="setd_ach_subtitle_coins">Shiba Coins</string>
+    <string name="setd_ach_enable">Zapnout Shiba Coins</string>
+    <string name="setd_ach_enable_sublabel">Sledovat achievementy jako Shiba Coins napříč RetroAchievements a Steamem</string>
+    <string name="setd_ach_connected_as">Připojeno jako</string>
+    <string name="setd_ach_username">Uživatelské jméno</string>
+    <string name="setd_ach_ra_username_placeholder">Vaše uživatelské jméno RA</string>
+    <string name="setd_ach_web_api_key">Klíč Web API</string>
+    <string name="setd_ach_web_api_key_saved">Klíč Web API (uložen)</string>
+    <string name="setd_ach_ra_key_placeholder">Vložte klíč RA Web API</string>
+    <string name="setd_ach_ra_key_helper">retroachievements.org → Settings → Keys → Web API Key</string>
+    <string name="setd_ach_ra_connect">Připojit RetroAchievements</string>
+    <string name="setd_ach_ra_disconnect">Odpojit RetroAchievements</string>
+    <string name="setd_ach_ra_disconnect_sublabel">Odebere vaše uživatelské jméno a klíč z tohoto zařízení</string>
+    <string name="setd_ach_steam_id">SteamID64 nebo název profilu</string>
+    <string name="setd_ach_steam_id_placeholder">76561… nebo vlastní název</string>
+    <string name="setd_ach_steam_id_helper">Vlastní název se při připojení převede na SteamID64</string>
+    <string name="setd_ach_steam_key_placeholder">Vložte klíč Steam Web API</string>
+    <string name="setd_ach_steam_key_helper">steamcommunity.com/dev — Podrobnosti o hrách ve vašem profilu musí být Veřejné</string>
+    <string name="setd_ach_steam_connect">Připojit Steam</string>
+    <string name="setd_ach_steam_disconnect">Odpojit Steam</string>
+    <string name="setd_ach_steam_disconnect_sublabel">Odebere vaše SteamID a klíč z tohoto zařízení</string>
+    <string name="setd_ach_ra_connected">RetroAchievements připojeno</string>
+    <string name="setd_ach_ra_disconnected">RetroAchievements odpojeno</string>
+    <string name="setd_ach_steam_disconnected">Steam odpojen</string>
+    <string name="setd_ach_group_local_steam">Místní Steam (emulovaný)</string>
+    <string name="setd_ach_track_local">Sledovat místní hry Steam (emulované)</string>
+    <string name="setd_ach_track_local_sublabel">Najít hry v emulátoru, vytvořit jejich data achievementů a synchronizovat odemčení</string>
+    <string name="setd_ach_goldberg">Instalovat Goldberg a převést hry</string>
+    <string name="setd_ach_goldberg_sublabel">Při prohledávání nabídnout zápis dat achievementů do rozpoznaných her, aby je emulátor mohl sledovat</string>
+    <string name="setd_ach_backup_title">Nejprve zálohujte uložené pozice</string>
+    <string name="setd_ach_backup_confirm">Mám zálohováno — zapnout</string>
+    <string name="setd_ach_local_steam_message">Před synchronizací otevřete emulátor Windows a zálohujte uložené pozice všech her s emulací Steamu, které už máte nastavené.\n\nSledování těchto her umožní synchronizaci přepsat konfiguraci emulátoru každé hry a nahradit její soubory Steamu, aby bylo možné zaznamenávat odemčení. Hra, kterou jste nastavili a hráli před touto funkcí, by jinak mohla ztratit přístup ke svým uloženým pozicím.\n\nK načtení dat achievementů se také používá váš vlastní klíč Steam Web API — na vlastní riziko. Sledování Steamu je zcela volitelné; pokud tato rizika nechcete přijmout, nechte jej vypnuté.\n\nNejprve zálohujte, pak toto zapněte a aktualizujte achievementy nainstalovaných her.</string>
+    <string name="setd_ach_goldberg_message">Před převodem jakékoli hry otevřete emulátor Windows a zálohujte uložené pozice všech her s emulací Steamu, které už máte nastavené.\n\nPřevod přepíše konfiguraci emulátoru každé hry a nahradí její soubory Steamu, aby bylo možné zaznamenávat odemčení. Hra, kterou jste nastavili a hráli před touto funkcí, by jinak mohla ztratit přístup ke svým uloženým pozicím.\n\nK načtení dat achievementů se také používá váš vlastní klíč Steam Web API — na vlastní riziko. Pokud tato rizika nechcete přijmout, nechte toto vypnuté.\n\nNejprve zálohujte, pak toto zapněte a prohledejte hry.</string>
+    <string name="setd_ach_group_update">Aktualizace</string>
+    <string name="setd_ach_last_updated">Naposledy aktualizováno</string>
+    <string name="setd_ach_never">Nikdy</string>
+    <string name="setd_ach_auto_updates">Automatické aktualizace</string>
+    <string name="setd_ach_updates_paused">Aktualizace pozastaveny do nové synchronizace</string>
+    <string name="setd_ach_updating">Aktualizace achievementů…</string>
+    <string name="setd_ach_update_installed">Aktualizovat achievementy nainstalovaných her</string>
+    <string name="setd_ach_update_after_match">Spustí se automaticky po dokončení automatického přiřazení</string>
+    <string name="setd_ach_update_resume">Znovu synchronizuje hry v tomto zařízení a obnoví automatické aktualizace</string>
+    <string name="setd_ach_update_check">Zkontrolovat nové achievementy her v tomto zařízení</string>
+    <string name="setd_ach_group_auto_match">Automatické přiřazení</string>
+    <string name="setd_ach_matching">Přiřazování her…</string>
+    <string name="setd_ach_auto_match">Automaticky přiřadit hry</string>
+    <string name="setd_ach_auto_match_sublabel">Propojit hry v tomto zařízení s RetroAchievements (hash ROM) a Steamem</string>
+    <string name="setd_ach_group_reset">Obnovení</string>
+    <string name="setd_ach_clearing">Mazání achievementů…</string>
+    <string name="setd_ach_clear_row">Vymazat všechny sledované achievementy</string>
+    <string name="setd_ach_clear_row_sublabel">Odebere všechny achievementy zaznamenané v Play Field Portal. Hry a připojení poskytovatelů zůstanou.</string>
+    <string name="setd_ach_clear_title">Vymazat všechny sledované achievementy?</string>
+    <string name="setd_ach_clear_message">Tímto odeberete všechny achievementy zaznamenané v Play Field Portal, včetně získaného průběhu a záznamů her, které už nejsou nainstalované. Hry a připojení poskytovatelů zůstanou. Aby se achievementy znovu zobrazily, bude nutné hry znovu synchronizovat.</string>
+    <string name="setd_ach_clear_confirm">Vymazat achievementy</string>
+
+</resources>

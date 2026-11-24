@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Localization slice H1: artwork scraping, import, export, relink and move -->
+<resources>
+    <!-- Shared -->
+    <string name="art_error_unexpected">Unexpected error</string>
+    <string name="art_no_folder_linked">No artwork folder linked</string>
+    <string name="art_paused_message">Artwork paused. Relink your artwork folder to save new art.</string>
+    <string name="art_error_game_not_found">Game not found</string>
+    <string name="art_error_not_found_any_source">Not found on any source</string>
+    <!-- %1$s is the name of the source that supplied the data, for example a scraping service -->
+    <string name="art_found_via">Found via %1$s</string>
+    <!-- Heading of the per-item results list; items that were processed successfully -->
+    <string name="art_results_label_updated">Updated</string>
+    <string name="art_results_label_imported">Imported</string>
+
+    <!-- Live scrape progress: what is being fetched right now (shown after the source name) -->
+    <string name="art_progress_hashing">Hashing ROM…</string>
+    <string name="art_progress_searching">Searching…</string>
+    <string name="art_asset_hero">Hero</string>
+    <string name="art_asset_background">Background</string>
+    <string name="art_asset_logo">Logo</string>
+    <string name="art_asset_box_art">Box Art</string>
+    <string name="art_asset_physical_media">Physical Media</string>
+    <string name="art_asset_3d_box">3D Box</string>
+    <string name="art_asset_screenshot">Screenshot</string>
+    <string name="art_asset_manual">Manual</string>
+    <string name="art_asset_video">Video</string>
+    <string name="art_asset_icon_video">Icon Video</string>
+    <string name="art_asset_icon_video_converting">Icon Video (converting)</string>
+    <!-- Shown in place of a store name when no online game store is available -->
+    <string name="art_source_storefronts">Storefronts</string>
+
+    <!-- Metadata fields (labels in the metadata preview and editor) -->
+    <string name="art_field_title">Title</string>
+    <string name="art_field_description">Description</string>
+    <string name="art_field_developer">Developer</string>
+    <string name="art_field_publisher">Publisher</string>
+    <string name="art_field_year">Year</string>
+    <string name="art_field_release_date">Release Date</string>
+    <string name="art_field_genre">Genre</string>
+    <string name="art_field_age_rating">Age Rating</string>
+    <string name="art_field_franchise">Franchise</string>
+    <string name="art_field_rating">Rating</string>
+
+    <!-- Ways to apply scraped metadata (button labels) -->
+    <string name="art_policy_replace_all">Replace All</string>
+    <string name="art_policy_fill_missing">Fill Missing Only</string>
+    <string name="art_policy_choose_fields">Choose Fields</string>
+    <string name="art_policy_keep_current">Keep Current</string>
+
+    <!-- Scrape (background task) -->
+    <string name="art_scrape_label_all">Re-scraping all games</string>
+    <string name="art_scrape_label_missing">Scraping missing artwork</string>
+    <string name="art_scrape_stop_note">Artwork already fetched is kept.</string>
+    <string name="art_scrape_paused_all_title">Artwork re-scrape paused</string>
+    <string name="art_scrape_paused_title">Artwork scrape paused</string>
+    <string name="art_scrape_finished_all_title">Artwork re-scrape finished</string>
+    <string name="art_scrape_finished_title">Artwork scrape finished</string>
+    <string name="art_scrape_stopped_title">Artwork scrape stopped</string>
+    <string name="art_scrape_failed_title">Artwork scrape failed</string>
+    <!-- %1$d games succeeded, %2$d games failed, %3$d games in total -->
+    <string name="art_scrape_result">%1$d succeeded, %2$d failed of %3$d</string>
+    <plurals name="art_scrape_stopped_after">
+        <item quantity="one">Stopped after %1$d game — artwork fetched so far is kept</item>
+        <item quantity="other">Stopped after %1$d games — artwork fetched so far is kept</item>
+    </plurals>
+
+    <!-- Relink (background task) -->
+    <string name="art_relink_label">Relinking artwork</string>
+    <plurals name="art_relink_label_consoles">
+        <item quantity="one">Relinking artwork for %1$d console</item>
+        <item quantity="other">Relinking artwork for %1$d consoles</item>
+    </plurals>
+    <string name="art_relink_stop_note">Artwork already linked stays linked.</string>
+    <string name="art_relink_finished_title">Artwork relink finished</string>
+    <string name="art_relink_stopped_title">Artwork relink stopped</string>
+    <string name="art_relink_stopped_note">Artwork linked so far is kept</string>
+    <string name="art_relink_failed_title">Artwork relink failed</string>
+    <plurals name="art_relink_games_linked">
+        <item quantity="one">%1$d game linked</item>
+        <item quantity="other">%1$d games linked</item>
+    </plurals>
+    <plurals name="art_relink_files">
+        <item quantity="one">%1$d file</item>
+        <item quantity="other">%1$d files</item>
+    </plurals>
+    <!-- %1$s is "3 games linked", %2$s is "12 files": reads "3 games linked of 12 files" -->
+    <string name="art_relink_result">%1$s of %2$s</string>
+    <!-- %1$s is the line above, %2$d is how many files matched no game -->
+    <string name="art_relink_result_unmatched">%1$s · %2$d unmatched</string>
+
+    <!-- Export to ES-DE (background task) -->
+    <string name="art_export_label">Exporting artwork for ES-DE</string>
+    <string name="art_export_stop_note">Files already exported stay in place.</string>
+    <string name="art_export_error_no_destination">No destination folder</string>
+    <string name="art_export_error_access_lost">Artwork folder access was lost</string>
+    <string name="art_export_dest_not_created">The destination folder could not be created.</string>
+    <plurals name="art_export_files_badge">
+        <item quantity="one">%1$d file</item>
+        <item quantity="other">%1$d files</item>
+    </plurals>
+    <string name="art_export_failed_title">Artwork export failed</string>
+    <string name="art_export_stopped_title">Artwork export stopped</string>
+    <string name="art_export_finished_title">Artwork export finished</string>
+    <plurals name="art_export_stopped_note">
+        <item quantity="one">%1$d file exported first</item>
+        <item quantity="other">%1$d files exported first</item>
+    </plurals>
+    <!-- %1$d files copied, %2$d files skipped because they already exist, %3$d files that failed -->
+    <string name="art_export_result">%1$d copied, %2$d already present, %3$d failed</string>
+
+    <!-- Import (background task and its notification) -->
+    <string name="art_import_plan_not_found">Import plan not found</string>
+    <string name="art_import_plan_unreadable">Import plan unreadable</string>
+    <!-- %1$s is the name of the folder or library the artwork comes from -->
+    <string name="art_import_label">Importing artwork — %1$s</string>
+    <string name="art_import_stop_note">Artwork already imported is kept.</string>
+    <string name="art_import_failed_title">Artwork import failed</string>
+    <string name="art_import_cancelled">Artwork import cancelled</string>
+    <string name="art_import_done">Artwork imported</string>
+    <plurals name="art_import_needs_review">
+        <item quantity="one">Artwork imported, %1$d item needs review</item>
+        <item quantity="other">Artwork imported, %1$d items need review</item>
+    </plurals>
+    <!-- %1$s is the headline above, %2$s is the name of the folder or library the artwork comes from -->
+    <string name="art_import_headline">%1$s: %2$s</string>
+    <string name="art_import_counts">%1$d imported, %2$d skipped, %3$d failed, %4$d ambiguous, %5$d unmatched.</string>
+    <string name="art_import_results_summary">%1$d imported, %2$d skipped</string>
+
+    <!-- Move artwork into the linked folder (background task) -->
+    <string name="art_move_label">Moving artwork into your folder</string>
+    <string name="art_move_failed_title">Artwork move failed</string>
+    <string name="art_move_stopped_title">Artwork move stopped</string>
+    <string name="art_move_finished_title">Artwork move finished</string>
+    <plurals name="art_move_stopped_note">
+        <item quantity="one">%1$d file moved first</item>
+        <item quantity="other">%1$d files moved first</item>
+    </plurals>
+    <!-- %1$d files moved, %2$d files skipped because the folder already has them, %3$d files that failed -->
+    <string name="art_move_result">%1$d moved, %2$d already covered, %3$d failed</string>
+</resources>

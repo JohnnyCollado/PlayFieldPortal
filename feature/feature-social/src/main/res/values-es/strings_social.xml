@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- QR login screen -->
+    <string name="soc_qr_preparing">Preparando el inicio de sesión…</string>
+    <string name="soc_qr_connected">Conectado</string>
+    <string name="soc_qr_expired">El código caducó.</string>
+    <string name="soc_qr_declined">Se rechazó el inicio de sesión.</string>
+    <string name="soc_qr_error">No se pudo iniciar sesión. %1$s</string>
+    <string name="soc_qr_content_description">Código QR para iniciar sesión en Discord</string>
+    <string name="soc_qr_title">Iniciar sesión con Discord</string>
+    <string name="soc_qr_copied">¡Copiado!</string>
+    <string name="soc_qr_tap_to_copy">Selecciona el código para copiarlo</string>
+    <string name="soc_qr_instructions">Escanéalo con la cámara de tu teléfono o ve a discord.com/activate y pega el código.</string>
+    <string name="soc_qr_expires_in">Caduca en %1$ds</string>
+    <string name="soc_qr_expired_short">Caducado</string>
+    <string name="soc_qr_cancel">Cancelar</string>
+    <string name="soc_qr_try_again">Reintentar</string>
+</resources>

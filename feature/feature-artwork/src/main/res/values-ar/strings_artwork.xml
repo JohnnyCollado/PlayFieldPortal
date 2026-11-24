@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared -->
+    <string name="art_error_unexpected">خطأ غير متوقع</string>
+    <string name="art_no_folder_linked">لا يوجد مجلد صور فنية مرتبط</string>
+    <string name="art_paused_message">تم إيقاف الصور الفنية مؤقتًا. أعِد ربط مجلد الصور الفنية لحفظ صور جديدة.</string>
+    <string name="art_error_game_not_found">لم يتم العثور على اللعبة</string>
+    <string name="art_error_not_found_any_source">غير موجودة في أي مصدر</string>
+    <string name="art_found_via">تم العثور عليها عبر %1$s</string>
+    <string name="art_results_label_updated">تم التحديث</string>
+    <string name="art_results_label_imported">تم الاستيراد</string>
+
+    <!-- Live scrape progress: what is being fetched right now (shown after the source name) -->
+    <string name="art_progress_hashing">جارٍ حساب بصمة ROM…</string>
+    <string name="art_progress_searching">جارٍ البحث…</string>
+    <string name="art_asset_hero">الصورة الرئيسية</string>
+    <string name="art_asset_background">الخلفية</string>
+    <string name="art_asset_logo">الشعار</string>
+    <string name="art_asset_box_art">صورة العلبة</string>
+    <string name="art_asset_physical_media">الوسيط المادي</string>
+    <string name="art_asset_3d_box">علبة ثلاثية الأبعاد</string>
+    <string name="art_asset_screenshot">لقطة الشاشة</string>
+    <string name="art_asset_manual">الدليل</string>
+    <string name="art_asset_video">الفيديو</string>
+    <string name="art_asset_icon_video">فيديو الأيقونة</string>
+    <string name="art_asset_icon_video_converting">فيديو الأيقونة (جارٍ التحويل)</string>
+    <string name="art_source_storefronts">المتاجر</string>
+
+    <!-- Metadata fields (labels in the metadata preview and editor) -->
+    <string name="art_field_title">العنوان</string>
+    <string name="art_field_description">الوصف</string>
+    <string name="art_field_developer">المطوّر</string>
+    <string name="art_field_publisher">الناشر</string>
+    <string name="art_field_year">السنة</string>
+    <string name="art_field_release_date">تاريخ الإصدار</string>
+    <string name="art_field_genre">النوع</string>
+    <string name="art_field_age_rating">التصنيف العمري</string>
+    <string name="art_field_franchise">السلسلة</string>
+    <string name="art_field_rating">التقييم</string>
+
+    <!-- Ways to apply scraped metadata (button labels) -->
+    <string name="art_policy_replace_all">استبدال الكل</string>
+    <string name="art_policy_fill_missing">ملء الناقص فقط</string>
+    <string name="art_policy_choose_fields">اختيار الحقول</string>
+    <string name="art_policy_keep_current">الإبقاء على الحالي</string>
+
+    <!-- Scrape (background task) -->
+    <string name="art_scrape_label_all">جارٍ إعادة جلب بيانات كل الألعاب</string>
+    <string name="art_scrape_label_missing">جارٍ جلب الصور الفنية الناقصة</string>
+    <string name="art_scrape_stop_note">سيتم الاحتفاظ بالصور الفنية التي جُلبت بالفعل.</string>
+    <string name="art_scrape_paused_all_title">تم إيقاف إعادة جلب الصور الفنية مؤقتًا</string>
+    <string name="art_scrape_paused_title">تم إيقاف جلب الصور الفنية مؤقتًا</string>
+    <string name="art_scrape_finished_all_title">انتهت إعادة جلب الصور الفنية</string>
+    <string name="art_scrape_finished_title">انتهى جلب الصور الفنية</string>
+    <string name="art_scrape_stopped_title">توقف جلب الصور الفنية</string>
+    <string name="art_scrape_failed_title">فشل جلب الصور الفنية</string>
+    <string name="art_scrape_result">نجح %1$d، وفشل %2$d من أصل %3$d</string>
+    <plurals name="art_scrape_stopped_after">
+        <item quantity="zero">توقف قبل أي لعبة — يتم الاحتفاظ بالصور الفنية المجلوبة حتى الآن</item>
+        <item quantity="one">توقف بعد لعبة واحدة — يتم الاحتفاظ بالصور الفنية المجلوبة حتى الآن</item>
+        <item quantity="two">توقف بعد لعبتين — يتم الاحتفاظ بالصور الفنية المجلوبة حتى الآن</item>
+        <item quantity="few">توقف بعد %1$d ألعاب — يتم الاحتفاظ بالصور الفنية المجلوبة حتى الآن</item>
+        <item quantity="many">توقف بعد %1$d لعبة — يتم الاحتفاظ بالصور الفنية المجلوبة حتى الآن</item>
+        <item quantity="other">توقف بعد %1$d لعبة — يتم الاحتفاظ بالصور الفنية المجلوبة حتى الآن</item>
+    </plurals>
+
+    <!-- Relink (background task) -->
+    <string name="art_relink_label">جارٍ إعادة ربط الصور الفنية</string>
+    <plurals name="art_relink_label_consoles">
+        <item quantity="zero">جارٍ إعادة ربط الصور الفنية</item>
+        <item quantity="one">جارٍ إعادة ربط الصور الفنية لجهاز واحد</item>
+        <item quantity="two">جارٍ إعادة ربط الصور الفنية لجهازين</item>
+        <item quantity="few">جارٍ إعادة ربط الصور الفنية لـ %1$d أجهزة</item>
+        <item quantity="many">جارٍ إعادة ربط الصور الفنية لـ %1$d جهازًا</item>
+        <item quantity="other">جارٍ إعادة ربط الصور الفنية لـ %1$d جهاز</item>
+    </plurals>
+    <string name="art_relink_stop_note">تبقى الصور الفنية المرتبطة بالفعل مرتبطة.</string>
+    <string name="art_relink_finished_title">انتهت إعادة ربط الصور الفنية</string>
+    <string name="art_relink_stopped_title">توقفت إعادة ربط الصور الفنية</string>
+    <string name="art_relink_stopped_note">يتم الاحتفاظ بالصور الفنية المرتبطة حتى الآن</string>
+    <string name="art_relink_failed_title">فشلت إعادة ربط الصور الفنية</string>
+    <plurals name="art_relink_games_linked">
+        <item quantity="zero">%1$d لعبة مرتبطة</item>
+        <item quantity="one">لعبة واحدة مرتبطة</item>
+        <item quantity="two">لعبتان مرتبطتان</item>
+        <item quantity="few">%1$d ألعاب مرتبطة</item>
+        <item quantity="many">%1$d لعبة مرتبطة</item>
+        <item quantity="other">%1$d لعبة مرتبطة</item>
+    </plurals>
+    <plurals name="art_relink_files">
+        <item quantity="zero">%1$d ملف</item>
+        <item quantity="one">ملف واحد</item>
+        <item quantity="two">ملفان</item>
+        <item quantity="few">%1$d ملفات</item>
+        <item quantity="many">%1$d ملفًا</item>
+        <item quantity="other">%1$d ملف</item>
+    </plurals>
+    <string name="art_relink_result">%1$s من أصل %2$s</string>
+    <string name="art_relink_result_unmatched">%1$s · %2$d غير مطابَق</string>
+
+    <!-- Export to ES-DE (background task) -->
+    <string name="art_export_label">جارٍ تصدير الصور الفنية إلى ES-DE</string>
+    <string name="art_export_stop_note">تبقى الملفات التي صُدّرت بالفعل في مكانها.</string>
+    <string name="art_export_error_no_destination">لا يوجد مجلد وجهة</string>
+    <string name="art_export_error_access_lost">فُقد الوصول إلى مجلد الصور الفنية</string>
+    <string name="art_export_dest_not_created">تعذّر إنشاء مجلد الوجهة.</string>
+    <plurals name="art_export_files_badge">
+        <item quantity="zero">%1$d ملف</item>
+        <item quantity="one">ملف واحد</item>
+        <item quantity="two">ملفان</item>
+        <item quantity="few">%1$d ملفات</item>
+        <item quantity="many">%1$d ملفًا</item>
+        <item quantity="other">%1$d ملف</item>
+    </plurals>
+    <string name="art_export_failed_title">فشل تصدير الصور الفنية</string>
+    <string name="art_export_stopped_title">توقف تصدير الصور الفنية</string>
+    <string name="art_export_finished_title">انتهى تصدير الصور الفنية</string>
+    <plurals name="art_export_stopped_note">
+        <item quantity="zero">لم يُصدَّر أي ملف قبل التوقف</item>
+        <item quantity="one">تم تصدير ملف واحد قبل التوقف</item>
+        <item quantity="two">تم تصدير ملفين قبل التوقف</item>
+        <item quantity="few">تم تصدير %1$d ملفات قبل التوقف</item>
+        <item quantity="many">تم تصدير %1$d ملفًا قبل التوقف</item>
+        <item quantity="other">تم تصدير %1$d ملف قبل التوقف</item>
+    </plurals>
+    <string name="art_export_result">نُسخ %1$d، و%2$d موجود مسبقًا، وفشل %3$d</string>
+
+    <!-- Import (background task and its notification) -->
+    <string name="art_import_plan_not_found">لم يتم العثور على خطة الاستيراد</string>
+    <string name="art_import_plan_unreadable">تتعذّر قراءة خطة الاستيراد</string>
+    <string name="art_import_label">جارٍ استيراد الصور الفنية — %1$s</string>
+    <string name="art_import_stop_note">سيتم الاحتفاظ بالصور الفنية المستوردة بالفعل.</string>
+    <string name="art_import_failed_title">فشل استيراد الصور الفنية</string>
+    <string name="art_import_cancelled">تم إلغاء استيراد الصور الفنية</string>
+    <string name="art_import_done">تم استيراد الصور الفنية</string>
+    <plurals name="art_import_needs_review">
+        <item quantity="zero">تم استيراد الصور الفنية</item>
+        <item quantity="one">تم استيراد الصور الفنية، وعنصر واحد يحتاج إلى مراجعة</item>
+        <item quantity="two">تم استيراد الصور الفنية، وعنصران يحتاجان إلى مراجعة</item>
+        <item quantity="few">تم استيراد الصور الفنية، و%1$d عناصر تحتاج إلى مراجعة</item>
+        <item quantity="many">تم استيراد الصور الفنية، و%1$d عنصرًا يحتاج إلى مراجعة</item>
+        <item quantity="other">تم استيراد الصور الفنية، و%1$d عنصر يحتاج إلى مراجعة</item>
+    </plurals>
+    <string name="art_import_headline">%1$s: %2$s</string>
+    <string name="art_import_counts">تم استيراد %1$d، وتخطي %2$d، وفشل %3$d، و%4$d غامض، و%5$d غير مطابَق.</string>
+    <string name="art_import_results_summary">تم استيراد %1$d، وتخطي %2$d</string>
+
+    <!-- Move artwork into the linked folder (background task) -->
+    <string name="art_move_label">جارٍ نقل الصور الفنية إلى مجلدك</string>
+    <string name="art_move_failed_title">فشل نقل الصور الفنية</string>
+    <string name="art_move_stopped_title">توقف نقل الصور الفنية</string>
+    <string name="art_move_finished_title">انتهى نقل الصور الفنية</string>
+    <plurals name="art_move_stopped_note">
+        <item quantity="zero">لم يُنقل أي ملف قبل التوقف</item>
+        <item quantity="one">تم نقل ملف واحد قبل التوقف</item>
+        <item quantity="two">تم نقل ملفين قبل التوقف</item>
+        <item quantity="few">تم نقل %1$d ملفات قبل التوقف</item>
+        <item quantity="many">تم نقل %1$d ملفًا قبل التوقف</item>
+        <item quantity="other">تم نقل %1$d ملف قبل التوقف</item>
+    </plurals>
+    <string name="art_move_result">نُقل %1$d، و%2$d موجود مسبقًا، وفشل %3$d</string>
+</resources>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App context menu: group headings -->
+    <string name="apps_menu_group_library">المكتبة</string>
+    <string name="apps_menu_group_arrange">الترتيب</string>
+    <string name="apps_menu_group_manage">الإدارة</string>
+
+    <!-- App context menu: rows -->
+    <string name="apps_menu_launch">تشغيل</string>
+    <string name="apps_menu_edit_details">تعديل تفاصيل التطبيق</string>
+    <string name="apps_menu_mark_game">وضع علامة كلعبة</string>
+    <string name="apps_menu_unmark_game">إزالة علامة اللعبة</string>
+    <string name="apps_menu_favorite">المفضلة</string>
+    <string name="apps_menu_add_to_card">إضافة إلى بطاقة</string>
+    <string name="apps_menu_pin_to_top">تثبيت في الأعلى</string>
+    <string name="apps_menu_move">نقل</string>
+    <string name="apps_menu_move_to_category">نقل إلى فئة</string>
+    <string name="apps_menu_add_to_category">إضافة إلى فئة</string>
+    <string name="apps_menu_remove_from_category">إزالة من الفئة</string>
+    <string name="apps_menu_rename_shortcut">إعادة تسمية الاختصار</string>
+    <string name="apps_menu_hide_from">إخفاء من %1$s</string>
+    <string name="apps_menu_hide_everywhere">إخفاء في كل مكان</string>
+    <string name="apps_menu_app_info">معلومات التطبيق</string>
+    <string name="apps_menu_uninstall">إلغاء التثبيت</string>
+    <string name="apps_value_on">مفعّل</string>
+    <string name="apps_value_off">متوقف</string>
+
+    <!-- Uninstall confirmation. %1$s is the app name -->
+    <string name="apps_uninstall_title">هل تريد إلغاء تثبيت %1$s؟</string>
+    <string name="apps_uninstall_message">سيؤدي هذا إلى إزالة %1$s من جهازك. سيطلب منك Android التأكيد.</string>
+
+    <!-- Category tabs and header title -->
+    <string name="apps_filter_all">كل التطبيقات</string>
+    <string name="apps_filter_games">الألعاب</string>
+    <string name="apps_filter_emulators">المحاكيات</string>
+    <string name="apps_filter_recent">المستخدمة مؤخرًا</string>
+
+    <!-- Header search -->
+    <string name="apps_search_placeholder">بحث…</string>
+    <string name="apps_search_button">بحث</string>
+
+    <!-- Empty states -->
+    <string name="apps_empty_no_match">لا توجد تطبيقات تطابق بحثك</string>
+    <string name="apps_empty_no_games">لم يتم العثور على ألعاب</string>
+    <string name="apps_empty_no_emulators">لا توجد محاكيات مثبّتة</string>
+    <string name="apps_empty_usage_access">يلزم الوصول إلى بيانات الاستخدام</string>
+    <string name="apps_empty_no_recent">لا توجد تطبيقات مستخدمة مؤخرًا بعد</string>
+    <string name="apps_empty_no_apps">لا توجد تطبيقات مثبّتة</string>
+    <string name="apps_hint_try_search">جرّب كلمة بحث مختلفة</string>
+    <string name="apps_hint_games">تظهر هنا التطبيقات المصنّفة كألعاب في Play Store</string>
+    <string name="apps_hint_emulators">ثبّت RetroArch أو PPSSPP أو محاكيًا آخر</string>
+    <string name="apps_hint_usage_access">امنح الإذن ليتمكن PFP من فرز التطبيقات حسب آخر استخدام</string>
+    <string name="apps_open_usage_access">فتح الوصول إلى بيانات الاستخدام</string>
+
+    <!-- Controller hint bar: short labels beside a button glyph -->
+    <string name="apps_hint_prev">السابق</string>
+    <string name="apps_hint_next">التالي</string>
+    <string name="apps_hint_back">رجوع</string>
+    <string name="apps_hint_launch">تشغيل</string>
+    <string name="apps_hint_options">الخيارات</string>
+    <string name="apps_hint_search">بحث</string>
+    <string name="apps_drawer_title">درج التطبيقات</string>
+    <string name="apps_drawer_subtitle">التطبيقات على هذا الجهاز</string>
+</resources>

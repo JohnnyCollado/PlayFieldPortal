@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
+import com.playfieldportal.core.ui.components.PfpBusyRing
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,9 +54,13 @@ import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.components.PspContextMenuOverlay
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.playfieldportal.core.ui.text.PfpDateFormat
+import com.playfieldportal.core.ui.text.PfpDateStyle
+import androidx.compose.ui.res.stringResource
+import android.content.res.Resources
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.xmb.R
+import com.playfieldportal.feature.xmb.ui.uiResources
 
 // Neutral dark surfaces stay fixed; accent colors come from the active theme.
 private val ViewerBg = Color(0xFF000000)
@@ -106,6 +110,7 @@ fun PhotoViewerScreen(
             onCancelRemove = viewModel::cancelRemove,
             onConfirmLockScreen = viewModel::confirmLockScreen,
             onCancelLockScreen = viewModel::cancelLockScreen,
+            res = uiResources(),
         ),
         // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
         showHints = !showTouchControls,
@@ -118,7 +123,7 @@ fun PhotoViewerScreen(
 
     if (state.isLoading) {
         Box(modifier.fillMaxSize().background(ViewerBg)) {
-            CircularProgressIndicator(Modifier.align(Alignment.Center), color = menuCursorEdge())
+            PfpBusyRing(Modifier.align(Alignment.Center), color = menuCursorEdge())
         }
         return
     }
@@ -219,8 +224,8 @@ fun PhotoViewerScreen(
                 if (showTouchControls) {
                     TouchPromptBar(
                         items = listOf(
-                            TouchPromptItem(listOf(TouchGesture.SWIPE_LEFT, TouchGesture.SWIPE_RIGHT), "Prev / Next"),
-                            TouchPromptItem(TouchGesture.TAP, "Hide Controls"),
+                            TouchPromptItem(listOf(TouchGesture.SWIPE_LEFT, TouchGesture.SWIPE_RIGHT), stringResource(R.string.xmbu_common_prev_next)),
+                            TouchPromptItem(TouchGesture.TAP, stringResource(R.string.xmbu_photo_hide_controls)),
                         ),
                         labelColor = themedSubText(TextMuted),
                         labelStyle = TextStyle(fontSize = 12.sp),
@@ -232,11 +237,11 @@ fun PhotoViewerScreen(
                         items = listOf(
                             ControllerPromptItem(
                                 listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY),
-                                "Prev / Next",
+                                stringResource(R.string.xmbu_common_prev_next),
                             ),
-                            ControllerPromptItem(GamepadAction.SELECT, "Hide Controls"),
-                            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
-                            ControllerPromptItem(GamepadAction.BACK, "Back"),
+                            ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.xmbu_photo_hide_controls)),
+                            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, stringResource(R.string.xmbu_common_options)),
+                            ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.xmbu_common_back)),
                         ),
                         labelColor = themedSubText(TextMuted),
                         labelStyle = TextStyle(fontSize = 12.sp),
@@ -252,7 +257,7 @@ fun PhotoViewerScreen(
             // input was touch (a controller press hides them, like the XMB App Drawer button).
             if (showTouchControls) {
                 XmbHeaderPill(
-                    label = "Back",
+                    label = stringResource(R.string.xmbu_common_back),
                     leadingGlyph = "◀",
                     onClick = { viewModel.handleGamepadAction(GamepadAction.BACK) },
                     background = XmbMediaPillScrim,
@@ -270,8 +275,8 @@ fun PhotoViewerScreen(
         // ── Options menu — the shared themed context menu, like every other context menu ──
         if (state.showOptions) {
             PspContextMenuOverlay(
-                title = "Options",
-                rows = photoOptionRows(state),
+                title = stringResource(R.string.xmbu_common_options),
+                rows = photoOptionRows(state, uiResources()),
                 selectedIndex = state.optionsIndex,
                 onRowActivated = { viewModel.activate(state.optionsActions[it]) },
                 onDismiss = viewModel::closeOptions,
@@ -288,8 +293,8 @@ fun PhotoViewerScreen(
                     .padding(horizontal = 24.dp, vertical = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text("Set as launcher wallpaper?", color = themedText(TextPrimary), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                Text("It replaces the XMB wave background.", color = themedSubText(TextMuted), fontSize = 12.sp)
+                Text(stringResource(R.string.xmbu_photo_wallpaper_title), color = themedText(TextPrimary), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.xmbu_photo_wallpaper_note), color = themedSubText(TextMuted), fontSize = 12.sp)
                 Spacer(Modifier.height(4.dp))
                 WallpaperPreviewActions(
                     showTouchControls = showTouchControls,
@@ -302,7 +307,7 @@ fun PhotoViewerScreen(
 
         state.actionMessage?.let { msg ->
             Text(
-                msg,
+                msg.asString(),
                 color = themedText(TextPrimary),
                 fontSize = 13.sp,
                 modifier = Modifier
@@ -324,8 +329,8 @@ fun PhotoViewerScreen(
             ) {
                 TouchPromptBar(
                     items = listOf(
-                        TouchPromptItem(listOf(TouchGesture.SWIPE_LEFT, TouchGesture.SWIPE_RIGHT), "Prev / Next"),
-                        TouchPromptItem(TouchGesture.TAP, "Show Controls"),
+                        TouchPromptItem(listOf(TouchGesture.SWIPE_LEFT, TouchGesture.SWIPE_RIGHT), stringResource(R.string.xmbu_common_prev_next)),
+                        TouchPromptItem(TouchGesture.TAP, stringResource(R.string.xmbu_photo_show_controls)),
                     ),
                     labelColor = themedSubText(TextMuted),
                     labelStyle = TextStyle(fontSize = 12.sp),
@@ -354,12 +359,12 @@ internal fun WallpaperPreviewActions(
     if (showTouchControls) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)) {
             XmbHeaderPill(
-                label = if (applying) "Applying…" else "Apply",
+                label = stringResource(if (applying) R.string.xmbu_photo_applying else R.string.xmbu_photo_apply),
                 onClick = { if (!applying) onApply() },
                 background = XmbMediaPillScrim,
             )
             XmbHeaderPill(
-                label = "Cancel",
+                label = stringResource(R.string.xmbu_common_cancel),
                 onClick = { if (!applying) onCancel() },
                 background = XmbMediaPillScrim,
             )
@@ -367,8 +372,8 @@ internal fun WallpaperPreviewActions(
     } else {
         ControllerPromptBar(
             items = listOf(
-                ControllerPromptItem(GamepadAction.SELECT, "Apply"),
-                ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+                ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.xmbu_photo_apply)),
+                ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.xmbu_common_cancel)),
             ),
             labelColor = themedSubText(TextMuted),
             labelStyle = TextStyle(fontSize = 12.sp),
@@ -392,32 +397,33 @@ internal fun photoViewerModalSpec(
     onCancelRemove: () -> Unit,
     onConfirmLockScreen: () -> Unit = {},
     onCancelLockScreen: () -> Unit = {},
+    res: Resources,
 ): PfpModalSpec? {
     val photo = state.photo ?: return null
     if (state.applyingWallpaper || state.wallpaperPreviewVisible) return null
     return when {
         state.confirmRemove -> PfpModalSpec.Confirm(
             key = "remove:${photo.id}",
-            title = "Remove from Library",
-            message = "\"${photo.displayName}\" will be removed from this library. The photo on disk is not deleted.",
-            confirmLabel = "Remove",
+            title = res.getString(R.string.xmbu_photo_remove),
+            message = res.getString(R.string.xmbu_photo_remove_message, photo.displayName),
+            confirmLabel = res.getString(R.string.xmbu_common_remove),
             destructive = true,
             onConfirm = onConfirmRemove,
             onCancel = onCancelRemove,
         )
         state.confirmLockScreen -> PfpModalSpec.Confirm(
             key = "lock:${photo.id}",
-            title = "Set as Lock Screen",
-            message = "\"${photo.displayName}\" becomes the device's lock screen image, cropped to fit the screen.",
-            confirmLabel = "Set",
+            title = res.getString(R.string.xmbu_photo_set_lock_screen),
+            message = res.getString(R.string.xmbu_photo_lock_message, photo.displayName),
+            confirmLabel = res.getString(R.string.xmbu_photo_set),
             onConfirm = onConfirmLockScreen,
             onCancel = onCancelLockScreen,
         )
         state.infoVisible -> PfpModalSpec.Notice(
             key = "info:${photo.id}",
             title = photo.displayName,
-            message = photoInfoLines(photo).joinToString("\n"),
-            buttonLabel = "Close",
+            message = photoInfoLines(photo, res).joinToString("\n"),
+            buttonLabel = res.getString(R.string.xmbu_common_close),
             onDismiss = onDismissInfo,
         )
         else -> null
@@ -425,18 +431,18 @@ internal fun photoViewerModalSpec(
 }
 
 // What is known about the file, one fact per line; unknown values are left out.
-private fun photoInfoLines(photo: Photo): List<String> = buildList {
-    photo.resolutionLabel?.let { add("Resolution: $it") }
-    photo.dateTaken?.let { add("Taken: ${fmtDate(it)}") }
-    photo.lastModified?.let { add("Modified: ${fmtDate(it)}") }
-    photo.sizeBytes?.let { add("Size: ${fmtSize(it)}") }
-    photo.mimeType?.let { add("Type: $it") }
-    photo.relativePath?.let { add("Location: $it") }
-    add("File: ${photo.displayName}")
+private fun photoInfoLines(photo: Photo, res: Resources): List<String> = buildList {
+    photo.resolutionLabel?.let { add(res.getString(R.string.xmbu_photo_info_resolution, it)) }
+    photo.dateTaken?.let { add(res.getString(R.string.xmbu_photo_info_taken, fmtDate(it))) }
+    photo.lastModified?.let { add(res.getString(R.string.xmbu_photo_info_modified, fmtDate(it))) }
+    photo.sizeBytes?.let { add(res.getString(R.string.xmbu_photo_info_size, fmtSize(it))) }
+    photo.mimeType?.let { add(res.getString(R.string.xmbu_photo_info_type, it)) }
+    photo.relativePath?.let { add(res.getString(R.string.xmbu_photo_info_location, it)) }
+    add(res.getString(R.string.xmbu_photo_info_file, photo.displayName))
 }
 
 private fun fmtDate(ms: Long): String =
-    SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(ms))
+    PfpDateFormat.format(PfpDateStyle.Date, ms)
 
 private fun fmtSize(bytes: Long): String {
     val mb = bytes / (1024.0 * 1024.0)

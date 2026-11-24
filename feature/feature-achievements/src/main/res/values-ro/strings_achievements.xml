@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Achievement update notifications -->
+    <string name="ach_upd_running">Se actualizează realizările instalate</string>
+    <string name="ach_upd_running_stop_note">Realizările deja actualizate se păstrează.</string>
+    <string name="ach_upd_progress">Se verifică %1$d din %2$d jocuri</string>
+    <string name="ach_upd_stopped">Actualizarea realizărilor a fost oprită</string>
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="one">%d joc verificat; progresul salvat se păstrează</item>
+        <item quantity="few">%d jocuri verificate; progresul salvat se păstrează</item>
+        <item quantity="other">%d de jocuri verificate; progresul salvat se păstrează</item>
+    </plurals>
+    <string name="ach_upd_some_failed">Unele realizări nu s-au putut actualiza</string>
+    <plurals name="ach_upd_failed_message">
+        <item quantity="one">%1$d din %2$d jocuri trebuie reîncercat</item>
+        <item quantity="few">%1$d din %2$d jocuri trebuie reîncercate</item>
+        <item quantity="other">%1$d din %2$d de jocuri trebuie reîncercate</item>
+    </plurals>
+    <string name="ach_upd_results_done">Actualizate</string>
+    <string name="ach_upd_updated">Realizări actualizate</string>
+    <plurals name="ach_upd_updated_message">
+        <item quantity="one">%1$d joc actualizat · %2$d neschimbate</item>
+        <item quantity="few">%1$d jocuri actualizate · %2$d neschimbate</item>
+        <item quantity="other">%1$d de jocuri actualizate · %2$d neschimbate</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">Realizările sunt la zi</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="one">%d joc instalat verificat</item>
+        <item quantity="few">%d jocuri instalate verificate</item>
+        <item quantity="other">%d de jocuri instalate verificate</item>
+    </plurals>
+    <string name="ach_upd_paused">Actualizarea realizărilor a fost întreruptă</string>
+    <string name="ach_upd_fact_service">Serviciu</string>
+    <string name="ach_upd_pause_offline">Conectează-te la internet</string>
+    <string name="ach_upd_pause_reconnect">Reconectează %1$s</string>
+    <string name="ach_upd_pause_steam_private">Detaliile jocurilor Steam nu sunt disponibile</string>
+
+    <!-- Auto-match notifications -->
+    <string name="ach_match_running">Se potrivesc automat jocurile</string>
+    <string name="ach_match_running_stop_note">Jocurile deja potrivite rămân legate.</string>
+    <string name="ach_match_stopped_note">Jocurile deja potrivite rămân legate</string>
+    <string name="ach_match_stopped">Potrivirea automată a fost oprită</string>
+    <string name="ach_match_recognized">Jocuri recunoscute</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="one">%d joc instalat potrivit. Se actualizează realizările.</item>
+        <item quantity="few">%d jocuri instalate potrivite. Se actualizează realizările.</item>
+        <item quantity="other">%d de jocuri instalate potrivite. Se actualizează realizările.</item>
+    </plurals>
+
+    <!-- Clearing achievement records -->
+    <string name="ach_clear_done">Înregistrările realizărilor au fost șterse</string>
+    <string name="ach_clear_done_message">Jocurile instalate trebuie resincronizate pentru a afișa din nou realizările</string>
+    <string name="ach_clear_failed">Realizările nu au putut fi șterse</string>
+    <string name="ach_clear_failed_message">Nu s-a eliminat nimic. Încearcă din nou din Setări ▸ Realizări</string>
+
+    <!-- Local Steam: reason phrases -->
+    <string name="ach_ls_unavail_store">magazinul nu a putut fi interogat</string>
+    <string name="ach_ls_unavail_steam">Steam nu este disponibil momentan</string>
+    <string name="ach_ls_steam_unreachable">Steam nu a putut fi accesat</string>
+    <string name="ach_ls_steam_rate_limited">Steam limitează numărul de cereri</string>
+    <string name="ach_ls_steam_error">Steam a returnat o eroare</string>
+    <string name="ach_ls_steam_needs_key">Steam are nevoie de cheia ta Web API</string>
+
+    <!-- Local Steam: linking a picked game folder -->
+    <string name="ach_link_no_match">Steam nu are niciun joc care să corespundă cu „%1$s”. Redenumește dosarul cu numele jocului de pe Steam sau leagă-l mai întâi din Detalii joc ▸ Potrivește jocul.</string>
+    <string name="ach_link_unavailable">%1$s, deci ID-ul aplicației pentru acest dosar nu a putut fi determinat. Nu s-a modificat nimic — încearcă din nou când ești din nou online.</string>
+    <string name="ach_link_marker_failed">Nu s-a putut crea steam_appid.txt în acel dosar — PFP poate avea doar acces de citire la el.</string>
+    <string name="ach_link_not_recorded">Potrivirea aleasă nu a putut fi înregistrată.</string>
+    <string name="ach_link_installer_off">Activează Instalează Goldberg și convertește jocurile în setările Realizări înainte ca PFP să scrie într-un dosar de joc.</string>
+    <string name="ach_link_no_app_id">Acel dosar nu mai declară un ID de aplicație — alege-l din nou.</string>
+    <string name="ach_link_need_key">Adaugă cheia ta Steam Web API în Setări ▸ Realizări ▸ Date de autentificare furnizori — lista de realizări provine de acolo.</string>
+    <string name="ach_link_no_achievements">Steam nu listează nicio realizare pentru ID-ul de aplicație %1$s, deci nu este nimic de urmărit.</string>
+    <string name="ach_link_kit_failed">Kitul de realizări nu a putut fi scris: %1$s</string>
+    <string name="ach_link_read_back_failed">Acel dosar nu a putut fi recitit. Dacă este pe o stocare amovibilă, montează-o din nou și alege-l din nou.</string>
+    <string name="ach_link_not_steam_build">Nicio bibliotecă Steam (steam_api64.dll) în acel dosar, deci nu este o versiune Steam și emulatorul nu are nimic de urmărit. Alege dosarul în care se află fișierul .exe al jocului.</string>
+
+    <!-- Local Steam: convert picker rows -->
+    <string name="ach_pick_checking">Se verifică Steam…</string>
+    <plurals name="ach_pick_coins">
+        <item quantity="one">%1$d monedă  ·  appid %2$s</item>
+        <item quantity="few">%1$d monede  ·  appid %2$s</item>
+        <item quantity="other">%1$d de monede  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">Nicio listă pe Steam  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">Necesită cheia ta Steam Web API  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">Steam nu a răspuns  ·  appid %1$s</string>
+
+    <!-- Local Steam: batch match summary -->
+    <string name="ach_batch_already_running">O potrivire în lot rulează deja.</string>
+    <string name="ach_batch_no_folders">Nu există dosare de jocuri aici. Alege dosarul care CONȚINE dosarele jocurilor, nu dosarul unui singur joc.</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="one">S-a găsit %d dosar, dar nu este o versiune Steam — nicio bibliotecă steam_api, deci emulatorul nu are nimic de urmărit.</item>
+        <item quantity="few">S-au găsit %d dosare, dar niciunul nu este o versiune Steam — nicio bibliotecă steam_api, deci emulatorul nu are nimic de urmărit.</item>
+        <item quantity="other">S-au găsit %d de dosare, dar niciunul nu este o versiune Steam — nicio bibliotecă steam_api, deci emulatorul nu are nimic de urmărit.</item>
+    </plurals>
+    <string name="ach_batch_linked">%1$d legate la jocuri din bibliotecă</string>
+    <string name="ach_batch_tracked">%1$d urmărite separat</string>
+    <string name="ach_batch_converting">%1$d în așteptarea conversiei</string>
+    <plurals name="ach_batch_matched">
+        <item quantity="one">Potrivite %1$d din %2$d dosar.</item>
+        <item quantity="few">Potrivite %1$d din %2$d dosare.</item>
+        <item quantity="other">Potrivite %1$d din %2$d de dosare.</item>
+    </plurals>
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="one">Potrivite %1$d din %2$d dosar: %3$s.</item>
+        <item quantity="few">Potrivite %1$d din %2$d dosare: %3$s.</item>
+        <item quantity="other">Potrivite %1$d din %2$d de dosare: %3$s.</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="one">%1$d nu a putut fi identificat după nume — deschide pagina Shiba Coins a jocului și folosește Potrivire automată pentru a-i alege dosarul.</item>
+        <item quantity="few">%1$d nu au putut fi identificate după nume — deschide pagina Shiba Coins a fiecărui joc și folosește Potrivire automată pentru a-i alege dosarul.</item>
+        <item quantity="other">%1$d nu au putut fi identificate după nume — deschide pagina Shiba Coins a fiecărui joc și folosește Potrivire automată pentru a-i alege dosarul.</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="one">%1$d nu este în biblioteca ta — adaugă-l mai întâi pe cardul Windows, apoi potrivește din nou.</item>
+        <item quantity="few">%1$d nu sunt în biblioteca ta — adaugă-le mai întâi pe cardul Windows, apoi potrivește din nou.</item>
+        <item quantity="other">%1$d nu sunt în biblioteca ta — adaugă-le mai întâi pe cardul Windows, apoi potrivește din nou.</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="one">%1$d nu este o versiune Steam.</item>
+        <item quantity="few">%1$d nu sunt versiuni Steam.</item>
+        <item quantity="other">%1$d nu sunt versiuni Steam.</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="one">%1$d a eșuat — vezi jurnalul.</item>
+        <item quantity="few">%1$d au eșuat — vezi jurnalul.</item>
+        <item quantity="other">%1$d au eșuat — vezi jurnalul.</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">Acel dosar nu a putut fi deschis.</string>
+    <string name="ach_batch_fail_read_back">%1$s: nu a putut fi recitit după identificare.</string>
+    <string name="ach_batch_fail_reason">%1$s: %2$s.</string>
+    <string name="ach_batch_fail_marker">%1$s: steam_appid.txt nu a putut fi creat.</string>
+
+    <!-- Vita3K library scan results -->
+    <string name="ach_vita_set_folder">Setează mai întâi dosarul de date Vita3K (ux0).</string>
+    <string name="ach_vita_link_invalid">Legătura către acel dosar Vita3K nu este validă — acordă din nou accesul.</string>
+    <string name="ach_vita_no_ux0">ux0/app nu a fost găsit în dosarul permis — alege dosarul ux0 al Vita3K (sau dosarul care îl conține).</string>
+    <string name="ach_vita_no_app">Niciun dosar app/ în ux0 — verifică dosarul permis.</string>
+    <string name="ach_vita_none_installed">Nu s-au găsit jocuri Vita instalate în ux0/app. Instalează mai întâi un joc în Vita3K.</string>
+    <plurals name="ach_vita_no_new">
+        <item quantity="one">Niciun joc Vita nou — %d este deja în biblioteca ta.</item>
+        <item quantity="few">Niciun joc Vita nou — %d sunt deja în biblioteca ta.</item>
+        <item quantity="other">Niciun joc Vita nou — %d sunt deja în biblioteca ta.</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="one">S-a importat %d joc Vita.</item>
+        <item quantity="few">S-au importat %d jocuri Vita.</item>
+        <item quantity="other">S-au importat %d de jocuri Vita.</item>
+    </plurals>
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="one">S-a importat %1$d joc Vita, actualizate %2$d.</item>
+        <item quantity="few">S-au importat %1$d jocuri Vita, actualizate %2$d.</item>
+        <item quantity="other">S-au importat %1$d de jocuri Vita, actualizate %2$d.</item>
+    </plurals>
+</resources>

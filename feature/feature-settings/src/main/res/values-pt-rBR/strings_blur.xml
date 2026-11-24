@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blur_title">Desfoque de fundo</string>
+    <string name="blur_sublabel">Intensidade do desfoque da tela atrás dos avisos e do menu de opções. Leve a zero para desativar.</string>
+    <string name="blur_unavailable">Requer Android 12 ou superior.</string>
+</resources>

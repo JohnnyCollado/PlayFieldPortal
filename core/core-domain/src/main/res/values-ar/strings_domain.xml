@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shiba rank titles -->
+    <!-- Rank title on the player card, from lowest to highest. Shiba is a dog breed; the ranks are dog-themed names. -->
+    <string name="dom_shiba_rank_pup">جرو</string>
+    <string name="dom_shiba_rank_ruffian">مشاكس</string>
+    <string name="dom_shiba_rank_lone_ron_inu">رونين-إينو المنفرد</string>
+    <string name="dom_shiba_rank_inu_master">سيّد الإينو</string>
+    <string name="dom_shiba_rank_legendary_hachiko">هاتشيكو الأسطوري</string>
+
+    <!-- App editions -->
+    <!-- Which build of the app is installed: the Full build or the Lite build (without Discord). -->
+    <string name="dom_edition_full">الكاملة</string>
+    <string name="dom_edition_lite">Lite</string>
+
+    <!-- Audio channels (volume rows) -->
+    <!-- Name of a launcher sound whose volume the user sets. -->
+    <string name="dom_audio_channel_navigation">التنقل</string>
+    <string name="dom_audio_channel_back">رجوع / إلغاء</string>
+    <string name="dom_audio_channel_confirm">تأكيد / تطبيق</string>
+    <string name="dom_audio_channel_error">خطأ / غير صالح</string>
+    <string name="dom_audio_channel_category">الفئة</string>
+    <string name="dom_audio_channel_options">الخيارات</string>
+    <string name="dom_audio_channel_notification">إشعار</string>
+    <string name="dom_audio_channel_boot">تسلسل الإقلاع</string>
+    <string name="dom_audio_channel_gameboot">Game Boot</string>
+    <string name="dom_audio_channel_ambience">صوت الخلفية</string>
+
+    <!-- Customisable media slots -->
+    <!-- Name of a sound or clip the user can replace with their own file. -->
+    <string name="dom_media_slot_navigation">التنقل</string>
+    <string name="dom_media_slot_back">رجوع / إلغاء</string>
+    <string name="dom_media_slot_confirm">تأكيد / تطبيق</string>
+    <string name="dom_media_slot_error">خطأ / غير صالح</string>
+    <string name="dom_media_slot_category">الفئة</string>
+    <string name="dom_media_slot_options">الخيارات</string>
+    <string name="dom_media_slot_notification">إشعار</string>
+    <string name="dom_media_slot_boot_video">رسوم الإقلاع المتحركة</string>
+    <string name="dom_media_slot_gameboot_video">رسوم Game Boot المتحركة</string>
+    <string name="dom_media_slot_ambience_audio">مقطع الخلفية</string>
+
+    <!-- Game tile display modes -->
+    <string name="dom_icon_display_icon0">أيقونة مخصصة</string>
+    <string name="dom_icon_display_box_art">صورة العلبة</string>
+    <string name="dom_icon_display_physical_media">الوسيط المادي</string>
+    <string name="dom_icon_display_box_3d">صورة العلبة ثلاثية الأبعاد</string>
+
+    <!-- Icon legibility styles -->
+    <!-- How icons separate from the background: a shadow or an outline (contour) in a dark or light colour. -->
+    <string name="dom_icon_legibility_none">بلا</string>
+    <string name="dom_icon_legibility_offset_shadow">ظل مُزاح (داكن)</string>
+    <string name="dom_icon_legibility_offset_shadow_light">ظل مُزاح (فاتح)</string>
+    <string name="dom_icon_legibility_contour_dark">حدّ خارجي (داكن)</string>
+    <string name="dom_icon_legibility_contour_light">حدّ خارجي (فاتح)</string>
+    <string name="dom_icon_legibility_contour_auto">حدّ خارجي (تلقائي)</string>
+
+    <!-- Animated image playback -->
+    <!-- How animated artwork plays: everything, only the focused item, or nothing. -->
+    <string name="dom_image_motion_animated">متحركة</string>
+    <string name="dom_image_motion_reduced">مخفّضة</string>
+    <string name="dom_image_motion_static">ثابتة</string>
+
+    <!-- Text legibility styles -->
+    <!-- How text separates from the background behind it. -->
+    <string name="dom_text_legibility_none">بلا</string>
+    <string name="dom_text_legibility_shadow">ظل مُسقط</string>
+    <string name="dom_text_legibility_outline">حدّ خارجي</string>
+    <string name="dom_text_legibility_plate">لوحة تباين</string>
+    <string name="dom_text_legibility_auto">تلقائي</string>
+
+    <!-- Touch gestures -->
+    <string name="dom_touch_gesture_tap">نقرة</string>
+    <string name="dom_touch_gesture_long_press">ضغط مطوّل</string>
+    <string name="dom_touch_gesture_swipe_left">تمرير لليسار</string>
+    <string name="dom_touch_gesture_swipe_right">تمرير لليمين</string>
+    <string name="dom_touch_gesture_swipe_down">تمرير للأسفل</string>
+
+    <!-- UMD slot display modes -->
+    <!-- UMD is the disc format of the PlayStation Portable. The slot shows the inserted game and/or the most recently played one. -->
+    <string name="dom_umd_slot_off">متوقف</string>
+    <string name="dom_umd_slot_inserted">المُدرج</string>
+    <string name="dom_umd_slot_inserted_and_recent">المُدرج والأخير</string>
+
+    <!-- Item list motion styles -->
+    <!-- How the item list animates between rows: the focused row rewinds up behind the icon, or the whole column glides together. -->
+    <string name="dom_list_motion_rewind">ترجيع</string>
+    <string name="dom_list_motion_glide">انزلاق</string>
+
+    <!-- Confirm / Back button layouts -->
+    <!-- A and B are controller button names; keep them as printed on the controller. -->
+    <string name="dom_confirm_back_standard">قياسي (A = تأكيد، B = رجوع)</string>
+    <string name="dom_confirm_back_reversed">معكوس (B = تأكيد، A = رجوع)</string>
+
+    <!-- X / Y button layouts -->
+    <!-- X and Y are controller button names; keep them as printed on the controller. -->
+    <string name="dom_xy_layout_standard">قياسي (Y = الخيارات، X = الفرز)</string>
+    <string name="dom_xy_layout_swapped">مبدّل (X = الخيارات، Y = الفرز)</string>
+
+    <!-- Controller prompt styles -->
+    <!-- Brand names of controller families. Normally left as is. -->
+    <string name="dom_controller_type_xbox">Xbox</string>
+    <string name="dom_controller_type_nintendo">Nintendo</string>
+    <string name="dom_controller_type_playstation">PlayStation</string>
+
+    <!-- Held-navigation scroll speeds -->
+    <string name="dom_scroll_speed_relaxed">هادئة</string>
+    <string name="dom_scroll_speed_standard">قياسية</string>
+    <string name="dom_scroll_speed_fast">سريعة</string>
+
+    <!-- Colour schemes -->
+    <!-- Name of a background colour scheme. 'Original (Monthly)' changes colour with the calendar month. -->
+    <string name="dom_color_scheme_original">الأصلي (شهري)</string>
+    <string name="dom_color_scheme_classic_blue">أزرق كلاسيكي</string>
+    <string name="dom_color_scheme_sunset_orange">برتقالي الغروب</string>
+    <string name="dom_color_scheme_fresh_green">أخضر منعش</string>
+    <string name="dom_color_scheme_royal_purple">بنفسجي ملكي</string>
+    <string name="dom_color_scheme_crimson_red">أحمر قرمزي</string>
+    <string name="dom_color_scheme_silver">فضي</string>
+    <string name="dom_color_scheme_sakura_pink">وردي ساكورا</string>
+    <string name="dom_color_scheme_golden_amber">كهرماني ذهبي</string>
+    <string name="dom_color_scheme_aqua_teal">أزرق مخضر مائي</string>
+    <string name="dom_color_scheme_midnight_navy">كحلي ليلي</string>
+    <string name="dom_color_scheme_charcoal">فحمي</string>
+
+    <!-- Controller actions -->
+    <!-- What a controller input does, shown beside the button that triggers it in Settings > Controller. -->
+    <string name="dom_action_navigate_up">التنقل لأعلى</string>
+    <string name="dom_action_navigate_down">التنقل لأسفل</string>
+    <string name="dom_action_navigate_left">التنقل لليسار (الفئة السابقة)</string>
+    <string name="dom_action_navigate_right">التنقل لليمين (الفئة التالية)</string>
+    <string name="dom_action_select">تحديد / تشغيل</string>
+    <string name="dom_action_back">رجوع / إغلاق</string>
+    <string name="dom_action_open_context_menu">الخيارات / قائمة السياق</string>
+    <string name="dom_action_change_sort">تغيير ترتيب الفرز</string>
+    <string name="dom_action_prev_category">علامة التبويب السابقة (درج التطبيقات)</string>
+    <string name="dom_action_next_category">علامة التبويب التالية (درج التطبيقات)</string>
+    <string name="dom_action_home">زر Start (الإشعارات / التأكيد في المنتقيات)</string>
+    <string name="dom_action_shift">مفتاح Shift (لوحة المفاتيح)</string>
+    <string name="dom_action_caps_lock">مفتاح Caps Lock (لوحة المفاتيح)</string>
+    <string name="dom_action_category_menu">قائمة الفئات</string>
+
+    <!-- Controller button names -->
+    <!-- Name of a physical controller button or key. Letters and shoulder buttons (L1, R2) are printed on the device and are normally left as is. -->
+    <string name="dom_key_a">A / Cross</string>
+    <string name="dom_key_b">B / Circle</string>
+    <string name="dom_key_x">X / Square</string>
+    <string name="dom_key_y">Y / Triangle</string>
+    <string name="dom_key_dpad_up">أعلى لوحة الاتجاهات</string>
+    <string name="dom_key_dpad_down">أسفل لوحة الاتجاهات</string>
+    <string name="dom_key_dpad_left">يسار لوحة الاتجاهات</string>
+    <string name="dom_key_dpad_right">يمين لوحة الاتجاهات</string>
+    <string name="dom_key_dpad_center">وسط لوحة الاتجاهات</string>
+    <string name="dom_key_l1">L1</string>
+    <string name="dom_key_r1">R1</string>
+    <string name="dom_key_l2">L2</string>
+    <string name="dom_key_r2">R2</string>
+    <string name="dom_key_start">Start</string>
+    <string name="dom_key_select">Select</string>
+    <string name="dom_key_enter">Enter</string>
+    <string name="dom_key_back">Back</string>
+    <string name="dom_key_unknown">المفتاح %1$d</string>
+
+    <!-- Colour naming (ColorNaming): descriptions of a colour and the steps of the colour steppers -->
+    <!-- Colour name in lower case, used inside a longer description such as "Dark blue" or "Red, leaning orange". -->
+    <string name="dom_hue_orange">برتقالي</string>
+    <string name="dom_hue_yellow">أصفر</string>
+    <string name="dom_hue_green">أخضر</string>
+    <string name="dom_hue_teal">أزرق مخضر</string>
+    <string name="dom_hue_blue">أزرق</string>
+    <string name="dom_hue_purple">بنفسجي</string>
+    <string name="dom_hue_pink">وردي</string>
+    <string name="dom_hue_red">أحمر</string>
+    <string name="dom_hue_orange_cap">برتقالي</string>
+    <string name="dom_hue_yellow_cap">أصفر</string>
+    <string name="dom_hue_green_cap">أخضر</string>
+    <string name="dom_hue_teal_cap">أزرق مخضر</string>
+    <string name="dom_hue_blue_cap">أزرق</string>
+    <string name="dom_hue_purple_cap">بنفسجي</string>
+    <string name="dom_hue_pink_cap">وردي</string>
+    <string name="dom_hue_red_cap">أحمر</string>
+    <string name="dom_hue_lean">%1$s مائل إلى %2$s</string>
+    <string name="dom_hue_lean_cap">%1$s مائل إلى %2$s</string>
+    <string name="dom_color_dark">%1$s داكن</string>
+    <string name="dom_color_very_dark">%1$s داكن جدًا</string>
+    <string name="dom_color_muted">%1$s باهت</string>
+    <string name="dom_color_dark_muted">%1$s باهت داكن</string>
+    <string name="dom_color_very_dark_muted">%1$s باهت داكن جدًا</string>
+    <string name="dom_color_grey">رمادي %1$s</string>
+    <string name="dom_saturation_grey">رمادي</string>
+    <string name="dom_saturation_muted">باهت</string>
+    <string name="dom_saturation_vivid">زاهٍ</string>
+    <string name="dom_saturation_intense">شديد</string>
+    <string name="dom_brightness_very_dark">داكن جدًا</string>
+    <string name="dom_brightness_dark">داكن</string>
+    <string name="dom_brightness_medium">متوسط</string>
+    <string name="dom_brightness_bright">فاتح</string>
+    <string name="dom_tint_standard">قياسي</string>
+    <string name="dom_tint_orange">أكثر برتقالية</string>
+    <string name="dom_tint_yellow">أكثر صفرة</string>
+    <string name="dom_tint_green">أكثر خضرة</string>
+    <string name="dom_tint_teal">أكثر زرقة مخضرة</string>
+    <string name="dom_tint_blue">أكثر زرقة</string>
+    <string name="dom_tint_purple">أكثر بنفسجية</string>
+    <string name="dom_tint_pink">أكثر وردية</string>
+    <string name="dom_tint_red">أكثر حمرة</string>
+    <string name="dom_tint_much_orange">أكثر برتقالية بكثير</string>
+    <string name="dom_tint_much_yellow">أكثر صفرة بكثير</string>
+    <string name="dom_tint_much_green">أكثر خضرة بكثير</string>
+    <string name="dom_tint_much_teal">أكثر زرقة مخضرة بكثير</string>
+    <string name="dom_tint_much_blue">أكثر زرقة بكثير</string>
+    <string name="dom_tint_much_purple">أكثر بنفسجية بكثير</string>
+    <string name="dom_tint_much_pink">أكثر وردية بكثير</string>
+    <string name="dom_tint_much_red">أكثر حمرة بكثير</string>
+    <string name="dom_tint_cooler">أبرد</string>
+    <string name="dom_tint_warmer">أدفأ</string>
+    <string name="dom_tint_much_cooler">أبرد بكثير</string>
+    <string name="dom_tint_much_warmer">أدفأ بكثير</string>
+    <string name="dom_depth_much_lighter">أفتح بكثير</string>
+    <string name="dom_depth_lighter">أفتح</string>
+    <string name="dom_depth_deeper">أعمق</string>
+    <string name="dom_depth_much_deeper">أعمق بكثير</string>
+
+    <!-- File limit messages (theme-kit's MotionLimits / UiMediaLimits wording, shown for rejected picks) -->
+    <!-- Shown when the picked file is not a supported motion wallpaper format. -->
+    <string name="dom_limit_motion_unsupported_format">تنسيق غير مدعوم — استخدم MP4 أو WebM أو GIF أو WebP</string>
+    <string name="dom_limit_motion_too_large_resolution">الفيديو كبير جدًا — 1080p أو أقل</string>
+    <string name="dom_limit_motion_too_long">المقطع طويل جدًا — 60 ثانية أو أقل</string>
+    <string name="dom_limit_motion_too_large_bytes">الملف كبير جدًا — أقل من 60 MB</string>
+    <string name="dom_limit_motion_undecodable">تعذّرت قراءة هذا الفيديو — جرّب ملفًا آخر</string>
+    <string name="dom_limit_media_unsupported_audio">تنسيق غير مدعوم — استخدم صوت MP3 أو WAV أو OGG أو M4A</string>
+    <string name="dom_limit_media_unsupported_video">تنسيق غير مدعوم — استخدم فيديو MP4 أو WebM</string>
+    <string name="dom_limit_media_too_large_sound">الملف كبير جدًا</string>
+    <string name="dom_limit_media_too_large_video">الملف كبير جدًا — يجب أن يكون الفيديو أقل من 25 MB</string>
+    <string name="dom_limit_media_undecodable">تعذّرت قراءة هذا الملف — جرّب ملفًا آخر</string>
+    <string name="dom_limit_media_no_duration">تعذّرت قراءة مدة هذا الملف — جرّب ملفًا آخر أو حوّله إلى MP3/WAV/OGG/M4A</string>
+    <string name="dom_limit_media_too_long">هذا المقطع طويل جدًا — %1$s أو أقل</string>
+
+    <!-- Error codes: title, why it happened, and what the user can do (docs/dev/notification-error-codes.md) -->
+    <!-- Error code LN-1001: title of the error. -->
+    <string name="dom_error_ln_1001_title">لم يتم تعيين محاكٍ لهذه المنصة</string>
+    <string name="dom_error_ln_1001_why">لا يعرف PlayFieldPortal أي تطبيق يجب أن يشغّل ألعاب هذه المنصة.</string>
+    <string name="dom_error_ln_1001_action">اختر محاكيًا لهذه المنصة من الإعدادات › تعيين المحاكيات.</string>
+    <string name="dom_error_ln_1002_title">نواة RetroArch المحددة غير مثبّتة</string>
+    <string name="dom_error_ln_1002_why">طُلب من RetroArch تحميل نواة غير موجودة على هذا الجهاز.</string>
+    <string name="dom_error_ln_1002_action">ثبّت النواة من Online Updater في RetroArch، أو اختر نواة أخرى في تعيين المحاكيات.</string>
+    <string name="dom_error_ln_2001_title">ملف اللعبة مفقود أو غير قابل للقراءة</string>
+    <string name="dom_error_ln_2001_why">ربما نُقل الملف أو أُعيدت تسميته أو حُذف، أو أُزيلت بطاقة SD التي تحمله.</string>
+    <string name="dom_error_ln_2001_action">تأكّد من أن الملف لا يزال موجودًا، ثم أعِد فحص بطاقة الذاكرة الخاصة به.</string>
+    <string name="dom_error_ln_4001_title">لم يتم العثور على المحاكي</string>
+    <string name="dom_error_ln_4001_why">المحاكي المعيّن لهذه اللعبة غير مثبّت، أو لم يعثر Android على الشاشة التي يفتحها PlayFieldPortal.</string>
+    <string name="dom_error_ln_4001_action">ثبّت المحاكي، أو اختر محاكيًا آخر من الإعدادات › تعيين المحاكيات.</string>
+    <string name="dom_error_ln_4002_title">لم يسمح Android بفتح المحاكي</string>
+    <string name="dom_error_ln_4002_why">رفض Android منح PlayFieldPortal إذنًا لتشغيل هذا المحاكي.</string>
+    <string name="dom_error_ln_4002_action">افتح المحاكي بمفرده مرة واحدة، ثم حاول مجددًا. إذا تكرر ذلك، حدّث المحاكي.</string>
+    <string name="dom_error_ln_4003_title">لم يظهر المحاكي في الواجهة أبدًا</string>
+    <string name="dom_error_ln_4003_why">على الأرجح أُغلق المحاكي أثناء بدء تشغيله، أو أوقفه Android قبل أن تُحمَّل اللعبة.</string>
+    <string name="dom_error_ln_4003_action">افتح المحاكي بمفرده مرة واحدة للتأكد من أنه يعمل، وحدّثه إن توفّر إصدار أحدث. إذا تكرر ذلك، اختر محاكيًا آخر من الإعدادات › تعيين المحاكيات.</string>
+    <string name="dom_error_ln_9001_title">تعذّر فتح المحاكي</string>
+    <string name="dom_error_ln_9001_why">حدث خطأ غير متوقع أثناء تشغيل المحاكي.</string>
+    <string name="dom_error_ln_9001_action">حاول مجددًا. إذا تكرر ذلك، انسخ التفاصيل وأبلغ عنه.</string>
+    <string name="dom_error_sc_1001_title">لم يتم تعيين مجلد لبطاقة الذاكرة هذه</string>
+    <string name="dom_error_sc_1001_why">لا يوجد لبطاقة الذاكرة هذه مكان لفحصه بعد.</string>
+    <string name="dom_error_sc_1001_action">اختر مجلدًا من خيارات بطاقة الذاكرة، ثم افحصه.</string>
+    <string name="dom_error_sc_1002_title">هناك فحص قيد التشغيل بالفعل</string>
+    <string name="dom_error_sc_1002_why">كانت بطاقة الذاكرة هذه قيد الفحص بالفعل، لذا تم تخطي الفحص الثاني.</string>
+    <string name="dom_error_sc_1002_action">انتظر حتى ينتهي الفحص الجاري. ستظهر نتيجته هنا عند اكتماله.</string>
+    <string name="dom_error_sc_2001_title">فُقد الوصول إلى المجلد</string>
+    <string name="dom_error_sc_2001_why">فقد PlayFieldPortal إذن قراءة هذا المجلد.</string>
+    <string name="dom_error_sc_2001_action">اختر المجلد مرة أخرى من خيارات بطاقة الذاكرة لمنح الوصول، ثم افحصه.</string>
+    <string name="dom_error_sc_2002_title">المجلد لم يعد موجودًا</string>
+    <string name="dom_error_sc_2002_why">نُقل المجلد أو حُذف. إذا كان على بطاقة SD، فربما أُزيلت البطاقة.</string>
+    <string name="dom_error_sc_2002_action">أدخِل بطاقة SD وافحص مجددًا، أو اختر مجلدًا جديدًا من خيارات بطاقة الذاكرة.</string>
+    <string name="dom_error_sc_2003_title">مجلد نظام غير معروف</string>
+    <string name="dom_error_sc_2003_why">هذا المجلد داخل مجلد ROM الرئيسي لا يطابق أي نظام يعرفه PlayFieldPortal.</string>
+    <string name="dom_error_sc_2003_action">أعِد تسمية المجلد إلى اسم نظام مدعوم، أو انقل ألعابه إلى مجلد مدعوم.</string>
+    <string name="dom_error_sc_2004_title">لم يتم التعرّف على الملف</string>
+    <string name="dom_error_sc_2004_why">نوع هذا الملف ليس من الأنواع التي تستخدمها ألعاب هذه المنصة.</string>
+    <string name="dom_error_sc_2004_action">تأكّد من أن الملف لعبة لهذه المنصة. يتم تخطي الأرشيفات والتصحيحات عمدًا.</string>
+    <string name="dom_error_sc_9001_title">فشل الفحص بشكل غير متوقع</string>
+    <string name="dom_error_sc_9001_why">حدث خطأ غير متوقع أثناء الفحص.</string>
+    <string name="dom_error_sc_9001_action">أعِد محاولة الفحص. إذا تكرر ذلك، انسخ التفاصيل وأبلغ عنه.</string>
+    <string name="dom_error_ar_1001_title">مجلد الصور الفنية غير متاح</string>
+    <string name="dom_error_ar_1001_why">لا يستطيع PFP الوصول إلى مجلد الصور الفنية، لذا تم إيقاف الصور الفنية الجديدة مؤقتًا.</string>
+    <string name="dom_error_ar_1001_action">أعِد ربط المجلد من الإعدادات › الصور الفنية.</string>
+    <string name="dom_error_ar_2001_title">تعذّر حفظ ملف الصورة الفنية</string>
+    <string name="dom_error_ar_2001_why">مساحة التخزين ممتلئة، أو تعذّرت الكتابة في مجلد الصور الفنية.</string>
+    <string name="dom_error_ar_2001_action">أفرِغ بعض المساحة وحاول مجددًا.</string>
+    <string name="dom_error_ar_2002_title">تعذّر نسخ ملف</string>
+    <string name="dom_error_ar_2002_why">فشل النسخ في منتصفه، أو تعذّرت الكتابة في الوجهة.</string>
+    <string name="dom_error_ar_2002_action">تأكّد من وجود مساحة فارغة في الوجهة، ثم شغّله مجددًا.</string>
+    <string name="dom_error_ar_2003_title">مجلد نظام غير معروف في الاستيراد</string>
+    <string name="dom_error_ar_2003_why">هذا المجلد في الاستيراد لا يطابق أي نظام يعرفه PlayFieldPortal.</string>
+    <string name="dom_error_ar_2003_action">أعِد تسمية المجلد إلى اسم نظام مدعوم واستورد مجددًا.</string>
+    <string name="dom_error_ar_3001_title">تعذّر الوصول إلى مصدر الصور الفنية</string>
+    <string name="dom_error_ar_3001_why">الجهاز غير متصل، أو لم يستجب المصدر.</string>
+    <string name="dom_error_ar_3001_action">تحقّق من الاتصال وحاول مجددًا لاحقًا.</string>
+    <string name="dom_error_ar_3002_title">رفض المصدر الطلب</string>
+    <string name="dom_error_ar_3002_why">المصدر يحدّ من الطلبات، أو رُفض الحساب أو المفتاح الذي يحتاجه.</string>
+    <string name="dom_error_ar_3002_action">انتظر قليلاً وحاول مجددًا، أو تحقّق من حساب المصدر في الإعدادات.</string>
+    <string name="dom_error_ar_3003_title">لم يتم العثور على تطابق لهذه اللعبة</string>
+    <string name="dom_error_ar_3003_why">لا يحتوي المصدر على إدخال يطابق عنوان هذه اللعبة.</string>
+    <string name="dom_error_ar_3003_action">تحقّق من عنوان اللعبة، أو اختر الصور الفنية يدويًا في Artwork Studio.</string>
+    <string name="dom_error_ar_9001_title">فشل الجلب بشكل غير متوقع</string>
+    <string name="dom_error_ar_9001_why">حدث خطأ غير متوقع أثناء الجلب.</string>
+    <string name="dom_error_ar_9001_action">حاول مجددًا. إذا تكرر ذلك، انسخ التفاصيل وأبلغ عنه.</string>
+    <string name="dom_error_ac_1001_title">لا توجد مجموعة إنجازات تطابق هذه اللعبة</string>
+    <string name="dom_error_ac_1001_why">لا تحتوي أي من الخدمات المتصلة على إنجازات للعبة بهذا العنوان.</string>
+    <string name="dom_error_ac_1001_action">طابِق اللعبة يدويًا من صفحة إنجازاتها.</string>
+    <string name="dom_error_ac_2001_title">تتعذّر قراءة مجلد إنجازات Windows</string>
+    <string name="dom_error_ac_2001_why">تعذّر فتح المجلد المختار لإنجازات هذه اللعبة المحلية.</string>
+    <string name="dom_error_ac_2001_action">اختر مجلد اللعبة مجددًا من صفحة إنجازاتها.</string>
+    <string name="dom_error_ac_3001_title">الجهاز غير متصل</string>
+    <string name="dom_error_ac_3001_why">لا يمكن تحديث الإنجازات دون اتصال بالإنترنت.</string>
+    <string name="dom_error_ac_3001_action">اتصل بالإنترنت. سيُعاد التحديث تلقائيًا.</string>
+    <string name="dom_error_ac_3002_title">انتهت صلاحية تسجيل الدخول</string>
+    <string name="dom_error_ac_3002_why">لم تعد الخدمة المتصلة تقبل تسجيل دخول PlayFieldPortal.</string>
+    <string name="dom_error_ac_3002_action">أعِد ربط الخدمة من الإعدادات › الإنجازات.</string>
+    <string name="dom_error_ac_3003_title">تفاصيل الألعاب في Steam خاصة</string>
+    <string name="dom_error_ac_3003_why">لا يشارك Steam الإنجازات إلا عندما تكون تفاصيل ألعابك عامة.</string>
+    <string name="dom_error_ac_3003_action">اضبط تفاصيل الألعاب على «عامة» في إعدادات الخصوصية في Steam، ثم حدّث مجددًا.</string>
+    <string name="dom_error_ac_3004_title">تعذّر تحديث هذه اللعبة</string>
+    <string name="dom_error_ac_3004_why">لم تستجب الخدمة لهذه اللعبة، أو استجابت بخطأ.</string>
+    <string name="dom_error_ac_3004_action">أعِد محاولة التحديث لاحقًا.</string>
+    <string name="dom_error_md_2001_title">تتعذّر قراءة مجلد الوسائط</string>
+    <string name="dom_error_md_2001_why">فقد PlayFieldPortal الوصول إلى هذا المجلد، أو لم يعد موجودًا.</string>
+    <string name="dom_error_md_2001_action">اختر المجلد مجددًا في إعدادات الوسائط، ثم افحصه.</string>
+    <string name="dom_error_md_9001_title">فشل فحص الوسائط بشكل غير متوقع</string>
+    <string name="dom_error_md_9001_why">حدث خطأ غير متوقع أثناء الفحص.</string>
+    <string name="dom_error_md_9001_action">أعِد محاولة الفحص. إذا تكرر ذلك، انسخ التفاصيل وأبلغ عنه.</string>
+    <string name="dom_error_bk_1001_title">تخطّت الاستعادة عنصرًا</string>
+    <string name="dom_error_bk_1001_why">تعذّرت استعادة هذا العنصر بأمان، لذا تُرك كما هو.</string>
+    <string name="dom_error_bk_1001_action">لم يتأثر أي شيء آخر. أعِد إعداد هذا العنصر يدويًا إن احتجت إليه.</string>
+    <string name="dom_error_bk_2001_title">تعذّرت كتابة ملف النسخة الاحتياطية</string>
+    <string name="dom_error_bk_2001_why">مساحة التخزين ممتلئة، أو تعذّرت الكتابة في مجلد النسخ الاحتياطي.</string>
+    <string name="dom_error_bk_2001_action">أفرِغ بعض المساحة أو اختر موقعًا آخر للنسخ الاحتياطي، ثم حاول مجددًا.</string>
+    <string name="dom_error_bk_2002_title">ملف النسخة الاحتياطية غير قابل للقراءة أو تالف</string>
+    <string name="dom_error_bk_2002_why">الملف ليس نسخة احتياطية من PlayFieldPortal، أو أنه مبتور.</string>
+    <string name="dom_error_bk_2002_action">اختر ملف نسخة احتياطية آخر.</string>
+    <string name="dom_error_sy_9001_title">حدث خطأ ما</string>
+    <string name="dom_error_sy_9001_why">حدث خطأ غير متوقع.</string>
+    <string name="dom_error_sy_9001_action">حاول مجددًا. إذا تكرر ذلك، انسخ التفاصيل وأبلغ عنه.</string>
+</resources>

@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slice G2: core-domain strings (enum labels, controller names, colour naming, error codes) -->
+<resources>
+
+    <!-- Shiba rank titles -->
+    <!-- Rank title on the player card, from lowest to highest. Shiba is a dog breed; the ranks are dog-themed names. -->
+    <string name="dom_shiba_rank_pup">Pup</string>
+    <string name="dom_shiba_rank_ruffian">Ruffian</string>
+    <string name="dom_shiba_rank_lone_ron_inu">Lone Ron-inu</string>
+    <string name="dom_shiba_rank_inu_master">Inu Master</string>
+    <string name="dom_shiba_rank_legendary_hachiko">Legendary Hachiko</string>
+
+    <!-- App editions -->
+    <!-- Which build of the app is installed: the Full build or the Lite build (without Discord). -->
+    <string name="dom_edition_full">Full</string>
+    <string name="dom_edition_lite">Lite</string>
+
+    <!-- Audio channels (volume rows) -->
+    <!-- Name of a launcher sound whose volume the user sets. -->
+    <string name="dom_audio_channel_navigation">Navigation</string>
+    <string name="dom_audio_channel_back">Back / cancel</string>
+    <string name="dom_audio_channel_confirm">Confirm / apply</string>
+    <string name="dom_audio_channel_error">Error / invalid</string>
+    <string name="dom_audio_channel_category">Category</string>
+    <string name="dom_audio_channel_options">Options</string>
+    <string name="dom_audio_channel_notification">Notification</string>
+    <string name="dom_audio_channel_boot">Boot sequence</string>
+    <string name="dom_audio_channel_gameboot">Game Boot</string>
+    <string name="dom_audio_channel_ambience">Ambience</string>
+
+    <!-- Customisable media slots -->
+    <!-- Name of a sound or clip the user can replace with their own file. -->
+    <string name="dom_media_slot_navigation">Navigation</string>
+    <string name="dom_media_slot_back">Back / Cancel</string>
+    <string name="dom_media_slot_confirm">Confirm / Apply</string>
+    <string name="dom_media_slot_error">Error / Invalid</string>
+    <string name="dom_media_slot_category">Category</string>
+    <string name="dom_media_slot_options">Options</string>
+    <string name="dom_media_slot_notification">Notification</string>
+    <string name="dom_media_slot_boot_video">Boot Animation</string>
+    <string name="dom_media_slot_gameboot_video">Game Boot Animation</string>
+    <string name="dom_media_slot_ambience_audio">Ambience Track</string>
+
+    <!-- Game tile display modes -->
+    <string name="dom_icon_display_icon0">Custom Icon</string>
+    <string name="dom_icon_display_box_art">Box Art</string>
+    <string name="dom_icon_display_physical_media">Physical Media</string>
+    <string name="dom_icon_display_box_3d">3D Box Art</string>
+
+    <!-- Icon legibility styles -->
+    <!-- How icons separate from the background: a shadow or an outline (contour) in a dark or light colour. -->
+    <string name="dom_icon_legibility_none">None</string>
+    <string name="dom_icon_legibility_offset_shadow">Offset Shadow (Dark)</string>
+    <string name="dom_icon_legibility_offset_shadow_light">Offset Shadow (Light)</string>
+    <string name="dom_icon_legibility_contour_dark">Contour (Dark)</string>
+    <string name="dom_icon_legibility_contour_light">Contour (Light)</string>
+    <string name="dom_icon_legibility_contour_auto">Contour (Auto)</string>
+
+    <!-- Animated image playback -->
+    <!-- How animated artwork plays: everything, only the focused item, or nothing. -->
+    <string name="dom_image_motion_animated">Animated</string>
+    <string name="dom_image_motion_reduced">Reduced</string>
+    <string name="dom_image_motion_static">Static</string>
+
+    <!-- Text legibility styles -->
+    <!-- How text separates from the background behind it. -->
+    <string name="dom_text_legibility_none">None</string>
+    <string name="dom_text_legibility_shadow">Drop Shadow</string>
+    <string name="dom_text_legibility_outline">Outline</string>
+    <string name="dom_text_legibility_plate">Contrast Plate</string>
+    <string name="dom_text_legibility_auto">Automatic</string>
+
+    <!-- Touch gestures -->
+    <string name="dom_touch_gesture_tap">Tap</string>
+    <string name="dom_touch_gesture_long_press">Hold</string>
+    <string name="dom_touch_gesture_swipe_left">Swipe left</string>
+    <string name="dom_touch_gesture_swipe_right">Swipe right</string>
+    <string name="dom_touch_gesture_swipe_down">Swipe down</string>
+
+    <!-- UMD slot display modes -->
+    <!-- UMD is the disc format of the PlayStation Portable. The slot shows the inserted game and/or the most recently played one. -->
+    <string name="dom_umd_slot_off">Off</string>
+    <string name="dom_umd_slot_inserted">Inserted</string>
+    <string name="dom_umd_slot_inserted_and_recent">Inserted &amp; Recent</string>
+
+    <!-- Item list motion styles -->
+    <!-- How the item list animates between rows: the focused row rewinds up behind the icon, or the whole column glides together. -->
+    <string name="dom_list_motion_rewind">Rewind</string>
+    <string name="dom_list_motion_glide">Glide</string>
+
+    <!-- Confirm / Back button layouts -->
+    <!-- A and B are controller button names; keep them as printed on the controller. -->
+    <string name="dom_confirm_back_standard">Standard (A = Confirm, B = Back)</string>
+    <string name="dom_confirm_back_reversed">Reversed (B = Confirm, A = Back)</string>
+
+    <!-- X / Y button layouts -->
+    <!-- X and Y are controller button names; keep them as printed on the controller. -->
+    <string name="dom_xy_layout_standard">Standard (Y = Options, X = Sort)</string>
+    <string name="dom_xy_layout_swapped">Swapped (X = Options, Y = Sort)</string>
+
+    <!-- Controller prompt styles -->
+    <!-- Brand names of controller families. Normally left as is. -->
+    <string name="dom_controller_type_xbox">Xbox</string>
+    <string name="dom_controller_type_nintendo">Nintendo</string>
+    <string name="dom_controller_type_playstation">PlayStation</string>
+
+    <!-- Held-navigation scroll speeds -->
+    <string name="dom_scroll_speed_relaxed">Relaxed</string>
+    <string name="dom_scroll_speed_standard">Standard</string>
+    <string name="dom_scroll_speed_fast">Fast</string>
+
+    <!-- Colour schemes -->
+    <!-- Name of a background colour scheme. 'Original (Monthly)' changes colour with the calendar month. -->
+    <string name="dom_color_scheme_original">Original (Monthly)</string>
+    <string name="dom_color_scheme_classic_blue">Classic Blue</string>
+    <string name="dom_color_scheme_sunset_orange">Sunset Orange</string>
+    <string name="dom_color_scheme_fresh_green">Fresh Green</string>
+    <string name="dom_color_scheme_royal_purple">Royal Purple</string>
+    <string name="dom_color_scheme_crimson_red">Crimson Red</string>
+    <string name="dom_color_scheme_silver">Silver</string>
+    <string name="dom_color_scheme_sakura_pink">Sakura Pink</string>
+    <string name="dom_color_scheme_golden_amber">Golden Amber</string>
+    <string name="dom_color_scheme_aqua_teal">Aqua Teal</string>
+    <string name="dom_color_scheme_midnight_navy">Midnight Navy</string>
+    <string name="dom_color_scheme_charcoal">Charcoal</string>
+
+    <!-- Controller actions -->
+    <!-- What a controller input does, shown beside the button that triggers it in Settings > Controller. -->
+    <string name="dom_action_navigate_up">Navigate Up</string>
+    <string name="dom_action_navigate_down">Navigate Down</string>
+    <string name="dom_action_navigate_left">Navigate Left (Previous Category)</string>
+    <string name="dom_action_navigate_right">Navigate Right (Next Category)</string>
+    <string name="dom_action_select">Select / Launch</string>
+    <string name="dom_action_back">Back / Close</string>
+    <string name="dom_action_open_context_menu">Options / Context Menu</string>
+    <string name="dom_action_change_sort">Change Sort Order</string>
+    <string name="dom_action_prev_category">Previous Tab (App Drawer)</string>
+    <string name="dom_action_next_category">Next Tab (App Drawer)</string>
+    <string name="dom_action_home">Start (Notifications / Confirm in pickers)</string>
+    <string name="dom_action_shift">Shift (Keyboard)</string>
+    <string name="dom_action_caps_lock">Caps Lock (Keyboard)</string>
+    <string name="dom_action_category_menu">Category Menu</string>
+
+    <!-- Controller button names -->
+    <!-- Name of a physical controller button or key. Letters and shoulder buttons (L1, R2) are printed on the device and are normally left as is. -->
+    <string name="dom_key_a">A / Cross</string>
+    <string name="dom_key_b">B / Circle</string>
+    <string name="dom_key_x">X / Square</string>
+    <string name="dom_key_y">Y / Triangle</string>
+    <string name="dom_key_dpad_up">D-Pad Up</string>
+    <string name="dom_key_dpad_down">D-Pad Down</string>
+    <string name="dom_key_dpad_left">D-Pad Left</string>
+    <string name="dom_key_dpad_right">D-Pad Right</string>
+    <string name="dom_key_dpad_center">D-Pad Center</string>
+    <string name="dom_key_l1">L1</string>
+    <string name="dom_key_r1">R1</string>
+    <string name="dom_key_l2">L2</string>
+    <string name="dom_key_r2">R2</string>
+    <string name="dom_key_start">Start</string>
+    <string name="dom_key_select">Select</string>
+    <string name="dom_key_enter">Enter</string>
+    <string name="dom_key_back">Back</string>
+    <!-- A button with no known name. %1$d is Android's numeric key code. -->
+    <string name="dom_key_unknown">Key %1$d</string>
+
+    <!-- Colour naming (ColorNaming): descriptions of a colour and the steps of the colour steppers -->
+    <!-- Colour name in lower case, used inside a longer description such as "Dark blue" or "Red, leaning orange". -->
+    <string name="dom_hue_orange">orange</string>
+    <string name="dom_hue_yellow">yellow</string>
+    <string name="dom_hue_green">green</string>
+    <string name="dom_hue_teal">teal</string>
+    <string name="dom_hue_blue">blue</string>
+    <string name="dom_hue_purple">purple</string>
+    <string name="dom_hue_pink">pink</string>
+    <string name="dom_hue_red">red</string>
+    <!-- Colour name starting a description by itself, such as "Purple, leaning blue" (capitalised where the language does). -->
+    <string name="dom_hue_orange_cap">Orange</string>
+    <string name="dom_hue_yellow_cap">Yellow</string>
+    <string name="dom_hue_green_cap">Green</string>
+    <string name="dom_hue_teal_cap">Teal</string>
+    <string name="dom_hue_blue_cap">Blue</string>
+    <string name="dom_hue_purple_cap">Purple</string>
+    <string name="dom_hue_pink_cap">Pink</string>
+    <string name="dom_hue_red_cap">Red</string>
+    <!-- A colour that sits near the edge of another colour. %1$s is the colour name, %2$s the neighbouring colour it leans toward. Lower case, used inside a longer description. -->
+    <string name="dom_hue_lean">%1$s, leaning %2$s</string>
+    <!-- Same as the lower-case version, but %1$s is already capitalised because this description starts the sentence. -->
+    <string name="dom_hue_lean_cap">%1$s, leaning %2$s</string>
+    <!-- Describes a colour: %1$s is a colour description (for example "blue" or "muted green"). Word order may be changed. -->
+    <string name="dom_color_dark">Dark %1$s</string>
+    <!-- Same as "Dark %1$s" but darker. -->
+    <string name="dom_color_very_dark">Very dark %1$s</string>
+    <!-- Describes a washed-out colour: %1$s is a colour name. -->
+    <string name="dom_color_muted">Muted %1$s</string>
+    <!-- A dark, washed-out colour: %1$s is a colour name. -->
+    <string name="dom_color_dark_muted">Dark muted %1$s</string>
+    <!-- A very dark, washed-out colour: %1$s is a colour name. -->
+    <string name="dom_color_very_dark_muted">Very dark muted %1$s</string>
+    <!-- A grey. %1$s is a brightness word such as "Dark" or "Bright", capitalised. -->
+    <string name="dom_color_grey">%1$s grey</string>
+    <!-- How colourful a colour is, from none to strongest. Shown beside a slider. -->
+    <string name="dom_saturation_grey">Grey</string>
+    <string name="dom_saturation_muted">Muted</string>
+    <string name="dom_saturation_vivid">Vivid</string>
+    <string name="dom_saturation_intense">Intense</string>
+    <!-- How bright a colour is, from darkest to lightest. Shown beside a slider. -->
+    <string name="dom_brightness_very_dark">Very dark</string>
+    <string name="dom_brightness_dark">Dark</string>
+    <string name="dom_brightness_medium">Medium</string>
+    <string name="dom_brightness_bright">Bright</string>
+    <!-- Label of the centre step of a colour or depth stepper: the colour exactly as designed. -->
+    <string name="dom_tint_standard">Standard</string>
+    <!-- Label of a stepper step that moves the colour toward this neighbouring colour. -->
+    <string name="dom_tint_orange">More orange</string>
+    <string name="dom_tint_yellow">Yellower</string>
+    <string name="dom_tint_green">Greener</string>
+    <string name="dom_tint_teal">More teal</string>
+    <string name="dom_tint_blue">Bluer</string>
+    <string name="dom_tint_purple">More purple</string>
+    <string name="dom_tint_pink">Pinker</string>
+    <string name="dom_tint_red">Redder</string>
+    <string name="dom_tint_much_orange">Much more orange</string>
+    <string name="dom_tint_much_yellow">Much yellower</string>
+    <string name="dom_tint_much_green">Much greener</string>
+    <string name="dom_tint_much_teal">Much more teal</string>
+    <string name="dom_tint_much_blue">Much bluer</string>
+    <string name="dom_tint_much_purple">Much more purple</string>
+    <string name="dom_tint_much_pink">Much pinker</string>
+    <string name="dom_tint_much_red">Much redder</string>
+    <!-- Steps for a grey colour: toward cool (bluish) or warm (reddish) tones. -->
+    <string name="dom_tint_cooler">Cooler</string>
+    <string name="dom_tint_warmer">Warmer</string>
+    <string name="dom_tint_much_cooler">Much cooler</string>
+    <string name="dom_tint_much_warmer">Much warmer</string>
+    <!-- Labels of the lightness stepper under a colour scheme. -->
+    <string name="dom_depth_much_lighter">Much lighter</string>
+    <string name="dom_depth_lighter">Lighter</string>
+    <string name="dom_depth_deeper">Deeper</string>
+    <string name="dom_depth_much_deeper">Much deeper</string>
+
+    <!-- File limit messages (theme-kit's MotionLimits / UiMediaLimits wording, shown for rejected picks) -->
+    <!-- Shown when the picked file is not a supported motion wallpaper format. -->
+    <string name="dom_limit_motion_unsupported_format">Unsupported format — use MP4, WebM, GIF or WebP</string>
+    <string name="dom_limit_motion_too_large_resolution">Video is too large — 1080p or smaller</string>
+    <string name="dom_limit_motion_too_long">Clip is too long — 60 seconds or less</string>
+    <string name="dom_limit_motion_too_large_bytes">File is too large — under 60 MB</string>
+    <string name="dom_limit_motion_undecodable">Couldn\'t read that video — try a different file</string>
+    <!-- Shown when a picked sound or clip does not meet the limits. -->
+    <string name="dom_limit_media_unsupported_audio">Unsupported format — use MP3, WAV, OGG, or M4A audio</string>
+    <string name="dom_limit_media_unsupported_video">Unsupported format — use MP4 or WebM video</string>
+    <string name="dom_limit_media_too_large_sound">File is too large</string>
+    <string name="dom_limit_media_too_large_video">File is too large — videos must be under 25 MB</string>
+    <string name="dom_limit_media_undecodable">Couldn\'t read that file — try a different one</string>
+    <string name="dom_limit_media_no_duration">Couldn\'t read that file\'s length — try a different file, or convert it to MP3/WAV/OGG/M4A</string>
+    <!-- %1$s is a duration such as "0.5 s" or "10 s". -->
+    <string name="dom_limit_media_too_long">That clip is too long — %1$s or less</string>
+
+    <!-- Error codes: title, why it happened, and what the user can do (docs/dev/notification-error-codes.md) -->
+    <!-- Error code LN-1001: title of the error. -->
+    <string name="dom_error_ln_1001_title">No emulator is assigned to this platform</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_1001_why">PlayFieldPortal doesn\'t know which app should run games for this platform.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_1001_action">Pick an emulator for this platform in Settings › Emulator Assignment.</string>
+    <!-- Error code LN-1002: title of the error. -->
+    <string name="dom_error_ln_1002_title">The selected RetroArch core isn\'t installed</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_1002_why">RetroArch was asked to load a core that isn\'t on this device.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_1002_action">Install the core from RetroArch\'s Online Updater, or choose another core in Emulator Assignment.</string>
+    <!-- Error code LN-2001: title of the error. -->
+    <string name="dom_error_ln_2001_title">The game file is missing or unreadable</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_2001_why">The file may have been moved, renamed or deleted, or the SD card holding it was removed.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_2001_action">Check the file is still there, then rescan its Memory Card.</string>
+    <!-- Error code LN-4001: title of the error. -->
+    <string name="dom_error_ln_4001_title">The emulator wasn\'t found</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_4001_why">The emulator assigned to this game isn\'t installed, or Android couldn\'t find the screen PlayFieldPortal opens.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_4001_action">Install the emulator, or choose another one in Settings › Emulator Assignment.</string>
+    <!-- Error code LN-4002: title of the error. -->
+    <string name="dom_error_ln_4002_title">Android didn\'t allow the emulator to open</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_4002_why">Android refused permission for PlayFieldPortal to start this emulator.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_4002_action">Open the emulator on its own once, then try again. If it keeps happening, update the emulator.</string>
+    <!-- Error code LN-4003: title of the error. -->
+    <string name="dom_error_ln_4003_title">The emulator never came to the front</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_4003_why">The emulator most likely closed as it started, or Android stopped it before the game could load.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_4003_action">Open the emulator on its own once to check it starts, and update it if a newer version is available. If it keeps happening, choose another emulator in Settings › Emulator Assignment.</string>
+    <!-- Error code LN-9001: title of the error. -->
+    <string name="dom_error_ln_9001_title">The emulator couldn\'t be opened</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ln_9001_why">Something unexpected went wrong while starting the emulator.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ln_9001_action">Try again. If it keeps happening, copy the details and report it.</string>
+    <!-- Error code SC-1001: title of the error. -->
+    <string name="dom_error_sc_1001_title">No folder is set for this Memory Card</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_1001_why">This Memory Card has nowhere to scan yet.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_1001_action">Choose a folder from the Memory Card\'s Options, then scan it.</string>
+    <!-- Error code SC-1002: title of the error. -->
+    <string name="dom_error_sc_1002_title">A scan is already running</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_1002_why">This Memory Card was already being scanned, so the second scan was skipped.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_1002_action">Wait for the running scan to finish. Its result appears here when it\'s done.</string>
+    <!-- Error code SC-2001: title of the error. -->
+    <string name="dom_error_sc_2001_title">Folder access was lost</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_2001_why">PlayFieldPortal lost permission to read this folder.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_2001_action">Choose the folder again from the Memory Card\'s Options so access is granted, then scan it.</string>
+    <!-- Error code SC-2002: title of the error. -->
+    <string name="dom_error_sc_2002_title">The folder no longer exists</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_2002_why">The folder was moved or deleted. If it\'s on an SD card, the card may have been removed.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_2002_action">Insert the SD card and scan again, or choose a new folder from the Memory Card\'s Options.</string>
+    <!-- Error code SC-2003: title of the error. -->
+    <string name="dom_error_sc_2003_title">Unknown system folder</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_2003_why">This folder inside the main ROM folder doesn\'t match a system PlayFieldPortal knows.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_2003_action">Rename the folder to a supported system name, or move its games into one.</string>
+    <!-- Error code SC-2004: title of the error. -->
+    <string name="dom_error_sc_2004_title">File not recognised</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_2004_why">This file\'s type isn\'t one this platform\'s games use.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_2004_action">Check the file is a game for this platform. Archives and patches are skipped on purpose.</string>
+    <!-- Error code SC-9001: title of the error. -->
+    <string name="dom_error_sc_9001_title">The scan failed unexpectedly</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_sc_9001_why">Something unexpected went wrong during the scan.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sc_9001_action">Try the scan again. If it keeps happening, copy the details and report it.</string>
+    <!-- Error code AR-1001: title of the error. -->
+    <string name="dom_error_ar_1001_title">Artwork folder unavailable</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_1001_why">PFP can\'t reach the artwork folder, so new artwork is paused.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_1001_action">Relink the folder in Settings › Artwork.</string>
+    <!-- Error code AR-2001: title of the error. -->
+    <string name="dom_error_ar_2001_title">The artwork file couldn\'t be saved</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_2001_why">Storage was full, or the artwork folder couldn\'t be written to.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_2001_action">Free up some space and try again.</string>
+    <!-- Error code AR-2002: title of the error. -->
+    <string name="dom_error_ar_2002_title">A file couldn\'t be copied</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_2002_why">The copy failed partway, or the destination couldn\'t be written to.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_2002_action">Check there\'s free space at the destination, then run it again.</string>
+    <!-- Error code AR-2003: title of the error. -->
+    <string name="dom_error_ar_2003_title">Unknown system folder in the import</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_2003_why">This folder in the import doesn\'t match a system PlayFieldPortal knows.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_2003_action">Rename the folder to a supported system name and import again.</string>
+    <!-- Error code AR-3001: title of the error. -->
+    <string name="dom_error_ar_3001_title">The artwork source couldn\'t be reached</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_3001_why">The device is offline, or the source didn\'t answer.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_3001_action">Check the connection and try again later.</string>
+    <!-- Error code AR-3002: title of the error. -->
+    <string name="dom_error_ar_3002_title">The source rejected the request</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_3002_why">The source is limiting requests, or the account or key it needs was refused.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_3002_action">Wait a while and try again, or check the source\'s account in Settings.</string>
+    <!-- Error code AR-3003: title of the error. -->
+    <string name="dom_error_ar_3003_title">No match was found for this game</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_3003_why">The source has no entry that matches this game\'s title.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_3003_action">Check the game\'s title, or choose artwork by hand in the Artwork Studio.</string>
+    <!-- Error code AR-9001: title of the error. -->
+    <string name="dom_error_ar_9001_title">The fetch failed unexpectedly</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ar_9001_why">Something unexpected went wrong while fetching.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ar_9001_action">Try again. If it keeps happening, copy the details and report it.</string>
+    <!-- Error code AC-1001: title of the error. -->
+    <string name="dom_error_ac_1001_title">No achievement set matched this game</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ac_1001_why">None of the connected services has achievements for a game with this title.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ac_1001_action">Match the game by hand from its achievements page.</string>
+    <!-- Error code AC-2001: title of the error. -->
+    <string name="dom_error_ac_2001_title">The Windows achievements folder can\'t be read</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ac_2001_why">The folder picked for this game\'s local achievements couldn\'t be opened.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ac_2001_action">Pick the game\'s folder again from its achievements page.</string>
+    <!-- Error code AC-3001: title of the error. -->
+    <string name="dom_error_ac_3001_title">The device is offline</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ac_3001_why">Achievements can\'t update without an internet connection.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ac_3001_action">Connect to the internet. The update runs again on its own.</string>
+    <!-- Error code AC-3002: title of the error. -->
+    <string name="dom_error_ac_3002_title">Sign-in expired</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ac_3002_why">The connected service no longer accepts PlayFieldPortal\'s sign-in.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ac_3002_action">Reconnect the service in Settings › Achievements.</string>
+    <!-- Error code AC-3003: title of the error. -->
+    <string name="dom_error_ac_3003_title">Steam Game Details are private</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ac_3003_why">Steam only shares achievements when your Game Details are public.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ac_3003_action">Set Game Details to Public in your Steam privacy settings, then update again.</string>
+    <!-- Error code AC-3004: title of the error. -->
+    <string name="dom_error_ac_3004_title">This game couldn\'t update</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_ac_3004_why">The service didn\'t answer for this game, or answered with an error.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_ac_3004_action">Try the update again later.</string>
+    <!-- Error code MD-2001: title of the error. -->
+    <string name="dom_error_md_2001_title">The media folder can\'t be read</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_md_2001_why">PlayFieldPortal lost access to this folder, or it no longer exists.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_md_2001_action">Choose the folder again in the media settings, then scan.</string>
+    <!-- Error code MD-9001: title of the error. -->
+    <string name="dom_error_md_9001_title">The media scan failed unexpectedly</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_md_9001_why">Something unexpected went wrong during the scan.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_md_9001_action">Try the scan again. If it keeps happening, copy the details and report it.</string>
+    <!-- Error code BK-1001: title of the error. -->
+    <string name="dom_error_bk_1001_title">Restore skipped an item</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_bk_1001_why">This item couldn\'t be restored safely, so it was left as it was.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_bk_1001_action">Nothing else is affected. Set this item up again by hand if you need it.</string>
+    <!-- Error code BK-2001: title of the error. -->
+    <string name="dom_error_bk_2001_title">The backup file couldn\'t be written</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_bk_2001_why">Storage was full, or the backup folder couldn\'t be written to.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_bk_2001_action">Free up some space or choose another backup location, then try again.</string>
+    <!-- Error code BK-2002: title of the error. -->
+    <string name="dom_error_bk_2002_title">The backup file is unreadable or damaged</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_bk_2002_why">The file isn\'t a PlayFieldPortal backup, or it was cut short.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_bk_2002_action">Choose another backup file.</string>
+    <!-- Error code SY-9001: title of the error. -->
+    <string name="dom_error_sy_9001_title">Something went wrong</string>
+    <!-- Why the error happened. -->
+    <string name="dom_error_sy_9001_why">Something unexpected went wrong.</string>
+    <!-- What the user can do about it. -->
+    <string name="dom_error_sy_9001_action">Try again. If it keeps happening, copy the details and report it.</string>
+</resources>

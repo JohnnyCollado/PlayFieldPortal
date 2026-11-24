@@ -1,5 +1,8 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.settings.R
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
@@ -86,8 +89,8 @@ fun PhotoSettingsContent(
     val removeGate = rememberRootRemoveGate()
     val modal = rememberSettingsModal(removeGate.spec)
     SettingsScaffold(
-        title    = "Settings",
-        subtitle = "Photo",
+        title    = stringResource(R.string.settings_title),
+        subtitle = stringResource(R.string.sets_photo_title),
         onBack   = onBack,
         modifier = modifier,
         modalOpen = modal.open,
@@ -101,22 +104,23 @@ fun PhotoSettingsContent(
                 .verticalScroll(scrollState),
         ) {
             RootAccessSection(
-                groupTitle  = "Root folders",
+                groupTitle  = stringResource(R.string.sets_roots_group),
                 rootKind    = "Photo",
+                rootKindRes = R.string.sets_root_kind_photo,
                 roots       = state.roots,
-                addLabel    = "Add photo root",
-                addSublabel = "Grant a root folder (e.g. /Pictures) — add several to span locations",
+                addLabel    = stringResource(R.string.sets_photo_add_root),
+                addSublabel = stringResource(R.string.sets_photo_add_root_help),
                 onAddRoot   = onAddRoot,
                 onRelinkRoot = onRelinkRoot,
                 onRemoveRoot = { row -> removeGate.request(row.name) { onRemoveRoot(row) } },
             )
 
             SettingsRow(
-                label    = "Rescan photo library",
+                label    = stringResource(R.string.sets_photo_rescan),
                 sublabel = when {
-                    state.scanning            -> "Scanning…"
-                    state.scanMessage != null -> state.scanMessage
-                    else                      -> "Update the libraries from every root folder"
+                    state.scanning            -> stringResource(R.string.sets_scanning)
+                    state.scanMessage != null -> state.scanMessage.asString()
+                    else                      -> stringResource(R.string.sets_rescan_help)
                 },
                 focusKey = "photo_rescan",
                 onClick  = if (state.scanning || !state.hasRoots) null else onRescan,
@@ -130,11 +134,11 @@ fun PhotoSettingsContent(
                 )
             }
 
-            SettingsGroup("Maintenance")
+            SettingsGroup(stringResource(R.string.sets_photo_group_maintenance))
 
             SettingsRow(
-                label    = "Clear thumbnail cache",
-                sublabel = "Delete generated thumbnails. A rescan regenerates them.",
+                label    = stringResource(R.string.sets_photo_clear_cache),
+                sublabel = stringResource(R.string.sets_photo_clear_cache_help),
                 onClick  = onClearCache,
             )
         }

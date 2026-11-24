@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="thm_error_manifest_missing">В архиве нет обязательного файла theme.json</string>
+    <string name="thm_error_manifest_invalid">Неверный theme.json: %1$s</string>
+    <string name="thm_error_id_invalid">Неверный id темы \'%1$s\' — используйте буквы, цифры, \'.\', \'_\' или \'-\' (не более 64)</string>
+    <string name="thm_error_color_invalid">Неверное значение %1$s \'%2$s\' — ожидается #RRGGBB или #AARRGGBB</string>
+</resources>

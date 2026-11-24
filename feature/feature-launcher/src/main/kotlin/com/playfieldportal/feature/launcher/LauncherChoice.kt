@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.domain.text.UiText
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -15,13 +16,13 @@ import javax.inject.Singleton
  * What the user said an unidentified app is, in Import PC Games ▸ Unknown Windows Emulators
  * (setup-wizard plan section 6). Declared in cycle order.
  */
-enum class LauncherChoice(val label: String, val type: PcLauncherType?) {
-    NOT_A_LAUNCHER("Not a launcher", null),
-    GAMEHUB("GameHub", PcLauncherType.GAMEHUB),
-    GAMEHUB_LITE("GameHub Lite", PcLauncherType.GAMEHUB_LITE),
-    BANNERHUB("BannerHub", PcLauncherType.BANNERHUB_V6),
-    WINLATOR("Winlator", PcLauncherType.WINLATOR),
-    GAMENATIVE("GameNative", PcLauncherType.GAMENATIVE);
+enum class LauncherChoice(val label: UiText, val type: PcLauncherType?) {
+    NOT_A_LAUNCHER(UiText.res(R.string.launch_choice_not_a_launcher), null),
+    GAMEHUB(UiText.raw("GameHub"), PcLauncherType.GAMEHUB),
+    GAMEHUB_LITE(UiText.raw("GameHub Lite"), PcLauncherType.GAMEHUB_LITE),
+    BANNERHUB(UiText.raw("BannerHub"), PcLauncherType.BANNERHUB_V6),
+    WINLATOR(UiText.raw("Winlator"), PcLauncherType.WINLATOR),
+    GAMENATIVE(UiText.raw("GameNative"), PcLauncherType.GAMENATIVE);
 
     companion object {
         /** The value after [current]; an undecided row starts at the first. */

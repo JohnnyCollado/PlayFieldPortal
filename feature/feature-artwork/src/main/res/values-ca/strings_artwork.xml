@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compartit -->
+    <string name="art_error_unexpected">Error inesperat</string>
+    <string name="art_no_folder_linked">No hi ha cap carpeta d\'imatges enllaçada</string>
+    <string name="art_paused_message">Imatges en pausa. Torna a enllaçar la carpeta d\'imatges per desar-ne de noves.</string>
+    <string name="art_error_game_not_found">No s\'ha trobat el joc</string>
+    <string name="art_error_not_found_any_source">No s\'ha trobat a cap font</string>
+    <string name="art_found_via">Trobat a través de %1$s</string>
+    <string name="art_results_label_updated">Actualitzats</string>
+    <string name="art_results_label_imported">Importats</string>
+    <string name="art_progress_hashing">S\'està calculant el hash de la ROM…</string>
+    <string name="art_progress_searching">S\'està cercant…</string>
+    <string name="art_asset_hero">Capçalera</string>
+    <string name="art_asset_background">Fons</string>
+    <string name="art_asset_logo">Logotip</string>
+    <string name="art_asset_box_art">Caràtula</string>
+    <string name="art_asset_physical_media">Suport físic</string>
+    <string name="art_asset_3d_box">Caixa 3D</string>
+    <string name="art_asset_screenshot">Captura de pantalla</string>
+    <string name="art_asset_manual">Manual</string>
+    <string name="art_asset_video">Vídeo</string>
+    <string name="art_asset_icon_video">Vídeo d\'icona</string>
+    <string name="art_asset_icon_video_converting">Vídeo d\'icona (s\'està convertint)</string>
+    <string name="art_source_storefronts">Botigues</string>
+
+    <!-- Camps de metadades -->
+    <string name="art_field_title">Títol</string>
+    <string name="art_field_description">Descripció</string>
+    <string name="art_field_developer">Desenvolupador</string>
+    <string name="art_field_publisher">Editor</string>
+    <string name="art_field_year">Any</string>
+    <string name="art_field_release_date">Data de llançament</string>
+    <string name="art_field_genre">Gènere</string>
+    <string name="art_field_age_rating">Classificació per edats</string>
+    <string name="art_field_franchise">Franquícia</string>
+    <string name="art_field_rating">Valoració</string>
+
+    <!-- Maneres d'aplicar les metadades -->
+    <string name="art_policy_replace_all">Substitueix-ho tot</string>
+    <string name="art_policy_fill_missing">Omple només els que falten</string>
+    <string name="art_policy_choose_fields">Tria els camps</string>
+    <string name="art_policy_keep_current">Conserva els actuals</string>
+
+    <!-- Obtenció d'imatges -->
+    <string name="art_scrape_label_all">S\'estan tornant a obtenir les imatges de tots els jocs</string>
+    <string name="art_scrape_label_missing">S\'estan obtenint les imatges que falten</string>
+    <string name="art_scrape_stop_note">Es conserven les imatges ja obtingudes.</string>
+    <string name="art_scrape_paused_all_title">S\'ha posat en pausa la nova obtenció d\'imatges</string>
+    <string name="art_scrape_paused_title">S\'ha posat en pausa l\'obtenció d\'imatges</string>
+    <string name="art_scrape_finished_all_title">S\'ha acabat la nova obtenció d\'imatges</string>
+    <string name="art_scrape_finished_title">S\'ha acabat l\'obtenció d\'imatges</string>
+    <string name="art_scrape_stopped_title">S\'ha aturat l\'obtenció d\'imatges</string>
+    <string name="art_scrape_failed_title">L\'obtenció d\'imatges ha fallat</string>
+    <string name="art_scrape_result">%1$d correctes, %2$d errors de %3$d</string>
+    <plurals name="art_scrape_stopped_after">
+        <item quantity="one">Aturat després de %1$d joc — es conserven les imatges obtingudes fins ara</item>
+        <item quantity="many">Aturat després de %1$d jocs — es conserven les imatges obtingudes fins ara</item>
+        <item quantity="other">Aturat després de %1$d jocs — es conserven les imatges obtingudes fins ara</item>
+    </plurals>
+
+    <!-- Tornar a enllaçar -->
+    <string name="art_relink_label">S\'estan tornant a enllaçar les imatges</string>
+    <plurals name="art_relink_label_consoles">
+        <item quantity="one">S\'estan tornant a enllaçar les imatges de %1$d consola</item>
+        <item quantity="many">S\'estan tornant a enllaçar les imatges de %1$d consoles</item>
+        <item quantity="other">S\'estan tornant a enllaçar les imatges de %1$d consoles</item>
+    </plurals>
+    <string name="art_relink_stop_note">Les imatges ja enllaçades continuen enllaçades.</string>
+    <string name="art_relink_finished_title">S\'ha acabat de tornar a enllaçar les imatges</string>
+    <string name="art_relink_stopped_title">S\'ha aturat el nou enllaç de les imatges</string>
+    <string name="art_relink_stopped_note">Es conserven les imatges enllaçades fins ara</string>
+    <string name="art_relink_failed_title">No s\'han pogut tornar a enllaçar les imatges</string>
+    <plurals name="art_relink_games_linked">
+        <item quantity="one">%1$d joc enllaçat</item>
+        <item quantity="many">%1$d jocs enllaçats</item>
+        <item quantity="other">%1$d jocs enllaçats</item>
+    </plurals>
+    <plurals name="art_relink_files">
+        <item quantity="one">%1$d fitxer</item>
+        <item quantity="many">%1$d fitxers</item>
+        <item quantity="other">%1$d fitxers</item>
+    </plurals>
+    <string name="art_relink_result">%1$s de %2$s</string>
+    <string name="art_relink_result_unmatched">%1$s · %2$d sense associar</string>
+
+    <!-- Exportació a ES-DE -->
+    <string name="art_export_label">S\'estan exportant les imatges per a ES-DE</string>
+    <string name="art_export_stop_note">Els fitxers ja exportats es queden on són.</string>
+    <string name="art_export_error_no_destination">No hi ha carpeta de destinació</string>
+    <string name="art_export_error_access_lost">S\'ha perdut l\'accés a la carpeta d\'imatges</string>
+    <string name="art_export_dest_not_created">No s\'ha pogut crear la carpeta de destinació.</string>
+    <plurals name="art_export_files_badge">
+        <item quantity="one">%1$d fitxer</item>
+        <item quantity="many">%1$d fitxers</item>
+        <item quantity="other">%1$d fitxers</item>
+    </plurals>
+    <string name="art_export_failed_title">L\'exportació d\'imatges ha fallat</string>
+    <string name="art_export_stopped_title">S\'ha aturat l\'exportació d\'imatges</string>
+    <string name="art_export_finished_title">S\'ha acabat l\'exportació d\'imatges</string>
+    <plurals name="art_export_stopped_note">
+        <item quantity="one">Abans s\'ha exportat %1$d fitxer</item>
+        <item quantity="many">Abans s\'han exportat %1$d fitxers</item>
+        <item quantity="other">Abans s\'han exportat %1$d fitxers</item>
+    </plurals>
+    <string name="art_export_result">%1$d copiats, %2$d ja hi eren, %3$d errors</string>
+
+    <!-- Importació -->
+    <string name="art_import_plan_not_found">No s\'ha trobat el pla d\'importació</string>
+    <string name="art_import_plan_unreadable">No es pot llegir el pla d\'importació</string>
+    <string name="art_import_label">S\'estan important imatges — %1$s</string>
+    <string name="art_import_stop_note">Es conserven les imatges ja importades.</string>
+    <string name="art_import_failed_title">La importació d\'imatges ha fallat</string>
+    <string name="art_import_cancelled">S\'ha cancel·lat la importació d\'imatges</string>
+    <string name="art_import_done">S\'han importat les imatges</string>
+    <plurals name="art_import_needs_review">
+        <item quantity="one">S\'han importat les imatges; %1$d element s\'ha de revisar</item>
+        <item quantity="many">S\'han importat les imatges; %1$d elements s\'han de revisar</item>
+        <item quantity="other">S\'han importat les imatges; %1$d elements s\'han de revisar</item>
+    </plurals>
+    <string name="art_import_headline">%1$s: %2$s</string>
+    <string name="art_import_counts">%1$d importats, %2$d omesos, %3$d errors, %4$d ambigus, %5$d sense associar.</string>
+    <string name="art_import_results_summary">%1$d importats, %2$d omesos</string>
+
+    <!-- Moure les imatges a la carpeta enllaçada -->
+    <string name="art_move_label">S\'estan movent les imatges a la teva carpeta</string>
+    <string name="art_move_failed_title">No s\'han pogut moure les imatges</string>
+    <string name="art_move_stopped_title">S\'ha aturat el moviment d\'imatges</string>
+    <string name="art_move_finished_title">S\'ha acabat de moure les imatges</string>
+    <plurals name="art_move_stopped_note">
+        <item quantity="one">Abans s\'ha mogut %1$d fitxer</item>
+        <item quantity="many">Abans s\'han mogut %1$d fitxers</item>
+        <item quantity="other">Abans s\'han mogut %1$d fitxers</item>
+    </plurals>
+    <string name="art_move_result">%1$d moguts, %2$d ja hi eren, %3$d errors</string>
+</resources>

@@ -23,6 +23,7 @@ import com.playfieldportal.feature.launcher.PcShortcutImporter
 import com.playfieldportal.feature.launcher.WinlatorDesktop
 import com.playfieldportal.feature.library.scanner.PcExportFile
 import com.playfieldportal.feature.library.scanner.RomScanner
+import com.playfieldportal.feature.settings.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
 import javax.inject.Inject
@@ -85,7 +86,7 @@ class PcGameScanner @Inject constructor(
         if (overrideFolder == null && setup is WindowsSetupState.NoRomRoot) {
             return PcScanReport(
                 setup, 0, 0,
-                message = "Add a ROM Root first — PFP creates <root>/windows/import for exported games.",
+                message = context.getString(R.string.lib_pc_scan_no_root),
             )
         }
 
@@ -153,29 +154,34 @@ class PcGameScanner @Inject constructor(
 
         runCatching { windowsLibrarySetup.ensure() }
 
-        val pinNote = if (pins > 0) " $pins pinned shortcut(s) reconciled." else ""
-        val restoreNote = buildString {
+        val res = context.resources
+        val pinNote = if (pins > 0) res.getQuantityString(R.plurals.lib_pc_scan_pins_reconciled, pins, pins) else null
+        val restoreNotes = listOfNotNull(
             if (restore.created + restore.matched > 0) {
-                append(" Restored ${restore.created} and matched ${restore.matched} game(s) from .pfpgame files.")
-            }
-            if (restore.skipped > 0) append(" Skipped ${restore.skipped} .pfpgame file(s): launcher not installed, ambiguous, or pin not in the library.")
-            if (restore.untrusted > 0) append(" ${restore.untrusted} .pfpgame file(s) ignored as unreadable or untrusted.")
-        }
+                res.getQuantityString(R.plurals.lib_pc_scan_restored, restore.matched, restore.created, restore.matched)
+            } else null,
+            if (restore.skipped > 0) res.getQuantityString(R.plurals.lib_pc_scan_restore_skipped, restore.skipped, restore.skipped) else null,
+            if (restore.untrusted > 0) res.getQuantityString(R.plurals.lib_pc_scan_restore_untrusted, restore.untrusted, restore.untrusted) else null,
+        )
         val relinkNote = when (relink) {
-            ArtworkRelink.NotNeeded -> ""
-            is ArtworkRelink.Done -> " Reconnected exported artwork by name (${relink.gamesLinked} game(s) updated)."
-            ArtworkRelink.FolderNotLinked -> " Link the artwork folder, then scan again to reconnect exported artwork."
-            ArtworkRelink.Failed -> " Reconnecting exported artwork failed — see the log."
+            ArtworkRelink.NotNeeded -> null
+            is ArtworkRelink.Done -> res.getQuantityString(R.plurals.lib_pc_scan_relinked, relink.gamesLinked, relink.gamesLinked)
+            ArtworkRelink.FolderNotLinked -> context.getString(R.string.lib_pc_scan_relink_no_folder)
+            ArtworkRelink.Failed -> context.getString(R.string.lib_pc_scan_relink_failed)
         }
         val message = when {
             importFolders.isEmpty() && pins == 0 ->
-                "Couldn't read that folder. Pick the folder your launcher exports games into."
+                context.getString(R.string.lib_pc_scan_folder_unreadable)
             added == 0 && skipped == 0 && pins == 0 && pfpExports.isEmpty() ->
-                "No exported PC games found in the selected folder."
-            else ->
-                "Imported $added PC game(s)" +
-                    (if (skipped > 0) ", skipped $skipped (no matching launcher installed)" else "") +
-                    "." + restoreNote + relinkNote + pinNote
+                context.getString(R.string.lib_pc_scan_none_found)
+            else -> {
+                val imported = if (skipped > 0) {
+                    res.getQuantityString(R.plurals.lib_pc_scan_imported_skipped, added, added, skipped)
+                } else {
+                    res.getQuantityString(R.plurals.lib_pc_scan_imported, added, added)
+                }
+                (listOf(imported) + restoreNotes + listOfNotNull(relinkNote, pinNote)).joinToString(" ")
+            }
         }
         Timber.i(
             "PC scan — importFolders=${importFolders.size} added=$added skipped=$skipped pins=$pins " +

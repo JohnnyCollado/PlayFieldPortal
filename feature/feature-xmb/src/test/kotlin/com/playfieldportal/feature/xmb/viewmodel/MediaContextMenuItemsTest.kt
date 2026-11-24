@@ -1,17 +1,23 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.domain.model.MusicTrack
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * The XMB media rows' menus. A controller-opened menu never repeats the press that opened the row
  * (Play / Open / Resume / Details); a long-press one keeps exactly one such row. Ids stay put, the
  * glossary wording and Favorite On/Off are what changed.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class MediaContextMenuItemsTest {
 
     private val repeatIds = setOf(
@@ -59,9 +65,9 @@ class MediaContextMenuItemsTest {
     @Test
     fun `a video has one View Details row for touch, never Play, Resume or Details`() {
         val items = videoFileMenuItems(isFavorite = false, inPlaylist = false, byTouch = true)
-        assertEquals("View Details", items.single { it.id == "video_details" }.label)
+        assertEquals("View Details", items.single { it.id == "video_details" }.label.en())
         assertTrue(items.none { it.id == "video_play" || it.id == "video_resume" })
-        assertTrue(items.none { it.label == "Play" || it.label == "Resume" || it.label == "Details" })
+        assertTrue(items.none { it.label.en() == "Play" || it.label.en() == "Resume" || it.label.en() == "Details" })
     }
 
     // ── Wording ────────────────────────────────────────────────────────────────
@@ -74,7 +80,7 @@ class MediaContextMenuItemsTest {
             photoFileMenuItems(false) to "photo_remove",
         ).forEach { (items, id) ->
             val row = items.single { it.id == id }
-            assertEquals("Remove from Library", row.label)
+            assertEquals("Remove from Library", row.label.en())
             assertTrue(row.isDestructive)
             assertEquals(id, items.last().id)
         }
@@ -85,7 +91,7 @@ class MediaContextMenuItemsTest {
         val track = musicTrackMenuItems(inPlaylist = true, byTouch = false).single { it.id == "remove_from_playlist" }
         val video = videoFileMenuItems(false, inPlaylist = true, byTouch = false).single { it.id == "video_remove_playlist" }
         listOf(track, video).forEach {
-            assertEquals("Remove from this Playlist", it.label)
+            assertEquals("Remove from this Playlist", it.label.en())
             assertFalse(it.isDestructive)
         }
         assertTrue(musicTrackMenuItems(false, false).none { it.id == "remove_from_playlist" })
@@ -96,9 +102,9 @@ class MediaContextMenuItemsTest {
     fun `Favorite is one silent row with an On or Off value`() {
         val on = videoFileMenuItems(isFavorite = true, inPlaylist = false, byTouch = false).single { it.id == "video_favorite" }
         val off = videoFileMenuItems(isFavorite = false, inPlaylist = false, byTouch = false).single { it.id == "video_favorite" }
-        assertEquals("Favorite", on.label)
-        assertEquals("On", on.value)
-        assertEquals("Off", off.value)
+        assertEquals("Favorite", on.label.en())
+        assertEquals("On", on.value.enOrNull())
+        assertEquals("Off", off.value.enOrNull())
         assertTrue(on.silent && off.silent)
     }
 
@@ -106,7 +112,7 @@ class MediaContextMenuItemsTest {
     fun `Add to Playlist opens a menu`() {
         assertTrue(musicTrackMenuItems(false, false).single { it.id == "add_to_playlist" }.opensMenu)
         val video = videoFileMenuItems(false, false, false).single { it.id == "video_add_playlist" }
-        assertEquals("Add to Playlist", video.label)
+        assertEquals("Add to Playlist", video.label.en())
         assertTrue(video.opensMenu)
     }
 
@@ -116,13 +122,13 @@ class MediaContextMenuItemsTest {
             musicPlaylistMenuItems(false) to "delete_playlist",
             videoPlaylistMenuItems(false) to "delete_video_playlist",
         ).forEach { (items, deleteId) ->
-            assertEquals("Rename Playlist", items.single { it.label == "Rename Playlist" }.label)
+            assertEquals("Rename Playlist", items.single { it.label.en() == "Rename Playlist" }.label.en())
             val delete = items.single { it.id == deleteId }
-            assertEquals("Delete Playlist", delete.label)
+            assertEquals("Delete Playlist", delete.label.en())
             assertTrue(delete.isDestructive)
             assertEquals(deleteId, items.last().id)
         }
-        assertEquals("Add Tracks", musicPlaylistMenuItems(false).first().label)
+        assertEquals("Add Tracks", musicPlaylistMenuItems(false).first().label.en())
     }
 
     @Test
@@ -131,11 +137,11 @@ class MediaContextMenuItemsTest {
         val options = musicPlayerOptionsMenuItems()
         listOf(nowPlaying, options).forEach {
             val close = it.single { row -> row.id == "music_close" }
-            assertEquals("Stop and Close", close.label)
+            assertEquals("Stop and Close", close.label.en())
             assertEquals("music_close", it.last().id)
         }
-        assertEquals("Pause", nowPlaying.first().label)
-        assertEquals("Resume", nowPlayingMenuItems(isPlaying = false).first().label)
+        assertEquals("Pause", nowPlaying.first().label.en())
+        assertEquals("Resume", nowPlayingMenuItems(isPlaying = false).first().label.en())
     }
 
     @Test
@@ -143,7 +149,7 @@ class MediaContextMenuItemsTest {
         listOf(true, false).forEach { playing ->
             val items = nowPlayingMenuItems(isPlaying = playing)
             assertEquals(listOf("music_playpause", "music_visualizer", "music_close"), items.ids())
-            assertEquals("Visualizer", items[1].label)
+            assertEquals("Visualizer", items[1].label.en())
         }
         // Same id and wording as the player's own options, so one handler serves both.
         assertEquals(
@@ -158,7 +164,7 @@ class MediaContextMenuItemsTest {
             listOf(true, false).forEach { inPlaylist ->
                 val items = musicTrackMenuItems(inPlaylist = inPlaylist, byTouch = touch)
                 val info = items.single { it.id == "track_info" }
-                assertEquals("View Information", info.label)
+                assertEquals("View Information", info.label.en())
                 assertFalse(info.isDestructive)
                 assertEquals("remove_track", items.last().id)
                 assertEquals(items.size - 2, items.indexOf(info))
@@ -178,23 +184,23 @@ class MediaContextMenuItemsTest {
                 "Artist: Band", "Album: Album", "Duration: 2:05", "Type: audio/mpeg",
                 "Size: 5.0 MB", "Location: Music/Band", "File: song.mp3",
             ),
-            musicTrackInfoLines(full),
+            musicTrackInfoLines(full).map { it.en() },
         )
-        assertEquals(listOf("File: a.flac"), musicTrackInfoLines(MusicTrack("t", "f", "u", "a.flac")))
+        assertEquals(listOf("File: a.flac"), musicTrackInfoLines(MusicTrack("t", "f", "u", "a.flac")).map { it.en() })
     }
 
     @Test
     fun `media cards scan and manage, with no Open row`() {
-        val items = mediaCardMenuItems("Videos")
+        val items = mediaCardMenuItems(UiText.raw("Videos"))
         assertEquals(listOf("media_card_scan", "media_card_manage"), items.ids())
-        assertEquals("Scan Videos", items.first().label)
-        assertNull(items.firstOrNull { it.label == "Open" })
+        assertEquals("Scan Videos", items.first().label.en())
+        assertNull(items.firstOrNull { it.label.en() == "Open" })
     }
 
     @Test
     fun `libraries and albums scan and manage`() {
-        assertEquals("Scan Library", videoLibraryMenuItems(false).single { it.id == "video_lib_scan" }.label)
-        assertEquals("Scan Album", photoAlbumMenuItems(false).single { it.id == "photo_lib_scan" }.label)
+        assertEquals("Scan Library", videoLibraryMenuItems(false).single { it.id == "video_lib_scan" }.label.en())
+        assertEquals("Scan Album", photoAlbumMenuItems(false).single { it.id == "photo_lib_scan" }.label.en())
         assertTrue(videoLibraryMenuItems(false).any { it.id == "video_lib_manage" })
         assertTrue(photoAlbumMenuItems(false).any { it.id == "photo_lib_manage" })
     }
@@ -202,7 +208,7 @@ class MediaContextMenuItemsTest {
     @Test
     fun `every destructive media row raises a confirm`() {
         fun menu(items: List<XMBContextMenuItem>, build: (XMBContextMenu) -> XMBContextMenu = { it }) =
-            build(XMBContextMenu("T", items))
+            build(XMBContextMenu(UiText.raw("T"), items))
         val cases = listOf(
             menu(musicTrackMenuItems(true, true)) { it.copy(musicTrackId = "t") },
             menu(musicPlaylistMenuItems(true)) { it.copy(playlistId = 1L) },
@@ -219,6 +225,6 @@ class MediaContextMenuItemsTest {
     fun `a photo row can set the lock screen, right after the launcher wallpaper`() {
         val ids = photoFileMenuItems(byTouch = false).map { it.id }
         assertEquals(ids.indexOf("photo_set_wallpaper") + 1, ids.indexOf("photo_set_lockscreen"))
-        assertEquals("Set as Lock Screen", photoFileMenuItems(false).single { it.id == "photo_set_lockscreen" }.label)
+        assertEquals("Set as Lock Screen", photoFileMenuItems(false).single { it.id == "photo_set_lockscreen" }.label.en())
     }
 }

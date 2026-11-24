@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Setări</string>
+    <string name="sound_title">Sunet</string>
+    <string name="sound_group_master">General</string>
+    <string name="sound_group_levels">Niveluri</string>
+    <string name="sound_group_sounds">Sunete</string>
+    <string name="sound_master_volume">Volum general</string>
+    <string name="sound_master_volume_help">Reglează toate sunetele launcherului. La 0, launcherul este fără sunet.</string>
+    <string name="sound_ambience_help">Se repetă în timp ce navighezi. OGG se repetă fără întreruperi; MP3 poate produce un clic.</string>
+    <string name="sound_rejected_title">Sunetul nu a putut fi folosit</string>
+    <string name="sound_reset_confirm_title">Resetezi sunetul la valorile implicite?</string>
+    <string name="sound_reset_confirm_message">Fiecare sunet de meniu revine la mostra PFP inclusă, iar fiecare nivel, inclusiv cel general, revine la maximum. Piesa de ambianță și fișierele media pentru Boot Video și Game Boot nu sunt afectate.</string>
+    <string name="sound_reset_confirm_action">Resetează</string>
+    <string name="sound_reset_row">Resetează sunetul la valorile implicite</string>
+    <string name="sound_reset_row_help">Readuce fiecare sunet de meniu la mostra PFP inclusă și fiecare nivel la maximum. Păstrează piesa de ambianță.</string>
+    <string name="sound_channel_navigation">Navigare</string>
+    <string name="sound_channel_back">Înapoi / Anulare</string>
+    <string name="sound_channel_confirm">Confirmare / Aplicare</string>
+    <string name="sound_channel_error">Eroare / Nevalid</string>
+    <string name="sound_channel_notification">Notificare</string>
+    <string name="sound_channel_boot">Secvență de pornire</string>
+    <string name="sound_channel_ambience">Ambianță</string>
+    <string name="sound_slot_navigation">Navigare</string>
+    <string name="sound_slot_back">Înapoi / Anulare</string>
+    <string name="sound_slot_confirm">Confirmare / Aplicare</string>
+    <string name="sound_slot_error">Eroare / Nevalid</string>
+    <string name="sound_slot_notification">Notificare</string>
+    <string name="sound_slot_ambience">Piesă de ambianță</string>
+</resources>

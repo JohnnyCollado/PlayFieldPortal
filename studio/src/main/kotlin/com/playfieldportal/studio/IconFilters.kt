@@ -78,7 +78,7 @@ object IconPicker {
             "catbar_network", "catbar_appstore" -> { k -> k == "item_add" }
             "catbar_social" -> { k -> k.startsWith("item_social_") }
             "catbar_achievements" -> { k -> k.startsWith("item_shiba_") || k.startsWith("shiba_coin_") }
-            "catbar_settings" -> { k -> k == "item_settings" }
+            "catbar_settings" -> { k -> k == "item_settings" || k.startsWith("item_settings_section_") }
             else -> { _ -> false }
         }
         return EditableSlots.ALL.map { it.key }.filter(matches).toSet()

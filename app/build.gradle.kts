@@ -86,6 +86,14 @@ android {
         compose = true
         buildConfig = true
     }
+
+    // Per-app language: AGP builds the list of languages Android offers for this app (Settings ▸
+    // Apps ▸ PFP ▸ Language, Android 13+) from the values-<language> resource folders, so the list
+    // cannot drift from what is actually translated. English is the unqualified base, declared in
+    // src/main/res/resources.properties.
+    androidResources {
+        generateLocaleConfig = true
+    }
 }
 
 dependencies {

@@ -1,0 +1,1047 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Slice D: XMB menu logic, context menus, confirmations and notification text -->
+
+    <!-- App picker -->
+    <!-- Touch hint under the app picker grid: tapping an app toggles its checkmark. -->
+    <string name="xmbm_picker_touch_toggle">Укључи/искључи</string>
+    <plurals name="xmbm_picker_remove_from_card">
+        <item quantity="one">Уклонити %d апликацију са ове картице?</item>
+        <item quantity="few">Уклонити %d апликације са ове картице?</item>
+        <item quantity="other">Уклонити %d апликација са ове картице?</item>
+    </plurals>
+    <plurals name="xmbm_picker_remove_from_library">
+        <item quantity="one">Уклонити %d апликацију из ове библиотеке?</item>
+        <item quantity="few">Уклонити %d апликације из ове библиотеке?</item>
+        <item quantity="other">Уклонити %d апликација из ове библиотеке?</item>
+    </plurals>
+
+    <!-- Category menu (long-press on a category icon) -->
+    <string name="xmbm_catmenu_rename">Преименуј категорију</string>
+    <string name="xmbm_catmenu_change_icon">Промени иконицу</string>
+    <string name="xmbm_catmenu_show_on_bar">Прикажи на траци</string>
+    <string name="xmbm_catmenu_new_card">Нова прилагођена картица</string>
+    <string name="xmbm_catmenu_manage">Управљај категоријама</string>
+
+    <!-- Shared menu rows -->
+    <!-- Value of an on/off setting row. -->
+    <string name="xmbm_common_on">Укључено</string>
+    <!-- Value of an on/off setting row. -->
+    <string name="xmbm_common_off">Искључено</string>
+    <!-- Menu row / title that opens the list of sort orders. -->
+    <string name="xmbm_sort">Сортирај</string>
+    <!-- Menu row: lets the user reorder this category on the bar. -->
+    <string name="xmbm_move">Премести</string>
+    <!-- Menu row that reopens the music player on the track that was playing. -->
+    <string name="xmbm_resume">Настави</string>
+    <!-- Menu row that opens the focused item. -->
+    <string name="xmbm_open">Отвори</string>
+    <!-- Menu row with an On/Off value: keeps the row at the top of its list. -->
+    <string name="xmbm_pin_to_top">Закачи на врх</string>
+    <!-- Menu row that opens a list of icon display modes; also that list's title. -->
+    <string name="xmbm_icon_display">Приказ иконица</string>
+    <string name="xmbm_manage_custom_cards">Управљај прилагођеним картицама</string>
+    <string name="xmbm_play_in_background">Репродукуј у позадини</string>
+    <!-- Menu row (and title of the list it opens) that adds the track or video to a playlist. -->
+    <string name="xmbm_add_to_playlist">Додај на плејлисту</string>
+    <!-- Destructive menu row. -->
+    <string name="xmbm_remove_from_library">Уклони из библиотеке</string>
+    <string name="xmbm_remove_from_this_playlist">Уклони са ове плејлисте</string>
+    <string name="xmbm_rename_playlist">Преименуј плејлисту</string>
+    <string name="xmbm_delete_playlist">Избриши плејлисту</string>
+    <string name="xmbm_manage_in_settings">Управљај у подешавањима</string>
+    <!-- Menu row with an On/Off value. -->
+    <string name="xmbm_favorite">Омиљено</string>
+    <!-- Menu row that opens the music visualizer picker. -->
+    <string name="xmbm_visualizer">Визуелизатор</string>
+    <!-- Music player menu row: stops playback and closes the player. -->
+    <string name="xmbm_stop_and_close">Заустави и затвори</string>
+    <string name="xmbm_pause">Паузирај</string>
+    <!-- Menu row / list row that opens a picker to add games. -->
+    <string name="xmbm_add_games">Додај игре</string>
+    <!-- Menu row / list row / picker title for adding installed apps. -->
+    <string name="xmbm_add_apps">Додај апликације</string>
+    <!-- Subtitle on a row that is pinned to the top of its list. -->
+    <string name="xmbm_pinned">Закачено</string>
+    <string name="xmbm_update_metadata">Ажурирај метаподатке</string>
+    <string name="xmbm_fetch_missing_artwork">Преузми недостајућу графику</string>
+    <string name="xmbm_library_manager">Менаџер библиотеке</string>
+    <string name="xmbm_default">Подразумевано</string>
+    <string name="xmbm_favorites">Омиљено</string>
+    <string name="xmbm_all_games">Све игре</string>
+    <string name="xmbm_playlists">Плејлисте</string>
+    <!-- Row in the Add to Playlist list: makes a new playlist and adds the item to it. -->
+    <string name="xmbm_create_new_playlist">Направи нову плејлисту</string>
+
+    <!-- Custom icon source chooser -->
+    <!-- %1$s is the name of the icon slot being edited, e.g. a category or a PSP body. -->
+    <string name="xmbm_srcchooser_title">Изаберите иконицу за %1$s</string>
+    <string name="xmbm_srcchooser_message">Користите иконицу из примењене теме или слику са уређаја.</string>
+    <!-- %2$s is the applied theme's name; the count is how many icons it offers for this slot. -->
+    <plurals name="xmbm_srcchooser_theme_detail">
+        <item quantity="one">%2$s · %1$d иконица</item>
+        <item quantity="few">%2$s · %1$d иконице</item>
+        <item quantity="other">%2$s · %1$d иконица</item>
+    </plurals>
+
+    <!-- Theme icon grid -->
+    <!-- %1$s is the theme name, %2$s the icon slot being edited. -->
+    <string name="xmbm_themegrid_title">%1$s · иконица за %2$s</string>
+
+    <!-- Notification panel and music browser list menus -->
+    <string name="xmbm_notifmenu_mark_all_read">Означи све као прочитано</string>
+    <string name="xmbm_notifmenu_clear_read">Обриши прочитано</string>
+    <string name="xmbm_notifmenu_clear_all">Обриши све</string>
+    <!-- Title of the connected Discord account's menu and sub-list. -->
+    <string name="xmbm_social_account">Налог</string>
+
+    <!-- Playlist list rows -->
+    <!-- List row that starts a new playlist. -->
+    <string name="xmbm_playlist_create_title">Направи плејлисту</string>
+    <string name="xmbm_playlist_create_music_sub">Започните нову плејлисту</string>
+    <string name="xmbm_playlist_create_video_sub">Започните нову видео плејлисту</string>
+    <!-- Row / menu entry that imports a playlist file. -->
+    <string name="xmbm_playlist_import_title">Увези плејлисту</string>
+    <string name="xmbm_playlist_import_sub">Из .m3u, .m3u8, .pls или .xspf датотеке</string>
+
+    <!-- Menu group headers -->
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_play">Играње</string>
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_library">Библиотека</string>
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_arrange">Распоред</string>
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_customize">Прилагођавање</string>
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_pc">PC</string>
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_manage">Управљање</string>
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_games">Игре</string>
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_update">Ажурирање</string>
+    <!-- Group heading drawn above a block of rows in a context menu. -->
+    <string name="xmbm_group_display">Приказ</string>
+
+    <!-- Sort and arrange rows -->
+    <!-- Value of a Sort row when the list is in its default order. -->
+    <string name="xmbm_sort_default">Подразумевано</string>
+    <string name="xmbm_sort_default_order">Подразумевани редослед</string>
+    <!-- Value of a Sort row when the list follows the global sort; %1$s is the global sort's name. -->
+    <string name="xmbm_sort_global_value">Глобално: %1$s</string>
+    <!-- %1$s is the name of the current global sort. -->
+    <string name="xmbm_sort_use_global">Користи глобално подешавање (%1$s)</string>
+    <!-- Sort order name for app lists: alphabetical. -->
+    <string name="xmbm_sort_az">А–Ш</string>
+    <!-- Sort order name for app lists. -->
+    <string name="xmbm_sort_recently_used">Недавно коришћено</string>
+    <!-- UMD is the PSP's game disc. Puts this game in the column's UMD slot. -->
+    <string name="xmbm_umd_insert">Уметни као UMD</string>
+    <string name="xmbm_umd_eject">Избаци UMD</string>
+    <string name="xmbm_card_rename">Преименуј картицу</string>
+    <string name="xmbm_card_move_to_category">Премести у категорију</string>
+    <string name="xmbm_card_delete">Избриши прилагођену картицу</string>
+    <!-- Group heading above custom cards; %1$s is a category name. -->
+    <string name="xmbm_card_in_category">У: %1$s</string>
+    <string name="xmbm_card_other_categories">Друге категорије</string>
+    <string name="xmbm_card_new_here">Нова прилагођена картица овде…</string>
+    <!-- Group heading above the Global Sort row in a list's Sort menu. -->
+    <string name="xmbm_sort_all_lists">Све листе</string>
+    <plurals name="xmbm_memcard_sub_games">
+        <item quantity="one">Меморијска картица · %d игра</item>
+        <item quantity="few">Меморијска картица · %d игре</item>
+        <item quantity="other">Меморијска картица · %d игара</item>
+    </plurals>
+    <plurals name="xmbm_memcard_sub_games_pinned">
+        <item quantity="one">Меморијска картица · Закачено · %d игра</item>
+        <item quantity="few">Меморијска картица · Закачено · %d игре</item>
+        <item quantity="other">Меморијска картица · Закачено · %d игара</item>
+    </plurals>
+
+    <!-- Memory Card menus -->
+    <string name="xmbm_card_find_games">Пронађи игре</string>
+    <string name="xmbm_card_scan_roms">Тражи игре</string>
+    <string name="xmbm_card_import_pc">Увези PC игре</string>
+    <string name="xmbm_card_match_achievements">Повежи достигнућа</string>
+    <string name="xmbm_card_hide">Сакриј картицу</string>
+    <!-- Destructive menu row: removes a console's Memory Card and its games. -->
+    <string name="xmbm_card_remove">Уклони картицу</string>
+    <string name="xmbm_card_scan_all">Скенирај све картице</string>
+    <string name="xmbm_card_relink_artwork">Поново повежи графику</string>
+    <!-- Menu row that opens the sort order shared by every list that has none of its own. -->
+    <string name="xmbm_card_global_sort">Глобално сортирање</string>
+    <string name="xmbm_scan_none_new">Нису пронађене нове игре</string>
+    <plurals name="xmbm_scan_new_games">
+        <item quantity="one">%d нова игра</item>
+        <item quantity="few">%d нове игре</item>
+        <item quantity="other">%d нових игара</item>
+    </plurals>
+    <plurals name="xmbm_scan_cards_scanned">
+        <item quantity="one">Скенирана је %d меморијска картица</item>
+        <item quantity="few">Скениране су %d меморијске картице</item>
+        <item quantity="other">Скенирано је %d меморијских картица</item>
+    </plurals>
+    <plurals name="xmbm_scan_cards_failed">
+        <item quantity="one">%d картицу није могуће скенирати</item>
+        <item quantity="few">%d картице није могуће скенирати</item>
+        <item quantity="other">%d картица није могуће скенирати</item>
+    </plurals>
+
+    <!-- Game row menu -->
+    <string name="xmbm_game_view_details">Прикажи детаље игре</string>
+    <!-- Menu row (and title of the list it opens) to pick which disc of a multi-disc game is preferred. -->
+    <string name="xmbm_game_choose_disc">Изабери диск</string>
+    <!-- Shiba Coins is the app's achievements feature. -->
+    <string name="xmbm_game_view_shiba_coins">Прикажи Shiba Coins</string>
+    <string name="xmbm_game_change_emulator">Промени емулатор</string>
+    <!-- Menu row (and list title) that adds a game to a custom memory card. -->
+    <string name="xmbm_game_add_to_card">Додај на картицу</string>
+    <string name="xmbm_game_remove_from_card">Уклони са картице</string>
+    <string name="xmbm_game_select_multiple">Изабери више</string>
+    <string name="xmbm_game_add_to_category">Додај у категорију</string>
+    <string name="xmbm_game_move_to_category">Премести у категорију</string>
+    <string name="xmbm_game_remove_from_category">Уклони из категорије</string>
+    <string name="xmbm_game_fetch_artwork">Преузми графику</string>
+    <!-- Menu row (and list title) choosing which PC launcher runs a Windows game. -->
+    <string name="xmbm_game_launch_with">Покрени помоћу</string>
+    <!-- Goldberg is a Steam emulator name; keep it. -->
+    <string name="xmbm_game_install_goldberg">Инсталирај Goldberg достигнућа</string>
+    <string name="xmbm_game_export">Извези игру</string>
+    <string name="xmbm_game_file_location">Прикажи локацију датотеке</string>
+    <!-- %1$s is the place the row is shown in: Favorites, All Games, a card name. -->
+    <string name="xmbm_game_hide_from">Сакриј из: %1$s</string>
+    <!-- Destructive menu row for a game whose file is missing. -->
+    <string name="xmbm_game_remove_permanently">Трајно уклони</string>
+    <string name="xmbm_game_mark_as_game">Означи као игру</string>
+    <string name="xmbm_game_unmark_as_game">Уклони ознаку игре</string>
+
+    <!-- Media row menus -->
+    <string name="xmbm_play">Пусти</string>
+    <string name="xmbm_media_view_information">Прикажи информације</string>
+    <string name="xmbm_media_add_tracks">Додај нумере</string>
+    <string name="xmbm_media_view_details">Прикажи детаље</string>
+    <string name="xmbm_media_scan_library">Скенирај библиотеку</string>
+    <string name="xmbm_media_scan_album">Скенирај албум</string>
+    <string name="xmbm_media_set_wallpaper">Подеси као позадину лаунчера</string>
+    <string name="xmbm_media_set_lockscreen">Подеси као закључани екран</string>
+    <!-- %1$s is the section name: Music, Videos or Photos. -->
+    <string name="xmbm_media_scan_section">Скенирај: %1$s</string>
+    <!-- One line of the track information dialog. -->
+    <string name="xmbm_info_artist">Извођач: %1$s</string>
+    <!-- One line of the track information dialog. -->
+    <string name="xmbm_info_album">Албум: %1$s</string>
+    <!-- One line of the track information dialog; %1$s is a time like 3:45. -->
+    <string name="xmbm_info_duration">Трајање: %1$s</string>
+    <!-- One line of the track information dialog; %1$s is a file type. -->
+    <string name="xmbm_info_type">Тип: %1$s</string>
+    <!-- One line of the track information dialog; %1$s is a file size like 4.2 MB. -->
+    <string name="xmbm_info_size">Величина: %1$s</string>
+    <!-- One line of the track information dialog; %1$s is a folder path. -->
+    <string name="xmbm_info_location">Локација: %1$s</string>
+    <!-- One line of the track information dialog; %1$s is a file name. -->
+    <string name="xmbm_info_file">Датотека: %1$s</string>
+
+    <!-- Confirmation dialogs -->
+    <!-- %1$s is the name of the game, app, track, video or photo. -->
+    <string name="xmbm_confirm_remove_library_title">Уклонити „%1$s“ из библиотеке?</string>
+    <string name="xmbm_confirm_remove_game_msg">Датотека се не брише. Касније скенирање ће је поново додати ако је још у скенираној фасцикли.</string>
+    <!-- Confirm button of a removal dialog. -->
+    <string name="xmbm_confirm_remove">Уклони</string>
+    <string name="xmbm_confirm_remove_missing_title">Трајно уклонити „%1$s“?</string>
+    <string name="xmbm_confirm_remove_missing_msg">Њена датотека више не постоји, па овај унос не може да се врати.</string>
+    <!-- Confirm button of a removal dialog. -->
+    <string name="xmbm_confirm_remove_permanently">Трајно уклони</string>
+    <!-- %1$s is the name of a custom memory card or playlist. -->
+    <string name="xmbm_confirm_delete_card_title">Избрисати „%1$s“?</string>
+    <string name="xmbm_confirm_delete_card_msg">Њене игре остају у библиотеци.</string>
+    <!-- Confirm button. -->
+    <string name="xmbm_confirm_delete_card_button">Избриши прилагођену картицу</string>
+    <!-- %1$s is a category name. -->
+    <string name="xmbm_confirm_remove_category_title">Уклонити из: %1$s?</string>
+    <!-- %1$s is a game title; %2$s is a comma-separated list of custom card names. -->
+    <string name="xmbm_confirm_remove_category_msg">„%1$s“ се уклања и из: %2$s.</string>
+    <string name="xmbm_confirm_remove_android_msg">Апликација остаје инсталирана. „Пронађи игре“ може поново да је дода.</string>
+    <!-- %1$s is a console's Memory Card name. -->
+    <string name="xmbm_confirm_remove_card_title">Уклонити картицу „%1$s“?</string>
+    <string name="xmbm_confirm_remove_card_android_msg">Њене игре такође напуштају библиотеку. Апликације остају инсталиране, а „Пронађи игре“ може поново да их дода.</string>
+    <string name="xmbm_confirm_remove_card_msg">Њене игре такође напуштају библиотеку. ROM датотеке остају на диску, а скенирање може да их врати.</string>
+    <!-- Confirm button. -->
+    <string name="xmbm_confirm_remove_card_button">Уклони картицу</string>
+    <string name="xmbm_confirm_remove_app_row_msg">Апликација остаје инсталирана и остаје у својим категоријама апликација.</string>
+    <string name="xmbm_confirm_remove_track_msg">Датотека се не брише. Касније скенирање ће је поново додати ако је још у фасцикли са музиком.</string>
+    <string name="xmbm_confirm_remove_video_msg">Датотека се не брише. Касније скенирање ће је поново додати ако је још у видео библиотеци.</string>
+    <string name="xmbm_confirm_remove_photo_msg">Датотека се не брише. Касније скенирање ће је поново додати ако је још у албуму.</string>
+    <string name="xmbm_confirm_delete_music_playlist_msg">Њене нумере остају у библиотеци.</string>
+    <string name="xmbm_confirm_delete_video_playlist_msg">Њени видео снимци остају у библиотеци.</string>
+    <!-- Confirm button. -->
+    <string name="xmbm_confirm_delete_playlist_button">Избриши плејлисту</string>
+    <string name="xmbm_confirm_uninstall_title">Деинсталирати „%1$s“?</string>
+    <string name="xmbm_confirm_uninstall_msg">Апликација и њени подаци биће уклоњени са овог уређаја.</string>
+    <!-- Confirm button. -->
+    <string name="xmbm_confirm_uninstall_button">Деинсталирај</string>
+    <string name="xmbm_confirm_clear_notifs_title">Обрисати сва обавештења?</string>
+    <string name="xmbm_confirm_clear_notifs_msg">Задаци у току нису погођени.</string>
+    <!-- Confirm button. -->
+    <string name="xmbm_confirm_clear_all_button">Обриши све</string>
+
+    <!-- Notification panel -->
+    <!-- %1$s is the name of a running background task. -->
+    <string name="xmbm_stop_confirm_title">Зауставити „%1$s“?</string>
+    <string name="xmbm_stop_confirm_kept_default">Досад урађено се задржава.</string>
+    <!-- Progress of a background task that is about to be stopped. -->
+    <string name="xmbm_stop_confirm_progress">Завршено %1$d од %2$d.</string>
+    <!-- Controller prompt on the notification panel: opens the focused notification. -->
+    <string name="xmbm_panel_prompt_open">Отвори</string>
+    <!-- Controller prompt on the notification panel: stops the focused running task. -->
+    <string name="xmbm_panel_prompt_stop">Заустави</string>
+    <!-- Controller prompt: opens the panel's options menu. -->
+    <string name="xmbm_panel_prompt_options">Опције</string>
+    <!-- Controller prompt: closes the notification panel. -->
+    <string name="xmbm_panel_prompt_close">Затвори</string>
+
+    <!-- Fetch Artwork notifications -->
+    <!-- Running-task label; %1$s is a game title. -->
+    <string name="xmbm_fetchart_running">Преузимање графике: %1$s</string>
+    <string name="xmbm_fetchart_failed">Преузимање графике није успело</string>
+    <!-- Notification title; %1$s is a game title. -->
+    <string name="xmbm_fetchart_failed_title">Преузимање графике за %1$s није успело</string>
+    <!-- Notification title; %1$s is a game title. -->
+    <string name="xmbm_fetchart_paused_title">Графика за %1$s је паузирана</string>
+    <!-- Notification title; %1$s is a game title. -->
+    <string name="xmbm_fetchart_done_title">Графика за %1$s је ажурирана</string>
+
+    <!-- Playlist import -->
+    <string name="xmbm_plimport_cant_open">Отварање датотеке није успело</string>
+    <!-- MiB = mebibytes, a file size unit. -->
+    <string name="xmbm_plimport_too_large">Датотека је већа од %1$d MiB</string>
+    <string name="xmbm_plimport_cant_read">Читање датотеке није успело</string>
+    <!-- Fallback file name for a picked playlist file that has no name. -->
+    <string name="xmbm_plimport_default_name">плејлиста</string>
+    <string name="xmbm_plimport_not_playlist">Није датотека плејлисте</string>
+    <string name="xmbm_plimport_unexpected">Неочекивана грешка</string>
+    <!-- %1$s is a file name. -->
+    <string name="xmbm_plimport_title_error">Увоз „%1$s“ није успео</string>
+    <!-- %1$s is the new playlist's name. -->
+    <string name="xmbm_plimport_title_ok">Увезено: „%1$s“</string>
+    <!-- %1$s is a file name. -->
+    <string name="xmbm_plimport_title_none">Ништа није увезено из „%1$s“</string>
+    <!-- Reason a playlist entry was skipped (shown in a results list). -->
+    <string name="xmbm_plimport_reason_web">није локална датотека</string>
+    <!-- Reason a playlist entry was skipped (shown in a results list). -->
+    <string name="xmbm_plimport_reason_type">погрешан тип медија</string>
+    <!-- Reason a playlist entry was skipped (shown in a results list). -->
+    <string name="xmbm_plimport_reason_dup">већ је на плејлисти</string>
+    <!-- Reason a playlist entry was not found (shown in a results list). -->
+    <string name="xmbm_plimport_reason_ambiguous">више од једног подударања</string>
+    <!-- Reason a playlist entry was not found (shown in a results list). -->
+    <string name="xmbm_plimport_reason_missing">није у библиотеци</string>
+    <!-- Part of a one-line summary: how many playlist entries were matched. -->
+    <string name="xmbm_plimport_sum_found">Пронађено: %1$d</string>
+    <!-- Part of a one-line summary. -->
+    <string name="xmbm_plimport_sum_missing">Није у библиотеци: %1$d</string>
+    <!-- Part of a one-line summary. -->
+    <string name="xmbm_plimport_sum_skipped">Прескочено: %1$d</string>
+    <!-- Part of a one-line summary: entries beyond the maximum were ignored. -->
+    <string name="xmbm_plimport_sum_dropped">Занемарено изнад ограничења од %2$d уноса: %1$d</string>
+    <!-- Heading of the group of matched playlist entries in a results list. -->
+    <string name="xmbm_plimport_label_found">Пронађено</string>
+    <!-- Heading of the group of unmatched playlist entries in a results list. -->
+    <string name="xmbm_plimport_label_missing">Није у библиотеци</string>
+    <!-- Heading of the group of skipped playlist entries in a results list. -->
+    <string name="xmbm_plimport_label_skipped">Прескочено</string>
+
+    <!-- Settings menu (mirrors Settings screen titles) -->
+    <!-- Settings section name; must match the same title in the Settings screens. -->
+    <string name="xmbm_setsec_library_title">Библиотека</string>
+    <!-- Settings section description. -->
+    <string name="xmbm_setsec_library_sub">Извори, картице, графика и скривене ставке</string>
+    <!-- Settings section name; must match the same title in the Settings screens. -->
+    <string name="xmbm_setsec_emulators_title">Емулатори</string>
+    <!-- Settings section description. -->
+    <string name="xmbm_setsec_emulators_sub">Профили покретања и RetroArch језгра</string>
+    <!-- Settings section name; must match the same title in the Settings screens. -->
+    <string name="xmbm_setsec_interface_title">Интерфејс</string>
+    <!-- Settings section description. -->
+    <string name="xmbm_setsec_interface_sub">Категорије, теме, екран и контролер</string>
+    <!-- Settings section name; must match the same title in the Settings screens. -->
+    <string name="xmbm_setsec_achievements_title">Достигнућа</string>
+    <!-- Settings section description. -->
+    <string name="xmbm_setsec_achievements_sub">RetroAchievements и Steam</string>
+    <!-- Settings section name; must match the same title in the Settings screens. -->
+    <string name="xmbm_setsec_media_title">Медији</string>
+    <!-- Settings section description. -->
+    <string name="xmbm_setsec_media_sub">Подешавања музике, видеа и фотографија</string>
+    <!-- Settings section name. -->
+    <string name="xmbm_setsec_system_title">Систем</string>
+    <!-- Settings section description. -->
+    <string name="xmbm_setsec_system_sub">О апликацији, ажурирања, дневници, резервна копија, подешавање и заслуге</string>
+    <!-- Settings section description (shown while Backup & Restore is switched off). -->
+    <string name="xmbm_setsec_system_sub_nobackup">О апликацији, ажурирања, дневници, подешавање и заслуге</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_library_title">Менаџер библиотеке</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_library_sub">ROM извори и скенирање</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_windows_games_title">Windows игре</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_windows_games_sub">PC игре, лаунчери и увоз</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_collections_title">Прилагођене меморијске картице</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_collections_sub">Прављење и управљање прилагођеним меморијским картицама</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_artwork_title">Графика</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_artwork_sub">Извори података и кеш</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_app_visibility_title">Скривене ставке</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_app_visibility_sub">Прегледајте апликације и игре које сте сакрили</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_emulators_installed_title">Инсталирано</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_emulators_installed_sub">Откривени профили емулатора</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_emulators_custom_title">Прилагођени емулатори</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_emulators_custom_sub">Прилагођени профили и „Додај прилагођени емулатор“</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_emulators_retroarch_title">RetroArch</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_emulators_retroarch_sub">Откривање и повезивање језгара</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_emulators_assign_title">Подразумевано по систему</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_emulators_assign_sub">Подразумевани емулатор и језгро по конзоли и посебна подешавања за игре</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_emulators_knowledge_title">База знања о емулаторима</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_emulators_knowledge_sub">Ажурирања, ваше датотеке и враћање на уграђено</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_display_title">Екран</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_display_sub">Талас, позадина, покретање и иконице</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_audio_title">Звук</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_audio_sub">Звуци менија, нивои и амбијент</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_notifications_title">Обавештења</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_notifications_sub">Историја панела и чување</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_categories_title">Категорије</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_categories_sub">Управљање XMB категоријама</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_themes_title">Теме</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_themes_sub">Изглед XMB-а, боје и иконице</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_controller_title">Контролер</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_controller_sub">Распоред дугмади</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_achievements_player_card_title">Картица играча</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_achievements_player_card_sub">Нивои, рангови и статус синхронизације</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_achievements_credentials_title">Акредитиви добављача</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_achievements_credentials_sub">RetroAchievements и Steam налози</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_achievements_local_windows_title">Локални Windows</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_achievements_local_windows_sub">Праћење локалних Windows игара (Steam емулатор)</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_achievements_update_title">Ажурирај достигнућа</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_achievements_update_sub">Синхронизација и аутоматско повезивање праћених игара</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_music_title">Музика</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_music_sub">Фасцикле са музиком и подразумевани плејер</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_video_title">Видео</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_video_sub">Видео библиотеке, скенирање и репродукција</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_photo_title">Фотографије</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_photo_sub">Библиотеке фотографија и скенирање</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_about_title">О апликацији</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_about_sub">Play Field Portal</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_system_update_title">Ажурирање система</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_system_update_sub">Нове верзије и списак измена</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_logs_title">Дневници</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_logs_sub">Отворите или поделите дневнике сесија</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_backup_title">Резервна копија и враћање</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_backup_sub">Извоз и увоз</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_setup_title">Чаробњак за подешавање</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_setup_sub">Вођено подешавање фасцикли и налога</string>
+    <!-- Settings menu row; must match the title of the Settings screen it opens. -->
+    <string name="xmbm_set_credits_title">Заслуге</string>
+    <!-- Settings menu row description. -->
+    <string name="xmbm_set_credits_sub">Графика и навођење аутора</string>
+
+    <!-- Media sections -->
+    <!-- Name of the Music section / its memory card. -->
+    <string name="xmbm_media_music">Музика</string>
+    <!-- Name of the Video section's memory card (plural). -->
+    <string name="xmbm_media_videos">Видео снимци</string>
+    <!-- Name of the Photo section's memory card (plural). -->
+    <string name="xmbm_media_photos">Фотографије</string>
+    <!-- Pill showing the current sort order; %1$s is the sort's name, e.g. Title. -->
+    <string name="xmbm_sort_pill">Сортирање: %1$s</string>
+    <!-- Hint-pill action name / menu title: opens the Games filter menu. -->
+    <string name="xmbm_filter">Филтер</string>
+
+    <!-- Sort modes -->
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_title">Наслов</string>
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_artist">Извођач</string>
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_album">Албум</string>
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_recent_played">Недавно пуштано</string>
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_date_added">Датум додавања</string>
+    <!-- Name of a sort order. -->
+    <string name="xmbm_sortmode_custom">Прилагођено</string>
+    <!-- Menu row (and value-less title) in the Games filter menu: opens the on-screen search. -->
+    <string name="xmbm_filter_search">Претрага</string>
+    <!-- Value of the Search row when no search term is set. -->
+    <string name="xmbm_filter_none">Ништа</string>
+    <!-- Value of the Search row: the search term in quotes. -->
+    <string name="xmbm_filter_term">„%1$s“</string>
+    <string name="xmbm_filter_clear">Обриши претрагу</string>
+
+    <!-- Local Windows games notifications -->
+    <string name="xmbm_lwm_running">Повезивање локалних Windows игара…</string>
+    <string name="xmbm_lwm_stop_note">Већ повезане игре остају повезане.</string>
+    <!-- Notification text for a background task the user stopped. -->
+    <string name="xmbm_task_stopped">Заустављено пре завршетка</string>
+    <string name="xmbm_lwm_stopped_title">Повезивање Windows достигнућа је заустављено</string>
+    <string name="xmbm_lwm_failed">Групно повезивање није успело</string>
+    <string name="xmbm_lwm_failed_title">Повезивање Windows достигнућа није успело</string>
+    <string name="xmbm_lwm_done_title">Повезивање Windows достигнућа је завршено</string>
+    <!-- Name of a background task that generates achievement data for Windows games. -->
+    <string name="xmbm_schema_label">Шеме достигнућа</string>
+    <string name="xmbm_convert_no_ach" formatted="false">Без достигнућа: %d</string>
+    <string name="xmbm_convert_no_key" formatted="false">Потребан Steam Web API кључ: %d</string>
+    <string name="xmbm_convert_failed" formatted="false">Неуспешно: %d</string>
+    <string name="xmbm_convert_tail">Играјте сваку игру да бисте почели да зарађујете новчиће.</string>
+    <string name="xmbm_convert_linked" formatted="false">Повезано са играма из библиотеке: %d.</string>
+    <string name="xmbm_diag_copied">Дијагностика је копирана у привремену меморију</string>
+    <!-- Name of the artwork folder setting, used as a notification heading. -->
+    <string name="xmbm_artwork_folder_label">Фасцикла за графику</string>
+    <string name="xmbm_artwork_folder_failed">Подешавање те фасцикле није успело. Изаберите фасциклу у коју PFP може да уписује.</string>
+    <plurals name="xmbm_convert_converted">
+        <item quantity="one">Конвертована је %d игра</item>
+        <item quantity="few">Конвертоване су %d игре</item>
+        <item quantity="other">Конвертовано је %d игара</item>
+    </plurals>
+
+    <!-- Games and apps list rows -->
+    <string name="xmbm_additem_apps_sub">Изаберите инсталиране апликације које ћете додати у овај одељак</string>
+    <string name="xmbm_additem_games_sub">Изаберите игре и прилагођене меморијске картице које ћете додати у ову категорију</string>
+    <!-- %1$s is a custom gaming category's name. -->
+    <string name="xmbm_catcard_title">Меморијска картица: %1$s</string>
+    <!-- Subtitle of a card that holds every game; the number is the game count. -->
+    <string name="xmbm_total_games">Укупно игара: %1$d</string>
+    <!-- Subtitle part: the game was added to the category directly, not through a custom memory card. -->
+    <string name="xmbm_catcard_loose">Појединачне</string>
+    <string name="xmbm_empty_category_title">Још нема игара у овој категорији</string>
+    <string name="xmbm_empty_category_sub">Вратите се и изаберите „Додај игре“.</string>
+    <plurals name="xmbm_customcard_games">
+        <item quantity="one">Прилагођено · %d игра</item>
+        <item quantity="few">Прилагођено · %d игре</item>
+        <item quantity="other">Прилагођено · %d игара</item>
+    </plurals>
+    <plurals name="xmbm_customcard_games_pinned">
+        <item quantity="one">Прилагођено · Закачено · %d игра</item>
+        <item quantity="few">Прилагођено · Закачено · %d игре</item>
+        <item quantity="other">Прилагођено · Закачено · %d игара</item>
+    </plurals>
+    <plurals name="xmbm_customcard_apps">
+        <item quantity="one">Прилагођено · %d апликација</item>
+        <item quantity="few">Прилагођено · %d апликације</item>
+        <item quantity="other">Прилагођено · %d апликација</item>
+    </plurals>
+    <plurals name="xmbm_customcard_apps_pinned">
+        <item quantity="one">Прилагођено · Закачено · %d апликација</item>
+        <item quantity="few">Прилагођено · Закачено · %d апликације</item>
+        <item quantity="other">Прилагођено · Закачено · %d апликација</item>
+    </plurals>
+
+    <!-- Music list rows -->
+    <!-- Subtitle label of the row for the song that is currently loaded; also the title of the player's menu fallback. -->
+    <string name="xmbm_music_now_playing">Тренутно се репродукује</string>
+    <!-- Row that opens the list of playlists (singular on purpose). -->
+    <string name="xmbm_music_playlist_title">Плејлиста</string>
+    <string name="xmbm_music_playlist_sub">Направите и пуштајте своје листе нумера</string>
+    <string name="xmbm_music_apps_title">Музичке апликације</string>
+    <string name="xmbm_music_apps_sub">Отворите инсталиране музичке апликације</string>
+    <string name="xmbm_music_add_folder_title">Додај фасциклу са музиком</string>
+    <string name="xmbm_music_add_folder_sub">За почетак подесите коренску фасциклу са музиком у Подешавањима</string>
+    <string name="xmbm_music_add_apps_title">Додај музичке апликације</string>
+    <string name="xmbm_picker_show_here_sub">Изаберите инсталиране апликације које ће се приказивати овде</string>
+    <string name="xmbm_music_add_tracks_title">Додај нумере</string>
+    <string name="xmbm_music_add_tracks_sub">Изаберите песме које ћете додати на ову плејлисту</string>
+    <string name="xmbm_music_empty_title">Није пронађена музика</string>
+    <string name="xmbm_music_empty_sub">Додајте фасциклу са музиком у Подешавања → Музика</string>
+    <string name="xmbm_playlist_empty_title">Ова плејлиста је празна</string>
+    <string name="xmbm_playlist_empty_sub">Додајте нумере испод или из менија опција песме.</string>
+
+    <!-- Hide locations -->
+    <!-- Fallback name of a custom memory card in a hide location. -->
+    <string name="xmbm_hide_custom_card">Прилагођена картица</string>
+    <!-- Name of the Android apps library card. -->
+    <string name="xmbm_hide_android">Android</string>
+    <!-- Name of the Music apps list, used as a hide location. -->
+    <string name="xmbm_music_apps_name">Музичке апликације</string>
+    <!-- Name of the Video apps list, used as a hide location. -->
+    <string name="xmbm_video_apps_name">Видео апликације</string>
+
+    <!-- Video list rows -->
+    <string name="xmbm_video_collections_title">Колекције</string>
+    <string name="xmbm_video_collections_sub">Недавно гледано, Омиљено и плејлисте</string>
+    <string name="xmbm_video_libraries_title">Видео библиотеке</string>
+    <string name="xmbm_video_apps_sub">Отворите инсталиране видео апликације</string>
+    <string name="xmbm_video_add_title">Додај видео снимке</string>
+    <string name="xmbm_video_add_sub">За почетак подесите коренску фасциклу са видео снимцима у Подешавањима</string>
+    <string name="xmbm_video_recent_title">Недавно гледано</string>
+    <string name="xmbm_video_recent_sub">Наставите тамо где сте стали</string>
+    <string name="xmbm_video_favorites_sub">Видео снимци које сте означили звездицом</string>
+    <string name="xmbm_video_playlists_sub">Направите и пуштајте своје листе</string>
+    <string name="xmbm_video_nolibs_title">Још нема видео библиотека</string>
+    <string name="xmbm_video_nolibs_sub">Подесите коренску фасциклу у Подешавања → Видео</string>
+    <string name="xmbm_video_add_apps_title">Додај видео апликације</string>
+    <string name="xmbm_video_none_title">Нису пронађени видео снимци</string>
+    <string name="xmbm_video_none_sub">Додајте видео библиотеку у Подешавања → Видео</string>
+    <string name="xmbm_video_nowatched_title">Још ништа није гледано</string>
+    <string name="xmbm_video_nowatched_sub">Видео снимци које пустите приказују се овде</string>
+    <string name="xmbm_video_nofav_title">Још нема омиљених</string>
+    <string name="xmbm_video_nofav_sub">Означите видео звездицом из његовог ⚙ менија опција</string>
+    <string name="xmbm_video_playlist_empty_sub">Додајте видео снимке из ⚙ менија опција видеа</string>
+    <!-- Title of the text dialog that names a new video playlist. -->
+    <string name="xmbm_video_new_playlist">Нова видео плејлиста</string>
+    <!-- Title of the text dialog that names a new playlist. -->
+    <string name="xmbm_music_new_playlist">Нова плејлиста</string>
+    <plurals name="xmbm_video_libraries_count">
+        <item quantity="one">%d библиотека</item>
+        <item quantity="few">%d библиотеке</item>
+        <item quantity="other">%d библиотека</item>
+    </plurals>
+
+    <!-- Photo list rows -->
+    <!-- Row that opens the device's camera app. -->
+    <string name="xmbm_photo_camera_title">Камера</string>
+    <string name="xmbm_photo_camera_sub">Отвори камеру</string>
+    <string name="xmbm_photo_albums_title">Албуми</string>
+    <string name="xmbm_photo_apps_title">Апликације за фотографије</string>
+    <string name="xmbm_photo_apps_sub">Отворите инсталиране апликације за фотографије</string>
+    <string name="xmbm_photo_add_title">Додај библиотеку фотографија</string>
+    <string name="xmbm_photo_add_sub">За почетак подесите коренску фасциклу са фотографијама у Подешавањима</string>
+    <string name="xmbm_photo_add_apps_title">Додај апликације за фотографије</string>
+    <string name="xmbm_photo_noalbums_title">Још нема албума</string>
+    <string name="xmbm_photo_noalbums_sub">Подесите коренску фасциклу у Подешавања → Фотографије</string>
+    <string name="xmbm_photo_none_title">Нису пронађене фотографије</string>
+    <string name="xmbm_photo_none_sub">Додајте библиотеку фотографија и скенирајте је</string>
+    <string name="xmbm_photo_noalbumphotos_title">У овом албуму нема фотографија</string>
+    <string name="xmbm_photo_noalbumphotos_sub">Скенирајте га из његовог ⚙ менија опција или у Подешавања → Фотографије</string>
+    <plurals name="xmbm_photo_albums_count">
+        <item quantity="one">%d албум</item>
+        <item quantity="few">%d албума</item>
+        <item quantity="other">%d албума</item>
+    </plurals>
+
+    <!-- Music browser -->
+    <string name="xmbm_no_matches_title">Нема подударања</string>
+    <string name="xmbm_no_matches_sub">Пробајте другу претрагу.</string>
+    <!-- Name of the player's queue when it plays the whole music library. -->
+    <string name="xmbm_queue_all_music">Сва музика</string>
+
+    <!-- Flyout titles and Social rows -->
+    <string name="xmbm_video_all">Сви видео снимци</string>
+    <string name="xmbm_photo_all">Све фотографије</string>
+    <!-- Name of the card listing games whose files were not found on the last scan. -->
+    <string name="xmbm_missing">Недостаје</string>
+    <string name="xmbm_social_friends">Пријатељи</string>
+    <string name="xmbm_social_voice">Глас</string>
+    <string name="xmbm_social_voice_settings">Подешавања гласа</string>
+    <string name="xmbm_social_invites">Позивнице</string>
+    <string name="xmbm_social_invite_friends">Позови пријатеље</string>
+    <string name="xmbm_social_activity_settings">Подешавања активности</string>
+    <string name="xmbm_social_discord_settings">Discord подешавања</string>
+    <!-- Row that opens the device's own Settings app. Must match the Android Settings wording elsewhere. -->
+    <string name="xmbm_android_settings_title">Android подешавања</string>
+    <string name="xmbm_android_settings_sub">Отвара подешавања уређаја</string>
+    <!-- Status chip of the Games list; %1$s is the sort order. -->
+    <string name="xmbm_filter_chip">Филтер: %1$s</string>
+    <!-- Status chip of the Games list; %1$s is the search term, %2$s the sort order. -->
+    <string name="xmbm_filter_chip_term">Филтер: „%1$s“ · %2$s</string>
+
+    <!-- Empty rows -->
+    <string name="xmbm_empty_games_assigned_title">Нема додељених игара.</string>
+    <string name="xmbm_empty_games_assigned_sub">Додајте игре у ову категорију.</string>
+    <string name="xmbm_empty_videos_apps">Нису пронађене видео апликације.</string>
+    <string name="xmbm_empty_network_apps">Нису пронађени прегледачи.</string>
+    <string name="xmbm_empty_store_apps">Нису пронађене продавнице апликација.</string>
+    <string name="xmbm_empty_music_apps">Нису пронађене музичке апликације.</string>
+    <string name="xmbm_empty_photo_apps">Нису пронађене апликације за фотографије.</string>
+    <string name="xmbm_empty_apps_assigned">Нема додељених апликација.</string>
+    <string name="xmbm_empty_install_apps">Инсталирајте неке апликације да бисте почели.</string>
+    <string name="xmbm_noconsoles_title">Нема подешених конзола</string>
+    <string name="xmbm_noconsoles_sub">Отворите менаџер библиотеке да бисте додали меморијску картицу</string>
+    <string name="xmbm_gap_press_confirm">Притисните потврду да отворите Подешавања и решите проблем.</string>
+    <string name="xmbm_nogames_imported_title">Још нема увезених игара</string>
+    <string name="xmbm_nogames_imported_sub">Отворите меморијску картицу да бисте скенирали библиотеку.</string>
+    <string name="xmbm_emptycard_title">Ова прилагођена меморијска картица је празна</string>
+    <string name="xmbm_emptycard_sub">Додајте игре са било које конзоле преко менија опција (△).</string>
+    <string name="xmbm_emptyfav_title">Још нема омиљених</string>
+    <string name="xmbm_emptyfav_sub">Означите игру као омиљену из њеног менија опција (△).</string>
+    <string name="xmbm_emptymissing_title">Ништа не недостаје</string>
+    <string name="xmbm_emptymissing_sub">Датотека сваке игре је пронађена при последњем скенирању.</string>
+    <string name="xmbm_findgames_sub">Изаберите инсталиране апликације које ћете додати у ову библиотеку</string>
+    <string name="xmbm_empty_romdir">ROM фасцикла није подешена</string>
+    <!-- ▲ is the controller's Triangle button symbol. -->
+    <string name="xmbm_empty_scan_console">Притисните ▲ да скенирате ову конзолу</string>
+    <string name="xmbm_empty_folder_title">У овој фасцикли нису пронађене игре</string>
+    <!-- Subtitle of a card: how many games it holds. -->
+    <plurals name="xmbm_games_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игре</item>
+        <item quantity="other">%d игара</item>
+    </plurals>
+
+    <!-- Games search and Shiba Coins hub -->
+    <!-- %1$s is the user's search term. -->
+    <string name="xmbm_nomatch_title">Ниједна игра не одговара упиту „%1$s“</string>
+    <string name="xmbm_nomatch_sub">Отворите мени филтера да бисте га променили или обрисали.</string>
+    <!-- Shiba Coins row: games that are not tracked for achievements. -->
+    <string name="xmbm_ach_untracked">Не прати се</string>
+    <string name="xmbm_ach_connect_title">Повежите налоге</string>
+    <string name="xmbm_ach_connect_sub">Подесите Shiba Coins и аутоматски повежите библиотеку</string>
+    <string name="xmbm_ach_all_tracked">Све праћене игре</string>
+    <!-- Progress: %1$d of %2$d games matched. -->
+    <string name="xmbm_ach_matching_progress">Аутоматско повезивање…  %1$d / %2$d</string>
+    <!-- Progress: %1$d of %2$d games synced. -->
+    <string name="xmbm_ach_syncing_progress">Синхронизација новчића…  %1$d / %2$d</string>
+    <!-- Player card summary: %1$s coins earned, %2$s coins available (already formatted with separators), %3$d games tracked, %4$d games mastered. -->
+    <string name="xmbm_ach_summary">%1$s / %2$s новчића  •  праћено: %3$d  •  савладано: %4$d</string>
+    <!-- Short level badge; %1$d is the player's level. -->
+    <string name="xmbm_ach_level_badge">Ниво %1$d</string>
+    <plurals name="xmbm_ach_games_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игре</item>
+        <item quantity="other">%d игара</item>
+    </plurals>
+
+    <!-- Games menus -->
+    <!-- Value of an Icon Display row that follows the global setting; %1$s is that setting's name. -->
+    <string name="xmbm_icon_global_value">Глобално: %1$s</string>
+    <!-- %1$s is the name of the current global icon display mode. -->
+    <string name="xmbm_icon_use_global">Користи глобално подешавање (%1$s)</string>
+    <!-- Title of the Shiba Coins player-card menu. -->
+    <string name="xmbm_ach_player_card">Картица играча</string>
+    <!-- Menu row while auto-matching is running. -->
+    <string name="xmbm_ach_auto_matching_busy">Аутоматско повезивање…</string>
+    <!-- Menu row: matches the library's games to achievement sets. -->
+    <string name="xmbm_ach_auto_matching">Аутоматско повезивање</string>
+    <!-- Menu row while installed achievements are updating. -->
+    <string name="xmbm_ach_updating_busy">Ажурирање…</string>
+    <!-- Menu row: re-syncs achievements for games that are already tracked. -->
+    <string name="xmbm_ach_update_installed">Ажурирај инсталирана достигнућа</string>
+
+    <!-- Game and app menus -->
+    <!-- Title of the list of categories a custom card can be moved into. -->
+    <string name="xmbm_move_card_to">Премести прилагођену картицу у</string>
+    <!-- Title of the list of categories an item can be moved into. -->
+    <string name="xmbm_move_to">Премести у…</string>
+    <!-- Title of the list of categories an item can be added to. -->
+    <string name="xmbm_add_to">Додај у…</string>
+    <string name="xmbm_move_game_to">Премести игру у</string>
+    <string name="xmbm_add_game_to">Додај игру у</string>
+    <!-- Title of the app picker for a custom card; %1$s is the card's name. -->
+    <string name="xmbm_picker_add_apps_named">Додај апликације · %1$s</string>
+    <string name="xmbm_picker_add_android_apps">Додај Android апликације</string>
+    <!-- %1$s is the icon display mode the game falls back to. -->
+    <string name="xmbm_icon_use_default">Користи подразумевано (%1$s)</string>
+    <string name="xmbm_emu_use_platform_default">Користи подразумевано за платформу</string>
+    <!-- Title of the list of emulators a game can use. -->
+    <string name="xmbm_emu_choose">Изабери емулатор</string>
+    <!-- Value shown on the launcher row the game was originally imported from. -->
+    <string name="xmbm_launchwith_imported_from">Увезено из</string>
+    <!-- Label of one disc of a multi-disc game. -->
+    <string name="xmbm_disc_n">Диск %1$d</string>
+    <!-- Label of a disc entry that has no disc number (it is usually a playlist file). -->
+    <string name="xmbm_disc_unnumbered">Плејлиста</string>
+    <!-- Title of the text dialog that names a new custom memory card. -->
+    <string name="xmbm_card_new_title">Нова прилагођена меморијска картица</string>
+    <!-- Title of the text dialog that renames a custom memory card. -->
+    <string name="xmbm_card_rename_title">Преименуј прилагођену меморијску картицу</string>
+    <!-- Title of the card picker opened from multi-select; the number is how many games are marked. -->
+    <plurals name="xmbm_marked_add_to_card">
+        <item quantity="one">Додај %d игру на картицу</item>
+        <item quantity="few">Додај %d игре на картицу</item>
+        <item quantity="other">Додај %d игара на картицу</item>
+    </plurals>
+
+    <!-- Game info dialogs -->
+    <!-- File-location dialog for an app: %1$s is the Android package name. -->
+    <string name="xmbm_info_package">Пакет: %1$s</string>
+    <string name="xmbm_info_no_location">Нема забележене локације датотеке</string>
+    <string name="xmbm_info_export_failed">Извоз није успео — погледајте дневник.</string>
+    <!-- The quoted name must match the Settings toggle's label. -->
+    <string name="xmbm_goldberg_off">Инсталирање Goldberg достигнућа је искључено. Укључите „Инсталирај Goldberg и конвертуј игре“ у Подешавања ▸ Достигнућа ▸ Локални Windows, па покушајте поново.</string>
+    <string name="xmbm_goldberg_no_setup">За ову игру није пронађено подешавање Steam емулатора (steam_settings).</string>
+    <!-- %1$s is a game title. -->
+    <string name="xmbm_goldberg_has_schema">%1$s већ има податке о достигнућима.</string>
+    <string name="xmbm_goldberg_installed">Goldberg достигнућа су инсталирана. Играјте игру преко емулатора да бисте почели да зарађујете новчиће.</string>
+    <string name="xmbm_goldberg_none">Ова игра нема достигнућа за инсталирање.</string>
+    <string name="xmbm_goldberg_no_key">Прво додајте свој Steam Web API кључ у подешавањима достигнућа.</string>
+    <string name="xmbm_goldberg_failed">Инсталирање достигнућа за ову игру није успело.</string>
+
+    <!-- Scan and artwork notifications -->
+    <!-- Running-task label; %1$s is a Memory Card name. -->
+    <string name="xmbm_scan_running">Скенирање: %1$s…</string>
+    <string name="xmbm_scan_stop_note">Досад пронађене игре се задржавају.</string>
+    <!-- Notification title; %1$s is a Memory Card name. -->
+    <string name="xmbm_scan_stopped_title">Скенирање је заустављено: %1$s</string>
+    <!-- Notification title; %1$s is a Memory Card name. -->
+    <string name="xmbm_scan_failed_title">Скенирање није успело: %1$s</string>
+    <!-- Notification title; %1$s is a Memory Card name. -->
+    <string name="xmbm_scan_finished_title">Скенирање је завршено: %1$s</string>
+    <!-- Notification title; %1$s is a Memory Card name. -->
+    <string name="xmbm_scan_skipped_title">Скенирање је прескочено: %1$s</string>
+    <string name="xmbm_pcscan_failed">Скенирање PC игара није успело</string>
+    <string name="xmbm_pcscan_no_new">Нису пронађене нове PC игре</string>
+    <string name="xmbm_scanall_running">Скенирање свих меморијских картица…</string>
+    <string name="xmbm_scanall_stop_note">Већ скениране картице задржавају своје нове игре.</string>
+    <string name="xmbm_scanall_nothing">Ниједна меморијска картица нема фасциклу за скенирање</string>
+    <string name="xmbm_scanall_nothing_title">Нема шта да се скенира</string>
+    <string name="xmbm_scanall_stopped_title">Скенирање свих меморијских картица је заустављено</string>
+    <string name="xmbm_scanall_failed_title">Скенирање свих меморијских картица није успело</string>
+    <string name="xmbm_scanall_finished_title">Скенирање свих меморијских картица је завршено</string>
+    <!-- Running-task label; %1$s is a Memory Card name or All Games. -->
+    <string name="xmbm_scrape_running">Преузимање недостајуће графике: %1$s</string>
+    <string name="xmbm_scrape_stop_note">Већ преузета графика се задржава.</string>
+    <!-- Notification title; %1$s is a Memory Card name or All Games. -->
+    <string name="xmbm_scrape_paused_title">Преузимање графике је паузирано: %1$s</string>
+    <string name="xmbm_scrape_none_missing">Ниједној игри не недостаје графика</string>
+    <!-- Notification title; %1$s is a Memory Card name or All Games. -->
+    <string name="xmbm_scrape_finished_title">Преузимање графике је завршено: %1$s</string>
+    <!-- Notification title; %1$s is a Memory Card name or All Games. -->
+    <string name="xmbm_scrape_stopped_title">Преузимање графике је заустављено: %1$s</string>
+    <!-- Notification title; %1$s is a Memory Card name or All Games. -->
+    <string name="xmbm_scrape_failed_title">Преузимање графике није успело: %1$s</string>
+    <!-- Running-task label; %1$s is a Memory Card name or All Games. -->
+    <string name="xmbm_meta_running">Ажурирање метаподатака: %1$s</string>
+    <string name="xmbm_meta_stop_note">Већ ажуриране игре задржавају своје детаље.</string>
+    <string name="xmbm_meta_no_games_library">Нема игара у библиотеци</string>
+    <string name="xmbm_meta_no_games_card">Нема игара на овој картици</string>
+    <!-- Notification title; %1$s is a Memory Card name or All Games. -->
+    <string name="xmbm_meta_finished_title">Ажурирање метаподатака је завршено: %1$s</string>
+    <!-- Notification title; %1$s is a Memory Card name or All Games. -->
+    <string name="xmbm_meta_stopped_title">Ажурирање метаподатака је заустављено: %1$s</string>
+    <string name="xmbm_meta_failed">Ажурирање метаподатака није успело</string>
+    <!-- Notification title; %1$s is a Memory Card name or All Games. -->
+    <string name="xmbm_meta_failed_title">Ажурирање метаподатака није успело: %1$s</string>
+    <plurals name="xmbm_scanall_stopped_after">
+        <item quantity="one">Заустављено након %1$d од %2$d картице</item>
+        <item quantity="few">Заустављено након %1$d од %2$d картице</item>
+        <item quantity="other">Заустављено након %1$d од %2$d картица</item>
+    </plurals>
+    <!-- Result summary; %1$d games updated out of %2$d. -->
+    <plurals name="xmbm_scrape_updated">
+        <item quantity="one">Ажурирана је %1$d од %2$d игре</item>
+        <item quantity="few">Ажуриране су %1$d од %2$d игре</item>
+        <item quantity="other">Ажурирано је %1$d од %2$d игара</item>
+    </plurals>
+    <plurals name="xmbm_stopped_after_games">
+        <item quantity="one">Заустављено након %d игре</item>
+        <item quantity="few">Заустављено након %d игре</item>
+        <item quantity="other">Заустављено након %d игара</item>
+    </plurals>
+
+    <!-- Notifications panel and shortcut requests -->
+    <!-- Title of a dialog about a home-screen shortcut request. -->
+    <string name="xmbm_shortcut_request_title">Захтев за пречицу</string>
+    <string name="xmbm_shortcut_request_handled">Овај захтев је већ обрађен.</string>
+    <!-- Title of the notification panel's options menu. -->
+    <string name="xmbm_notifications_title">Обавештења</string>
+
+    <!-- Discord Social rows -->
+    <string name="xmbm_social_signin_title">Пријавите се преко Discord-а</string>
+    <string name="xmbm_social_signin_sub">Скенирајте QR код телефоном</string>
+    <string name="xmbm_social_connected">Повезано са Discord-ом</string>
+    <!-- Discord presence / connection state. -->
+    <string name="xmbm_social_online">На мрежи</string>
+    <!-- Discord presence / connection state. -->
+    <string name="xmbm_social_offline">Ван мреже</string>
+    <string name="xmbm_social_connecting">Повезивање…</string>
+    <!-- Discord presence state. -->
+    <string name="xmbm_social_idle">Неактиван</string>
+    <!-- Discord presence state. -->
+    <string name="xmbm_social_dnd">Не узнемиравај</string>
+    <!-- Discord presence state. -->
+    <string name="xmbm_social_streaming">Стримује</string>
+    <string name="xmbm_social_friends_unknown">Погледајте ко је на мрежи</string>
+    <string name="xmbm_social_friends_none_online">Нема пријатеља на мрежи</string>
+    <string name="xmbm_social_voice_sub">Разговарајте у заједничкој соби</string>
+    <string name="xmbm_social_activity_sub">Поделите шта играте</string>
+    <string name="xmbm_social_discord_sub">Налог и одјављивање</string>
+    <string name="xmbm_social_share_title">Дели активност</string>
+    <string name="xmbm_social_share_on">Укључено · пријатељи виде да сте у Playfield Portal-у</string>
+    <string name="xmbm_social_share_off">Искључено · ништа се не дели са пријатељима</string>
+    <string name="xmbm_social_generic_title">Генерички режим</string>
+    <string name="xmbm_social_generic_on">Укључено · приказује „игра“ уместо назива апликације</string>
+    <string name="xmbm_social_generic_off">Искључено · приказује назив апликације</string>
+    <string name="xmbm_social_signout_title">Одјави се</string>
+    <!-- %1$s is the connected Discord account's name. -->
+    <string name="xmbm_social_signout_named">Прекини везу са %1$s</string>
+    <string name="xmbm_social_signout_sub">Прекини везу са овим Discord налогом</string>
+    <string name="xmbm_social_you_offline">Нисте на мрежи</string>
+    <string name="xmbm_social_friends_reconnect">Поново се повежите да бисте видели пријатеље</string>
+    <string name="xmbm_social_no_friends">Нема пријатеља за приказ</string>
+    <string name="xmbm_social_in_lobby">У гласовном лобију · Затражите придруживање</string>
+    <!-- %1$s is the name of the game a friend is playing. -->
+    <string name="xmbm_social_playing">Игра %1$s</string>
+    <string name="xmbm_social_voice_reconnect">Поново се повежите да бисте користили глас</string>
+    <string name="xmbm_social_invites_none">Нема позивница на чекању</string>
+    <string name="xmbm_social_create_lobby">Направи лоби</string>
+    <string name="xmbm_social_create_lobby_sub">Отворите приватну собу и позовите пријатеље</string>
+    <!-- Name shown for a voice participant who has no display name. -->
+    <string name="xmbm_social_someone">Неко</string>
+    <!-- A voice participant that is the user; %1$s is their name. -->
+    <string name="xmbm_social_participant_you">%1$s (ви)</string>
+    <string name="xmbm_social_muted">Звук искључен</string>
+    <string name="xmbm_social_speaking">Говори</string>
+    <string name="xmbm_social_waiting_others">Чека се да се други придруже</string>
+    <string name="xmbm_social_invite_friends_sub">Доведите пријатеље у овај лоби</string>
+    <string name="xmbm_social_unmute">Укључи звук</string>
+    <string name="xmbm_social_mute">Искључи звук</string>
+    <string name="xmbm_social_mic_off">Микрофон је искључен</string>
+    <string name="xmbm_social_mic_on">Микрофон је укључен</string>
+    <string name="xmbm_social_leave_voice">Напусти глас</string>
+    <string name="xmbm_social_leave_voice_sub">Прекини везу са собом</string>
+    <string name="xmbm_social_no_invites">Нема позивница</string>
+    <string name="xmbm_social_no_invites_sub">Позивнице и захтеви за придруживање приказују се овде</string>
+    <!-- %1$s is the name of a person asking to join the user's lobby. -->
+    <string name="xmbm_social_wants_to_join">%1$s жели да се придружи</string>
+    <!-- %1$s is the name of the person who sent the invite. -->
+    <string name="xmbm_social_join_lobby">Придружи се лобију: %1$s</string>
+    <string name="xmbm_social_select_approve">Изаберите да одобрите</string>
+    <string name="xmbm_social_select_join">Изаберите да се придружите</string>
+    <string name="xmbm_social_invite_offline">Поново се повежите да бисте позвали пријатеље</string>
+    <string name="xmbm_social_invited">Позван ✓</string>
+    <string name="xmbm_social_already_lobby">Већ је у лобију</string>
+    <string name="xmbm_social_select_invite">Изаберите да позовете</string>
+    <string name="xmbm_social_voice_settings_sub">Осетљивост микрофона, филтер шума, јачина звука</string>
+    <!-- %1$s explains what the setting does. -->
+    <string name="xmbm_social_vs_toggle_on">Укључено · %1$s</string>
+    <string name="xmbm_social_vs_sens_title">Осетљивост микрофона</string>
+    <!-- %1$s is the sensitivity level's name. -->
+    <string name="xmbm_social_vs_sens_value">%1$s · нижа филтрира кликове</string>
+    <string name="xmbm_social_vs_noise_title">Поништавање шума</string>
+    <!-- Krisp is a noise-suppression technology name; keep it. -->
+    <string name="xmbm_social_vs_noise_on">Krisp уклања позадински шум + кликове дугмади</string>
+    <string name="xmbm_social_vs_echo_title">Поништавање еха</string>
+    <string name="xmbm_social_vs_echo_on">спречава повратни звук звучника</string>
+    <string name="xmbm_social_vs_agc_title">Аутоматска контрола појачања</string>
+    <string name="xmbm_social_vs_agc_on">уједначава јачину микрофона</string>
+    <string name="xmbm_social_vs_input_title">Јачина микрофона</string>
+    <string name="xmbm_social_vs_balance_title">Баланс звука</string>
+    <!-- A slider drawn in text: %1$s is a row of dashes with a dot marking the mix between game sound and voice. -->
+    <string name="xmbm_social_vs_balance_bar">Игра ◀%1$s▶ Глас</string>
+    <string name="xmbm_social_vs_ptt_title">Притисни за говор</string>
+    <string name="xmbm_social_vs_ptt_on">држите да говорите — иначе је микрофон затворен</string>
+    <string name="xmbm_social_vs_overlay_title">Плутајуће дугме за говор</string>
+    <!-- The quoted name is the Android permission's label; it must match the device's wording. -->
+    <string name="xmbm_social_vs_overlay_needs">Искључено · потребна је дозвола „Приказ преко других апликација“</string>
+    <string name="xmbm_social_vs_overlay_on">Укључено · плутајуће дугме „држи за говор“</string>
+    <string name="xmbm_social_vs_overlay_hidden">Искључено · скривено (користите дугме контролера)</string>
+    <!-- PTT = push-to-talk. -->
+    <string name="xmbm_social_vs_pttbtn_title">Дугме за говор</string>
+    <string name="xmbm_social_vs_pttbtn_press">Притисните дугме на контролеру…</string>
+    <!-- %1$s is the name of the mapped controller button. -->
+    <string name="xmbm_social_vs_pttbtn_set">%1$s  ·  држите да говорите док сте у Playfield Portal-у</string>
+    <string name="xmbm_social_vs_pttbtn_unset">Није подешено · изаберите да доделите дугме контролера</string>
+    <!-- Controller prompt label next to the east face button while a button is being captured. -->
+    <string name="xmbm_social_hint_cancel">откажи</string>
+    <string name="xmbm_ptt_not_set">Није подешено</string>
+    <string name="xmbm_ptt_l3">L3 (клик левом палицом)</string>
+    <string name="xmbm_ptt_r3">R3 (клик десном палицом)</string>
+    <!-- Name of the controller's Select button. -->
+    <string name="xmbm_ptt_select">Select</string>
+    <!-- Name of the controller's Start button. -->
+    <string name="xmbm_ptt_start">Start</string>
+    <plurals name="xmbm_social_friends_online">
+        <item quantity="one">%d на мрежи</item>
+        <item quantity="few">%d на мрежи</item>
+        <item quantity="other">%d на мрежи</item>
+    </plurals>
+    <plurals name="xmbm_social_invites_waiting">
+        <item quantity="one">%d на чекању</item>
+        <item quantity="few">%d на чекању</item>
+        <item quantity="other">%d на чекању</item>
+    </plurals>
+
+    <!-- Launch, shortcut and theme messages -->
+    <!-- Subtitle of a game in the Missing list: why it is there. -->
+    <string name="xmbm_missing_reason">Датотека није пронађена при последњем скенирању</string>
+    <!-- Menu row on the Discord account: reconnects after the network dropped. -->
+    <string name="xmbm_social_reconnect">Поново повежи</string>
+    <!-- %1$s is the technical reason the launch failed. -->
+    <string name="xmbm_launch_failed">Покретање није успело: %1$s</string>
+    <!-- %1$s is a game or emulator name. -->
+    <string name="xmbm_launch_could_not">Покретање није успело: %1$s</string>
+    <!-- %1$s is a console id in capitals, e.g. PSX. -->
+    <string name="xmbm_launch_no_emulator">Није подешен емулатор за %1$s. Доделите га у Подешавања ▸ Емулатори ▸ Подразумевано по систему.</string>
+    <string name="xmbm_shortcut_fav_added">Додато у Омиљено</string>
+    <string name="xmbm_shortcut_fav_removed">Уклоњено из Омиљеног</string>
+    <!-- %1$s is the technical reason. -->
+    <string name="xmbm_shortcut_fav_failed">Ажурирање Омиљеног није успело: %1$s</string>
+    <!-- %1$s is the technical reason. -->
+    <string name="xmbm_shortcut_create_failed">Прављење пречице није успело: %1$s</string>
+    <!-- Description of the monthly colour scheme. -->
+    <string name="xmbm_scheme_original_sub">Мења се сваког месеца</string>
+    <!-- Description of a fixed colour scheme. -->
+    <string name="xmbm_scheme_fixed_sub">Фиксна унапред подешена боја</string>
+    <!-- Colour scheme row that opens the free colour picker. -->
+    <string name="xmbm_scheme_custom">Прилагођено</string>
+    <string name="xmbm_scheme_custom_sub">Фино подесите било коју боју клизачима</string>
+    <!-- Name shown for the applied theme when it has no name. -->
+    <string name="xmbm_theme_current">Тренутна тема</string>
+    <!-- Title of the text dialog that names a new theme. -->
+    <string name="xmbm_theme_save_title">Сачувај тренутни изглед као тему</string>
+    <string name="xmbm_theme_save_failed">Чување теме није успело</string>
+    <!-- %1$s is the theme's name. -->
+    <string name="xmbm_theme_saved">Тема је сачувана — %1$s</string>
+    <!-- Title shown on the Game Boot preview in place of a game's name. -->
+    <string name="xmbm_gameboot_preview_title">Преглед</string>
+    <string name="xmbm_drawer_all_title">Све апликације</string>
+    <string name="xmbm_drawer_all_sub">Прегледајте све инсталиране апликације</string>
+    <!-- App Drawer filter: apps categorized as games. -->
+    <string name="xmbm_drawer_games_title">Игре</string>
+    <string name="xmbm_drawer_games_sub">Апликације разврстане као игре</string>
+    <!-- App Drawer filter. -->
+    <string name="xmbm_drawer_emulators_title">Емулатори</string>
+    <string name="xmbm_drawer_emulators_sub">RetroArch, PPSSPP, Dolphin и други</string>
+    <string name="xmbm_drawer_recent_title">Недавно коришћено</string>
+    <string name="xmbm_drawer_recent_sub">Апликације које сте недавно користили</string>
+    <string name="xmbm_shortcut_unsafe">Ухваћена пречица није безбедна за покретање</string>
+</resources>

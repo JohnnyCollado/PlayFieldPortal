@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">Beweging</string>
+    <string name="motion_summary">Hoeveel er vanzelf beweegt.</string>
+    <string name="motion_detail_animated">Alles beweegt</string>
+    <string name="motion_detail_reduced">Alleen de selectie</string>
+    <string name="motion_detail_static">Niets vanzelf</string>
+    <string name="motion_sub_animated">Alles wat kan bewegen, beweegt: artwork, pictogrammen, achtergronden, de achtergrond en de gloed. Verbruikt de meeste batterij.</string>
+    <string name="motion_sub_reduced">Alleen wat geselecteerd is beweegt: het artwork, het videofragment en de gloed ervan. De achtergrond blijft bewegen.</string>
+    <string name="motion_sub_static">Niets beweegt vanzelf. Menu\'s schuiven nog wel wanneer je erdoorheen gaat.</string>
+    <string name="motion_holds_background">Stilgezet zolang ‘Beweging’ op ‘Statisch’ staat.</string>
+    <string name="motion_holds_glow">Stil zolang ‘Beweging’ op ‘Statisch’ staat.</string>
+</resources>

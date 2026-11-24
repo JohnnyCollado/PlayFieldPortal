@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blur_title">Sfocatura dello sfondo</string>
+    <string name="blur_sublabel">Intensità della sfocatura dello schermo dietro i messaggi e il menu delle opzioni. Portala a zero per disattivarla.</string>
+    <string name="blur_unavailable">Richiede Android 12 o versioni successive.</string>
+</resources>

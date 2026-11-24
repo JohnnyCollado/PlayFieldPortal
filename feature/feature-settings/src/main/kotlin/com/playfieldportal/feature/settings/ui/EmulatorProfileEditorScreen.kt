@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,10 +19,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.IntentType
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.feature.settings.viewmodel.EmulatorTemplate
 import com.playfieldportal.feature.settings.viewmodel.ProfileEditorState
 
@@ -54,7 +58,7 @@ fun EmulatorProfileEditorScreen(
     onTestLaunch: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val subtitle = if (editorState.isNew) "New Profile" else "Edit Profile"
+    val subtitle = stringResource(if (editorState.isNew) R.string.lib_prof_new else R.string.lib_prof_edit)
 
     // Custom-intent field guide (Advanced section). Shown while the ⓘ row is focused
     // ("hovered" on a controller); pressing SELECT pins it open so it stays visible while
@@ -63,7 +67,7 @@ fun EmulatorProfileEditorScreen(
     var intentHelpFocused by remember { mutableStateOf(false) }
 
     SettingsScaffold(
-        title    = "Emulators",
+        title    = stringResource(R.string.lib_emu_title),
         subtitle = subtitle,
         onBack   = onCancel,
         modifier = modifier,
@@ -86,40 +90,40 @@ fun EmulatorProfileEditorScreen(
             }
 
             // ── Recommended templates ─────────────────────────────────────
-            SettingsGroup("Recommended templates")
+            SettingsGroup(stringResource(R.string.lib_prof_group_templates))
             EmulatorTemplate.entries.forEach { template ->
                 SettingsRow(
-                    label    = template.label,
-                    sublabel = template.description,
+                    label    = stringResource(template.labelRes),
+                    sublabel = stringResource(template.descriptionRes),
                     onClick  = { onApplyTemplate(template) },
                 )
             }
 
             // ── Required fields ───────────────────────────────────────────
-            SettingsGroup("Required")
+            SettingsGroup(stringResource(R.string.lib_prof_group_required))
 
             EditorTextField(
-                label       = "Display name",
+                label       = stringResource(R.string.lib_prof_display_name),
                 value       = editorState.name,
                 onValueChange = onNameChange,
-                placeholder = "e.g. My Emulator",
+                placeholder = stringResource(R.string.lib_prof_display_name_hint),
             )
 
             EditorTextField(
-                label         = "Package name",
+                label         = stringResource(R.string.lib_prof_package),
                 value         = editorState.packageName,
                 onValueChange = onPackageNameChange,
-                placeholder   = "e.g. com.example.emulator",
+                placeholder   = stringResource(R.string.lib_prof_package_hint),
             )
 
             // Intent type picker
-            SettingsGroup("Launch method")
+            SettingsGroup(stringResource(R.string.lib_prof_group_launch))
 
             // CUSTOM_COMMAND is refused at launch (AD-1), so it is no longer offered.
             IntentType.entries.filter { it != IntentType.CUSTOM_COMMAND }.forEach { type ->
                 SettingsRow(
                     label    = type.name,
-                    sublabel = intentTypeDescription(type),
+                    sublabel = stringResource(intentTypeDescription(type)),
                     trailing = {
                         if (editorState.intentType == type) {
                             com.playfieldportal.core.ui.components.PfpCheckMark(EditorAccent)
@@ -130,63 +134,62 @@ fun EmulatorProfileEditorScreen(
             }
 
             // ── Optional fields ───────────────────────────────────────────
-            SettingsGroup("Optional")
+            SettingsGroup(stringResource(R.string.lib_prof_group_optional))
 
             EditorTextField(
-                label         = "Activity class",
+                label         = stringResource(R.string.lib_prof_activity),
                 value         = editorState.activityClass,
                 onValueChange = onActivityClassChange,
-                placeholder   = "e.g. com.example.emulator.MainActivity (leave blank for default)",
+                placeholder   = stringResource(R.string.lib_prof_activity_hint),
             )
 
             EditorTextField(
-                label         = "Supported platforms",
+                label         = stringResource(R.string.lib_prof_platforms),
                 value         = editorState.supportedPlatformIds,
                 onValueChange = onPlatformIdsChange,
-                placeholder   = "psx,psp,ps2  (comma-separated platform IDs)",
+                placeholder   = stringResource(R.string.lib_prof_platforms_hint),
             )
 
             EditorTextField(
-                label         = "MIME type",
+                label         = stringResource(R.string.lib_prof_mime),
                 value         = editorState.mimeType,
                 onValueChange = onMimeTypeChange,
-                placeholder   = "e.g. application/octet-stream",
+                placeholder   = stringResource(R.string.lib_prof_mime_hint),
             )
 
             EditorTextField(
-                label         = "Notes",
+                label         = stringResource(R.string.lib_prof_notes),
                 value         = editorState.notes,
                 onValueChange = onNotesChange,
-                placeholder   = "Optional notes for this profile",
+                placeholder   = stringResource(R.string.lib_prof_notes_hint),
                 singleLine    = false,
             )
 
             // ── URI flags ─────────────────────────────────────────────────
-            SettingsGroup("URI flags")
+            SettingsGroup(stringResource(R.string.lib_prof_group_uri))
 
             SettingsToggleRow(
-                label    = "Use file URI",
-                sublabel = "Pass rom path as file:// URI (most emulators)",
+                label    = stringResource(R.string.lib_prof_use_file_uri),
+                sublabel = stringResource(R.string.lib_prof_use_file_uri_sub),
                 checked  = editorState.useFileUri,
                 onToggle = onUseFileUriChange,
             )
 
             SettingsToggleRow(
-                label    = "Use SAF URI",
-                sublabel = "Pass SAF content:// URI instead of file path",
+                label    = stringResource(R.string.lib_prof_use_saf_uri),
+                sublabel = stringResource(R.string.lib_prof_use_saf_uri_sub),
                 checked  = editorState.useSafUri,
                 onToggle = onUseSafUriChange,
             )
 
             // ── Advanced ──────────────────────────────────────────────────
-            SettingsGroup("Advanced")
+            SettingsGroup(stringResource(R.string.lib_prof_group_advanced))
 
             // Info affordance for the custom-intent fields: focusing it (controller "hover")
             // reveals the guide; pressing SELECT pins it open so it stays while editing below.
             SettingsRow(
-                label    = "How custom intents work",
-                sublabel = if (intentHelpPinned) "Press to hide the field guide"
-                           else "Hover or press to show the field guide",
+                label    = stringResource(R.string.lib_prof_intent_help),
+                sublabel = stringResource(if (intentHelpPinned) R.string.lib_prof_intent_help_hide else R.string.lib_prof_intent_help_show),
                 leading  = { Text("ⓘ", color = EditorAccent, fontSize = 18.sp) },
                 onFocusChangedExternal = { intentHelpFocused = it },
                 onClick  = { intentHelpPinned = !intentHelpPinned },
@@ -196,76 +199,76 @@ fun EmulatorProfileEditorScreen(
             }
 
             EditorTextField(
-                label         = "Intent action",
+                label         = stringResource(R.string.lib_prof_intent_action),
                 value         = editorState.intentActionText,
                 onValueChange = onIntentActionChange,
-                placeholder   = "e.g. me.magnum.melonds.LAUNCH_ROM (blank = default)",
+                placeholder   = stringResource(R.string.lib_prof_intent_action_hint),
             )
             EditorTextField(
-                label         = "Intent extras",
+                label         = stringResource(R.string.lib_prof_intent_extras),
                 value         = editorState.intentExtrasText,
                 onValueChange = onIntentExtrasChange,
-                placeholder   = "key=value per line. {rom_path}, {rom_uri}, {core_path} tokens. true/false = boolean.",
+                placeholder   = stringResource(R.string.lib_prof_intent_extras_hint),
                 singleLine    = false,
             )
             EditorTextField(
-                label         = "Intent flags",
+                label         = stringResource(R.string.lib_prof_intent_flags),
                 value         = editorState.intentFlagsText,
                 onValueChange = onIntentFlagsChange,
-                placeholder   = "CLEAR_TASK, CLEAR_TOP, NEW_TASK (comma-separated)",
+                placeholder   = stringResource(R.string.lib_prof_intent_flags_hint),
             )
             EditorTextField(
-                label         = "Intent category",
+                label         = stringResource(R.string.lib_prof_intent_category),
                 value         = editorState.intentCategoryText,
                 onValueChange = onIntentCategoryChange,
-                placeholder   = "e.g. android.intent.category.LEANBACK_LAUNCHER",
+                placeholder   = stringResource(R.string.lib_prof_intent_category_hint),
             )
             EditorTextField(
-                label         = "RetroArch core path",
+                label         = stringResource(R.string.lib_prof_core_path),
                 value         = editorState.coreText,
                 onValueChange = onCoreChange,
                 placeholder   = "/data/data/com.retroarch/cores/xxx_libretro_android.so",
             )
             EditorTextField(
-                label         = "Supported extensions",
+                label         = stringResource(R.string.lib_prof_extensions),
                 value         = editorState.extensionsText,
                 onValueChange = onExtensionsChange,
-                placeholder   = "iso,cso,chd  (informational)",
+                placeholder   = stringResource(R.string.lib_prof_extensions_hint),
             )
 
             // ── Error message ─────────────────────────────────────────────
             editorState.errorMessage?.let { msg ->
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text     = msg,
+                    text     = msg.asString(),
                     color    = EditorError,
                     modifier = Modifier.padding(horizontal = 48.dp, vertical = 4.dp),
                 )
             }
 
             // ── Test ──────────────────────────────────────────────────────
-            SettingsGroup("Test")
+            SettingsGroup(stringResource(R.string.lib_prof_group_test))
 
             SettingsRow(
-                label    = "Test launch with a ROM",
-                sublabel = "Pick a scanned ROM, preview the intent, and try launching",
+                label    = stringResource(R.string.lib_prof_test),
+                sublabel = stringResource(R.string.lib_prof_test_sub),
                 onClick  = onTestLaunch,
             )
 
             // ── Actions ───────────────────────────────────────────────────
-            SettingsGroup("Actions")
+            SettingsGroup(stringResource(R.string.lib_prof_group_actions))
 
             SettingsRow(
-                label    = if (editorState.isSaving) "Saving…" else "Save Profile",
-                sublabel = if (editorState.isNew) "Add to custom profiles" else "Update this profile",
+                label    = stringResource(if (editorState.isSaving) R.string.lib_prof_saving else R.string.lib_prof_save),
+                sublabel = stringResource(if (editorState.isNew) R.string.lib_prof_save_new_sub else R.string.lib_prof_save_edit_sub),
                 onClick  = if (editorState.isSaving) null else onSave,
             )
 
             onDelete?.let { doDelete ->
                 SettingsRow(
-                    label    = "Delete profile",
-                    sublabel = "Remove this custom profile permanently",
-                    trailing = { Text("Delete", color = EditorError) },
+                    label    = stringResource(R.string.lib_prof_delete),
+                    sublabel = stringResource(R.string.lib_prof_delete_sub),
+                    trailing = { Text(stringResource(R.string.lib_prof_delete_button), color = EditorError) },
                     onClick  = doDelete,
                 )
             }
@@ -299,30 +302,30 @@ private fun EditorTextField(
 @Composable
 private fun CustomIntentHelp() {
     Column(modifier = Modifier.padding(start = 64.dp, end = 48.dp, top = 2.dp, bottom = 12.dp)) {
-        HelpSection("Launch Method")
-        HelpLine("ACTION_VIEW — ROM handed to the app as the intent's data URI (most emulators).")
-        HelpLine("COMPONENT — explicit activity + extras (RetroArch ROM/LIBRETRO, DuckStation bootPath).")
+        HelpSection(stringResource(R.string.lib_help_launch_method))
+        HelpLine(stringResource(R.string.lib_help_launch_view))
+        HelpLine(stringResource(R.string.lib_help_launch_component))
 
-        HelpSection("Intent Action")
-        HelpLine("The action the emulator's activity expects. Blank = default (VIEW / MAIN).")
-        HelpLine("e.g. me.magnum.melonds.LAUNCH_ROM   or   android.nfc.action.TECH_DISCOVERED")
+        HelpSection(stringResource(R.string.lib_help_action))
+        HelpLine(stringResource(R.string.lib_help_action_line))
+        HelpLine(stringResource(R.string.lib_help_action_examples))
 
-        HelpSection("Intent Extras  (one key=value per line)")
-        HelpLine("Tokens are replaced at launch time:")
-        HelpLine("   {rom_uri} — content:// URI  (recommended; works with scoped storage)")
-        HelpLine("   {rom_path} — raw file path      {core_path}   {package}   {platform}")
-        HelpLine("A value of true or false is sent as a boolean extra.")
-        HelpLine("e.g.   bootPath={rom_uri}      resumeState=false")
+        HelpSection(stringResource(R.string.lib_help_extras))
+        HelpLine(stringResource(R.string.lib_help_extras_tokens))
+        HelpLine(stringResource(R.string.lib_help_extras_rom_uri))
+        HelpLine(stringResource(R.string.lib_help_extras_rom_path))
+        HelpLine(stringResource(R.string.lib_help_extras_boolean))
+        HelpLine(stringResource(R.string.lib_help_extras_examples))
 
-        HelpSection("Intent Flags")
-        HelpLine("Comma-separated:  CLEAR_TASK, CLEAR_TOP, NEW_TASK")
+        HelpSection(stringResource(R.string.lib_help_flags))
+        HelpLine(stringResource(R.string.lib_help_flags_line))
 
-        HelpSection("Intent Category")
-        HelpLine("e.g. android.intent.category.LEANBACK_LAUNCHER")
+        HelpSection(stringResource(R.string.lib_help_category))
+        HelpLine(stringResource(R.string.lib_help_category_line))
 
-        HelpSection("Tip")
-        HelpLine("Prefer {rom_uri} with \"Use SAF URI\" enabled — the emulator gets read access to")
-        HelpLine("that one ROM without needing any storage-all permission.")
+        HelpSection(stringResource(R.string.lib_help_tip))
+        HelpLine(stringResource(R.string.lib_help_tip_line1))
+        HelpLine(stringResource(R.string.lib_help_tip_line2))
     }
 }
 
@@ -347,9 +350,10 @@ private fun HelpLine(text: String) {
     )
 }
 
-private fun intentTypeDescription(type: IntentType) = when (type) {
-    IntentType.ACTION_VIEW     -> "Intent.ACTION_VIEW — most emulators (PPSSPP, Dolphin, DuckStation…)"
-    IntentType.COMPONENT       -> "Explicit component — RetroArch and apps needing direct class target"
-    IntentType.SHORTCUT        -> "Home screen shortcut — Winlator, GameHub and custom launchers"
-    IntentType.CUSTOM_COMMAND  -> "Not supported — custom commands are refused at launch"
+@StringRes
+private fun intentTypeDescription(type: IntentType): Int = when (type) {
+    IntentType.ACTION_VIEW     -> R.string.lib_prof_type_view
+    IntentType.COMPONENT       -> R.string.lib_prof_type_component
+    IntentType.SHORTCUT        -> R.string.lib_prof_type_shortcut
+    IntentType.CUSTOM_COMMAND  -> R.string.lib_prof_type_custom
 }

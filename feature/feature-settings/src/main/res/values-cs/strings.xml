@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Nastavení</string>
+    <string name="sound_title">Zvuk</string>
+    <string name="sound_group_master">Hlavní</string>
+    <string name="sound_group_levels">Úrovně</string>
+    <string name="sound_group_sounds">Zvuky</string>
+    <string name="sound_master_volume">Hlavní hlasitost</string>
+    <string name="sound_master_volume_help">Ovlivňuje všechny zvuky launcheru. Při 0 je launcher ztlumený.</string>
+    <string name="sound_ambience_help">Přehrává se ve smyčce při procházení. OGG navazuje plynule; MP3 může lupnout.</string>
+    <string name="sound_rejected_title">Tento zvuk nelze použít</string>
+    <string name="sound_reset_confirm_title">Obnovit výchozí nastavení zvuku?</string>
+    <string name="sound_reset_confirm_message">Každý zvuk nabídky se vrátí na přiložený vzorek PFP a každá úroveň, včetně hlavní, se vrátí na maximum. Skladba na pozadí a média Boot Video a Game Boot zůstanou beze změny.</string>
+    <string name="sound_reset_confirm_action">Obnovit</string>
+    <string name="sound_reset_row">Obnovit výchozí nastavení zvuku</string>
+    <string name="sound_reset_row_help">Vrátí každý zvuk nabídky na přiložený vzorek PFP a každou úroveň na maximum. Skladba na pozadí zůstane zachována.</string>
+    <string name="sound_channel_navigation">Navigace</string>
+    <string name="sound_channel_back">Zpět / Zrušit</string>
+    <string name="sound_channel_confirm">Potvrdit / Použít</string>
+    <string name="sound_channel_error">Chyba / Neplatné</string>
+    <string name="sound_channel_notification">Oznámení</string>
+    <string name="sound_channel_boot">Spouštěcí sekvence</string>
+    <string name="sound_channel_ambience">Zvuk na pozadí</string>
+    <string name="sound_slot_navigation">Navigace</string>
+    <string name="sound_slot_back">Zpět / Zrušit</string>
+    <string name="sound_slot_confirm">Potvrdit / Použít</string>
+    <string name="sound_slot_error">Chyba / Neplatné</string>
+    <string name="sound_slot_notification">Oznámení</string>
+    <string name="sound_slot_ambience">Skladba na pozadí</string>
+</resources>

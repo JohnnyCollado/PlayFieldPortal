@@ -1,0 +1,625 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared labels used on several of these screens. -->
+    <string name="setd_apply">Applica</string>
+    <string name="setd_cancel">Annulla</string>
+    <string name="setd_select">Seleziona</string>
+    <string name="setd_close">Chiudi</string>
+    <string name="setd_tap_to_dismiss">Seleziona per chiudere</string>
+    <string name="setd_unavailable">Non disponibile</string>
+    <string name="setd_loading">Caricamento…</string>
+    <string name="setd_error">Errore</string>
+    <string name="setd_error_tap_to_dismiss">"%1$s  (seleziona per chiudere)"</string>
+    <string name="setd_testing">Verifica…</string>
+    <string name="setd_key_replace_placeholder">"••••••••  (seleziona per sostituire)"</string>
+    <string name="setd_pfp_default">Predefinito PFP</string>
+    <string name="setd_from_theme">Dal tema</string>
+    <string name="setd_custom_video">Video personalizzato</string>
+    <string name="setd_custom_sound">Suono personalizzato</string>
+
+    <!-- ===== Display ===== -->
+    <string name="setd_display_title">Schermo</string>
+    <string name="setd_group_appearance">Aspetto</string>
+    <string name="setd_group_lock_screen">Schermata di blocco</string>
+    <string name="setd_group_xmb_layout">Layout XMB</string>
+    <string name="setd_group_boot_sequence">Sequenza di avvio</string>
+    <string name="setd_group_game_boot">Game Boot</string>
+    <string name="setd_group_orientation">Orientamento</string>
+    <string name="setd_group_interface">Interfaccia</string>
+    <string name="setd_group_performance">Prestazioni</string>
+    <string name="setd_group_games">Giochi</string>
+
+    <!-- Wallpaper -->
+    <string name="setd_wallpaper_title">Sfondo</string>
+    <string name="setd_wallpaper_choose">Scegli sfondo</string>
+    <string name="setd_wallpaper_choose_motion_set">Sfondo animato impostato: un video in loop sostituisce l\'onda</string>
+    <string name="setd_wallpaper_choose_custom_set">Sfondo personalizzato impostato: sostituisce l\'onda</string>
+    <string name="setd_wallpaper_choose_none">Scegli un\'immagine o un breve video (PNG, JPG, WEBP, MP4, WEBM, GIF): sostituisce l\'onda</string>
+    <string name="setd_wallpaper_preview">Anteprima sfondo</string>
+    <string name="setd_wallpaper_preview_sublabel">Mostra lo sfondo selezionato a schermo intero</string>
+    <string name="setd_wallpaper_reset_row">Ripristina sfondo</string>
+    <string name="setd_wallpaper_reset_row_sublabel">Rimuove lo sfondo personalizzato e ripristina lo sfondo predefinito</string>
+    <string name="setd_wallpaper_preview_cd">Anteprima dello sfondo</string>
+    <string name="setd_wallpaper_unsupported">Formato non supportato: usa PNG, JPG, WEBP, MP4, WEBM o GIF</string>
+    <string name="setd_wallpaper_applied">Sfondo applicato</string>
+    <string name="setd_wallpaper_unreadable">Impossibile leggere il file: provane un altro</string>
+    <string name="setd_wallpaper_motion_applied">Sfondo animato applicato</string>
+    <string name="setd_wallpaper_reset">Sfondo ripristinato al predefinito</string>
+    <string name="setd_wallpaper_none">Nessuno sfondo ancora selezionato</string>
+
+    <!-- Lock screen image -->
+    <string name="setd_lock_choose">Scegli immagine della schermata di blocco</string>
+    <string name="setd_lock_choose_busy">Impostazione della schermata di blocco…</string>
+    <string name="setd_lock_choose_from_theme">Impostata dal tema applicato: scegli un\'immagine per usarne una tua</string>
+    <string name="setd_lock_choose_set">La tua immagine è sulla schermata di blocco</string>
+    <string name="setd_lock_choose_none">Scegli un\'immagine (PNG, JPG, WEBP) per la schermata di blocco del dispositivo</string>
+    <string name="setd_lock_use_wallpaper">Usa lo sfondo del launcher</string>
+    <string name="setd_lock_use_wallpaper_motion">Usa un fotogramma fisso dello sfondo animato</string>
+    <string name="setd_lock_use_wallpaper_still">Usa lo sfondo dietro l\'XMB</string>
+    <string name="setd_lock_reset_row">Ripristina schermata di blocco</string>
+    <string name="setd_lock_reset_row_sublabel">Torna alla schermata di blocco predefinita del dispositivo</string>
+    <string name="setd_lock_tray_label">Schermata di blocco</string>
+    <string name="setd_lock_unreadable">Impossibile leggere l\'immagine</string>
+    <string name="setd_lock_no_wallpaper">Il launcher non ha un\'immagine di sfondo da usare</string>
+    <string name="setd_lock_reset_done">Schermata di blocco ripristinata al predefinito del dispositivo</string>
+    <string name="setd_lock_reset_failed">Il dispositivo non ha ripristinato la schermata di blocco. Mostra ancora l\'immagine attuale.</string>
+    <string name="setd_lock_set_done">Immagine della schermata di blocco impostata</string>
+
+    <!-- Pick-one options -->
+    <string name="setd_opt_wave_style_title">Stile dell\'onda</string>
+    <string name="setd_opt_wave_style_summary">Quanto è vivace l\'onda dello sfondo.</string>
+    <string name="setd_opt_background_motion_title">Movimento dello sfondo</string>
+    <string name="setd_opt_background_motion_summary">Quanto è vivace lo sfondo animato.</string>
+    <string name="setd_motion_animated">In movimento</string>
+    <string name="setd_motion_animated_detail">Movimento completo</string>
+    <string name="setd_motion_reduced">In movimento, attenuato</string>
+    <string name="setd_wave_reduced_detail">Più tenue, più calmo</string>
+    <string name="setd_bgmotion_reduced_detail">Più lento, più calmo</string>
+    <string name="setd_motion_static">Fermo</string>
+    <string name="setd_wave_static_detail">Fermo</string>
+    <string name="setd_bgmotion_static_detail">Immagine fissa</string>
+    <string name="setd_motion_reduced_static">Fermo, attenuato</string>
+    <string name="setd_opt_icon_legibility_title">Leggibilità icone</string>
+    <string name="setd_opt_icon_legibility_summary">Come le icone XMB si distinguono dallo sfondo.</string>
+    <string name="setd_icon_legibility_light_detail">Per icone scure</string>
+    <string name="setd_icon_legibility_auto_detail">Segue il colore dell\'icona</string>
+    <string name="setd_opt_item_list_motion_title">Movimento elenco elementi</string>
+    <string name="setd_opt_item_list_motion_summary">Come si muove l\'elenco mentre lo scorri. Riavvolgi fa scivolare l\'elemento selezionato dietro l\'icona della categoria e si riproduce al contrario salendo; Scivola sposta tutto l\'elenco insieme.</string>
+    <string name="setd_opt_umd_slot_title">Slot UMD</string>
+    <string name="setd_opt_umd_slot_summary">Quale gioco occupa lo slot UMD.</string>
+    <string name="setd_umd_inserted_detail">Solo un gioco che hai inserito</string>
+    <string name="setd_umd_recent_detail">Altrimenti l\'ultimo gioco giocato</string>
+    <string name="setd_opt_text_legibility_title">Leggibilità testo</string>
+    <string name="setd_opt_text_legibility_summary">Non ancora applicata. Salvata con i tuoi temi e backup per un aggiornamento futuro.</string>
+    <string name="setd_opt_orientation_title">Orientamento schermo</string>
+    <string name="setd_opt_orientation_summary">Se PFP ruota con il dispositivo. Segui dispositivo mostra un invito a ruotare in verticale (per Tasker / cambio launcher).</string>
+    <string name="setd_orientation_landscape">Orizzontale</string>
+    <string name="setd_orientation_landscape_detail">PFP resta in orizzontale</string>
+    <string name="setd_orientation_follow">Segui dispositivo</string>
+    <string name="setd_orientation_follow_detail">Ruota con il dispositivo</string>
+    <string name="setd_opt_touch_nav_title">Pulsante di navigazione touch</string>
+    <string name="setd_opt_touch_nav_summary">Il pulsante a schermo Cassetto app / Indietro.</string>
+    <string name="setd_touch_nav_auto">Auto</string>
+    <string name="setd_touch_nav_auto_detail">Solo quando usi il touch</string>
+    <string name="setd_touch_nav_show">Mostra sempre</string>
+    <string name="setd_touch_nav_hide">Nascondi sempre</string>
+    <string name="setd_touch_nav_hide_detail">Solo controller</string>
+    <string name="setd_opt_touch_sens_title">Sensibilità touch</string>
+    <string name="setd_opt_touch_sens_summary">Quanto deve essere lungo uno scorrimento per ogni passo dell\'XMB.</string>
+    <string name="setd_touch_sens_low">Bassa</string>
+    <string name="setd_touch_sens_low_detail">Più stabile</string>
+    <string name="setd_touch_sens_normal">Normale</string>
+    <string name="setd_touch_sens_high">Alta</string>
+    <string name="setd_touch_sens_high_detail">Scorrimento più rapido</string>
+
+    <!-- Appearance toggles -->
+    <string name="setd_solid_icons">Icone non selezionate piene</string>
+    <string name="setd_solid_icons_sublabel">Disegna le icone non selezionate a piena opacità: la selezione resta riconoscibile da dimensione ed etichetta</string>
+    <string name="setd_text_shadow">Ombra del testo</string>
+    <string name="setd_text_shadow_sublabel">Ombra dietro il testo di aiuto delle righe: lo mantiene leggibile sulle zone chiare dello sfondo</string>
+
+    <!-- Font colour -->
+    <string name="setd_font_colour">Colore del testo</string>
+    <string name="setd_font_colour_sublabel">Colore di etichette e testo in tutta l\'interfaccia</string>
+    <string name="setd_font_colour_theme_default">Predefinito del tema</string>
+    <string name="setd_sub_font_colour">Colore testo secondario</string>
+    <string name="setd_sub_font_colour_sublabel">Colore di sottotitoli, descrizioni e valori. Segue il colore del testo finché non lo imposti</string>
+    <string name="setd_sub_font_colour_same">Uguale al colore del testo</string>
+    <string name="setd_sub_font_colour_reset">Ripristina colore testo secondario</string>
+    <string name="setd_sub_font_colour_reset_sublabel">Torna a seguire il colore del testo</string>
+    <string name="setd_font_colour_reset">Ripristina colore del testo</string>
+    <string name="setd_font_colour_reset_sublabel">Torna al colore fornito dal tema attuale</string>
+    <string name="setd_picker_font_title">Colore del testo</string>
+    <string name="setd_picker_sub_font_title">Colore testo secondario</string>
+    <string name="setd_contrast_title">Il colore del testo potrebbe essere poco leggibile</string>
+    <string name="setd_text_contrast_notice">Questo colore ha un contrasto di %1$s con questo sfondo, sotto la soglia di leggibilità di 4.5:1. Il testo potrebbe essere difficile da leggere.</string>
+    <string name="setd_contrast_ok">OK</string>
+    <string name="setd_contrast_dont_warn">Non avvisarmi più</string>
+
+    <!-- XMB layout -->
+    <string name="setd_xmb_layout_intro">Posiziona l\'XMB dal vivo per questo schermo: ridimensionalo e sposta la barra trasversale in alto/basso e a sinistra/destra sopra l\'interfaccia reale. Ogni dimensione di schermo (portatile, pieghevole, tablet) mantiene la propria regolazione.</string>
+    <string name="setd_xmb_adjust">Regola layout XMB</string>
+    <string name="setd_xmb_adjust_sublabel">Editor dal vivo: ridimensiona e riposiziona la barra trasversale con la croce direzionale o i cursori</string>
+    <string name="setd_psp_row">XMB PSP biblicamente accurato</string>
+    <string name="setd_psp_row_applied">Applicato a questo schermo. Cambia il layout con Regola layout XMB per usarlo di nuovo</string>
+    <string name="setd_psp_row_apply">Applica a questo schermo le proporzioni originali della PSP</string>
+    <string name="setd_psp_confirm_title">Applicare XMB PSP biblicamente accurato?</string>
+    <string name="setd_psp_confirm_message">Imposta la scala dell\'XMB e la posizione della barra trasversale di questo schermo sulle proporzioni originali della PSP. Il layout attuale per questa dimensione di schermo viene sostituito; le altre dimensioni mantengono il loro.</string>
+
+    <!-- Boot sequence -->
+    <string name="setd_boot_show">Mostra sequenza di avvio</string>
+    <string name="setd_boot_show_sublabel">Animazione di avvio in stile PSP a ogni apertura</string>
+    <string name="setd_boot_resume">Mostra sequenza di avvio alla ripresa</string>
+    <string name="setd_boot_resume_sublabel">Riproducila anche quando torni da un gioco</string>
+    <string name="setd_boot_video">Boot Video</string>
+    <string name="setd_boot_video_sublabel">Riproduci un tuo video al posto dell\'animazione del logo PFP %1$s</string>
+    <string name="setd_gameboot">Game Boot</string>
+    <string name="setd_gameboot_sublabel">"Una breve presentazione tra la conferma di un gioco e l\'apertura dell\'emulatore: cinque secondi quella integrata, fino a dieci con una tua clip. Si salta con Conferma o Indietro.  Disattivato significa avvio silenzioso: niente animazione, niente suono."</string>
+    <string name="setd_gameboot_video">Video Game Boot</string>
+    <string name="setd_gameboot_video_sublabel">Sostituisci la sequenza integrata con una tua clip, riprodotta con il suo audio al livello Game Boot in Audio ▸ Livelli %1$s</string>
+    <plurals name="setd_video_cap">
+        <item quantity="one">(MP4 o WebM, fino a %1$d secondo)</item>
+        <item quantity="many">(MP4 o WebM, fino a %1$d secondi)</item>
+        <item quantity="other">(MP4 o WebM, fino a %1$d secondi)</item>
+    </plurals>
+
+    <!-- Media rows (shared with the Sound screen). -->
+    <string name="setd_media_preview">Anteprima</string>
+    <string name="setd_media_default">Predefinito</string>
+    <string name="setd_media_use_default_prompt">Usa predefinito</string>
+    <string name="setd_media_preview_cd">Anteprima di %1$s</string>
+    <string name="setd_media_use_default_cd">Usa il predefinito PFP per %1$s</string>
+
+    <!-- Interface / performance / games -->
+    <string name="setd_options_hint_sublabel">Mostra l\'etichetta “Opzioni” in attesa sopra gli elementi XMB con un menu contestuale</string>
+    <string name="setd_hint_delay">Ritardo suggerimento</string>
+    <string name="setd_hint_delay_sublabel">Mostra dopo %1$s di inattività (1–5 secondi)</string>
+    <string name="setd_thermal">Rilevamento surriscaldamento</string>
+    <string name="setd_thermal_sublabel">Blocca lo sfondo (onda o sfondo animato) mentre il dispositivo segnala che si sta scaldando</string>
+    <string name="setd_battery_saver">Modalità risparmio batteria</string>
+    <string name="setd_battery_saver_sublabel">Blocca lo sfondo (onda o sfondo animato) quando il Risparmio energetico è attivo</string>
+    <string name="setd_direct_launch">Avvia i giochi direttamente</string>
+    <string name="setd_direct_launch_sublabel">Conferma avvia subito il gioco invece di aprire Dettagli gioco: usa \"Visualizza dettagli gioco\" nel menu Opzioni di un gioco per modificarlo</string>
+
+    <!-- Words around media rows in Settings -->
+    <string name="setd_slot_boot_video">Boot Video</string>
+    <string name="setd_slot_gameboot_video">Video Game Boot</string>
+    <string name="setd_slot_sound_name">Suono %1$s</string>
+    <string name="setd_dropped_header">Non installati da questo tema:</string>
+    <string name="setd_dropped_item">%1$s: %2$s</string>
+
+    <!-- ===== Themes ===== -->
+    <string name="setd_themes_title">Temi</string>
+    <string name="setd_color_scheme">Schema colori</string>
+    <string name="setd_color_scheme_custom_active">Colore tema personalizzato attivo: scegliere un preset lo sostituisce</string>
+    <string name="setd_color_scheme_sublabel">Colori di sfondo in stile PSP, con anteprima dal vivo</string>
+    <string name="setd_custom_theme_color">Colore tema personalizzato</string>
+    <string name="setd_custom_theme_color_sublabel">Da un tema importato: seleziona per rimuoverlo e tornare allo schema colori</string>
+    <string name="setd_group_icon_color">Colore icone</string>
+    <string name="setd_custom_icon_color_title">Colore icone personalizzato</string>
+    <string name="setd_group_icons">Icone</string>
+    <string name="setd_customize_icons">Personalizza icone XMB</string>
+    <string name="setd_customize_icons_sublabel">Barra trasversale, elementi, console e supporti fisici: nell\'ordine dell\'XMB, dal vivo sopra l\'XMB</string>
+    <string name="setd_custom_icons_none">Nessuna personalizzata</string>
+    <string name="setd_custom_icons_count">%1$d personalizzate</string>
+    <string name="setd_group_my_themes">I miei temi</string>
+    <string name="setd_new_from_photo">Nuovo tema da foto</string>
+    <string name="setd_new_from_photo_sublabel">Scegli un\'immagine: sfondo e colore vengono impostati da essa</string>
+    <string name="setd_group_active_theme">Tema attivo</string>
+    <string name="setd_current_theme">Tema attuale</string>
+    <string name="setd_theme_default_name">Predefinito</string>
+    <string name="setd_reset_to_default">Ripristina predefinito</string>
+    <string name="setd_reset_to_default_sublabel">Rimuove lo sfondo applicato, i colori del tema e le icone personalizzate</string>
+    <string name="setd_group_install">Installa</string>
+    <string name="setd_save_look_row">Salva l\'aspetto attuale come tema</string>
+    <string name="setd_save_look_row_sublabel">Raccogli icone, sfondo, colori e animazioni in un .pfptheme condivisibile</string>
+    <string name="setd_save_look_title">Salva aspetto attuale come tema</string>
+    <string name="setd_theme_name_placeholder">Nome del tema</string>
+    <string name="setd_import_ptf">Importa tema PSP (.ptf)</string>
+    <string name="setd_import_ptf_sublabel">Usa sfondo, colore e icone corrispondenti del tema</string>
+    <string name="setd_import_pfptheme">Importa tema (.pfptheme)</string>
+    <string name="setd_import_pfptheme_sublabel">Un tema condiviso da PlayFieldPortal</string>
+
+    <!-- Saved theme cards and menu. -->
+    <string name="setd_theme_older_format">Formato precedente</string>
+    <string name="setd_theme_share">Condividi</string>
+    <string name="setd_theme_update">Aggiorna</string>
+    <string name="setd_theme_update_file">Aggiorna file del tema</string>
+    <string name="setd_theme_rename">Rinomina tema</string>
+    <string name="setd_theme_delete">Elimina tema</string>
+    <string name="setd_theme_delete_title">Eliminare il tema?</string>
+    <string name="setd_theme_delete_message">\"%1$s\" verrà eliminato. L\'operazione non può essere annullata.</string>
+    <string name="setd_theme_delete_confirm">Elimina</string>
+    <string name="setd_theme_share_chooser">Condividi tema</string>
+
+    <!-- Apply-theme question. -->
+    <string name="setd_apply_theme_title">Applicare \"%1$s\"?</string>
+    <string name="setd_apply_base_message">Questo cambia i colori, le icone e lo sfondo del launcher.</string>
+    <string name="setd_apply_use_themes">Usa quelli del tema</string>
+    <string name="setd_apply_keep_mine">Mantieni i miei</string>
+    <string name="setd_apply_turn_on">Attiva</string>
+    <string name="setd_apply_leave_off">Lascia disattivato</string>
+    <string name="setd_apply_replace_icons">Questo tema ha icone proprie per %1$s, ma le tue sono impostate e vengono mostrate al loro posto. Usare quelle del tema? Le tue verranno rimosse per questi elementi.</string>
+    <string name="setd_apply_replace_media">Questo tema ha %1$s propri, ma i tuoi sono impostati e vengono riprodotti al loro posto. Usare quelli del tema? I tuoi verranno rimossi per questi elementi.</string>
+    <string name="setd_apply_boot_off">La sequenza di avvio è disattivata: attivala per riprodurre il Boot Video del tema.</string>
+    <string name="setd_apply_gameboot_off">Game Boot è disattivato: attivalo per riprodurre il video Game Boot del tema.</string>
+    <string name="setd_apply_lock_screen">Ha anche un\'immagine per la schermata di blocco: ti verrà chiesto dopo l\'applicazione.</string>
+    <string name="setd_lock_offer_title">Impostare la schermata di blocco?</string>
+    <string name="setd_lock_offer_message">\"%1$s\" ha un\'immagine per la schermata di blocco. Usarla come schermata di blocco del dispositivo? Ripristinando il tema la schermata di blocco torna com\'era.</string>
+    <string name="setd_lock_offer_confirm">Imposta schermata di blocco</string>
+    <string name="setd_lock_offer_cancel">Non ora</string>
+
+    <!-- Notification-tray messages about themes. -->
+    <string name="setd_theme_reset_done">Tema ripristinato: torna l\'aspetto predefinito</string>
+    <string name="setd_theme_created">Creato \"%1$s\"</string>
+    <string name="setd_theme_created_derived">Creato \"%1$s\": colore ricavato dalla foto</string>
+    <string name="setd_theme_image_unreadable">Impossibile leggere l\'immagine</string>
+    <string name="setd_theme_apply_failed">Impossibile applicare il tema</string>
+    <string name="setd_theme_lock_unreadable">Impossibile leggere l\'immagine della schermata di blocco di questo tema</string>
+    <string name="setd_theme_lock_set">Schermata di blocco impostata da \"%1$s\"</string>
+    <string name="setd_theme_saved">Salvato \"%1$s\"</string>
+    <string name="setd_theme_save_failed">Impossibile salvare il tema</string>
+    <string name="setd_theme_fallback_name">tema</string>
+    <string name="setd_theme_updated">\"%1$s\" aggiornato al formato attuale dei temi</string>
+    <string name="setd_theme_update_failed">Impossibile aggiornare \"%1$s\": il file originale è rimasto com\'era</string>
+    <string name="setd_theme_export_failed">Impossibile esportare il tema</string>
+    <string name="setd_theme_imported">Importato \"%1$s\"</string>
+    <string name="setd_theme_import_unreadable">Impossibile aprire il file</string>
+    <string name="setd_theme_import_too_large">Il tema è troppo grande da importare</string>
+    <string name="setd_theme_import_out_of_memory">Memoria insufficiente per importare il tema: il suo sfondo animato è troppo grande</string>
+    <string name="setd_theme_import_not_a_bundle">Non è un file .pfptheme valido</string>
+    <string name="setd_theme_import_damaged_wallpaper">Lo sfondo di questo tema è danneggiato</string>
+    <string name="setd_theme_import_not_saved">Impossibile salvare il tema importato</string>
+
+    <!-- ===== Artwork ===== -->
+    <string name="setd_artwork_title">Immagini</string>
+    <string name="setd_group_artwork_library">Libreria immagini</string>
+    <string name="setd_artwork_folder_row">Cartella immagini e importazione</string>
+    <string name="setd_artwork_folder_sublabel">Scegli dove salvare le immagini e importa quelle esistenti da ES-DE</string>
+    <string name="setd_artwork_folder_unavailable_sublabel">Non disponibile. Ricollegala per riprendere a salvare nuove immagini</string>
+    <string name="setd_group_artwork_status">Stato immagini della libreria</string>
+    <string name="setd_status_total">Giochi totali</string>
+    <string name="setd_status_complete">Complete</string>
+    <string name="setd_status_missing">Mancanti</string>
+    <string name="setd_status_stale">Obsolete / Non valide</string>
+    <string name="setd_refresh_status">Aggiorna stato</string>
+    <string name="setd_refresh_checking">Controllo dei file…</string>
+    <string name="setd_refresh_sublabel">Ricontrolla le immagini su disco</string>
+    <string name="setd_group_scrape">Recupera immagini</string>
+    <string name="setd_scrape_progress">"%1$d / %2$d  —  %3$s"</string>
+    <string name="setd_scrape_counts">%1$d riusciti · %2$d non riusciti</string>
+    <string name="setd_scrape_background">Viene eseguito in background: puoi uscire da questa schermata.</string>
+    <string name="setd_scrape_starting">Avvio…</string>
+    <string name="setd_scrape_cancel">Annulla recupero</string>
+    <string name="setd_scrape_cancel_sublabel">Si ferma dopo il gioco attuale: le immagini scaricate finora vengono mantenute</string>
+    <string name="setd_scrape_all">Recupera di nuovo per tutti i giochi</string>
+    <string name="setd_scrape_all_sublabel">Cancella e riscarica le immagini di ogni gioco</string>
+    <string name="setd_scrape_missing">Recupera solo i giochi mancanti</string>
+    <string name="setd_scrape_missing_sublabel">Scarica solo i giochi con immagini mancanti o non valide: mantiene quelle valide</string>
+    <string name="setd_scrape_done_all">Nuovo recupero per tutti i giochi: %1$d riusciti, %2$d non riusciti su %3$d</string>
+    <string name="setd_scrape_done_missing">Recupero dei giochi mancanti: %1$d riusciti, %2$d non riusciti su %3$d</string>
+    <string name="setd_scrape_cancelled">Recupero annullato: le immagini scaricate finora vengono mantenute</string>
+    <string name="setd_scrape_failed">Recupero non riuscito: %1$s</string>
+    <string name="setd_scrape_unknown_error">errore sconosciuto</string>
+    <string name="setd_rescrape_title">Recuperare di nuovo tutti i giochi?</string>
+    <string name="setd_rescrape_confirm">Recupera tutto</string>
+    <plurals name="setd_rescrape_message">
+        <item quantity="one">Le immagini di %1$d gioco verranno cancellate e recuperate di nuovo. Le immagini esistenti verranno sostituite. Continuare?</item>
+        <item quantity="many">Le immagini di tutti i %1$d giochi verranno cancellate e recuperate di nuovo. Le immagini esistenti verranno sostituite. Continuare?</item>
+        <item quantity="other">Le immagini di tutti i %1$d giochi verranno cancellate e recuperate di nuovo. Le immagini esistenti verranno sostituite. Continuare?</item>
+    </plurals>
+    <string name="setd_group_source_priority">Priorità delle fonti</string>
+    <string name="setd_source_primary">Principale</string>
+    <string name="setd_source_fallback">Riserva %1$d</string>
+    <string name="setd_source_screenscraper_hash">ScreenScraper (hash ROM)</string>
+    <string name="setd_source_steamgriddb_artwork">SteamGridDB (immagini)</string>
+    <string name="setd_group_art_preferences">Preferenze immagini</string>
+    <string name="setd_icon_display">Visualizzazione icone dei giochi</string>
+    <string name="setd_icon_display_sublabel">Predefinita per ogni console: modificala per console o per gioco dai rispettivi menu Opzioni</string>
+    <string name="setd_animated_icons">Icone animate</string>
+    <string name="setd_animated_icons_sublabel">Riproduci la video snap di un gioco nella sua icona dopo averlo selezionato per un po\' (modalità Icona personalizzata; saltato con batteria scarica)</string>
+    <string name="setd_snap_delay">Ritardo video snap</string>
+    <string name="setd_snap_delay_sublabel">Resta su un gioco per %1$s prima che parta la sua video snap (1–5 secondi): ritardi più lunghi evitano scatti mentre navighi</string>
+    <string name="setd_crop_preview">Anteprima ritaglio</string>
+    <string name="setd_crop_preview_sublabel">Mostra il riquadro finito nell\'angolo mentre ritagli le immagini (Ⓨ lo attiva/disattiva anche nell\'editor di ritaglio)</string>
+    <string name="setd_prefer_sgdb_heroes">Preferisci hero di SteamGridDB</string>
+    <string name="setd_prefer_sgdb_heroes_sublabel">Prova prima SteamGridDB per le immagini hero/banner</string>
+    <string name="setd_download_heroes">Scarica immagini hero</string>
+    <string name="setd_download_heroes_sublabel">Banner larghi mostrati nella vista dettagli del gioco</string>
+    <string name="setd_download_logos">Scarica loghi trasparenti</string>
+    <string name="setd_download_logos_sublabel">Loghi PNG trasparenti sovrapposti all\'immagine hero</string>
+    <string name="setd_download_manuals">Scarica manuali dei giochi</string>
+    <string name="setd_download_manuals_sublabel">Manuali PDF da ScreenScraper: si aprono dal menu Opzioni del gioco</string>
+    <string name="setd_download_video_snaps">Scarica video snap</string>
+    <string name="setd_download_video_snaps_sublabel">Brevi clip di gameplay da ScreenScraper: file di grandi dimensioni</string>
+    <string name="setd_artwork_region">Regione immagini (%1$s)</string>
+    <string name="setd_artwork_region_sublabel">Di quale regione preferire copertine e loghi quando un gioco ne ha diversi</string>
+    <string name="setd_region_no_preference">Nessuna preferenza</string>
+
+    <!-- Provider keys. -->
+    <string name="setd_api_key">Chiave API</string>
+    <string name="setd_api_key_saved">Chiave API (salvata)</string>
+    <string name="setd_group_sgdb_api">API SteamGridDB</string>
+    <string name="setd_sgdb_key_placeholder">Incolla la tua chiave SteamGridDB</string>
+    <string name="setd_sgdb_key_helper">Ottieni una chiave gratuita su steamgriddb.com/api</string>
+    <string name="setd_save_api_key">Salva chiave API</string>
+    <string name="setd_remove_api_key">Rimuovi chiave API</string>
+    <string name="setd_remove_api_key_sublabel">Le immagini di SteamGridDB verranno disattivate</string>
+    <string name="setd_group_tgdb_api">API TheGamesDB</string>
+    <string name="setd_tgdb_key_placeholder">Incolla la tua chiave TheGamesDB</string>
+    <string name="setd_tgdb_key_helper">Richiedi una chiave a TheGamesDB su thegamesdb.net</string>
+    <string name="setd_save_tgdb_key">Salva chiave TheGamesDB</string>
+    <string name="setd_remove_tgdb_key">Rimuovi chiave TheGamesDB</string>
+    <string name="setd_remove_tgdb_key_sublabel">TheGamesDB verrà saltato come fonte</string>
+    <string name="setd_group_igdb">Credenziali IGDB (facoltative)</string>
+    <string name="setd_igdb_client_id">Client ID</string>
+    <string name="setd_igdb_client_id_saved">Client ID (salvato)</string>
+    <string name="setd_igdb_client_id_placeholder">Twitch Client ID</string>
+    <string name="setd_igdb_client_secret">Client secret</string>
+    <string name="setd_igdb_client_secret_placeholder">Twitch Client Secret</string>
+    <string name="setd_igdb_helper">Crea un\'app su dev.twitch.tv: migliora la copertura di riserva per i giochi moderni</string>
+    <string name="setd_test_credentials">Verifica credenziali</string>
+    <string name="setd_save_credentials">Salva credenziali</string>
+    <string name="setd_clear_igdb">Cancella credenziali IGDB</string>
+    <string name="setd_clear_igdb_sublabel">IGDB verrà saltato come fonte di riserva</string>
+    <string name="setd_ss_status">Stato</string>
+    <string name="setd_ss_status_active_sublabel">Il recupero basato su hash è attivo (coppia sviluppatore integrata)</string>
+    <string name="setd_ss_status_inactive_sublabel">ScreenScraper non è disponibile in questa build: nessuna coppia sviluppatore inclusa</string>
+    <string name="setd_ss_active">Attivo</string>
+    <string name="setd_ss_inactive">Inattivo</string>
+    <string name="setd_group_ss_account">Account ScreenScraper (facoltativo)</string>
+    <string name="setd_ss_username_saved">Nome utente (salvato: %1$s)</string>
+    <string name="setd_ss_username">Nome utente</string>
+    <string name="setd_ss_tap_to_replace">Seleziona per sostituire</string>
+    <string name="setd_ss_username_placeholder">Nome utente ScreenScraper</string>
+    <string name="setd_ss_password">Password</string>
+    <string name="setd_ss_password_placeholder">Password ScreenScraper</string>
+    <string name="setd_ss_password_helper">Account gratuito su screenscraper.fr: aumenta il limite di richieste e la quota giornaliera. Salvato in forma crittografata su questo dispositivo (Android Keystore).</string>
+    <string name="setd_test_account">Verifica account</string>
+    <string name="setd_save_account">Salva account</string>
+    <string name="setd_clear_ss_account">Cancella account ScreenScraper</string>
+    <string name="setd_clear_ss_account_sublabel">Il recupero continua con i limiti per utenti anonimi</string>
+    <string name="setd_secret_sgdb_key">La chiave SteamGridDB</string>
+    <string name="setd_secret_tgdb_key">La chiave TheGamesDB</string>
+    <string name="setd_secret_igdb_secret">Il client secret IGDB</string>
+    <string name="setd_secret_ss_password">La password ScreenScraper</string>
+    <string name="setd_secret_unprotected">%1$s è stato salvato, ma il keystore sicuro di questo dispositivo non era disponibile, quindi è memorizzato senza crittografia. Cancellandolo e reinserendolo in seguito verrà fatto un nuovo tentativo.</string>
+
+    <!-- Cache -->
+    <string name="setd_group_cache">Cache</string>
+    <string name="setd_cache_size">Dimensione immagini salvate</string>
+    <string name="setd_cache_size_sublabel">Cache delle immagini + immagini salvate su questo dispositivo (la tua cartella immagini non è conteggiata)</string>
+    <string name="setd_clear_ss_cache">Cancella cache URL ScreenScraper</string>
+    <string name="setd_clear_ss_cache_sublabel">Dimentica gli URL delle immagini in cache: il prossimo recupero interroga di nuovo ScreenScraper per ogni gioco. Innocuo; non elimina mai immagini</string>
+    <string name="setd_ss_cache_cleared">Cache URL ScreenScraper cancellata</string>
+    <string name="setd_clear_all_artwork">Cancella tutte le immagini</string>
+    <string name="setd_clear_all_artwork_sublabel">Ripartenza da zero: rimuove immagini in cache, immagini salvate e i collegamenti alle immagini di ogni gioco. I file nella tua cartella immagini vengono mantenuti: ricollega o recupera di nuovo per ripristinarli</string>
+
+    <!-- ===== Artwork Folder & Import ===== -->
+    <string name="setd_import_title">Cartella immagini e importazione</string>
+    <string name="setd_import_group_folder">Cartella immagini</string>
+    <string name="setd_import_change_folder">Cambia cartella immagini</string>
+    <string name="setd_import_choose_folder">Scegli cartella immagini</string>
+    <string name="setd_import_folder_not_set">Non impostata: seleziona per scegliere dove PFP salva le immagini</string>
+    <string name="setd_import_group_existing">Importa immagini esistenti</string>
+    <string name="setd_import_no_launchers">Nessun launcher trovato</string>
+    <string name="setd_import_no_launchers_sublabel">Prima copia o sposta i contenuti multimediali di un altro launcher nella cartella, ad es. import/ES-DE/downloaded_media. Spostare libera spazio ma rimuove le immagini da quel launcher.</string>
+    <plurals name="setd_import_source_systems">
+        <item quantity="one">%1$d cartella di sistema riconosciuta: seleziona per l\'anteprima dell\'importazione</item>
+        <item quantity="many">%1$d cartelle di sistema riconosciute: seleziona per l\'anteprima dell\'importazione</item>
+        <item quantity="other">%1$d cartelle di sistema riconosciute: seleziona per l\'anteprima dell\'importazione</item>
+    </plurals>
+    <string name="setd_import_unrecognized">Struttura non riconosciuta: prevista la struttura downloaded_media di ES-DE</string>
+    <string name="setd_import_scanning">Scansione…</string>
+    <string name="setd_import_rescan">Ripeti scansione cartella import</string>
+    <string name="setd_import_rescan_sublabel">Ricontrolla import/ per cartelle di launcher</string>
+    <string name="setd_import_relinking">Scansione della libreria…</string>
+    <string name="setd_import_relink">Scansiona e ricollega libreria</string>
+    <string name="setd_import_relink_sublabel">Ricollega le immagini della cartella ai tuoi giochi, aggiorna i file spostati o modificati e rimuove i riferimenti a quelli eliminati</string>
+    <string name="setd_import_unmatched">Immagini senza corrispondenza (%1$d)</string>
+    <string name="setd_import_unmatched_sublabel">File nella tua cartella che non corrispondono a nessun gioco: collegali a mano</string>
+    <string name="setd_import_group_storage">Memoria dell\'app</string>
+    <string name="setd_import_moving">Spostamento delle immagini nella tua cartella…</string>
+    <string name="setd_import_moving_progress">%1$d / %2$d: in esecuzione in background</string>
+    <string name="setd_import_moving_background">Viene eseguito in background: puoi uscire da questa schermata</string>
+    <string name="setd_import_cancel_move">Annulla spostamento</string>
+    <string name="setd_import_cancel_move_sublabel">Le immagini già spostate restano nella cartella</string>
+    <string name="setd_import_move_in">Sposta nella cartella</string>
+    <plurals name="setd_import_move_in_sublabel">
+        <item quantity="one">%1$d file di immagine (%2$s) è stato salvato prima del collegamento di questa cartella e si trova nella memoria dell\'app. Spostarlo lo rende portabile e libera spazio nell\'app. Le immagini bloccate e scelte a mano già presenti nella cartella non vengono mai sovrascritte.</item>
+        <item quantity="many">%1$d file di immagine (%2$s) sono stati salvati prima del collegamento di questa cartella e si trovano nella memoria dell\'app. Spostarli li rende portabili e libera spazio nell\'app. Le immagini bloccate e scelte a mano già presenti nella cartella non vengono mai sovrascritte.</item>
+        <item quantity="other">%1$d file di immagine (%2$s) sono stati salvati prima del collegamento di questa cartella e si trovano nella memoria dell\'app. Spostarli li rende portabili e libera spazio nell\'app. Le immagini bloccate e scelte a mano già presenti nella cartella non vengono mai sovrascritte.</item>
+    </plurals>
+    <string name="setd_import_group_export">Esporta</string>
+    <string name="setd_import_export">Esporta per ES-DE</string>
+    <string name="setd_import_export_sublabel">Copia le tue immagini in una cartella a tua scelta (ad es. downloaded_media di ES-DE): incrementale, la tua libreria non viene mai modificata</string>
+    <string name="setd_import_group_preview">Anteprima importazione</string>
+    <string name="setd_import_building">Creazione anteprima…</string>
+    <string name="setd_import_building_sublabel">Abbinamento delle immagini ai tuoi giochi</string>
+    <string name="setd_import_preview_group">Anteprima importazione: %1$s</string>
+    <string name="setd_import_games_matched">Giochi abbinati</string>
+    <string name="setd_import_files_to_import">File da importare</string>
+    <string name="setd_import_estimated_size">Dimensione stimata</string>
+    <string name="setd_import_details_found">Dettagli dei giochi trovati</string>
+    <string name="setd_import_details_none_sublabel">Copia la cartella gamelists di ES-DE nella cartella import del launcher per portare con te descrizioni, sviluppatori e anni di uscita</string>
+    <string name="setd_import_details_some_sublabel">Descrizioni e dettagli da gamelist.xml: non sovrascrive mai i dati esistenti</string>
+    <string name="setd_import_already_present">Già presenti</string>
+    <string name="setd_import_needs_review">Da controllare</string>
+    <string name="setd_import_unmatched_artwork">Immagini senza corrispondenza</string>
+    <string name="setd_import_skipped_folders">Cartelle di sistema saltate</string>
+    <string name="setd_import_no_games">Nessun gioco nella libreria</string>
+    <string name="setd_import_no_games_sublabel">Immagini trovate per %1$s, ma la tua libreria non ha giochi per questi sistemi: aggiungi prima i giochi, poi ripeti l\'importazione.</string>
+    <string name="setd_import_move_files">Sposta i file (più veloce, libera spazio)</string>
+    <string name="setd_import_move_files_sublabel">Sposta le immagini fuori dalla cartella del launcher invece di copiarle. L\'altro launcher perde questi file.</string>
+    <string name="setd_import_review_group">Controlla abbinamenti ambigui (%1$d)</string>
+    <plurals name="setd_import_possible_games">
+        <item quantity="one">%1$d gioco possibile: seleziona per scegliere</item>
+        <item quantity="many">%1$d giochi possibili: seleziona per scegliere</item>
+        <item quantity="other">%1$d giochi possibili: seleziona per scegliere</item>
+    </plurals>
+    <string name="setd_import_game_number">Gioco n. %1$d</string>
+    <string name="setd_import_assign_sublabel">Assegna questa immagine a questo gioco</string>
+    <string name="setd_import_skip_file">Salta questo file</string>
+    <string name="setd_import_start">Avvia importazione</string>
+    <plurals name="setd_import_start_move">
+        <item quantity="one">Sposta %1$d file nella libreria immagini</item>
+        <item quantity="many">Sposta %1$d file nella libreria immagini</item>
+        <item quantity="other">Sposta %1$d file nella libreria immagini</item>
+    </plurals>
+    <plurals name="setd_import_start_copy">
+        <item quantity="one">Copia %1$d file nella libreria immagini</item>
+        <item quantity="many">Copia %1$d file nella libreria immagini</item>
+        <item quantity="other">Copia %1$d file nella libreria immagini</item>
+    </plurals>
+    <string name="setd_import_cancel_preview">Annulla anteprima</string>
+    <string name="setd_import_group_importing">Importazione</string>
+    <string name="setd_import_cancel">Annulla importazione</string>
+    <string name="setd_import_cancel_sublabel">Le immagini già importate vengono mantenute</string>
+    <string name="setd_import_group_report">Rapporto importazione</string>
+    <string name="setd_import_clear_reports">Cancella rapporti</string>
+    <string name="setd_kind_icon">Copertine</string>
+    <string name="setd_kind_hero">Immagini mix</string>
+    <string name="setd_kind_background">Fanart</string>
+    <string name="setd_kind_logo">Marquee</string>
+    <string name="setd_kind_screenshot">Screenshot</string>
+    <string name="setd_kind_titlescreen">Schermate del titolo</string>
+    <string name="setd_kind_physical_media">Supporti fisici</string>
+    <string name="setd_kind_manual">Manuali</string>
+    <string name="setd_import_link_failed">Impossibile configurare la libreria immagini in quella cartella: potrebbe essere di sola lettura.</string>
+    <string name="setd_import_library_reconnected">Libreria immagini PFP esistente ricollegata.</string>
+    <string name="setd_import_library_created">Libreria immagini creata.</string>
+    <plurals name="setd_import_games_linked">
+        <item quantity="one">%1$d gioco collegato da %2$d file già presenti nella cartella.</item>
+        <item quantity="many">%1$d giochi collegati da %2$d file già presenti nella cartella.</item>
+        <item quantity="other">%1$d giochi collegati da %2$d file già presenti nella cartella.</item>
+    </plurals>
+    <string name="setd_import_place_media">Metti i contenuti multimediali degli altri launcher in import/.</string>
+    <plurals name="setd_import_internal_files">
+        <item quantity="one">%1$d file di immagine è ancora nella memoria dell\'app: vedi Sposta nella cartella qui sotto.</item>
+        <item quantity="many">%1$d file di immagine sono ancora nella memoria dell\'app: vedi Sposta nella cartella qui sotto.</item>
+        <item quantity="other">%1$d file di immagine sono ancora nella memoria dell\'app: vedi Sposta nella cartella qui sotto.</item>
+    </plurals>
+    <plurals name="setd_import_upgraded">
+        <item quantity="one">Libreria immagini aggiornata alla nuova struttura: %1$d file riorganizzato.</item>
+        <item quantity="many">Libreria immagini aggiornata alla nuova struttura: %1$d file riorganizzati.</item>
+        <item quantity="other">Libreria immagini aggiornata alla nuova struttura: %1$d file riorganizzati.</item>
+    </plurals>
+    <string name="setd_import_scan_failed">Impossibile analizzare la cartella import.</string>
+    <string name="setd_import_source_unreadable">Impossibile leggere questa fonte.</string>
+    <string name="setd_import_preview_failed">Anteprima non riuscita: consulta i log.</string>
+    <string name="setd_import_nothing">Niente da importare: è già tutto presente.</string>
+    <string name="setd_import_export_started">Esportazione avviata: avanzamento nella notifica; il risultato compare in Rapporto importazione.</string>
+    <plurals name="setd_relink_files">
+        <item quantity="one">Scansione: %1$d file</item>
+        <item quantity="many">Scansione: %1$d file</item>
+        <item quantity="other">Scansione: %1$d file</item>
+    </plurals>
+    <plurals name="setd_relink_linked">
+        <item quantity="one">%1$d gioco collegato</item>
+        <item quantity="many">%1$d giochi collegati</item>
+        <item quantity="other">%1$d giochi collegati</item>
+    </plurals>
+    <string name="setd_relink_orphans">%1$d senza corrispondenza: vedi Immagini senza corrispondenza</string>
+    <string name="setd_relink_failed">Scansione della libreria non riuscita: consulta i log.</string>
+    <string name="setd_relink_cancelled">Scansione della libreria annullata.</string>
+    <string name="setd_report_title">%1$s — %2$s</string>
+    <string name="setd_report_unreadable">Rapporto illeggibile</string>
+    <string name="setd_report_imported">%1$d importati</string>
+    <string name="setd_report_skipped">%1$d saltati</string>
+    <string name="setd_report_failed">%1$d non riusciti</string>
+    <plurals name="setd_report_game_details">
+        <item quantity="one">%1$d dettaglio di gioco</item>
+        <item quantity="many">%1$d dettagli di gioco</item>
+        <item quantity="other">%1$d dettagli di gioco</item>
+    </plurals>
+    <string name="setd_report_need_review">%1$d da controllare</string>
+    <string name="setd_report_unmatched">%1$d senza corrispondenza</string>
+    <string name="setd_report_cancelled">annullato</string>
+
+    <!-- ===== Unmatched Artwork ===== -->
+    <string name="setd_orphan_title">Immagini senza corrispondenza</string>
+    <string name="setd_orphan_link_title">Collega “%1$s”</string>
+    <string name="setd_orphan_none">Nessun file senza corrispondenza</string>
+    <string name="setd_orphan_none_sublabel">Ogni file di immagine nella tua cartella è collegato a un gioco. Esegui Scansiona e ricollega dopo aver aggiunto file per ricontrollare.</string>
+    <plurals name="setd_orphan_count">
+        <item quantity="one">%1$d file non corrisponde a nessun gioco</item>
+        <item quantity="many">%1$d file non corrispondono a nessun gioco</item>
+        <item quantity="other">%1$d file non corrispondono a nessun gioco</item>
+    </plurals>
+    <string name="setd_orphan_group_file">File</string>
+    <string name="setd_orphan_group_search">Cerca tra i tuoi giochi</string>
+    <string name="setd_orphan_title_field">Titolo</string>
+    <string name="setd_orphan_searching">Ricerca…</string>
+    <string name="setd_orphan_search">Cerca</string>
+    <string name="setd_orphan_search_sublabel">Cerca solo tra i tuoi giochi %1$s: non viene scaricato nulla</string>
+    <string name="setd_orphan_no_search">Nessuna ricerca</string>
+    <string name="setd_orphan_no_search_sublabel">Modifica il titolo qui sopra e premi Cerca per vedere i giochi corrispondenti</string>
+    <string name="setd_orphan_no_match">Nessun gioco corrispondente</string>
+    <string name="setd_orphan_no_match_sublabel">Prova un titolo più breve: di solito basta una sola parola distintiva</string>
+    <plurals name="setd_orphan_matches">
+        <item quantity="one">%1$d corrispondenza: scegli il proprietario</item>
+        <item quantity="many">%1$d corrispondenze: scegli il proprietario</item>
+        <item quantity="other">%1$d corrispondenze: scegli il proprietario</item>
+    </plurals>
+
+    <!-- ===== Achievements ===== -->
+    <string name="setd_ach_subtitle_credentials">Achievement · Credenziali dei fornitori</string>
+    <string name="setd_ach_subtitle_local_windows">Achievement · Windows locale</string>
+    <string name="setd_ach_subtitle_update">Achievement · Aggiorna achievement</string>
+    <string name="setd_ach_subtitle_coins">Shiba Coins</string>
+    <string name="setd_ach_enable">Attiva Shiba Coins</string>
+    <string name="setd_ach_enable_sublabel">Monitora gli achievement come Shiba Coins su RetroAchievements e Steam</string>
+    <string name="setd_ach_connected_as">Connesso come</string>
+    <string name="setd_ach_username">Nome utente</string>
+    <string name="setd_ach_ra_username_placeholder">Il tuo nome utente RA</string>
+    <string name="setd_ach_web_api_key">Chiave Web API</string>
+    <string name="setd_ach_web_api_key_saved">Chiave Web API (salvata)</string>
+    <string name="setd_ach_ra_key_placeholder">Incolla la tua chiave Web API di RA</string>
+    <string name="setd_ach_ra_key_helper">retroachievements.org → Settings → Keys → Web API Key</string>
+    <string name="setd_ach_ra_connect">Collega RetroAchievements</string>
+    <string name="setd_ach_ra_disconnect">Scollega RetroAchievements</string>
+    <string name="setd_ach_ra_disconnect_sublabel">Rimuove nome utente e chiave da questo dispositivo</string>
+    <string name="setd_ach_steam_id">SteamID64 o nome del profilo</string>
+    <string name="setd_ach_steam_id_placeholder">76561… o il tuo nome personalizzato</string>
+    <string name="setd_ach_steam_id_helper">Un nome personalizzato viene convertito in SteamID64 al collegamento</string>
+    <string name="setd_ach_steam_key_placeholder">Incolla la tua chiave Steam Web API</string>
+    <string name="setd_ach_steam_key_helper">steamcommunity.com/dev: i Dettagli di gioco del tuo profilo devono essere pubblici</string>
+    <string name="setd_ach_steam_connect">Collega Steam</string>
+    <string name="setd_ach_steam_disconnect">Scollega Steam</string>
+    <string name="setd_ach_steam_disconnect_sublabel">Rimuove SteamID e chiave da questo dispositivo</string>
+    <string name="setd_ach_ra_connected">RetroAchievements collegato</string>
+    <string name="setd_ach_ra_disconnected">RetroAchievements scollegato</string>
+    <string name="setd_ach_steam_disconnected">Steam scollegato</string>
+    <string name="setd_ach_group_local_steam">Steam locale (emulato)</string>
+    <string name="setd_ach_track_local">Monitora giochi Steam locali (emulati)</string>
+    <string name="setd_ach_track_local_sublabel">Trova i giochi dell\'emulatore, genera i loro dati degli achievement e sincronizza gli sblocchi</string>
+    <string name="setd_ach_goldberg">Installa Goldberg e converti giochi</string>
+    <string name="setd_ach_goldberg_sublabel">Durante la scansione, proponi di scrivere i dati degli achievement nei giochi rilevati così che l\'emulatore possa monitorarli</string>
+    <string name="setd_ach_backup_title">Prima fai un backup dei salvataggi</string>
+    <string name="setd_ach_backup_confirm">Ho fatto il backup: attiva</string>
+    <string name="setd_ach_local_steam_message">Prima di sincronizzare, apri il tuo emulatore Windows e fai un backup dei salvataggi di tutti i giochi Steam emulati che hai già configurato.\n\nMonitorare questi giochi permette a una sincronizzazione di riscrivere la configurazione dell\'emulatore di ogni gioco e di sostituirne i file Steam per registrare gli sblocchi. Un gioco configurato e giocato prima di questa funzione potrebbe altrimenti perdere l\'accesso ai salvataggi esistenti.\n\nViene usata anche la tua chiave Steam Web API per leggere i dati degli achievement: usala a tuo rischio. Il monitoraggio Steam è del tutto facoltativo; lascialo disattivato se preferisci non accettare questi rischi.\n\nPrima fai il backup, poi attiva questa opzione e usa Aggiorna achievement installati.</string>
+    <string name="setd_ach_goldberg_message">Prima di convertire un gioco, apri il tuo emulatore Windows e fai un backup dei salvataggi di tutti i giochi Steam emulati che hai già configurato.\n\nLa conversione riscrive la configurazione dell\'emulatore di ogni gioco e ne sostituisce i file Steam per registrare gli sblocchi. Un gioco configurato e giocato prima di questa funzione potrebbe altrimenti perdere l\'accesso ai salvataggi esistenti.\n\nViene usata anche la tua chiave Steam Web API per leggere i dati degli achievement: usala a tuo rischio. Lascia questa opzione disattivata se preferisci non accettare questi rischi.\n\nPrima fai il backup, poi attiva questa opzione e avvia la scansione dei giochi.</string>
+    <string name="setd_ach_group_update">Aggiornamento</string>
+    <string name="setd_ach_last_updated">Ultimo aggiornamento</string>
+    <string name="setd_ach_never">Mai</string>
+    <string name="setd_ach_auto_updates">Aggiornamenti automatici</string>
+    <string name="setd_ach_updates_paused">Aggiornamenti in pausa fino alla risincronizzazione</string>
+    <string name="setd_ach_updating">Aggiornamento achievement…</string>
+    <string name="setd_ach_update_installed">Aggiorna achievement installati</string>
+    <string name="setd_ach_update_after_match">Viene eseguito automaticamente al termine dell\'abbinamento automatico</string>
+    <string name="setd_ach_update_resume">Risincronizza i giochi su questo dispositivo e riprende gli aggiornamenti automatici</string>
+    <string name="setd_ach_update_check">Controlla se i giochi su questo dispositivo hanno nuovi achievement</string>
+    <string name="setd_ach_group_auto_match">Abbinamento automatico</string>
+    <string name="setd_ach_matching">Abbinamento dei giochi…</string>
+    <string name="setd_ach_auto_match">Abbina giochi automaticamente</string>
+    <string name="setd_ach_auto_match_sublabel">Collega i giochi su questo dispositivo a RetroAchievements (hash ROM) e Steam</string>
+    <string name="setd_ach_group_reset">Ripristino</string>
+    <string name="setd_ach_clearing">Cancellazione degli achievement…</string>
+    <string name="setd_ach_clear_row">Cancella tutti gli achievement monitorati</string>
+    <string name="setd_ach_clear_row_sublabel">Rimuove ogni achievement registrato in Play Field Portal. I tuoi giochi e i collegamenti ai fornitori restano.</string>
+    <string name="setd_ach_clear_title">Cancellare tutti gli achievement monitorati?</string>
+    <string name="setd_ach_clear_message">Verranno rimossi tutti gli achievement registrati in Play Field Portal, compresi i progressi ottenuti e i dati dei giochi non più installati. I tuoi giochi e i collegamenti ai fornitori resteranno. I giochi dovranno essere risincronizzati per mostrare di nuovo i loro achievement.</string>
+    <string name="setd_ach_clear_confirm">Cancella achievement</string>
+
+</resources>

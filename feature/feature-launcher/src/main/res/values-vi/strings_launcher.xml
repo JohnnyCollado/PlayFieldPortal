@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="launch_err_custom_command">Hồ sơ lệnh tùy chỉnh không còn được hỗ trợ. Hãy chuyển trình giả lập này sang phương thức khởi động \"Mở ROM bằng ứng dụng\" hoặc \"Mở một màn hình của ứng dụng\".</string>
+    <string name="launch_err_shortcut_unsupported">Không hỗ trợ khởi động lối tắt từ màn hình này</string>
+    <string name="launch_err_no_package">Chưa ghi nhận gói Android cho %1$s</string>
+    <string name="launch_err_app_not_launchable">Ứng dụng Android chưa được cài hoặc không thể khởi động: %1$s</string>
+    <string name="launch_err_emulator_not_installed">Chưa cài trình giả lập: %1$s (%2$s)</string>
+    <string name="launch_err_wrong_build">%1$s (%2$s) không phải bản dựng như mong đợi: chứng chỉ ký không khớp. Hãy cài lại trình giả lập từ nguồn chính thức.</string>
+    <string name="launch_err_no_activity_for_path">%1$s chưa ghi nhận activity khởi động, nên không thể truyền đường dẫn tệp. Hãy nhập lại mục kiến thức của nó hoặc phát hiện lại trình giả lập.</string>
+    <string name="launch_err_activity_required">Phương thức khởi động này cần tên màn hình của ứng dụng - hồ sơ: %1$s</string>
+    <string name="launch_err_activity_gone">%1$s không còn cung cấp activity khởi động (%2$s). Hãy cập nhật trình giả lập hoặc chọn trình giả lập khác cho nền tảng này.</string>
+    <string name="launch_err_no_launch_id">Chưa ghi nhận ID khởi động cho %1$s. Hãy quét lại thư viện của nó.</string>
+    <string name="launch_err_rom_link_invalid">Liên kết ROM của trò chơi này không hợp lệ. Hãy quét lại thư viện của nó.</string>
+    <string name="launch_err_lost_access">Play Field Portal đã mất quyền truy cập tệp của trò chơi này. Hãy kết nối lại bộ nhớ và quét lại thư viện.</string>
+    <string name="launch_err_rom_path_required">Cần đường dẫn ROM để khởi động %1$s</string>
+    <string name="launch_err_rom_not_found">Không tìm thấy tệp ROM: %1$s</string>
+    <string name="launch_err_no_core">Chưa cấu hình core RetroArch cho nền tảng \'%1$s\' trong hồ sơ \'%2$s\'. Hãy mở RetroArch → Core Downloader để cài core cho hệ máy này.</string>
+    <string name="launch_err_cannot_open_rom_type">%1$s không mở được loại ROM này. Hãy thử cài lại trình giả lập hoặc kiểm tra quyền ứng dụng trong Cài đặt Android.</string>
+    <string name="launch_err_no_file_path">%1$s không có đường dẫn tệp trên thiết bị này, nên không thể báo cho %2$s trò chơi cần khởi động.</string>
+    <string name="launch_err_not_in_rom_folder">%1$s không nằm trong thư mục ROM đã cấu hình, nên không thể truyền cho %2$s. Hãy kiểm tra thư mục đặt cho Memory Card này trong Cài đặt.</string>
+
+    <string name="launch_err_configured_missing">Trình giả lập %1$s chưa được cài hoặc không khả dụng: %2$s</string>
+    <string name="launch_err_core_not_installed">%1$s được đặt làm %2$s, nhưng core đó chưa được cài trong RetroArch. Hãy cài nó hoặc chọn trình giả lập khác.</string>
+    <string name="launch_err_no_longer_available">%1$s được đặt làm %2$s, nhưng không còn khả dụng. Hãy chọn trình giả lập khác.</string>
+    <string name="launch_err_not_configured_for_platform">%1$s chưa được cấu hình cho %2$s</string>
+    <string name="launch_err_no_emulator_for_platform">Chưa cấu hình trình giả lập cho %1$s. Hãy chọn trình giả lập cho trò chơi này hoặc đặt mặc định cho nền tảng.</string>
+
+    <string name="launch_source_per_game">Ghi đè theo trò chơi</string>
+    <string name="launch_source_per_game_lower">ghi đè theo trò chơi</string>
+    <string name="launch_source_memory_card">Mặc định của Memory Card</string>
+    <string name="launch_source_memory_card_lower">mặc định của Memory Card</string>
+    <string name="launch_source_platform">Mặc định của nền tảng</string>
+    <string name="launch_source_platform_lower">mặc định của nền tảng</string>
+    <string name="launch_source_recommended">Đề xuất</string>
+    <string name="launch_source_recommended_lower">đề xuất</string>
+    <string name="launch_phrase_per_game">ghi đè theo trò chơi</string>
+    <string name="launch_phrase_memory_card">trình giả lập của Memory Card</string>
+    <string name="launch_phrase_platform">mặc định của nền tảng</string>
+
+    <!-- Launch hand-off failures -->
+    <string name="launch_err_emulator_not_found">Không tìm thấy trình giả lập. Bạn đã cài nó chưa?</string>
+    <string name="launch_err_permission_denied">Bị từ chối quyền khi khởi động trình giả lập</string>
+    <string name="launch_err_open_emulator">Không thể mở trình giả lập: %1$s</string>
+    <string name="launch_never_foreground">Trình giả lập không hiện lên phía trước sau khi khởi động.</string>
+    <string name="launch_never_appeared">Trình giả lập không xuất hiện. Hãy kiểm tra xem nó đã được cài và cập nhật chưa, rồi thử khởi động lại.</string>
+    <plurals name="launch_history_failed">
+        <item quantity="other">%1$d trong %2$d lần khởi động gần nhất của trò chơi này đã thất bại.</item>
+    </plurals>
+
+    <!-- Launch failure notification -->
+    <string name="launch_rec_title">Không thể khởi động %1$s</string>
+    <string name="launch_rec_could_not_start">Không thể bắt đầu trình giả lập</string>
+    <string name="launch_rec_never_foreground">Trình giả lập không hiện lên phía trước</string>
+    <string name="launch_fact_emulator">Trình giả lập</string>
+    <string name="launch_fact_core">Core</string>
+    <string name="launch_fact_platform">Nền tảng</string>
+    <string name="launch_fact_recent">Lần khởi động gần đây</string>
+    <string name="launch_fact_recent_value">%1$d trong %2$d lần gần nhất thất bại</string>
+
+    <string name="launch_shortcut_request_title">Yêu cầu lối tắt: %1$s (mở %2$s)</string>
+    <string name="launch_shortcut_request_message">Chỉ thêm nếu chính bạn vừa tạo lối tắt này.</string>
+    <string name="launch_shortcut_added_title">Đã thêm lối tắt: %1$s</string>
+    <string name="launch_shortcut_ignored_title">Đã bỏ qua lối tắt: %1$s</string>
+    <string name="launch_shortcut_from">Từ %1$s</string>
+    <string name="launch_windows_added_title">Đã thêm \"%1$s\" vào Trò chơi Windows</string>
+    <string name="launch_windows_added_message">Hoàn tất thiết lập Thư viện Windows để quét thư mục của nó</string>
+
+    <!-- First-run setup prompts -->
+    <string name="launch_setup_add_rom_folder">Thêm thư mục ROM để bắt đầu thư viện</string>
+    <string name="launch_setup_add_console_card">Thêm Memory Card hệ máy để quét vào</string>
+    <string name="launch_setup_install_emulator">Cài trình giả lập để chơi trò chơi</string>
+
+    <!-- Emulator detection notes for an app being added -->
+    <string name="launch_inspect_known">Đã tự điền từ hồ sơ có sẵn cho %1$s. Hãy xác nhận nền tảng rồi lưu.</string>
+    <string name="launch_inspect_best_guess">Phỏng đoán từ cách ứng dụng này mở tệp ROM. Hãy đặt nền tảng, rồi thử một ROM trước khi lưu.</string>
+    <string name="launch_inspect_minimal">Không phát hiện được cách ứng dụng này nhận ROM. Hãy tự điền cài đặt activity / intent, rồi thử một ROM.</string>
+
+    <!-- Emulator knowledge file updates -->
+    <string name="launch_kb_too_many_files">Chỉ có thể nhập tối đa %1$d tệp kiến thức; hãy xóa bớt một tệp trước</string>
+    <string name="launch_kb_installed">Đã cập nhật</string>
+    <string name="launch_kb_not_configured">Bản dựng này chưa thiết lập cập nhật</string>
+    <string name="launch_kb_offline">Không thể kết nối máy chủ cập nhật</string>
+    <string name="launch_kb_too_large">Tệp cập nhật quá lớn</string>
+    <string name="launch_kb_signature_invalid">Chữ ký của bản cập nhật không hợp lệ</string>
+    <string name="launch_kb_needs_app_update">Bản cập nhật này cần phiên bản ứng dụng mới hơn</string>
+    <string name="launch_kb_older">Bản cập nhật cũ hơn bản đã cài</string>
+    <string name="launch_kb_invalid_content">Tệp cập nhật có nội dung không hợp lệ</string>
+    <string name="launch_kb_storage_failed">Không thể lưu bản cập nhật</string>
+    <string name="launch_kb_skipped">Không cần kiểm tra</string>
+
+    <!-- Windows game launchers: why an unrecognised app is listed, and the choice offered for it -->
+    <string name="launch_unknown_gamehub_or_bannerhub">có thể là GameHub hoặc BannerHub</string>
+    <string name="launch_unknown_gamehublite_or_bannerhub">có thể là GameHub Lite hoặc BannerHub</string>
+    <string name="launch_unknown_not_in_list">không có trong danh sách của PFP</string>
+    <string name="launch_choice_not_a_launcher">Không phải launcher</string>
+    <string name="launch_id_prompt_gamehub">ID trò chơi — trên trang trò chơi: chạm Copy cạnh Local Game ID, hoặc ⋮ → Banner Tools → Show Game ID</string>
+    <string name="launch_id_prompt_gamenative">Steam App ID (hoặc app id cửa hàng) của trò chơi đã cài</string>
+</resources>

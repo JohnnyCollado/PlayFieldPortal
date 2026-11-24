@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Slice H2: feature-social (Discord QR login) -->
+    <!-- QR login screen -->
+    <string name="soc_qr_preparing">Припрема пријаве…</string>
+    <string name="soc_qr_connected">Повезано</string>
+    <string name="soc_qr_expired">Код је истекао.</string>
+    <string name="soc_qr_declined">Пријава је одбијена.</string>
+    <!-- %1$s is the error detail text returned by the service -->
+    <string name="soc_qr_error">Пријављивање није успело. %1$s</string>
+    <string name="soc_qr_content_description">QR код за пријаву на Discord</string>
+    <string name="soc_qr_title">Пријавите се преко Discord-а</string>
+    <string name="soc_qr_copied">Копирано!</string>
+    <string name="soc_qr_tap_to_copy">Изаберите код да бисте га копирали</string>
+    <string name="soc_qr_instructions">Скенирајте камером телефона или отворите discord.com/activate и налепите код.</string>
+    <!-- %1$d is the number of seconds left; the trailing "s" is the seconds symbol -->
+    <string name="soc_qr_expires_in">Истиче за %1$d с</string>
+    <!-- Short status shown when the countdown reaches zero -->
+    <string name="soc_qr_expired_short">Истекло</string>
+    <!-- Button -->
+    <string name="soc_qr_cancel">Откажи</string>
+    <!-- Button -->
+    <string name="soc_qr_try_again">Покушај поново</string>
+</resources>

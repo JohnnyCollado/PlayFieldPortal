@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_title">Strălucire la selecție</string>
+    <string name="glow_sub_off">Fără strălucire în jurul pictogramei selectate.</string>
+    <string name="glow_sub_steady">O lumină blândă în jurul pictogramei selectate. Rămâne nemișcată.</string>
+    <string name="glow_sub_pulsing">Lumina din jurul pictogramei selectate crește și scade lent. Rămâne nemișcată cât timp „Mișcare” este setat la „Static”.</string>
+    <string name="glow_value_off">Dezactivat</string>
+    <string name="glow_value_steady">Constantă</string>
+    <string name="glow_value_pulsing">Pulsatorie</string>
+</resources>

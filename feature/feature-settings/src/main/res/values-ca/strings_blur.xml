@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blur_title">Desenfocament de fons</string>
+    <string name="blur_sublabel">Intensitat del desenfocament de la pantalla darrere dels avisos i del menú d\'opcions. Posa-ho a zero per desactivar-ho.</string>
+    <string name="blur_unavailable">Cal Android 12 o posterior.</string>
+</resources>

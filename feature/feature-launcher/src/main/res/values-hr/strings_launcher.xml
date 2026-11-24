@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launch refusals shown before an emulator starts -->
+    <string name="launch_err_custom_command">Profili s prilagođenom naredbom više nisu podržani. Prebacite ovaj emulator na način pokretanja „Otvori ROM aplikacijom” ili „Otvori zaslon aplikacije”.</string>
+    <string name="launch_err_shortcut_unsupported">Pokretanje prečaca nije podržano s ovog zaslona</string>
+    <string name="launch_err_no_package">Za %1$s nije zabilježen Android paket</string>
+    <string name="launch_err_app_not_launchable">Android aplikacija nije instalirana ili se ne može pokrenuti: %1$s</string>
+    <string name="launch_err_emulator_not_installed">Emulator nije instaliran: %1$s (%2$s)</string>
+    <string name="launch_err_wrong_build">%1$s (%2$s) nije očekivana verzija: certifikat za potpisivanje ne odgovara. Ponovno instalirajte emulator iz službenog izvora.</string>
+    <string name="launch_err_no_activity_for_path">Za %1$s nije zabilježena aktivnost pokretanja pa mu se ne može predati putanja datoteke. Ponovno uvezite njegov unos znanja ili ponovno prepoznajte emulator.</string>
+    <string name="launch_err_activity_required">Za ovaj način pokretanja potreban je naziv zaslona aplikacije - profil: %1$s</string>
+    <string name="launch_err_activity_gone">%1$s više ne pruža svoju aktivnost pokretanja (%2$s). Ažurirajte emulator ili odaberite drugi emulator za ovu platformu.</string>
+    <string name="launch_err_no_launch_id">Za %1$s nije zabilježen ID pokretanja. Ponovno skenirajte biblioteku.</string>
+    <string name="launch_err_rom_link_invalid">Poveznica na ROM ove igre nije važeća. Ponovno skenirajte biblioteku.</string>
+    <string name="launch_err_lost_access">Play Field Portal izgubio je pristup datoteci ove igre. Ponovno povežite pohranu i ponovno skenirajte biblioteku.</string>
+    <string name="launch_err_rom_path_required">Za pokretanje igre %1$s potrebna je putanja ROM-a</string>
+    <string name="launch_err_rom_not_found">ROM datoteka nije pronađena: %1$s</string>
+    <string name="launch_err_no_core">Nijedna RetroArch jezgra nije postavljena za platformu \'%1$s\' u profilu \'%2$s\'. Otvorite RetroArch → Core Downloader i instalirajte jezgru za ovaj sustav.</string>
+    <string name="launch_err_cannot_open_rom_type">%1$s ne može otvoriti ovu vrstu ROM-a. Pokušajte ponovno instalirati emulator ili provjerite dopuštenja aplikacije u Android postavkama.</string>
+    <string name="launch_err_no_file_path">%1$s nema putanju datoteke na ovom uređaju pa %2$s ne može znati koju igru pokrenuti.</string>
+    <string name="launch_err_not_in_rom_folder">%1$s nije unutar postavljene mape s ROM-ovima pa se ne može predati emulatoru %2$s. Provjerite mapu postavljenu za ovu memorijsku karticu u Postavkama.</string>
+
+    <!-- Emulator choice problems -->
+    <string name="launch_err_configured_missing">Emulator (%1$s) nije instaliran ili dostupan: %2$s</string>
+    <string name="launch_err_core_not_installed">%1$s je postavljen kao %2$s, ali ta jezgra nije instalirana u RetroArchu. Instalirajte je ili odaberite drugi emulator.</string>
+    <string name="launch_err_no_longer_available">%1$s je postavljen kao %2$s, ali više nije dostupan. Odaberite drugi emulator.</string>
+    <string name="launch_err_not_configured_for_platform">%1$s nije postavljen za %2$s</string>
+    <string name="launch_err_no_emulator_for_platform">Nijedan emulator nije postavljen za %1$s. Odaberite emulator za ovu igru ili postavite zadani za platformu.</string>
+
+    <!-- Where an emulator choice came from -->
+    <string name="launch_source_per_game">Zasebno za igru</string>
+    <string name="launch_source_per_game_lower">zasebna postavka igre</string>
+    <string name="launch_source_memory_card">Zadano za memorijsku karticu</string>
+    <string name="launch_source_memory_card_lower">zadani za memorijsku karticu</string>
+    <string name="launch_source_platform">Zadano za platformu</string>
+    <string name="launch_source_platform_lower">zadani za platformu</string>
+    <string name="launch_source_recommended">Preporučeno</string>
+    <string name="launch_source_recommended_lower">preporučeni</string>
+    <!-- Noun phrases placed in "The ... emulator is not installed or available" -->
+    <string name="launch_phrase_per_game">zasebna postavka igre</string>
+    <string name="launch_phrase_memory_card">emulator memorijske kartice</string>
+    <string name="launch_phrase_platform">zadani za platformu</string>
+
+    <!-- Launch hand-off failures -->
+    <string name="launch_err_emulator_not_found">Emulator nije pronađen. Je li instaliran?</string>
+    <string name="launch_err_permission_denied">Dopuštenje za pokretanje emulatora odbijeno</string>
+    <string name="launch_err_open_emulator">Nije moguće otvoriti emulator: %1$s</string>
+    <string name="launch_never_foreground">Emulator se nakon pokretanja nije prikazao u prvom planu.</string>
+    <string name="launch_never_appeared">Emulator se nije pojavio. Provjerite je li instaliran i ažuran, a zatim ga pokušajte ponovno pokrenuti.</string>
+    <plurals name="launch_history_failed">
+        <item quantity="one">Nije uspjelo %1$d od zadnjih %2$d pokretanja ove igre.</item>
+        <item quantity="few">Nisu uspjela %1$d od zadnjih %2$d pokretanja ove igre.</item>
+        <item quantity="other">Nije uspjelo %1$d od zadnjih %2$d pokretanja ove igre.</item>
+    </plurals>
+
+    <!-- Launch failure notification -->
+    <string name="launch_rec_title">Nije moguće pokrenuti %1$s</string>
+    <string name="launch_rec_could_not_start">Emulator nije bilo moguće pokrenuti</string>
+    <string name="launch_rec_never_foreground">Emulator se nije prikazao u prvom planu</string>
+    <string name="launch_fact_emulator">Emulator</string>
+    <string name="launch_fact_core">Jezgra</string>
+    <string name="launch_fact_platform">Platforma</string>
+    <string name="launch_fact_recent">Nedavna pokretanja</string>
+    <string name="launch_fact_recent_value">Nije uspjelo %1$d od zadnjih %2$d</string>
+
+    <!-- Shortcut requests -->
+    <string name="launch_shortcut_request_title">Zahtjev za prečac: %1$s (otvara %2$s)</string>
+    <string name="launch_shortcut_request_message">Dodajte ga samo ako ste ovaj prečac upravo sami izradili.</string>
+    <string name="launch_shortcut_added_title">Prečac dodan: %1$s</string>
+    <string name="launch_shortcut_ignored_title">Prečac zanemaren: %1$s</string>
+    <string name="launch_shortcut_from">Iz: %1$s</string>
+    <string name="launch_windows_added_title">\"%1$s\" dodano u Windows igre</string>
+    <string name="launch_windows_added_message">Dovršite postavljanje Windows biblioteke kako biste skenirali njezinu mapu</string>
+
+    <!-- First-run setup prompts -->
+    <string name="launch_setup_add_rom_folder">Dodajte mapu s ROM-ovima kako biste pokrenuli biblioteku</string>
+    <string name="launch_setup_add_console_card">Dodajte memorijsku karticu konzole u koju će se skenirati</string>
+    <string name="launch_setup_install_emulator">Instalirajte emulator kako biste igrali svoje igre</string>
+
+    <!-- Emulator detection notes for an app being added -->
+    <string name="launch_inspect_known">Automatski popunjeno iz ugrađenog profila za %1$s. Potvrdite platformu (ili platforme) i spremite.</string>
+    <string name="launch_inspect_best_guess">Najbolja procjena prema tome kako ova aplikacija otvara ROM datoteke. Postavite platformu (ili platforme), a zatim prije spremanja isprobajte ROM.</string>
+    <string name="launch_inspect_minimal">Nije moguće utvrditi kako ova aplikacija prima ROM-ove. Ručno ispunite postavke aktivnosti / intenta, a zatim isprobajte ROM.</string>
+
+    <!-- Emulator knowledge file updates -->
+    <string name="launch_kb_too_many_files">Moguće je uvesti najviše %1$d datoteka znanja; najprije uklonite jednu</string>
+    <string name="launch_kb_installed">Ažurirano</string>
+    <string name="launch_kb_not_configured">Ažuriranja nisu postavljena u ovoj verziji</string>
+    <string name="launch_kb_offline">Nije moguće povezati se s poslužiteljem za ažuriranja</string>
+    <string name="launch_kb_too_large">Datoteka ažuriranja je prevelika</string>
+    <string name="launch_kb_signature_invalid">Potpis ažuriranja nije važeći</string>
+    <string name="launch_kb_needs_app_update">Za ovo ažuriranje potrebna je novija verzija aplikacije</string>
+    <string name="launch_kb_older">Ažuriranje je starije od već instaliranog</string>
+    <string name="launch_kb_invalid_content">Datoteka ažuriranja ima nevažeći sadržaj</string>
+    <string name="launch_kb_storage_failed">Ažuriranje nije bilo moguće spremiti</string>
+    <string name="launch_kb_skipped">Provjera nije bila potrebna</string>
+
+    <!-- Windows game launchers -->
+    <string name="launch_unknown_gamehub_or_bannerhub">može biti GameHub ili BannerHub</string>
+    <string name="launch_unknown_gamehublite_or_bannerhub">može biti GameHub Lite ili BannerHub</string>
+    <string name="launch_unknown_not_in_list">nije na PFP-ovu popisu</string>
+    <string name="launch_choice_not_a_launcher">Nije launcher</string>
+    <string name="launch_id_prompt_gamehub">ID igre — na stranici igre: dodirnite Copy pokraj Local Game ID ili ⋮ → Banner Tools → Show Game ID</string>
+    <string name="launch_id_prompt_gamenative">Steam App ID (ili ID aplikacije u trgovini) za instaliranu igru</string>
+</resources>

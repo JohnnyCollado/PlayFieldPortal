@@ -22,6 +22,8 @@ class UiMediaSlotTest {
         assertEquals(
             listOf(
                 "sound_scroll" to "Navigation",
+                "sound_category" to "Category",
+                "sound_options" to "Options",
                 "sound_back" to "Back / Cancel",
                 "sound_confirm" to "Confirm / Apply",
                 "sound_error" to "Error / Invalid",
@@ -30,6 +32,15 @@ class UiMediaSlotTest {
             UiMediaSlot.ofKind(UiMediaKind.SOUND).map { it.key to it.displayName },
             "the settings screen iterates enum order — this is the Sound screen's row order",
         )
+    }
+
+    @Test fun `category and options fall back to navigation while unassigned`() {
+        // They were Navigation's moments before they had rows: nothing assigned must sound as before.
+        assertEquals(UiMediaSlot.SOUND_SCROLL, UiMediaSlot.SOUND_CATEGORY.fallback)
+        assertEquals(UiMediaSlot.SOUND_SCROLL, UiMediaSlot.SOUND_OPTIONS.fallback)
+        for (slot in UiMediaSlot.entries - setOf(UiMediaSlot.SOUND_CATEGORY, UiMediaSlot.SOUND_OPTIONS)) {
+            assertNull(slot.fallback, "${slot.key} has always stood alone")
+        }
     }
 
     @Test fun `ambience is the only audio track`() {

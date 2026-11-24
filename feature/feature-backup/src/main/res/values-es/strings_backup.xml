@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Backup failures -->
+    <string name="bak_no_folder">No hay carpeta de copia de seguridad. Elige una en Ajustes → Copia de seguridad y restauración → Carpeta de copia.</string>
+    <string name="bak_too_large">Esta copia de seguridad sería demasiado grande para restaurarla (admite hasta 20.000 archivos y 2 GB). Elimina ilustraciones o medios que no uses e inténtalo de nuevo.</string>
+    <string name="bak_write_failed">No se pudo escribir en la carpeta de copia de seguridad. Vuelve a elegirla en Ajustes ▸ Sistema ▸ Copia de seguridad y restauración.</string>
+    <string name="bak_unknown_error">Error desconocido</string>
+
+    <!-- Restore failures -->
+    <string name="bak_open_failed">No se pudo abrir el archivo de copia de seguridad</string>
+    <string name="bak_missing_manifest">Falta el manifiesto en la copia de seguridad</string>
+    <string name="bak_format_too_new">El formato de copia v%1$d es más reciente que el que admite esta app (v%2$d)</string>
+    <string name="bak_no_uri">No se proporcionó ninguna URI</string>
+
+    <!-- Notification titles -->
+    <string name="bak_task_created">Copia de seguridad creada</string>
+    <string name="bak_task_failed">Error en la copia de seguridad</string>
+    <string name="bak_task_restored">Copia de seguridad restaurada</string>
+    <string name="bak_task_restore_failed">Error al restaurar</string>
+    <string name="bak_results_restored">Restaurado</string>
+    <plurals name="bak_items_skipped">
+        <item quantity="one">%d elemento omitido</item>
+        <item quantity="many">%d elementos omitidos</item>
+        <item quantity="other">%d elementos omitidos</item>
+    </plurals>
+
+    <!-- Items turned away during restore -->
+    <string name="bak_refused_out_of_root">Rechazado \'%1$s\': no está dentro de una carpeta restaurable</string>
+    <string name="bak_refused_profiles_unparseable">Perfiles de emulador rechazados: no se pudo analizar el archivo</string>
+    <string name="bak_refused_profile">Perfil de emulador rechazado \'%1$s\': %2$s</string>
+</resources>

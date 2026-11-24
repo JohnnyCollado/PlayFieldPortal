@@ -11,8 +11,10 @@ package com.playfieldportal.core.domain.model
  * own luminance. A hardcoded dark matte behind a dark glyph on dark wallpaper is invisible —
  * exactly the failure this setting exists to fix.
  *
- *  - [NONE]           today's rendering, unchanged — the shipped default.
+ *  - [NONE]           the plain glyph with no matte. Still a choice; no longer the default.
  *  - [OFFSET_SHADOW]  one dark matte copy, offset down and to the right (a hard drop shadow).
+ *                     The default since 21 Nov 2026 (the owner's call): white icons read over any
+ *                     wallpaper out of the box. Anyone who had picked a style keeps it, None included.
  *  - [OFFSET_SHADOW_LIGHT] the same copy in the light matte, for dark glyphs (a black icon) that
  *                     a dark shadow disappears into.
  *  - [CONTOUR_DARK]   dark matte copies dilated all around the glyph.
@@ -32,7 +34,7 @@ enum class IconLegibilityStyle(val label: String) {
     val isOffsetShadow: Boolean get() = this == OFFSET_SHADOW || this == OFFSET_SHADOW_LIGHT
 
     companion object {
-        val DEFAULT = NONE
+        val DEFAULT = OFFSET_SHADOW
 
         /** Tolerant parse for the persisted preference; unknown/blank falls back to [DEFAULT]. */
         fun fromName(value: String?): IconLegibilityStyle =

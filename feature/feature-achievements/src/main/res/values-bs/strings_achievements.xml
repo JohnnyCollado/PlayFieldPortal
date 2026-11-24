@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Achievement update notifications -->
+    <string name="ach_upd_running">Ažuriranje instaliranih dostignuća</string>
+    <string name="ach_upd_running_stop_note">Već ažurirana dostignuća ostaju sačuvana.</string>
+    <string name="ach_upd_progress">Provjera %1$d od %2$d igara</string>
+    <string name="ach_upd_stopped">Ažuriranje dostignuća zaustavljeno</string>
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="one">Provjerena %d igra; sačuvani napredak zadržan</item>
+        <item quantity="few">Provjerene %d igre; sačuvani napredak zadržan</item>
+        <item quantity="other">Provjereno %d igara; sačuvani napredak zadržan</item>
+    </plurals>
+    <string name="ach_upd_some_failed">Neka dostignuća nije bilo moguće ažurirati</string>
+    <plurals name="ach_upd_failed_message">
+        <item quantity="one">%1$d od %2$d igara treba ponovni pokušaj</item>
+        <item quantity="few">%1$d od %2$d igara trebaju ponovni pokušaj</item>
+        <item quantity="other">%1$d od %2$d igara treba ponovni pokušaj</item>
+    </plurals>
+    <string name="ach_upd_results_done">Ažurirano</string>
+    <string name="ach_upd_updated">Dostignuća ažurirana</string>
+    <plurals name="ach_upd_updated_message">
+        <item quantity="one">Ažurirana %1$d igra · nepromijenjeno: %2$d</item>
+        <item quantity="few">Ažurirane %1$d igre · nepromijenjeno: %2$d</item>
+        <item quantity="other">Ažurirano %1$d igara · nepromijenjeno: %2$d</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">Dostignuća su ažurna</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="one">Provjerena %d instalirana igra</item>
+        <item quantity="few">Provjerene %d instalirane igre</item>
+        <item quantity="other">Provjereno %d instaliranih igara</item>
+    </plurals>
+    <string name="ach_upd_paused">Ažuriranje dostignuća pauzirano</string>
+    <string name="ach_upd_fact_service">Usluga</string>
+    <string name="ach_upd_pause_offline">Povežite se s internetom</string>
+    <string name="ach_upd_pause_reconnect">Ponovo povežite %1$s</string>
+    <string name="ach_upd_pause_steam_private">Detalji o igrama na Steamu nisu dostupne</string>
+
+    <!-- Auto-match notifications -->
+    <string name="ach_match_running">Automatsko povezivanje igara</string>
+    <string name="ach_match_running_stop_note">Već povezane igre ostaju povezane.</string>
+    <string name="ach_match_stopped_note">Već povezane igre ostaju povezane</string>
+    <string name="ach_match_stopped">Automatsko povezivanje zaustavljeno</string>
+    <string name="ach_match_recognized">Igre prepoznate</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="one">Povezana %d instalirana igra. Ažuriranje njezinih dostignuća.</item>
+        <item quantity="few">Povezane %d instalirane igre. Ažuriranje njihovih dostignuća.</item>
+        <item quantity="other">Povezano %d instaliranih igara. Ažuriranje njihovih dostignuća.</item>
+    </plurals>
+
+    <!-- Clearing achievement records -->
+    <string name="ach_clear_done">Zapisi dostignuća izbrisani</string>
+    <string name="ach_clear_done_message">Instalirane igre treba ponovo sinhronizirati kako bi se dostignuća opet prikazala</string>
+    <string name="ach_clear_failed">Nije moguće izbrisati dostignuća</string>
+    <string name="ach_clear_failed_message">Ništa nije uklonjeno. Pokušajte ponovo u Postavke ▸ Dostignuća</string>
+
+    <!-- Local Steam: reason phrases -->
+    <string name="ach_ls_unavail_store">trgovinu nije bilo moguće upitati</string>
+    <string name="ach_ls_unavail_steam">Steam trenutno nije dostupan</string>
+    <string name="ach_ls_steam_unreachable">Nije moguće povezati se sa Steamom</string>
+    <string name="ach_ls_steam_rate_limited">Steam ograničava broj zahtjeva</string>
+    <string name="ach_ls_steam_error">Steam je vratio grešku</string>
+    <string name="ach_ls_steam_needs_key">Steam treba vaš Web API ključ</string>
+
+    <!-- Local Steam: linking a picked game folder -->
+    <string name="ach_link_no_match">Steam nema igru koja odgovara nazivu \"%1$s\". Preimenujte folder u naziv igre na Steamu ili je najprije povežite u Detalji igre ▸ Poveži igru.</string>
+    <string name="ach_link_unavailable">%1$s pa nije bilo moguće utvrditi app ID ovog foldera. Ništa nije promijenjeno — pokušajte ponovo kad budete na mreži.</string>
+    <string name="ach_link_marker_failed">Nije moguće stvoriti steam_appid.txt u tom folderu — PFP možda ima samo pristup za čitanje.</string>
+    <string name="ach_link_not_recorded">Odabrano podudaranje nije moguće zabilježiti.</string>
+    <string name="ach_link_installer_off">Uključite Instaliraj Goldberg i pretvori igre u postavkama dostignuća prije nego što PFP zapiše u folder igre.</string>
+    <string name="ach_link_no_app_id">Taj folder više ne navodi app ID — ponovo ga odaberite.</string>
+    <string name="ach_link_need_key">Dodajte svoj Steam Web API ključ u Postavke ▸ Dostignuća ▸ Pristupni podaci pružalaca — spisak dostignuća dolazi od njega.</string>
+    <string name="ach_link_no_achievements">Steam ne navodi dostignuća za app ID %1$s pa nema šta pratiti.</string>
+    <string name="ach_link_kit_failed">Nije moguće zapisati komplet dostignuća: %1$s</string>
+    <string name="ach_link_read_back_failed">Taj folder nije bilo moguće ponovo pročitati. Ako se nalazi na prijenosnoj pohrani, ponovo montirajte pohranu i odaberite ga.</string>
+    <string name="ach_link_not_steam_build">U tom folderu nema Steam biblioteke (steam_api64.dll) pa to nije Steam verzija i emulator nema šta pratiti. Odaberite folder u kojem se nalazi .exe datoteka igre.</string>
+
+    <!-- Local Steam: convert picker rows -->
+    <string name="ach_pick_checking">Provjera Steama…</string>
+    <plurals name="ach_pick_coins">
+        <item quantity="one">%1$d novčić  ·  appid %2$s</item>
+        <item quantity="few">%1$d novčića  ·  appid %2$s</item>
+        <item quantity="other">%1$d novčića  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">Nema spiska na Steamu  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">Potreban je vaš Steam Web API ključ  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">Steam nije odgovorio  ·  appid %1$s</string>
+
+    <!-- Local Steam: batch match summary -->
+    <string name="ach_batch_already_running">Skupno povezivanje već je u toku.</string>
+    <string name="ach_batch_no_folders">Tamo nema foldera igara. Odaberite folder koji SADRŽI foldere vaših igara, a ne folder pojedine igre.</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="one">Pronađen je %d folder, ali nije Steam verzija — nema biblioteke steam_api pa emulator nema šta pratiti.</item>
+        <item quantity="few">Pronađena su %d foldera, ali nijedan nije Steam verzija — nema biblioteke steam_api pa emulator nema šta pratiti.</item>
+        <item quantity="other">Pronađeno je %d foldera, ali nijedan nije Steam verzija — nema biblioteke steam_api pa emulator nema šta pratiti.</item>
+    </plurals>
+    <string name="ach_batch_linked">%1$d povezano s igrama u biblioteci</string>
+    <string name="ach_batch_tracked">%1$d praćeno samostalno</string>
+    <string name="ach_batch_converting">%1$d čeka pretvaranje</string>
+    <plurals name="ach_batch_matched">
+        <item quantity="one">Povezano foldera: %1$d od %2$d.</item>
+        <item quantity="few">Povezano foldera: %1$d od %2$d.</item>
+        <item quantity="other">Povezano foldera: %1$d od %2$d.</item>
+    </plurals>
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="one">Povezano foldera: %1$d od %2$d: %3$s.</item>
+        <item quantity="few">Povezano foldera: %1$d od %2$d: %3$s.</item>
+        <item quantity="other">Povezano foldera: %1$d od %2$d: %3$s.</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="one">%1$d folder nije bilo moguće prepoznati po nazivu — otvorite stranicu Shiba Coins te igre i pomoću Automatskog povezivanja odaberite folder.</item>
+        <item quantity="few">%1$d foldera nije bilo moguće prepoznati po nazivu — otvorite stranicu Shiba Coins svake igre i pomoću Automatskog povezivanja odaberite folder.</item>
+        <item quantity="other">%1$d foldera nije bilo moguće prepoznati po nazivu — otvorite stranicu Shiba Coins svake igre i pomoću Automatskog povezivanja odaberite folder.</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="one">%1$d nije u vašoj biblioteci — najprije je dodajte na karticu Windows, a zatim ponovo povežite.</item>
+        <item quantity="few">%1$d nisu u vašoj biblioteci — najprije ih dodajte na karticu Windows, a zatim ponovo povežite.</item>
+        <item quantity="other">%1$d nije u vašoj biblioteci — najprije ih dodajte na karticu Windows, a zatim ponovo povežite.</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="one">%1$d nije Steam verzija.</item>
+        <item quantity="few">%1$d nisu Steam verzije.</item>
+        <item quantity="other">%1$d nije Steam verzija.</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="one">%1$d nije uspjela — pogledajte zapisnik.</item>
+        <item quantity="few">%1$d nisu uspjele — pogledajte zapisnik.</item>
+        <item quantity="other">%1$d nije uspjelo — pogledajte zapisnik.</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">Taj folder nije bilo moguće otvoriti.</string>
+    <string name="ach_batch_fail_read_back">%1$s: nije je bilo moguće ponovo pročitati nakon prepoznavanja.</string>
+    <string name="ach_batch_fail_reason">%1$s: %2$s.</string>
+    <string name="ach_batch_fail_marker">%1$s: nije bilo moguće stvoriti steam_appid.txt.</string>
+
+    <!-- Vita3K library scan results -->
+    <string name="ach_vita_set_folder">Najprije postavite folder podataka Vita3K (ux0).</string>
+    <string name="ach_vita_link_invalid">Taj link na folder Vita3K nije važeći — ponovo dodijelite pristup.</string>
+    <string name="ach_vita_no_ux0">U dodijeljenom folderu nije pronađen folder ux0/app — odaberite svoj folder Vita3K ux0 (ili folder koji ga sadrži).</string>
+    <string name="ach_vita_no_app">U ux0 nema foldera app/ — provjerite dodijeljeni folder.</string>
+    <string name="ach_vita_none_installed">U ux0/app nisu pronađene instalirane Vita igre. Najprije instalirajte igru u Vita3K.</string>
+    <plurals name="ach_vita_no_new">
+        <item quantity="one">Nema novih Vita igara — %d je već u vašoj biblioteci.</item>
+        <item quantity="few">Nema novih Vita igara — %d su već u vašoj biblioteci.</item>
+        <item quantity="other">Nema novih Vita igara — %d ih je već u vašoj biblioteci.</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="one">Uvezena %d Vita igra.</item>
+        <item quantity="few">Uvezene %d Vita igre.</item>
+        <item quantity="other">Uvezeno %d Vita igara.</item>
+    </plurals>
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="one">Uvezena %1$d Vita igra, ažurirano: %2$d.</item>
+        <item quantity="few">Uvezene %1$d Vita igre, ažurirano: %2$d.</item>
+        <item quantity="other">Uvezeno %1$d Vita igara, ažurirano: %2$d.</item>
+    </plurals>
+</resources>

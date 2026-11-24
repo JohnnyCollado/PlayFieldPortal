@@ -6,6 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import com.playfieldportal.core.domain.model.FeatureFlags
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.detail.ProvidePfpBackdropBlur
 import com.playfieldportal.feature.settings.viewmodel.CategoryManagerTarget
 
 // Every screen route SettingsNavHost resolves. Kept beside the `when` (whose branches are string
@@ -86,6 +87,10 @@ fun SettingsNavHost(
     onCategoryTargetConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    // One blur state for every Settings screen, provided above each screen's Box so the screen's
+    // `modal.Content()` (a sibling of its SettingsScaffold) raises it and the scaffold's content
+    // layer reads it: no screen is edited. It follows the shell's Performance / Thermal decision.
+    ProvidePfpBackdropBlur {
     CompositionLocalProvider(
         LocalSettingsPendingAction provides pendingGamepadAction,
         LocalSettingsActionConsumed provides onGamepadActionConsumed,
@@ -187,5 +192,6 @@ fun SettingsNavHost(
             "settings_credits"    -> CreditsSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_app_visibility" -> AppVisibilitySettingsScreen(onBack = onBack, modifier = modifier)
         }
+    }
     }
 }

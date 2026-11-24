@@ -1,5 +1,8 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.settings.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -58,24 +61,32 @@ internal fun SystemUpdateContent(
     modifier: Modifier = Modifier,
 ) {
     SettingsScaffold(
-        title = "Settings",
-        subtitle = "System Update",
+        title = stringResource(R.string.settings_title),
+        subtitle = stringResource(R.string.sets_update_title),
         onBack = onBack,
         modifier = modifier.fillMaxSize(),
     ) {
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(modifier = Modifier.fillMaxSize().verticalScroll(scrollState)) {
-            SettingsGroup("Update")
-            SettingsValueRow(label = "Installed version", value = state.installedLabel, focusKey = "update_installed")
-            SettingsValueRow(label = "Latest version", value = state.latestLabel, focusKey = "update_latest")
+            SettingsGroup(stringResource(R.string.sets_update_group_update))
+            SettingsValueRow(
+                label = stringResource(R.string.sets_update_installed),
+                value = state.installedLabel.asString(),
+                focusKey = "update_installed",
+            )
+            SettingsValueRow(
+                label = stringResource(R.string.sets_update_latest),
+                value = state.latestLabel.asString(),
+                focusKey = "update_latest",
+            )
             state.availableVersion?.let { version -> InstallRow(version, state, onDownloadAndInstall) }
             SettingsRow(
-                label = "Check for updates",
-                sublabel = state.checkMessage ?: state.lastCheckedLabel,
+                label = stringResource(R.string.sets_update_check),
+                sublabel = (state.checkMessage ?: state.lastCheckedLabel).asString(),
                 focusKey = "update_check",
                 trailing = if (state.isChecking) {
-                    { UpdateValueText("Checking…") }
+                    { UpdateValueText(stringResource(R.string.sets_update_checking)) }
                 } else {
                     null
                 },
@@ -83,18 +94,18 @@ internal fun SystemUpdateContent(
                 onClick = onCheckNow,
             )
             SettingsToggleRow(
-                label = "Update notifications",
-                sublabel = "Remind me in Notifications when a new version is out, at most once a day",
+                label = stringResource(R.string.sets_update_notifications),
+                sublabel = stringResource(R.string.sets_update_notifications_help),
                 focusKey = "update_notifications",
                 checked = state.notificationsEnabled,
                 onToggle = onSetNotifications,
             )
 
-            SettingsGroup("Changelog")
+            SettingsGroup(stringResource(R.string.sets_update_group_changelog))
             if (state.changelog.isEmpty()) {
                 SettingsRow(
-                    label = "No releases loaded yet",
-                    sublabel = "Check for updates to load the changelog",
+                    label = stringResource(R.string.sets_update_no_releases),
+                    sublabel = stringResource(R.string.sets_update_no_releases_help),
                     focusKey = "update_changelog_empty",
                 )
             }
@@ -108,13 +119,13 @@ private fun InstallRow(version: String, state: SystemUpdateUiState, onDownloadAn
     val download = state.download
     val downloading = download as? UpdateDownload.Downloading
     SettingsRow(
-        label = "Download and install $version",
+        label = stringResource(R.string.sets_update_install, version),
         sublabel = when {
-            !state.canInstall -> "This build can't install updates from here"
-            download is UpdateDownload.Failed -> download.message
-            download is UpdateDownload.HandedToInstaller -> "Confirm in Android's installer to finish"
-            downloading != null -> "Downloading…"
-            else -> "Android asks you to confirm before anything is installed"
+            !state.canInstall -> stringResource(R.string.sets_update_cannot_install)
+            download is UpdateDownload.Failed -> download.message.asString()
+            download is UpdateDownload.HandedToInstaller -> stringResource(R.string.sets_update_handed_over)
+            downloading != null -> stringResource(R.string.sets_update_downloading)
+            else -> stringResource(R.string.sets_update_install_help)
         },
         focusKey = "update_install",
         trailing = if (downloading != null) {
@@ -141,7 +152,7 @@ private fun ChangelogRows(entry: ChangelogEntry, onToggleRelease: (String) -> Un
         sublabel = entry.publishedOn.ifBlank { null },
         focusKey = "update_release_${entry.version}",
         trailing = if (entry.tag != null) {
-            { UpdateValueText(entry.tag) }
+            { UpdateValueText(entry.tag.asString()) }
         } else {
             null
         },
@@ -150,7 +161,7 @@ private fun ChangelogRows(entry: ChangelogEntry, onToggleRelease: (String) -> Un
     if (!entry.expanded) return
     if (entry.summary.isEmpty()) {
         SettingsRow(
-            label = "$CHILD_INDENT No summary for this version",
+            label = "$CHILD_INDENT ${stringResource(R.string.sets_update_no_summary)}",
             focusKey = "update_release_${entry.version}_none",
         )
     }
@@ -161,8 +172,8 @@ private fun ChangelogRows(entry: ChangelogEntry, onToggleRelease: (String) -> Un
         )
     }
     SettingsRow(
-        label = "$CHILD_INDENT Full release notes",
-        sublabel = "$CHILD_INDENT Opens GitHub in your browser",
+        label = "$CHILD_INDENT ${stringResource(R.string.sets_update_full_notes)}",
+        sublabel = "$CHILD_INDENT ${stringResource(R.string.sets_update_full_notes_help)}",
         focusKey = "update_release_${entry.version}_notes",
         onClick = { onOpenNotes(entry.notesUrl) },
     )

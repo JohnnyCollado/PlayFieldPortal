@@ -1,0 +1,399 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Initial Setup wizard -->
+
+    <!-- Wizard chrome -->
+    <string name="setup_title">Configurare inițială</string>
+    <string name="setup_prompt_enter">Intră</string>
+    <string name="setup_prompt_change">Schimbă</string>
+    <string name="setup_prompt_back">Înapoi</string>
+    <string name="setup_prompt_skip">Omite</string>
+    <string name="setup_row_edit">Editează</string>
+    <string name="setup_row_remove">Elimină</string>
+    <string name="setup_message_dismiss_hint">Selectează pentru a închide — sau confirmă pe acest rând</string>
+
+    <!-- Page names -->
+    <string name="setup_step_welcome">Bun venit</string>
+    <string name="setup_step_controller">Controler</string>
+    <string name="setup_step_rom_roots">Dosare ROM</string>
+    <string name="setup_step_music">Muzică</string>
+    <string name="setup_step_video">Video</string>
+    <string name="setup_step_photo">Foto</string>
+    <string name="setup_step_artwork">Artwork</string>
+    <string name="setup_step_services">Servicii online</string>
+    <string name="setup_step_achievements">Servicii de realizări</string>
+    <string name="setup_step_local_achievements">Realizări locale</string>
+    <string name="setup_step_retroarch">RetroArch</string>
+    <string name="setup_step_emulators">Emulatoare</string>
+    <string name="setup_step_windows">Jocuri Windows</string>
+    <string name="setup_step_hints">Indicii și atingere</string>
+    <string name="setup_step_home_app">Aplicația ecran de pornire</string>
+    <string name="setup_step_finish">Final</string>
+
+    <!-- Page headings -->
+    <string name="setup_heading_welcome">Bun venit în Play Field Portal.</string>
+    <string name="setup_heading_controller">Alege controlerul.</string>
+    <string name="setup_heading_rom_roots">Alege dosarele ROM.</string>
+    <string name="setup_heading_music">Alege dosarele de muzică.</string>
+    <string name="setup_heading_video">Alege dosarele video.</string>
+    <string name="setup_heading_photo">Alege dosarele de fotografii.</string>
+    <string name="setup_heading_artwork">Alege dosarul de artwork.</string>
+    <string name="setup_heading_services">Conectează sursele de artwork.</string>
+    <string name="setup_heading_achievements">Conectează serviciile de realizări.</string>
+    <string name="setup_heading_local_achievements">Leagă dosarele de date ale emulatoarelor.</string>
+    <string name="setup_heading_retroarch">Leagă dosarul de core-uri RetroArch.</string>
+    <string name="setup_heading_emulators">Verifică emulatoarele.</string>
+    <string name="setup_heading_windows">Configurează jocurile Windows.</string>
+    <string name="setup_heading_hints">Alege cum te ajută launcherul.</string>
+    <string name="setup_heading_home_app">Fă din Play Field Portal ecranul de pornire.</string>
+    <string name="setup_heading_finish">Totul este gata!</string>
+
+    <!-- Page hints -->
+    <string name="setup_hint_welcome">Majoritatea pașilor sunt opționali. Va trebui să alegi un dosar de artwork.</string>
+    <string name="setup_hint_controller">Setează pictogramele butoanelor și butonul care confirmă, astfel încât fiecare indicație de acum înainte să se potrivească cu controlerul tău.</string>
+    <string name="setup_hint_rom_roots">Adaugă unul sau mai multe dosare ROM — jocurile fiecărei console stau într-un subdosar al acestora.</string>
+    <string name="setup_hint_media_roots">Adaugă mai multe rădăcini pentru a acoperi stocarea internă și un card SD.</string>
+    <string name="setup_hint_artwork">Obligatoriu. Artwork-ul tău stă aici, în afara aplicației, astfel încât rezistă la o reinstalare.</string>
+    <string name="setup_hint_services">Toate sunt opționale și gratuite. SteamGridDB, TheGamesDB, IGDB și ScreenScraper descarcă artwork și metadate pentru jocuri.</string>
+    <string name="setup_hint_achievements">RetroAchievements și Steam urmăresc realizările ca Shiba Coins.</string>
+    <string name="setup_hint_local_achievements">Trofeele și realizările pe care emulatoarele le salvează pe acest dispozitiv. O singură permisiune per emulator leagă toate titlurile.</string>
+    <string name="setup_hint_retroarch">Îi spune launcherului exact ce core-uri ai, astfel încât să fie oferite doar acestea.</string>
+    <string name="setup_hint_emulators">Emulatorul implicit al fiecărei console, ales dintre cele instalate. Schimbă-le pe cele care par greșite.</string>
+    <string name="setup_hint_windows">Este instalat un emulator Windows — alege unde se află jocurile de PC.</string>
+    <string name="setup_hint_hints">Indiciile pentru butoane apar când faci o pauză și dispar imediat ce apeși ceva.</string>
+    <string name="setup_hint_home_app">Butonul Acasă te va aduce înapoi aici în locul launcherului implicit.</string>
+    <string name="setup_hint_finish">Tot ce este mai jos poate fi ajustat oricând în Setări.</string>
+
+    <!-- Continue row -->
+    <string name="setup_continue">Continuă</string>
+    <string name="setup_continue_next">Următorul: %1$s</string>
+    <string name="setup_continue_blocked">Alege mai întâi un dosar</string>
+
+    <!-- Welcome page -->
+    <string name="setup_welcome_intro">Această configurare rapidă îi arată launcherului dosarele tale media și conectează serviciile online folosite pentru artwork și realizări.</string>
+    <string name="setup_welcome_start">Să începem</string>
+    <string name="setup_welcome_start_sub">Alege mai întâi controlerul</string>
+    <string name="setup_welcome_skip">Omite configurarea</string>
+    <string name="setup_welcome_skip_sub">Mergi direct la launcher — poți rula oricând Asistentul de configurare din Setări ▸ Sistem</string>
+
+    <!-- Folder rows -->
+    <string name="setup_root_access_lost">Acces pierdut — folosește ✎ pentru a acorda din nou accesul</string>
+
+    <!-- ROM roots page -->
+    <string name="setup_rom_empty">Încă nu există dosare ROM. Adaugă dosarul în care se află jocurile consolelor — câte un subdosar per consolă, scanat automat.</string>
+    <string name="setup_rom_add">Adaugă dosar ROM</string>
+    <string name="setup_rom_add_sub">Acordă acces la un dosar ROM cu câte un subdosar per consolă</string>
+    <string name="setup_rom_rescan">Rescanează dosarele ROM</string>
+    <string name="setup_rom_rescan_sub">Detectează automat consolele și scanează-le jocurile</string>
+    <string name="setup_rom_root_linked">Legat — dosarele consolelor sunt citite de aici</string>
+    <string name="setup_rom_create_folders">Creează dosarele standard</string>
+    <string name="setup_rom_create_folders_sub">Câte un subdosar per consolă, denumit pentru jocurile tale</string>
+
+    <!-- Music roots page -->
+    <string name="setup_music_empty">Încă nu există rădăcini de muzică. Adaugă dosarul în care se află muzica — mai multe rădăcini pot acoperi stocarea internă și un card SD.</string>
+    <string name="setup_music_add">Adaugă rădăcină de muzică</string>
+    <string name="setup_music_add_sub">Acordă acces la un dosar rădăcină (de ex. /Music) — adaugă mai multe pentru mai multe locații</string>
+    <string name="setup_music_root_linked">Biblioteca de muzică se află aici</string>
+    <string name="setup_music_rescan">Rescanează biblioteca de muzică</string>
+
+    <!-- Video roots page -->
+    <string name="setup_video_empty">Încă nu există rădăcini video. Adaugă dosarul în care se află videoclipurile — mai multe rădăcini pot acoperi stocarea internă și un card SD.</string>
+    <string name="setup_video_add">Adaugă rădăcină video</string>
+    <string name="setup_video_add_sub">Acordă acces la un dosar rădăcină (de ex. /Videos) — adaugă mai multe pentru mai multe locații</string>
+    <string name="setup_video_root_linked">Biblioteca video se află aici</string>
+    <string name="setup_video_rescan">Rescanează biblioteca video</string>
+
+    <!-- Photo roots page -->
+    <string name="setup_photo_empty">Încă nu există rădăcini foto. Adaugă dosarul în care se află fotografiile — mai multe rădăcini pot acoperi stocarea internă și un card SD.</string>
+    <string name="setup_photo_add">Adaugă rădăcină foto</string>
+    <string name="setup_photo_add_sub">Acordă acces la un dosar rădăcină (de ex. /Photos) — adaugă mai multe pentru mai multe locații</string>
+    <string name="setup_photo_root_linked">Biblioteca foto se află aici</string>
+    <string name="setup_photo_rescan">Rescanează biblioteca foto</string>
+
+    <string name="setup_media_rescan_sub">Actualizează bibliotecile din fiecare dosar rădăcină</string>
+
+    <!-- Artwork page -->
+    <string name="setup_artwork_empty">Alege un dosar în care se poate scrie. Launcherul configurează automat o bibliotecă de artwork în el — jocurile primesc artwork pe măsură ce sunt adăugate.</string>
+    <string name="setup_artwork_unavailable">Indisponibil. Leagă din nou pentru a relua artwork-ul nou</string>
+    <string name="setup_artwork_folder_sub">Biblioteca de artwork — folosește ✎ pentru a alege alt dosar</string>
+    <string name="setup_artwork_choose">Alege dosarul de artwork</string>
+    <string name="setup_artwork_choose_sub">Un singur dosar găzduiește biblioteca de artwork</string>
+    <string name="setup_artwork_import_title">Imporți artwork-ul acum?</string>
+    <string name="setup_artwork_import_sub_one">Copiază %1$s din import/ al dosarului în bibliotecă</string>
+    <plurals name="setup_artwork_import_sub_many">
+        <item quantity="one">Copiază %1$d dosar sursă din import/ al dosarului în bibliotecă</item>
+        <item quantity="few">Copiază %1$d dosare sursă din import/ al dosarului în bibliotecă</item>
+        <item quantity="other">Copiază %1$d de dosare sursă din import/ al dosarului în bibliotecă</item>
+    </plurals>
+    <string name="setup_artwork_import_row">Import artwork</string>
+    <string name="setup_artwork_import_none_sub">Încă nimic de importat — adaugă dosarul media al unui launcher în import/</string>
+
+    <!-- Online services page -->
+    <string name="setup_services_intro">Toate conturile sunt opționale și gratuite. SteamGridDB, TheGamesDB, IGDB și ScreenScraper descarcă artwork și metadate pentru biblioteca ta.</string>
+    <string name="setup_field_api_key">Cheie API</string>
+    <string name="setup_field_api_key_saved">Cheie API (salvată)</string>
+    <string name="setup_field_web_api_key">Cheie Web API</string>
+    <string name="setup_field_web_api_key_saved">Cheie Web API (salvată)</string>
+    <string name="setup_field_client_id">Client ID</string>
+    <string name="setup_field_client_id_saved">Client ID (salvat)</string>
+    <string name="setup_field_client_secret">Client Secret</string>
+    <string name="setup_field_client_secret_saved">Client Secret (salvat)</string>
+    <string name="setup_field_username">Nume de utilizator</string>
+    <string name="setup_field_username_saved">Nume de utilizator (salvat)</string>
+    <string name="setup_field_password">Parolă</string>
+    <string name="setup_field_password_saved">Parolă (salvată)</string>
+    <string name="setup_field_steam_id">SteamID64 sau nume personalizat</string>
+    <string name="setup_field_steam_id_saved">SteamID64 sau nume personalizat (salvat)</string>
+    <string name="setup_placeholder_tap_to_replace">Selectează pentru a înlocui</string>
+    <string name="setup_placeholder_secret_saved">••••••••  (selectează pentru a înlocui)</string>
+    <string name="setup_placeholder_sgdb_key">Lipește cheia SteamGridDB</string>
+    <string name="setup_placeholder_tgdb_key">Lipește cheia TheGamesDB</string>
+    <string name="setup_placeholder_twitch_client_id">Twitch Client ID</string>
+    <string name="setup_placeholder_twitch_client_secret">Twitch Client Secret</string>
+    <string name="setup_placeholder_ss_username">Nume de utilizator ScreenScraper</string>
+    <string name="setup_placeholder_ss_password">Parolă ScreenScraper</string>
+    <string name="setup_placeholder_ra_username">Numele tău de utilizator RA</string>
+    <string name="setup_placeholder_ra_key">Lipește cheia ta RA Web API</string>
+    <string name="setup_placeholder_steam_id">7656119… sau numele URL personalizat</string>
+    <string name="setup_placeholder_steam_key">Lipește cheia ta Steam Web API</string>
+    <string name="setup_connect_sgdb">Conectează SteamGridDB</string>
+    <string name="setup_connect_tgdb">Conectează TheGamesDB</string>
+    <string name="setup_connect_igdb">Conectează IGDB</string>
+    <string name="setup_connect_ss">Conectează ScreenScraper</string>
+    <string name="setup_connect_ra">Conectează RetroAchievements</string>
+    <string name="setup_connect_steam">Conectează Steam</string>
+    <string name="setup_test_credentials">Testează datele de autentificare</string>
+    <string name="setup_test_account">Testează contul</string>
+    <string name="setup_connected_as">Conectat ca</string>
+
+    <!-- Achievement services page -->
+    <string name="setup_achievements_intro">Opțional și gratuit. RetroAchievements și Steam urmăresc realizările ca Shiba Coins.</string>
+
+    <!-- Controller page -->
+    <string name="setup_controller_type">Tip de controler</string>
+    <string name="setup_controller_type_sub">Schimbă pictogramele butoanelor în toate indicațiile</string>
+    <string name="setup_controller_ab_swap">Inversare confirmare și înapoi</string>
+    <string name="setup_controller_xy_swap">Inversare opțiuni și sortare</string>
+    <string name="setup_controller_xy_swap_sub">Doar meniurile launcherului — comenzile emulatorului rămân neschimbate</string>
+    <string name="setup_on">Activat</string>
+    <string name="setup_off">Dezactivat</string>
+    <string name="setup_controller_summary">%1$s · %2$s confirmă</string>
+    <string name="setup_button_circle">Cerc</string>
+    <string name="setup_button_cross">Cruce</string>
+    <string name="setup_confirm_swap_off">Dezactivat — %1$s confirmă, %2$s merge înapoi</string>
+    <string name="setup_confirm_swap_on">Activat — %1$s confirmă, %2$s merge înapoi</string>
+
+    <!-- Local achievements page -->
+    <string name="setup_local_vita_header">PS Vita · Vita3K</string>
+    <string name="setup_local_vita_set">Setează dosarul de date Vita3K</string>
+    <string name="setup_local_vita_set_sub">Acordă acces la dosarul ux0 (sau la dosarul care îl conține)</string>
+    <string name="setup_local_vita_folder_sub">Dosarul de date Vita3K — folosește ✎ pentru a alege altul</string>
+    <string name="setup_local_ps3_header">PS3 · ARMSX3</string>
+    <string name="setup_local_ps3_set">Setează dosarul de date ARMSX3</string>
+    <string name="setup_local_ps3_set_sub">Acordă acces la PS3/config/dev_hdd0 — sau la orice dosar de deasupra ori de dedesubt</string>
+    <string name="setup_local_ps3_folder_sub">Dosarul de date ARMSX3 — folosește ✎ pentru a alege altul</string>
+    <string name="setup_local_x360_header">Xbox 360 · X360 Mobile</string>
+    <string name="setup_local_x360_set">Setează dosarul de date X360 Mobile</string>
+    <string name="setup_local_x360_set_sub">Alege X360 Mobile în meniul lateral al selectorului de dosare, apoi permite accesul</string>
+    <string name="setup_local_x360_folder_sub">Dosarul de date X360 Mobile — folosește ✎ pentru a alege altul</string>
+    <string name="setup_local_xendroid_header">Xbox 360 · XenDroid</string>
+    <string name="setup_local_xendroid_set">Setează dosarul de date XenDroid</string>
+    <string name="setup_local_xendroid_set_sub">Acordă acces la Android/data/xendroid.compose — sau la orice dosar de deasupra ori de dedesubt</string>
+    <string name="setup_local_xendroid_folder_sub">Dosarul de date XenDroid — folosește ✎ pentru a alege altul</string>
+
+    <!-- RetroArch page -->
+    <string name="setup_retroarch_cores_folder">Dosarul de core-uri</string>
+    <plurals name="setup_retroarch_cores_detected">
+        <item quantity="one">%1$d core detectat</item>
+        <item quantity="few">%1$d core-uri detectate</item>
+        <item quantity="other">%1$d de core-uri detectate</item>
+    </plurals>
+    <string name="setup_retroarch_linked">Legat</string>
+    <string name="setup_retroarch_relink">Leagă din nou dosarul</string>
+    <string name="setup_retroarch_relink_sub">Alege din nou dosarul RetroArch</string>
+    <string name="setup_retroarch_recheck">Reverifică core-urile</string>
+    <string name="setup_retroarch_recheck_sub">După instalarea unor core-uri noi</string>
+    <string name="setup_retroarch_unlink">Dezleagă RetroArch</string>
+    <string name="setup_retroarch_unlink_sub">Revino la oferirea tuturor core-urilor selectate</string>
+    <string name="setup_retroarch_intro">RetroArch este instalat. Leagă-i dosarul pentru ca la pornirea jocurilor să fie oferite doar core-urile pe care le ai efectiv — altfel se afișează toate core-urile selectate (neverificate).</string>
+    <string name="setup_retroarch_link">Leagă dosarul RetroArch</string>
+    <string name="setup_retroarch_link_sub">Alege arborele de documente com.retroarch</string>
+
+    <!-- Emulators page -->
+    <string name="setup_emulators_empty">Încă nu există console cu jocuri. După ce dosarele ROM sunt scanate, fiecare consolă apare aici cu emulatorul pe care îl va porni — îl poți schimba oricând în Setări ▸ Emulatoare.</string>
+    <string name="setup_emulators_none">Niciunul</string>
+
+    <!-- Windows games page -->
+    <string name="setup_windows_intro">Alege dosarul care conține câte un subdosar per joc. PFP îl scanează pentru jocurile Windows; nimic din el nu este modificat.</string>
+    <string name="setup_windows_detected">Detectat</string>
+    <string name="setup_windows_set">Setează dosarul de jocuri Windows</string>
+    <string name="setup_windows_change">Schimbă dosarul de jocuri Windows</string>
+    <string name="setup_windows_set_sub">Acordă acces la dosarul în care sunt instalate jocurile</string>
+
+    <!-- Hints and touch page -->
+    <string name="setup_hints_enabled">Indicii pentru butoane</string>
+    <string name="setup_hints_enabled_sub">Eticheta de indicii la inactivitate în XMB, în Setări și pe ecranele media</string>
+    <string name="setup_hints_delay">Întârzierea indiciilor</string>
+    <string name="setup_hints_delay_sub">Cât timp să aștepți înainte să apară indiciile (1–5 secunde)</string>
+    <plurals name="setup_hints_delay_seconds">
+        <item quantity="one">%1$d secundă</item>
+        <item quantity="few">%1$d secunde</item>
+        <item quantity="other">%1$d de secunde</item>
+    </plurals>
+    <string name="setup_hints_delay_fraction">%1$s secunde</string>
+    <string name="setup_hints_touch">Buton tactil</string>
+    <string name="setup_hints_touch_sub">Butonul de pe ecran pentru sertarul de aplicații — Automat îl afișează după ce atingi ecranul</string>
+    <string name="setup_touch_auto">Automat</string>
+    <string name="setup_touch_always_show">Afișează mereu</string>
+    <string name="setup_touch_always_hide">Ascunde mereu</string>
+    <string name="setup_hints_summary_on">Activat · %1$s</string>
+
+    <!-- Home app page -->
+    <string name="setup_home_intro">Android îți cere să alegi o aplicație de ecran de pornire și să confirmi. Poți reveni oricând din setările Android pentru Aplicații prestabilite.</string>
+    <string name="setup_home_current">Aplicația actuală de ecran de pornire</string>
+    <string name="setup_home_set">Setează ca ecran de pornire</string>
+    <string name="setup_home_set_sub">Deschide selectorul Android pentru aplicația de ecran de pornire</string>
+    <string name="setup_home_is_pfp">Play Field Portal</string>
+    <string name="setup_home_not_pfp">Nu este Play Field Portal</string>
+
+    <!-- Finish page -->
+    <string name="setup_finish_nothing">Încă nu s-a configurat nimic — fiecare dosar și serviciu poate fi adăugat oricând din Setări.</string>
+    <string name="setup_finish_summary">Rezumat</string>
+    <string name="setup_summary_controller">Controler</string>
+    <string name="setup_summary_rom">Biblioteca ROM</string>
+    <string name="setup_summary_music">Muzică</string>
+    <string name="setup_summary_video">Video</string>
+    <string name="setup_summary_photo">Foto</string>
+    <string name="setup_summary_artwork">Biblioteca de artwork</string>
+    <string name="setup_summary_vita">Dosarul de date Vita</string>
+    <string name="setup_summary_ps3">Dosarul de date PS3</string>
+    <string name="setup_summary_x360">Dosarul de date X360 Mobile</string>
+    <string name="setup_summary_xendroid">Dosarul de date XenDroid</string>
+    <string name="setup_summary_windows">Jocuri Windows</string>
+    <string name="setup_summary_hints">Indicii pentru butoane</string>
+    <string name="setup_summary_home">Aplicația ecran de pornire</string>
+    <string name="setup_not_set">Nesetat</string>
+    <string name="setup_connected">Conectat</string>
+    <string name="setup_retroarch_not_linked">Nelegat</string>
+    <plurals name="setup_retroarch_cores_count">
+        <item quantity="one">%1$d core</item>
+        <item quantity="few">%1$d core-uri</item>
+        <item quantity="other">%1$d de core-uri</item>
+    </plurals>
+    <string name="setup_roots_more">%1$s +încă %2$d</string>
+    <string name="setup_finish_xmb_header">Aspect XMB</string>
+    <string name="setup_finish_autofit">Ajustează automat aspectul XMB (proporții PSP) — se poate schimba oricând în Setări</string>
+    <string name="setup_finish_open_lm">Deschide Managerul bibliotecii</string>
+    <string name="setup_finish_open_lm_sub">Adaugă console și scanează dosarele ROM tocmai setate</string>
+    <string name="setup_finish_go_library">Mergi la bibliotecă</string>
+    <string name="setup_finish_go_library_sub">Sari direct la Toate jocurile</string>
+    <string name="setup_finish_done">Termină</string>
+    <string name="setup_finish_done_sub">Mergi la launcher</string>
+
+    <!-- Messages -->
+    <string name="setup_status_testing">Se testează…</string>
+    <plurals name="setup_msg_rom_folders_created">
+        <item quantity="one">S-a creat %1$d dosar de consolă. Copiază jocurile în dosarele corespunzătoare.</item>
+        <item quantity="few">S-au creat %1$d dosare de console. Copiază jocurile în dosarele corespunzătoare.</item>
+        <item quantity="other">S-au creat %1$d de dosare de console. Copiază jocurile în dosarele corespunzătoare.</item>
+    </plurals>
+    <plurals name="setup_msg_rom_folders_created_existing">
+        <item quantity="one">S-a creat %1$d dosar de consolă (%2$d existau deja). Copiază jocurile în dosarele corespunzătoare.</item>
+        <item quantity="few">S-au creat %1$d dosare de console (%2$d existau deja). Copiază jocurile în dosarele corespunzătoare.</item>
+        <item quantity="other">S-au creat %1$d de dosare de console (%2$d existau deja). Copiază jocurile în dosarele corespunzătoare.</item>
+    </plurals>
+    <string name="setup_msg_artwork_failed">Nu s-a putut configura o bibliotecă de artwork în acel dosar. Alege un dosar în care se poate scrie.</string>
+    <string name="setup_msg_artwork_reconnected">Biblioteca de artwork existentă a fost reconectată.</string>
+    <string name="setup_msg_artwork_created">Biblioteca de artwork a fost creată.</string>
+    <plurals name="setup_msg_artwork_games_linked">
+        <item quantity="one">%1$d joc legat din fișierele deja existente în dosar.</item>
+        <item quantity="few">%1$d jocuri legate din fișierele deja existente în dosar.</item>
+        <item quantity="other">%1$d de jocuri legate din fișierele deja existente în dosar.</item>
+    </plurals>
+    <string name="setup_msg_artwork_import_hint">Pune fișierele media ale altor launchere în dosarul său import/ pentru a le aduna aici.</string>
+    <string name="setup_msg_import_none_yet">Încă nimic de importat — pune fișiere în directorul import/ al dosarului de artwork.</string>
+    <string name="setup_msg_import_unreadable">Acea sursă de import nu a putut fi citită.</string>
+    <string name="setup_msg_import_empty">Nimic de importat — totul este deja prezent.</string>
+    <string name="setup_msg_import_started">Se importă „%1$s” — progresul apare în notificări; detaliile ajung în Setări ▸ Import artwork.</string>
+    <string name="setup_msg_retroarch_linked">RetroArch a fost legat — core-urile instalate sunt acum oferite în Emulatoare.</string>
+    <string name="setup_msg_retroarch_rechecked">Core-urile RetroArch au fost reverificate.</string>
+    <string name="setup_msg_retroarch_unlinked">Legătura RetroArch a fost eliminată — nu vor fi oferite core-uri RetroArch până nu legi din nou.</string>
+    <string name="setup_msg_vita_set">Dosarul de date Vita3K a fost setat. Titlurile instalate pot fi scanate de pe cardul de memorie PS Vita în Managerul bibliotecii.</string>
+    <string name="setup_msg_vita_released">Dosarul de date Vita3K a fost eliberat — fișierele de pe disc nu au fost atinse.</string>
+    <string name="setup_msg_ps3_set">Dosarul de date PS3 a fost setat. Rulează Potrivire automată în Setări ▸ Realizări ▸ Actualizează realizările pentru a lega trofeele PS3.</string>
+    <string name="setup_msg_ps3_released">Dosarul de date PS3 a fost eliberat — fișierele de pe disc nu au fost atinse.</string>
+    <string name="setup_msg_x360_set">Dosarul de date %1$s a fost setat. Rulează Potrivire automată în Setări ▸ Realizări ▸ Actualizează realizările pentru a lega realizările Xbox 360.</string>
+    <string name="setup_msg_x360_released">Dosarul de date %1$s a fost eliberat — fișierele de pe disc nu au fost atinse.</string>
+    <string name="setup_msg_sgdb_connected">SteamGridDB conectat</string>
+    <string name="setup_msg_tgdb_connected">TheGamesDB conectat</string>
+    <string name="setup_msg_igdb_connected">IGDB conectat</string>
+    <string name="setup_msg_ss_connected">ScreenScraper conectat</string>
+    <string name="setup_msg_ra_connected">RetroAchievements conectat</string>
+
+    <!-- ROM root scan report -->
+    <string name="setup_rom_scan_no_root">Adaugă mai întâi un dosar ROM în Setări ▸ Bibliotecă ▸ Managerul bibliotecii.</string>
+    <string name="setup_rom_scan_none">S-au scanat %1$s în %2$s; nu s-au găsit ROM-uri noi. Copiază jocurile în dosarele de sistem corespunzătoare și încearcă din nou.</string>
+    <string name="setup_rom_scan_loaded">S-au încărcat %1$s, %2$s din %3$s.</string>
+    <string name="setup_rom_scan_systems_new">%1$s (%2$s)</string>
+    <plurals name="setup_rom_scan_folders">
+        <item quantity="one">%1$d dosar</item>
+        <item quantity="few">%1$d dosare</item>
+        <item quantity="other">%1$d de dosare</item>
+    </plurals>
+    <plurals name="setup_rom_scan_systems">
+        <item quantity="one">%1$d sistem</item>
+        <item quantity="few">%1$d sisteme</item>
+        <item quantity="other">%1$d de sisteme</item>
+    </plurals>
+    <plurals name="setup_rom_scan_new_consoles">
+        <item quantity="one">%1$d consolă nouă</item>
+        <item quantity="few">%1$d console noi</item>
+        <item quantity="other">%1$d de console noi</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roms">
+        <item quantity="one">%1$d ROM</item>
+        <item quantity="few">%1$d ROM-uri</item>
+        <item quantity="other">%1$d de ROM-uri</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roots">
+        <item quantity="one">%1$d dosar ROM</item>
+        <item quantity="few">%1$d dosare ROM</item>
+        <item quantity="other">%1$d de dosare ROM</item>
+    </plurals>
+    <plurals name="setup_rom_scan_skipped">
+        <item quantity="one">%1$d dosar omis (biblioteca nu poate fi citită).</item>
+        <item quantity="few">%1$d dosare omise (biblioteca nu poate fi citită).</item>
+        <item quantity="other">%1$d de dosare omise (biblioteca nu poate fi citită).</item>
+    </plurals>
+
+    <!-- Media library scans -->
+    <string name="setup_media_add_root_first">Adaugă mai întâi un dosar rădăcină.</string>
+    <string name="setup_media_not_ready">Stocarea acestui dosar nu este încă pregătită. Încearcă din nou peste puțin timp.</string>
+    <string name="setup_media_scan_failed_title">Scanarea %1$s a eșuat</string>
+    <string name="setup_media_scan_finished_title">Scanarea %1$s s-a încheiat</string>
+    <string name="setup_media_scan_stopped_title">Scanarea %1$s a fost oprită</string>
+    <string name="setup_media_scanning_title">Se scanează %1$s</string>
+    <string name="setup_media_stop_note">Dosarul va fi scanat din nou data viitoare.</string>
+    <string name="setup_media_stopped">Oprită înainte de final</string>
+    <plurals name="setup_media_tracks">
+        <item quantity="one">%1$d piesă</item>
+        <item quantity="few">%1$d piese</item>
+        <item quantity="other">%1$d de piese</item>
+    </plurals>
+    <plurals name="setup_media_photos">
+        <item quantity="one">%1$d fotografie</item>
+        <item quantity="few">%1$d fotografii</item>
+        <item quantity="other">%1$d de fotografii</item>
+    </plurals>
+    <plurals name="setup_media_videos">
+        <item quantity="one">%1$d videoclip</item>
+        <item quantity="few">%1$d videoclipuri</item>
+        <item quantity="other">%1$d de videoclipuri</item>
+    </plurals>
+    <plurals name="setup_media_roots">
+        <item quantity="one">%1$d rădăcină</item>
+        <item quantity="few">%1$d rădăcini</item>
+        <item quantity="other">%1$d de rădăcini</item>
+    </plurals>
+    <string name="setup_media_found">S-au găsit %1$s în %2$s.</string>
+</resources>

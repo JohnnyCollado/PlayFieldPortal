@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">Pohyb</string>
+    <string name="motion_summary">Kolik se toho hýbe samo od sebe.</string>
+    <string name="motion_detail_animated">Všechno se hýbe</string>
+    <string name="motion_detail_reduced">Jen vybraná položka</string>
+    <string name="motion_detail_static">Nic samo od sebe</string>
+    <string name="motion_sub_animated">Hýbe se vše, co může: obrázky, ikony, tapety, pozadí i záře. Spotřebuje nejvíce baterie.</string>
+    <string name="motion_sub_reduced">Hýbe se jen vybraná položka: její obrázek, videoukázka a záře. Pozadí se hýbe dál.</string>
+    <string name="motion_sub_static">Nic se nehýbe samo od sebe. Nabídky se při procházení stále posouvají.</string>
+    <string name="motion_holds_background">Zastaveno, dokud je „Pohyb“ nastaveno na „Statické“.</string>
+    <string name="motion_holds_glow">V klidu, dokud je „Pohyb“ nastaveno na „Statické“.</string>
+</resources>

@@ -13,6 +13,8 @@ import com.playfieldportal.core.data.saf.matchesCachedFile
 import com.playfieldportal.core.data.saf.walkSafTree
 import com.playfieldportal.core.domain.model.Photo
 import com.playfieldportal.core.domain.model.PhotoLibrary
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.library.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -64,7 +66,7 @@ sealed interface PhotoScanResult {
         /** Store this alongside the rows; pass it back as `knownSignature` next time. */
         val signature: String,
     ) : PhotoScanResult
-    data class Error(val libraryId: String, val message: String) : PhotoScanResult
+    data class Error(val libraryId: String, val message: UiText) : PhotoScanResult
 }
 
 /**
@@ -103,7 +105,7 @@ class PhotoScanner @Inject constructor(
         val treeUri = runCatching { Uri.parse(library.treeUri) }.getOrNull()
         val root = treeUri?.let { DocumentFile.fromTreeUri(context, it) }
         if (treeUri == null || root == null || !root.canRead()) {
-            send(PhotoScanResult.Error(library.id, "Permission lost, re-select folder."))
+            send(PhotoScanResult.Error(library.id, UiText.res(R.string.scan_error_permission_lost)))
             return@channelFlow
         }
 
@@ -114,7 +116,7 @@ class PhotoScanner @Inject constructor(
         // Part of the tree could not be listed: replacing the library from this walk would drop
         // everything in the unread folders (survey L17). Nothing is changed; the next scan retries.
         if (walk.incomplete) {
-            send(PhotoScanResult.Error(library.id, "Part of the folder couldn't be read, so nothing was changed. Try again in a moment."))
+            send(PhotoScanResult.Error(library.id, UiText.res(R.string.scan_error_partial_read)))
             return@channelFlow
         }
         if (!deep && knownSignature != null && walk.signature == knownSignature) {

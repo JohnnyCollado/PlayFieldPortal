@@ -3,6 +3,8 @@ package com.playfieldportal.feature.library.scanner
 import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
 import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.domain.model.MemoryCard
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.library.R
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
@@ -86,11 +88,8 @@ class ScanSourceResolver @Inject constructor(
         val UNSURVEYED_SOURCE: (Set<String>) -> Flow<ScanResult> = {
             flowOf(
                 ScanResult.Complete(emptyList(), 0, emptyList(), emptyList(), presentRomPaths = null),
-                ScanResult.Error(UNREADABLE_ROOT_MESSAGE),
+                ScanResult.Error(UiText.res(R.string.scan_error_root_unreadable)),
             )
         }
-
-        const val UNREADABLE_ROOT_MESSAGE =
-            "A ROM folder could not be read. If it is on an SD card, check that the card is inserted."
     }
 }

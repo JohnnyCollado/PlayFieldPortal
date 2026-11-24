@@ -30,7 +30,7 @@ class IconFiltersTest {
     fun `group counts cover the editable slots only`() {
         val counts = IconPicker.counts()
         assertEquals(
-            mapOf(IconEditorTab.CROSSBAR to 9, IconEditorTab.ITEMS to 38, IconEditorTab.CONSOLES to 45, IconEditorTab.PHYSICAL_MEDIA to 42),
+            mapOf(IconEditorTab.CROSSBAR to 9, IconEditorTab.ITEMS to 45, IconEditorTab.CONSOLES to 45, IconEditorTab.PHYSICAL_MEDIA to 42),
             counts,
         )
         assertEquals(EditableSlots.ALL.size, counts.values.sum())

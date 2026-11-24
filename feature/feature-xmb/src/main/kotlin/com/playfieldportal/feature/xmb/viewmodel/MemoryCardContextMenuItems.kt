@@ -1,5 +1,8 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.xmb.R
+
 /**
  * The Games root's two card menus, from the state they depend on. Kept out of [XMBViewModel] for
  * the same reason as [gameContextMenuItems]: their contents can be pinned without building it.
@@ -10,10 +13,10 @@ package com.playfieldportal.feature.xmb.viewmodel
  * the menu it was chosen from says which scope.
  */
 
-private const val GROUP_GAMES = "Games"
-private const val GROUP_UPDATE = "Update"
-private const val GROUP_DISPLAY = "Display"
-private const val GROUP_MANAGE = "Manage"
+private val GROUP_GAMES = UiText.res(R.string.xmbm_group_games)
+private val GROUP_UPDATE = UiText.res(R.string.xmbm_group_update)
+private val GROUP_DISPLAY = UiText.res(R.string.xmbm_group_display)
+private val GROUP_MANAGE = UiText.res(R.string.xmbm_group_manage)
 
 /**
  * One platform Memory Card's menu.
@@ -25,43 +28,43 @@ private const val GROUP_MANAGE = "Manage"
 internal fun platformCardMenuItems(
     platformId: String,
     pinned: Boolean,
-    iconDisplayLabel: String,
-    sortLabel: String? = null,
+    iconDisplayLabel: UiText,
+    sortLabel: UiText? = null,
     canMove: Boolean = false,
 ): List<XMBContextMenuItem> = buildList {
     val isWindows = platformId == XMBViewModel.WINDOWS_PLATFORM_ID
 
     group(GROUP_GAMES) {
         // Android libraries pick installed apps; consoles scan ROM folders.
-        if (platformId == XMBViewModel.ANDROID_PLATFORM_ID) add(XMBContextMenuItem("find_games", "Find Games"))
-        else add(XMBContextMenuItem("scan_roms", "Scan for Games"))
+        if (platformId == XMBViewModel.ANDROID_PLATFORM_ID) add(XMBContextMenuItem("find_games", UiText.res(R.string.xmbm_card_find_games)))
+        else add(XMBContextMenuItem("scan_roms", UiText.res(R.string.xmbm_card_scan_roms)))
         // The Windows card is import-driven, and this is the only card menu that offers it.
-        if (isWindows) add(XMBContextMenuItem("import_pc_games", "Import PC Games"))
+        if (isWindows) add(XMBContextMenuItem("import_pc_games", UiText.res(R.string.xmbm_card_import_pc)))
     }
     group(GROUP_UPDATE) {
-        add(XMBContextMenuItem("update_metadata", "Update Metadata"))
-        add(XMBContextMenuItem("scrape_missing_artwork", "Fetch Missing Artwork"))
+        add(XMBContextMenuItem("update_metadata", UiText.res(R.string.xmbm_update_metadata)))
+        add(XMBContextMenuItem("scrape_missing_artwork", UiText.res(R.string.xmbm_fetch_missing_artwork)))
         // Achievement tracking for emulated Windows games: one folder pick covers a whole
         // library. Offered here as well as in settings because this is the card those games
         // live on, and the card's own scan deliberately does no emulator work.
-        if (isWindows) add(XMBContextMenuItem("batch_match_local", "Match Achievements"))
+        if (isWindows) add(XMBContextMenuItem("batch_match_local", UiText.res(R.string.xmbm_card_match_achievements)))
     }
     group(GROUP_DISPLAY) {
         // Icon display for THIS console only. Games on other Memory Cards are untouched;
         // "Use Global Setting" in its picker clears the console's override.
-        add(XMBContextMenuItem("icon_display_platform", "Icon Display", value = iconDisplayLabel, opensMenu = true))
+        add(XMBContextMenuItem("icon_display_platform", UiText.res(R.string.xmbm_icon_display), value = iconDisplayLabel, opensMenu = true))
         // Sort for THIS card's games only, the same way: its own, or the global one it follows.
-        if (sortLabel != null) add(XMBContextMenuItem(LIST_SORT_ROW_ID, "Sort", value = sortLabel, opensMenu = true))
+        if (sortLabel != null) add(XMBContextMenuItem(LIST_SORT_ROW_ID, UiText.res(R.string.xmbm_sort), value = sortLabel, opensMenu = true))
         // One name whichever way it is set: a label that flips leaves a user nothing to learn
         // but the row's position.
-        add(XMBContextMenuItem(if (pinned) "unpin" else "pin", "Pin to Top", value = if (pinned) "On" else "Off"))
-        if (canMove) add(XMBContextMenuItem(MOVE_ROW_ID, "Move"))
+        add(XMBContextMenuItem(if (pinned) "unpin" else "pin", UiText.res(R.string.xmbm_pin_to_top), value = onOff(pinned)))
+        if (canMove) add(XMBContextMenuItem(MOVE_ROW_ID, UiText.res(R.string.xmbm_move)))
     }
     group(GROUP_MANAGE) {
-        add(XMBContextMenuItem("library_manager", "Library Manager"))
-        add(XMBContextMenuItem("hide", "Hide Card"))
+        add(XMBContextMenuItem("library_manager", UiText.res(R.string.xmbm_library_manager)))
+        add(XMBContextMenuItem("hide", UiText.res(R.string.xmbm_card_hide)))
         // The Windows Memory Card is managed by the PC import system and cannot be removed.
-        if (!isWindows) add(XMBContextMenuItem("remove", "Remove Card", isDestructive = true))
+        if (!isWindows) add(XMBContextMenuItem("remove", UiText.res(R.string.xmbm_card_remove), isDestructive = true))
     }
 }
 
@@ -73,29 +76,29 @@ internal fun platformCardMenuItems(
  * itself, and [globalSortLabel] for every game list that has no sort of its own.
  */
 internal fun allGamesMenuItems(
-    iconDisplayLabel: String,
-    sortLabel: String? = null,
-    globalSortLabel: String? = null,
+    iconDisplayLabel: UiText,
+    sortLabel: UiText? = null,
+    globalSortLabel: UiText? = null,
     canMove: Boolean = false,
 ): List<XMBContextMenuItem> = buildList {
     group(GROUP_GAMES) {
-        add(XMBContextMenuItem("scan_all", "Scan All Cards"))
+        add(XMBContextMenuItem("scan_all", UiText.res(R.string.xmbm_card_scan_all)))
     }
     group(GROUP_UPDATE) {
-        add(XMBContextMenuItem("update_metadata", "Update Metadata"))
-        add(XMBContextMenuItem("scrape_missing_artwork", "Fetch Missing Artwork"))
+        add(XMBContextMenuItem("update_metadata", UiText.res(R.string.xmbm_update_metadata)))
+        add(XMBContextMenuItem("scrape_missing_artwork", UiText.res(R.string.xmbm_fetch_missing_artwork)))
         // Full-library Scan & Relink from the card the whole collection lives on (C22 task T3).
         // Runs as a worker, so it survives leaving this screen.
-        add(XMBContextMenuItem("relink_artwork", "Relink Artwork"))
+        add(XMBContextMenuItem("relink_artwork", UiText.res(R.string.xmbm_card_relink_artwork)))
     }
     group(GROUP_DISPLAY) {
-        add(XMBContextMenuItem("icon_display_global", "Icon Display", value = iconDisplayLabel, opensMenu = true))
-        if (sortLabel != null) add(XMBContextMenuItem(LIST_SORT_ROW_ID, "Sort", value = sortLabel, opensMenu = true))
-        if (globalSortLabel != null) add(XMBContextMenuItem(GLOBAL_SORT_ROW_ID, "Global Sort", value = globalSortLabel, opensMenu = true))
-        if (canMove) add(XMBContextMenuItem(MOVE_ROW_ID, "Move"))
+        add(XMBContextMenuItem("icon_display_global", UiText.res(R.string.xmbm_icon_display), value = iconDisplayLabel, opensMenu = true))
+        if (sortLabel != null) add(XMBContextMenuItem(LIST_SORT_ROW_ID, UiText.res(R.string.xmbm_sort), value = sortLabel, opensMenu = true))
+        if (globalSortLabel != null) add(XMBContextMenuItem(GLOBAL_SORT_ROW_ID, UiText.res(R.string.xmbm_card_global_sort), value = globalSortLabel, opensMenu = true))
+        if (canMove) add(XMBContextMenuItem(MOVE_ROW_ID, UiText.res(R.string.xmbm_move)))
     }
     group(GROUP_MANAGE) {
-        add(XMBContextMenuItem("library_manager", "Library Manager"))
+        add(XMBContextMenuItem("library_manager", UiText.res(R.string.xmbm_library_manager)))
     }
 }
 
@@ -105,13 +108,18 @@ internal fun allGamesMenuItems(
  * A card that could not be scanned is always named: "nothing new" and "could not look" lead to
  * opposite actions, so one must never be reported as the other.
  */
-internal fun scanAllSummary(added: Int, cards: Int, failed: Int): String {
+internal fun scanAllSummary(added: Int, cards: Int, failed: Int): UiText {
     val found = when (added) {
-        0 -> "No new games found"
+        0 -> UiText.res(R.string.xmbm_scan_none_new)
         // [cards] is every card scanned, not the ones that found games (survey U25).
-        else -> "$added new ${if (added == 1) "game" else "games"} · " +
-            "$cards ${if (cards == 1) "Memory Card" else "Memory Cards"} scanned"
+        else -> UiText.Joined(
+            listOf(
+                UiText.plural(R.plurals.xmbm_scan_new_games, added),
+                UiText.plural(R.plurals.xmbm_scan_cards_scanned, cards),
+            ),
+            " · ",
+        )
     }
     if (failed == 0) return found
-    return "$found · $failed ${if (failed == 1) "card" else "cards"} could not be scanned"
+    return UiText.Joined(listOf(found, UiText.plural(R.plurals.xmbm_scan_cards_failed, failed)), " · ")
 }

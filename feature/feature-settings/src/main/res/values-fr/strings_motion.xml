@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">Mouvement</string>
+    <string name="motion_summary">Ce qui bouge de lui-même.</string>
+    <string name="motion_detail_animated">Tout bouge</string>
+    <string name="motion_detail_reduced">Seulement la sélection</string>
+    <string name="motion_detail_static">Rien de lui-même</string>
+    <string name="motion_sub_animated">Tout ce qui peut bouger bouge : illustrations, icônes, fonds d\'écran, l\'arrière-plan et le halo. Consomme le plus de batterie.</string>
+    <string name="motion_sub_reduced">Seul l\'élément sélectionné bouge : son illustration, son extrait vidéo et son halo. L\'arrière-plan continue de bouger.</string>
+    <string name="motion_sub_static">Rien ne bouge de lui-même. Les menus glissent toujours quand vous les parcourez.</string>
+    <string name="motion_holds_background">Figé tant que « Mouvement » est réglé sur « Statiques ».</string>
+    <string name="motion_holds_glow">Fixe tant que « Mouvement » est réglé sur « Statiques ».</string>
+</resources>

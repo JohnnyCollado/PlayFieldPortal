@@ -5,7 +5,9 @@ import com.playfieldportal.core.archive.SafeArchivePath
 import com.playfieldportal.core.archive.ZipLimits
 import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.core.domain.model.EmulatorProfileAdmission
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.backup.BACKUP_FILES_PREFIX
+import com.playfieldportal.feature.backup.R
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import timber.log.Timber
@@ -55,7 +57,7 @@ object RestoreArchive {
         staging.mkdirs()
 
         val jsonEntries = mutableMapOf<String, String>()
-        val refusals = mutableListOf<String>()
+        val refusals = mutableListOf<UiText>()
         var staged = 0
 
         BoundedZipReader.read(source, limits) { entry ->
@@ -72,7 +74,7 @@ object RestoreArchive {
             // which is precisely what happened before.
             val dest = SafeArchivePath.resolveWithinRoots(staging, relative, bundledRoots)
             if (dest == null) {
-                refusals += "Refused '$relative': not inside a restorable folder"
+                refusals += UiText.res(R.string.bak_refused_out_of_root, relative)
                 Timber.w("Restore refused out-of-root entry: %s", relative)
                 return@read
             }
@@ -94,7 +96,7 @@ object RestoreArchive {
      */
     private fun sanitizeProfiles(
         staging: File,
-        refusals: MutableList<String>,
+        refusals: MutableList<UiText>,
         selfPackage: String?,
     ): Int {
         val file = File(staging, PROFILES_PATH)
@@ -106,7 +108,7 @@ object RestoreArchive {
             // An unreadable profile file is dropped rather than committed verbatim: the repository
             // that reads it later would swallow the parse failure and the user would see profiles
             // silently missing with no explanation of why.
-            refusals += "Refused emulator profiles: file could not be parsed"
+            refusals += UiText.res(R.string.bak_refused_profiles_unparseable)
             Timber.w(e, "Restore refused unparseable emulator profiles")
             file.delete()
             return 1
@@ -114,7 +116,7 @@ object RestoreArchive {
 
         val result = EmulatorProfileAdmission.admit(parsed, selfPackage)
         result.refused.forEach {
-            refusals += "Refused emulator profile '${it.name}': ${it.reason}"
+            refusals += UiText.res(R.string.bak_refused_profile, it.name, it.reason)
             Timber.w("Restore refused emulator profile %s: %s", it.id, it.reason)
         }
         if (result.refused.isEmpty()) return 0
@@ -141,7 +143,7 @@ class RestoredBundle internal constructor(
     val stagingDir: File,
     private val bundledRoots: List<String>,
     /** Human-readable notes about what was turned away, for the restore summary. */
-    val refusals: List<String>,
+    val refusals: List<UiText>,
     /** How many files survived validation. */
     val stagedCount: Int,
 ) {

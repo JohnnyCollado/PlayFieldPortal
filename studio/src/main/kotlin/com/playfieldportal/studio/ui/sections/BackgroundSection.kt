@@ -8,7 +8,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Text
+import com.playfieldportal.studio.i18n.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -53,10 +53,10 @@ fun motionControlLabel(source: BackgroundSource): String = when (source) {
 
 /** (exact wave style, label) in display order — `reduced_static` is a value of its own, not a pair of toggles. */
 val MOTION_CHOICES: List<Pair<String, String>> = listOf(
-    PfpThemeManifest.WAVE_ANIMATED to "Animated",
-    PfpThemeManifest.WAVE_REDUCED to "Reduced",
-    PfpThemeManifest.WAVE_STATIC to "Static",
-    PfpThemeManifest.WAVE_REDUCED_STATIC to "Reduced + Static",
+    PfpThemeManifest.WAVE_ANIMATED to "Moving",
+    PfpThemeManifest.WAVE_REDUCED to "Moving, dim",
+    PfpThemeManifest.WAVE_STATIC to "Still",
+    PfpThemeManifest.WAVE_REDUCED_STATIC to "Still, dim",
 )
 
 /** "Still: frame at 1.5 s" for a video poster; the file does not record the time, so it can be unknown. */
@@ -106,7 +106,7 @@ fun BackgroundSection(state: StudioState, viewModel: StudioViewModel, window: Fr
             state.wallpaperFileName?.let { if (source == BackgroundSource.VIDEO) state.motionFileName ?: it else it }
                 ?: if (state.wallpaperPng != null) "(embedded image)" else "None — live wave background",
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        ButtonRow {
             when (source) {
                 BackgroundSource.WAVE -> Unit
                 BackgroundSource.IMAGE -> if (pending == null) {
@@ -151,7 +151,7 @@ fun BackgroundSection(state: StudioState, viewModel: StudioViewModel, window: Fr
         if (source == BackgroundSource.VIDEO) {
             // The still IS the video's poster: whenever playback is frozen on device the launcher shows it.
             // Without the hint, authors read the frozen poster as the video being broken.
-            HintText("The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, or a Static style).")
+            HintText("The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, a Still style, or Motion set to Static on the device).")
         }
 
         HorizontalDivider()
@@ -160,7 +160,7 @@ fun BackgroundSection(state: StudioState, viewModel: StudioViewModel, window: Fr
             if (state.lockScreenPng != null) "The theme offers this image for the device lock screen"
             else "None — the theme leaves the device lock screen alone",
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        ButtonRow {
             OutlinedButton(onClick = { pickLockScreen() }) { Text(if (state.lockScreenPng != null) "Replace…" else "Choose Image…") }
             if (state.wallpaperPng != null) {
                 OutlinedButton(onClick = viewModel::useWallpaperForLockScreen) {
@@ -216,7 +216,7 @@ private fun CropEditor(
     }
     val (outW, outH) = frame.outputSize()
     MutedText("Output ${outW}×${outH}", 11)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    ButtonRow {
         OutlinedButton(onClick = { frame = frame.centeredInSource() }) { Text("Center") }
         OutlinedButton(onClick = { frame = frame.reset() }) { Text("Reset") }
     }
@@ -225,7 +225,7 @@ private fun CropEditor(
         PosterFramePicker(atMs, pending.videoDurationMs, viewModel::pickPosterFrame)
     }
 
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    ButtonRow {
         Button(onClick = { viewModel.confirmWallpaperCrop(frame) }) { Text("Apply") }
         TextButton(onClick = viewModel::cancelWallpaperImport) { Text("Cancel") }
     }

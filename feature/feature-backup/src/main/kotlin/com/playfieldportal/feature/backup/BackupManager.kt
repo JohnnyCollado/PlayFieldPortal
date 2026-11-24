@@ -40,6 +40,7 @@ import com.playfieldportal.core.data.repository.BackupFolderRepository
 import com.playfieldportal.core.data.repository.ThemePrefKeys
 import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.domain.model.UiMediaSlot
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.backup.restore.RestoreArchive
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
@@ -53,8 +54,14 @@ import javax.inject.Singleton
 
 sealed class BackupResult {
     data class Success(val displayName: String) : BackupResult()
-    data class Failure(val reason: String, val cause: Throwable? = null) : BackupResult()
+    data class Failure(val reason: UiText, val cause: Throwable? = null) : BackupResult()
 }
+
+/** A failure whose message is user text: carried as a [UiText] so it is resolved in the user's language. */
+internal class LocalizedFailure(val text: UiText) : IllegalStateException(text.toString())
+
+private fun Throwable.failureText(): UiText =
+    (this as? LocalizedFailure)?.text ?: message?.let(UiText::raw) ?: UiText.res(R.string.bak_unknown_error)
 
 // One backup file found in the SAF backup folder.
 data class BackupInfo(val name: String, val uri: Uri, val lastModified: Long)
@@ -65,8 +72,8 @@ sealed class RestoreResult {
      * restorable folders, or an emulator profile that failed admission. A restore can succeed and
      * still have turned something away, and the user is entitled to know which.
      */
-    data class Success(val refusals: List<String> = emptyList()) : RestoreResult()
-    data class Failure(val reason: String, val cause: Throwable? = null) : RestoreResult()
+    data class Success(val refusals: List<UiText> = emptyList()) : RestoreResult()
+    data class Failure(val reason: UiText, val cause: Throwable? = null) : RestoreResult()
 }
 
 @Singleton
@@ -98,9 +105,7 @@ open class BackupManager @Inject constructor(
     ): BackupResult {
         val backupFolder = backupFolderRepository.get()
         if (backupFolder.isNullOrBlank()) {
-            return BackupResult.Failure(
-                "No backup folder set. Choose one under Settings → Backup & Restore → Backup Folder."
-            )
+            return BackupResult.Failure(UiText.res(R.string.bak_no_folder))
         }
         return runCatching {
         val games        = gameDao.getAll()
@@ -181,20 +186,20 @@ open class BackupManager @Inject constructor(
         // Never hand the user a backup that restore would refuse.
         if (!BackupLimits.fits(entryCount, totalBytes, largestEntry)) {
             tempFile.delete()
-            error(BackupLimits.TOO_LARGE_MESSAGE)
+            throw LocalizedFailure(UiText.res(R.string.bak_too_large))
         }
 
         val exported = exportToBackupFolder(backupFolder, tempFile, fileName)
         tempFile.delete()
         if (exported == null) {
-            error("Could not write to the backup folder. Choose the backup folder again in Settings ▸ System ▸ Backup & Restore.")
+            throw LocalizedFailure(UiText.res(R.string.bak_write_failed))
         }
         fileName
     }.fold(
         onSuccess = {
             tasks.report(
                 id = BACKUP_TASK_ID,
-                label = "Backup created",
+                label = context.getString(R.string.bak_task_created),
                 severity = com.playfieldportal.core.domain.model.NotificationSeverity.SUCCESS,
                 action = com.playfieldportal.core.domain.model.NotificationAction.OpenSettingsScreen("settings_backup"),
             )
@@ -205,25 +210,28 @@ open class BackupManager @Inject constructor(
             if (it is kotlinx.coroutines.CancellationException) throw it
             tasks.report(
                 id = BACKUP_TASK_ID,
-                label = "Backup failed",
-                message = it.message,
+                label = context.getString(R.string.bak_task_failed),
+                message = it.userMessage(),
                 severity = com.playfieldportal.core.domain.model.NotificationSeverity.ERROR,
                 action = com.playfieldportal.core.domain.model.NotificationAction.OpenSettingsScreen("settings_backup"),
                 detail = com.playfieldportal.core.domain.model.NotificationDetail.notes(
-                    com.playfieldportal.core.domain.model.PfpErrorCode.BK_2001, summary = it.message,
+                    com.playfieldportal.core.domain.model.PfpErrorCode.BK_2001, summary = it.userMessage(),
                     diagnostic = it.stackTraceToString().take(4_000),
                 ),
             )
-            BackupResult.Failure(it.message ?: "Unknown error", it)
+            BackupResult.Failure(it.failureText(), it)
         },
     )
     }
+
+    // The failure as the notification shows it: a localized message resolved, any other as thrown.
+    private fun Throwable.userMessage(): String? = (this as? LocalizedFailure)?.text?.resolve(context) ?: message
 
     // ── Import ──────────────────────────────────────────────────────────
 
     suspend fun restoreBackup(uri: Uri): RestoreResult = runCatching {
         val stream = context.contentResolver.openInputStream(uri)
-            ?: return RestoreResult.Failure("Could not open backup file")
+            ?: return RestoreResult.Failure(UiText.res(R.string.bak_open_failed))
 
         // Everything untrusted goes through RestoreArchive: it bounds the archive, confines staged
         // files to the roots a backup owns, and drops inadmissible emulator profiles. Nothing is
@@ -247,13 +255,13 @@ open class BackupManager @Inject constructor(
             json.decodeFromString(BackupManifest.serializer(), it)
         } ?: run {
             bundle.discard()
-            return RestoreResult.Failure("Backup is missing manifest")
+            return RestoreResult.Failure(UiText.res(R.string.bak_missing_manifest))
         }
 
         if (manifest.formatVersion > BACKUP_FORMAT_VERSION) {
             bundle.discard()
             return RestoreResult.Failure(
-                "Backup format v${manifest.formatVersion} is newer than this app supports (v$BACKUP_FORMAT_VERSION)"
+                UiText.res(R.string.bak_format_too_new, manifest.formatVersion, BACKUP_FORMAT_VERSION)
             )
         }
 
@@ -432,22 +440,25 @@ open class BackupManager @Inject constructor(
                 .onFailure { Timber.w(it, "Post-restore UI-media prune failed") }
             tasks.report(
                 id = RESTORE_TASK_ID,
-                label = "Backup restored",
-                message = if (refusals.isEmpty()) null else "${refusals.size} item(s) skipped",
+                label = context.getString(R.string.bak_task_restored),
+                message = if (refusals.isEmpty()) null else UiText.plural(R.plurals.bak_items_skipped, refusals.size).resolve(context),
                 severity = if (refusals.isEmpty()) com.playfieldportal.core.domain.model.NotificationSeverity.SUCCESS
                 else com.playfieldportal.core.domain.model.NotificationSeverity.WARNING,
                 // Each refused item, so "3 item(s) skipped" says which and why.
                 detail = refusals.takeIf { it.isNotEmpty() }?.let { skipped ->
                     com.playfieldportal.core.domain.model.NotificationDetail.results(
-                        skipped.map { reason ->
+                        skipped.map { refusal ->
+                            val reason = refusal.resolve(context)
                             com.playfieldportal.core.domain.model.ResultItem(
-                                primary = reason.substringBefore(':').take(80),
+                                // Translations may use a full-width colon (CJK) or put a space
+                                // before it (French), so split on either and trim.
+                                primary = reason.split(':', '：', limit = 2)[0].trim().take(80),
                                 outcome = com.playfieldportal.core.domain.model.ResultOutcome.SKIPPED,
                                 reason = reason,
                                 code = com.playfieldportal.core.domain.model.PfpErrorCode.BK_1001.id,
                             )
                         },
-                        labels = com.playfieldportal.core.domain.model.ResultsLabels(done = "Restored"),
+                        labels = com.playfieldportal.core.domain.model.ResultsLabels(done = context.getString(R.string.bak_results_restored)),
                     )
                 },
             )
@@ -459,15 +470,15 @@ open class BackupManager @Inject constructor(
             if (it is kotlinx.coroutines.CancellationException) throw it
             tasks.report(
                 id = RESTORE_TASK_ID,
-                label = "Restore failed",
-                message = it.message,
+                label = context.getString(R.string.bak_task_restore_failed),
+                message = it.userMessage(),
                 severity = com.playfieldportal.core.domain.model.NotificationSeverity.ERROR,
                 detail = com.playfieldportal.core.domain.model.NotificationDetail.notes(
-                    com.playfieldportal.core.domain.model.PfpErrorCode.BK_2002, summary = it.message,
+                    com.playfieldportal.core.domain.model.PfpErrorCode.BK_2002, summary = it.userMessage(),
                     diagnostic = it.stackTraceToString().take(4_000),
                 ),
             )
-            RestoreResult.Failure(it.message ?: "Unknown error", it)
+            RestoreResult.Failure(it.failureText(), it)
         },
     )
 
@@ -705,6 +716,7 @@ open class BackupManager @Inject constructor(
         stringPreferencesKey("display_item_list_motion"),
         // UMD Slot (Off / Inserted / Inserted & Recent), stored by enum name.
         stringPreferencesKey("display_umd_slot_mode"),
+        stringPreferencesKey("display_focus_glow"),
         stringPreferencesKey("pref_icon_display_mode"),
         // Animated Images (Animated / Reduced / Static), stored by enum name.
         stringPreferencesKey("pref_image_motion"),
@@ -818,6 +830,8 @@ open class BackupManager @Inject constructor(
             booleanPreferencesKey("controller_left_backs_out"),
             // Controller — PFP's own Virtual Keyboard on/off (Settings ▸ Controller).
             booleanPreferencesKey("controller_virtual_keyboard"),
+            // Controller — haptic feedback on menu steps, off by default (Settings ▸ Controller).
+            booleanPreferencesKey("controller_haptic_feedback"),
             // Artwork download preferences
             booleanPreferencesKey("pref_dl_clear_logos"),
             booleanPreferencesKey("pref_dl_heroes"),
@@ -844,6 +858,8 @@ open class BackupManager @Inject constructor(
             *com.playfieldportal.core.domain.model.AudioChannel.ALL_PREFERENCE_KEYS
                 .map { floatPreferencesKey(it) }.toTypedArray(),
             floatPreferencesKey("interface_context_menu_hint_delay_seconds"),
+            // Display ▸ Background blur (the name is BackdropBlur.PREFERENCE_KEY).
+            floatPreferencesKey("display_backdrop_blur_strength"),
             // XMB scale + crossbar position (Display ▸ Adjust XMB Layout).
             floatPreferencesKey("display_xmb_scale"),
             floatPreferencesKey("display_bar_top_fraction"),

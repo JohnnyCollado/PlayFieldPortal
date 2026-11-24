@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared by several Settings screens. -->
+    <string name="sets_on">Activat</string>
+    <string name="sets_off">Dezactivat</string>
+    <string name="sets_prompt_back">Înapoi</string>
+    <string name="sets_prompt_enter">Intră</string>
+    <string name="sets_prompt_switch">Comută</string>
+    <string name="sets_prompt_options">Opțiuni</string>
+
+    <!-- Settings ▸ Backup & Restore -->
+    <string name="sets_backup_title">Backup și restaurare</string>
+    <string name="sets_backup_group_backup">Backup</string>
+    <string name="sets_backup_last_backup">Ultimul backup</string>
+    <string name="sets_backup_never">Niciodată</string>
+    <string name="sets_backup_folder">Dosar de backup</string>
+    <string name="sets_backup_folder_saving_to">Se salvează în: %1$s  (selectează pentru a schimba)</string>
+    <string name="sets_backup_folder_not_set">Nesetat — selectează pentru a alege unde se salvează backupurile</string>
+    <string name="sets_backup_now">Fă backup acum</string>
+    <string name="sets_backup_now_help">Salvează biblioteca, setările și istoricul de joc</string>
+    <string name="sets_backup_choose_folder_first">Alege mai întâi un dosar de backup</string>
+    <string name="sets_backup_choose_folder_first_error">Alege mai întâi un dosar de backup.</string>
+    <string name="sets_backup_group_saved">Backupuri salvate</string>
+    <string name="sets_backup_group_included">Ce este inclus</string>
+    <string name="sets_backup_included_library">Biblioteca de jocuri</string>
+    <string name="sets_backup_included_history">Istoricul de joc</string>
+    <string name="sets_backup_included_categories">Categorii personalizate</string>
+    <string name="sets_backup_included_settings">Setări și chei API</string>
+    <string name="sets_backup_included_profiles">Profiluri de emulator</string>
+    <string name="sets_backup_rom_files">Fișiere ROM</string>
+    <string name="sets_backup_not_included">✗  (neinclus)</string>
+    <string name="sets_backup_group_restore">Restaurare</string>
+    <string name="sets_backup_restore_from_file">Restaurează din fișier</string>
+    <string name="sets_backup_restore_from_file_help">Caută un fișier .pfpbackup</string>
+    <string name="sets_backup_after_restoring">După restaurare</string>
+    <string name="sets_backup_after_restoring_help">Dosarele tale revin, dar accesul Android la ele nu. Leagă din nou fiecare rădăcină din Acces la rădăcini al secțiunii sale (Bibliotecă, Muzică, Video, Foto) — câte un pas; relegarea unei rădăcini restaurează dintr-odată tot ce se află sub ea.</string>
+    <string name="sets_backup_working">Se lucrează…</string>
+    <string name="sets_backup_error">Eroare</string>
+    <string name="sets_backup_creating">Se creează backupul…</string>
+    <string name="sets_backup_restoring">Se restaurează backupul…</string>
+    <string name="sets_backup_unknown_error">Eroare necunoscută</string>
+    <string name="sets_backup_delete_failed">%1$s nu a putut fi șters.</string>
+    <string name="sets_backup_menu_restore">Restaurează</string>
+    <string name="sets_backup_menu_share">Distribuie</string>
+    <string name="sets_backup_menu_delete">Șterge backupul</string>
+    <string name="sets_backup_delete_title">Ștergi backupul?</string>
+    <string name="sets_backup_delete_message">„%1$s” va fi șters. Acțiunea nu poate fi anulată.</string>
+    <string name="sets_backup_delete_confirm">Șterge</string>
+    <string name="sets_backup_restore_title">Restaurezi backupul?</string>
+    <string name="sets_backup_restore_message_named">„%1$s” va înlocui biblioteca, setările și istoricul de joc actuale. Acțiunea nu poate fi anulată.</string>
+    <string name="sets_backup_restore_message_picked">Acest backup va înlocui biblioteca, setările și istoricul de joc actuale. Acțiunea nu poate fi anulată.</string>
+    <string name="sets_backup_restore_confirm">Restaurează</string>
+    <string name="sets_backup_share_chooser">Distribuie backupul</string>
+
+    <!-- Settings ▸ Credits -->
+    <string name="sets_credits_group_xmb">Design XMB — Sony</string>
+    <string name="sets_credits_xmb_inspired">Aspectul acestui launcher este inspirat de XMB (XrossMediaBar), interfața creată de Sony pentru PlayStation Portable și PlayStation 3 — dispunerea în cruce, valul fluid și modelul de navigare sunt toate omagii aduse acesteia.</string>
+    <string name="sets_credits_xmb_trademarks">„XrossMediaBar”, „XMB”, „PSP” și „PlayStation” sunt mărci comerciale ale Sony Interactive Entertainment Inc. Play Field Portal este un proiect independent, necomercial, făcut de fani — nu este afiliat, susținut sau sponsorizat de Sony. Artwork-ul de interfață inclus provine din tema comunității „XMB Menu for ES-DE” (menționată mai jos) și rămâne proprietatea autorilor săi. Nu este inclus niciun sunet Sony: fiecare sunet de meniu este menționat separat mai jos.</string>
+    <string name="sets_credits_group_icon">Pictograma și logoul aplicației</string>
+    <string name="sets_credits_icon_designed">Pictograma și logoul aplicației Play Field Portal au fost create de johakovi. Mulțumiri imense pentru artwork-ul care îi dă launcherului identitatea.</string>
+    <string name="sets_credits_label_design">Design</string>
+    <string name="sets_credits_group_artwork">Artwork pentru sisteme și console</string>
+    <string name="sets_credits_artwork_from">Pictogramele de sistem, consolă și categorie folosite în acest launcher provin din tema „XMB Menu for ES-DE” — o recreare de către comunitate a XMB-ului PSP.</string>
+    <string name="sets_credits_artwork_rights">Toate drepturile asupra acestui artwork aparțin creatorilor săi — Anthony Caccese, pornind de la lucrarea originală a lui InitialDin. Pictogramele sunt folosite aici cu recunoștință și rămân proprietatea autorilor lor.</string>
+    <string name="sets_credits_label_project">Proiect</string>
+    <string name="sets_credits_label_authors">Autori</string>
+    <string name="sets_credits_label_source">Sursă</string>
+    <string name="sets_credits_group_buttons">Pictogramele butoanelor controlerului</string>
+    <string name="sets_credits_buttons_from">Fiecare indicație de buton de pe ecran — butoanele frontale PlayStation, Xbox și Nintendo, D-pad-urile, bumperele, trăgaciurile, stick-urile și butoanele de sistem — provine din pachetele de pictograme pentru butoane ale lui Zacksly, folosite sub licența Creative Commons Attribution 3.0.</string>
+    <string name="sets_credits_buttons_unmodified">Artwork-ul este nemodificat: doar numele fișierelor au fost schimbate în nume de resurse Android și sunt incluse doar pictogramele pe care le afișează launcherul.</string>
+    <string name="sets_credits_label_author">Autor</string>
+    <string name="sets_credits_label_website">Site web</string>
+    <string name="sets_credits_label_support">Asistență</string>
+    <string name="sets_credits_label_packs">Pachete</string>
+    <string name="sets_credits_label_license">Licență</string>
+    <string name="sets_credits_group_sounds">Sunetele meniului</string>
+    <string name="sets_credits_sounds_built">Sunetele de meniu incluse — navigare, înapoi, confirmare, eroare, pornire, notificare și sunetul de boot — sunt create din audio fără drepturi de autor publicat pe Pixabay, editat pentru launcher: tăiat, retonalizat, renivelat și convertit. Mulțumiri creatorilor pe a căror muncă se bazează setul.</string>
+    <string name="sets_credits_sounds_license">Licența de conținut Pixabay nu cere atribuire; aceasta este oferită oricum aici, cu mulțumiri. Dacă ești unul dintre acești creatori și dorești ca mențiunea să fie modificată sau un fișier eliminat, te rugăm să ne contactezi.</string>
+    <string name="sets_credits_group_metadata">Artwork și metadate pentru jocuri</string>
+    <string name="sets_credits_metadata_fetched">Copertele, cutiile 3D, imaginile cartușelor/discurilor, bannerele hero, logourile, pictogramele, manualele, clipurile video și metadatele jocurilor sunt descărcate la cererea ta de la furnizori terți și rămân proprietatea deținătorilor lor.</string>
+    <string name="sets_credits_label_primary_scraper">Scraper principal</string>
+    <string name="sets_credits_value_screenscraper">ScreenScraper — screenscraper.fr, bază de date media pentru jocuri întreținută de comunitate</string>
+    <string name="sets_credits_label_artwork">Artwork</string>
+    <string name="sets_credits_label_metadata">Metadate</string>
+    <string name="sets_credits_group_achievements">Realizări — Shiba Coins</string>
+    <string name="sets_credits_achievements_from">Datele despre realizări pentru sistemul Shiba Coins provin de la următoarele servicii și proiecte și rămân proprietatea deținătorilor lor.</string>
+    <string name="sets_credits_value_retroachievements">retroachievements.org — seturi de realizări create de comunitate și date de deblocare pentru jocuri retro, prin Web API-ul oficial RetroAchievements și clientul api-kotlin</string>
+    <string name="sets_credits_value_steam">Powered by Steam — scheme de realizări și date de deblocare prin Steam Web API, folosind propria ta cheie. Steam și logoul Steam sunt mărci comerciale ale Valve Corporation. steampowered.com</string>
+    <string name="sets_credits_goldberg_bundles">Urmărirea locală a realizărilor pentru jocurile PC cu Steam emulat include Goldberg Steam Emulator — mai exact gbe_fork, fork-ul comunității întreținut de Detanup01 și colaboratori, pornind de la Goldberg Emulator original al lui Mr. Goldberg.</string>
+    <string name="sets_credits_goldberg_license">Emulatorul este software liber licențiat sub GNU Lesser General Public License v3.0 (LGPL-3.0). Play Field Portal include o versiune nemodificată a steam_api64.dll; codul sursă corespunzător complet și textul integral al licenței sunt disponibile la linkurile de mai jos.</string>
+    <string name="sets_credits_value_gbe">gbe_fork — Detanup01 și colaboratori</string>
+    <string name="sets_credits_label_original_project">Proiectul original</string>
+    <string name="sets_credits_value_goldberg_original">Goldberg Emulator de Mr. Goldberg — gitlab.com/Mr_Goldberg/goldberg_emulator</string>
+    <string name="sets_credits_group_support">Susține proiectul</string>
+    <string name="sets_credits_support_thanks">Vă mulțumesc tuturor pentru sprijin. Am creat acest proiect ca pe o scrisoare de dragoste pentru PSP și pentru minunata comunitate care îl iubește la fel de mult, așa că acest proiect va rămâne mereu gratuit. Acestea fiind spuse, dacă apreciezi ce fac și vrei să îți arăți aprecierea și altfel, îmi poți cumpăra un taco. Desigur, donațiile sunt mereu opționale și niciodată obligatorii. Vă iubesc pe toți și La mulți ani de 15 iunie!</string>
+    <string name="sets_credits_label_buy_taco">Cumpără-mi un taco</string>
+    <string name="sets_credits_group_notes">Note</string>
+    <string name="sets_credits_notes_text">Dacă ești deținător de drepturi și dorești ca atribuirea să fie modificată sau un fișier eliminat, te rugăm să ne contactezi și problema va fi rezolvată prompt.</string>
+    <string name="sets_credits_title">Mulțumiri</string>
+    <string name="sets_credits_no_browser">Nicio aplicație nu poate deschide linkuri web. Accesează %1$s într-un browser.</string>
+
+    <!-- Settings ▸ Logs -->
+    <string name="sets_logs_title">Jurnale</string>
+    <string name="sets_logs_prompt_share">Distribuie</string>
+    <string name="sets_logs_prompt_open">Deschide</string>
+    <string name="sets_logs_prompt_clear">Golește</string>
+    <string name="sets_logs_clear_title">Golești toate jurnalele?</string>
+    <plurals name="sets_logs_clear_message">
+        <item quantity="one">Fișierul jurnal (%2$s) va fi șters. Dacă urmează să raportezi o problemă, distribuie mai întâi jurnalul. Un jurnal golit nu poate fi recuperat.</item>
+        <item quantity="few">Toate cele %1$d fișiere jurnal (%2$s) vor fi șterse. Dacă urmează să raportezi o problemă, distribuie mai întâi jurnalul. Un jurnal golit nu poate fi recuperat.</item>
+        <item quantity="other">Toate cele %1$d de fișiere jurnal (%2$s) vor fi șterse. Dacă urmează să raportezi o problemă, distribuie mai întâi jurnalul. Un jurnal golit nu poate fi recuperat.</item>
+    </plurals>
+    <string name="sets_logs_clear_confirm">Golește</string>
+    <string name="sets_logs_group_files">Fișiere jurnal</string>
+    <string name="sets_logs_empty">Încă nu există fișiere jurnal</string>
+    <string name="sets_logs_empty_help">Un jurnal nou începe la fiecare pornire a aplicației. Selectează pentru a verifica din nou.</string>
+    <string name="sets_logs_group_manage">Gestionare</string>
+    <string name="sets_logs_clear_row">Golește toate jurnalele</string>
+    <string name="sets_logs_clear_row_help">Șterge toate jurnalele salvate. Această sesiune continuă să scrie într-un fișier nou.</string>
+    <string name="sets_logs_clear_row_none">Nimic de golit</string>
+    <string name="sets_logs_group_about">Despre jurnale</string>
+    <string name="sets_logs_saved">Ce se salvează</string>
+    <string name="sets_logs_saved_help">Se păstrează doar cele mai recente sesiuni (cel mult aproximativ 2 MB). Parolele, tokenurile, numele de cont și adresele de e-mail sunt eliminate înainte de a se scrie ceva.</string>
+    <string name="sets_logs_share_file">Distribuie %1$s</string>
+    <string name="sets_logs_current">CURENT</string>
+    <string name="sets_logs_open_with">Deschide jurnalul cu</string>
+    <string name="sets_logs_share_subject">Jurnal Play Field Portal — %1$s</string>
+    <string name="sets_logs_share_chooser">Distribuie fișierul jurnal</string>
+    <string name="sets_logs_no_files">Niciun fișier</string>
+    <plurals name="sets_logs_summary">
+        <item quantity="one">%1$d fișier · %2$s</item>
+        <item quantity="few">%1$d fișiere · %2$s</item>
+        <item quantity="other">%1$d de fișiere · %2$s</item>
+    </plurals>
+    <plurals name="sets_logs_deleted">
+        <item quantity="one">S-a șters %1$d fișier (%2$s)</item>
+        <item quantity="few">S-au șters %1$d fișiere (%2$s)</item>
+        <item quantity="other">S-au șters %1$d de fișiere (%2$s)</item>
+    </plurals>
+    <string name="sets_logs_started_today">Început azi, %1$s</string>
+    <string name="sets_logs_started_yesterday">Început ieri, %1$s</string>
+    <string name="sets_logs_started_on">Început %1$s, %2$s</string>
+
+    <!-- Root folders (shared by Music, Video, Photo) -->
+    <string name="sets_roots_group">Dosare rădăcină</string>
+    <string name="sets_scanning">Se scanează…</string>
+    <string name="sets_rescan_help">Actualizează bibliotecile din fiecare dosar rădăcină</string>
+    <string name="sets_playback_group">Redare</string>
+    <string name="sets_root_kind_music">muzică</string>
+    <string name="sets_root_kind_video">video</string>
+    <string name="sets_root_kind_photo">foto</string>
+    <string name="sets_root_kind_rom">ROM</string>
+    <string name="sets_root_fallback_music">Muzică</string>
+    <string name="sets_root_fallback_video">Videoclipuri</string>
+    <string name="sets_root_fallback_photo">Fotografii</string>
+    <string name="sets_root_none">Nicio rădăcină de tip %1$s configurată</string>
+    <string name="sets_root_none_help">Adaugă un dosar mai jos pentru a începe să-ți gestionezi biblioteca</string>
+    <string name="sets_root_access_lost">Acces pierdut — folosește Editează pentru a acorda din nou accesul</string>
+    <string name="sets_root_consoles">Console: %1$s</string>
+    <string name="sets_root_kind_root">Rădăcină %1$s</string>
+    <string name="sets_label_edit_folder">Editează dosarul</string>
+    <string name="sets_label_remove_folder">Elimină dosarul</string>
+    <string name="sets_label_options_hint">Indiciu opțiuni</string>
+    <string name="sets_label_show_on_bar">Afișează pe bară</string>
+    <string name="sets_label_show_in_games">Afișează în Jocuri</string>
+    <string name="sets_label_pin_to_top">Fixează sus</string>
+    <string name="sets_root_edit_short">Editează</string>
+    <string name="sets_root_remove_short">Elimină</string>
+    <string name="sets_root_remove_title">Elimini acest dosar?</string>
+    <string name="sets_root_remove_message">PFP nu va mai folosi „%1$s”, iar ce a găsit acolo va ieși din bibliotecă. Nu se șterge niciun fișier din stocare.</string>
+    <string name="sets_root_remove_confirm">Elimină</string>
+    <string name="sets_player_builtin">Play Field Portal</string>
+    <string name="sets_player_system_default">Prestabilit de sistem</string>
+
+    <!-- Settings ▸ Music -->
+    <string name="sets_music_title">Muzică</string>
+    <string name="sets_music_player_title">Player de muzică implicit</string>
+    <string name="sets_music_player_none">Nu s-au găsit alte playere de muzică pe acest dispozitiv.</string>
+    <string name="sets_music_add_root">Adaugă rădăcină de muzică</string>
+    <string name="sets_music_add_root_help">Acordă acces la un dosar rădăcină (de ex. /Music) — adaugă mai multe pentru mai multe locații</string>
+    <string name="sets_music_rescan">Rescanează biblioteca de muzică</string>
+    <string name="sets_music_player">Player de muzică implicit</string>
+    <string name="sets_music_player_help">Aplicația care deschide piesele muzicale</string>
+
+    <!-- Settings ▸ Video -->
+    <string name="sets_video_title">Video</string>
+    <string name="sets_video_player_title">Player video implicit</string>
+    <string name="sets_video_player_none">Nu s-au găsit playere video externe pe acest dispozitiv.</string>
+    <string name="sets_video_add_root">Adaugă rădăcină video</string>
+    <string name="sets_video_add_root_help">Acordă acces la un dosar rădăcină (de ex. /Movies) — adaugă mai multe pentru mai multe locații</string>
+    <string name="sets_video_rescan">Rescanează biblioteca video</string>
+    <string name="sets_video_player">Player video implicit</string>
+    <string name="sets_video_player_help">Play Field Portal redă în aplicație; sau alege o aplicație / să fii întrebat de fiecare dată.</string>
+
+    <!-- Settings ▸ Photo -->
+    <string name="sets_photo_title">Foto</string>
+    <string name="sets_photo_add_root">Adaugă rădăcină foto</string>
+    <string name="sets_photo_add_root_help">Acordă acces la un dosar rădăcină (de ex. /Pictures) — adaugă mai multe pentru mai multe locații</string>
+    <string name="sets_photo_rescan">Rescanează biblioteca foto</string>
+    <string name="sets_photo_group_maintenance">Întreținere</string>
+    <string name="sets_photo_clear_cache">Golește memoria cache a miniaturilor</string>
+    <string name="sets_photo_clear_cache_help">Șterge miniaturile generate. O rescanare le regenerează.</string>
+    <plurals name="sets_photo_cache_cleared">
+        <item quantity="one">S-a șters %1$d miniatură din cache. Rescanează pentru a o regenera.</item>
+        <item quantity="few">S-au șters %1$d miniaturi din cache. Rescanează pentru a le regenera.</item>
+        <item quantity="other">S-au șters %1$d de miniaturi din cache. Rescanează pentru a le regenera.</item>
+    </plurals>
+
+    <!-- Settings ▸ Interface ▸ Notifications -->
+    <string name="sets_notif_title">Notificări</string>
+    <string name="sets_notif_record">Înregistrează notificările</string>
+    <string name="sets_notif_record_help">Păstrează un istoric al scanărilor, artwork-ului, descărcărilor de metadate și activității de realizări. Dezactivat oprește intrările noi; activitățile în curs își afișează în continuare progresul.</string>
+    <string name="sets_notif_group_history">Istoric</string>
+    <string name="sets_notif_keep_for">Păstrează intrările timp de</string>
+    <string name="sets_notif_keep_for_help">Intrările mai vechi sunt eliminate data viitoare când se înregistrează ceva. Oricum se aplică o limită de 200 de intrări, iar cele citite sunt eliminate primele.</string>
+    <string name="sets_notif_never">Niciodată</string>
+    <plurals name="sets_notif_days">
+        <item quantity="one">%1$d zi</item>
+        <item quantity="few">%1$d zile</item>
+        <item quantity="other">%1$d de zile</item>
+    </plurals>
+    <string name="sets_notif_mark_read">Marchează toate ca citite</string>
+    <string name="sets_notif_mark_read_help">Șterge numărul de necitite din bara de stare</string>
+    <plurals name="sets_notif_unread">
+        <item quantity="one">%1$d necitită</item>
+        <item quantity="few">%1$d necitite</item>
+        <item quantity="other">%1$d de necitite</item>
+    </plurals>
+    <string name="sets_notif_none_unread">Nicio notificare necitită</string>
+    <string name="sets_notif_clear_all">Golește tot</string>
+    <string name="sets_notif_clear_all_help">Golește istoricul. Activitățile încă în curs nu sunt afectate.</string>
+    <plurals name="sets_notif_stored">
+        <item quantity="one">%1$d stocată</item>
+        <item quantity="few">%1$d stocate</item>
+        <item quantity="other">%1$d de stocate</item>
+    </plurals>
+
+    <!-- Settings ▸ System ▸ System Update -->
+    <string name="sets_update_title">Actualizare sistem</string>
+    <string name="sets_update_group_update">Actualizare</string>
+    <string name="sets_update_installed">Versiunea instalată</string>
+    <string name="sets_update_latest">Cea mai recentă versiune</string>
+    <string name="sets_update_check">Caută actualizări</string>
+    <string name="sets_update_checking">Se verifică…</string>
+    <string name="sets_update_notifications">Notificări de actualizare</string>
+    <string name="sets_update_notifications_help">Amintește-mi în Notificări când apare o versiune nouă, cel mult o dată pe zi</string>
+    <string name="sets_update_group_changelog">Istoric modificări</string>
+    <string name="sets_update_no_releases">Încă nu s-au încărcat versiuni</string>
+    <string name="sets_update_no_releases_help">Caută actualizări pentru a încărca istoricul modificărilor</string>
+    <string name="sets_update_install">Descarcă și instalează %1$s</string>
+    <string name="sets_update_cannot_install">Această versiune nu poate instala actualizări de aici</string>
+    <string name="sets_update_handed_over">Confirmă în programul de instalare Android pentru a finaliza</string>
+    <string name="sets_update_downloading">Se descarcă…</string>
+    <string name="sets_update_install_help">Android îți cere confirmarea înainte de a instala ceva</string>
+    <string name="sets_update_no_summary">Niciun rezumat pentru această versiune</string>
+    <string name="sets_update_full_notes">Notele complete ale versiunii</string>
+    <string name="sets_update_full_notes_help">Deschide GitHub în browser</string>
+    <string name="sets_edition_full">Completă</string>
+    <string name="sets_edition_lite">Lite</string>
+    <string name="sets_update_installed_label">%1$s · %2$s</string>
+    <string name="sets_update_unknown_version">Necunoscută</string>
+    <string name="sets_update_available">%1$s disponibilă</string>
+    <string name="sets_update_not_checked">Încă neverificat</string>
+    <string name="sets_update_up_to_date">La zi</string>
+    <string name="sets_update_never_checked">Niciodată verificat</string>
+    <string name="sets_update_checked">Verificat %1$s</string>
+    <string name="sets_update_tag_new">Nou</string>
+    <string name="sets_update_tag_installed">Instalată</string>
+    <string name="sets_update_msg_available">Este disponibilă o versiune nouă.</string>
+    <string name="sets_update_msg_latest">Ai cea mai recentă versiune.</string>
+    <string name="sets_update_msg_offline">GitHub nu a putut fi accesat. Încearcă din nou mai târziu.</string>
+    <string name="sets_update_msg_invalid">GitHub a trimis un răspuns neașteptat. Încearcă din nou mai târziu.</string>
+    <string name="sets_update_no_apk">Versiunea %1$s nu are încă o descărcare %2$s. Încearcă din nou mai târziu.</string>
+    <string name="sets_update_download_failed">Actualizarea nu a putut fi descărcată. Verifică conexiunea și încearcă din nou.</string>
+    <string name="sets_update_not_newer">Descărcarea nu este o versiune mai nouă a acestei aplicații, așa că nu a fost instalată.</string>
+    <string name="sets_update_no_installer">Programul de instalare Android nu a putut fi deschis pe acest dispozitiv.</string>
+    <string name="sets_update_reminder_installed">Versiunea %1$s este instalată.</string>
+    <string name="sets_update_reminder_available">Versiunea %1$s este disponibilă.</string>
+
+    <!-- Settings ▸ About -->
+    <string name="sets_about_label_version">Versiune</string>
+    <string name="sets_about_label_build">Build</string>
+    <string name="sets_about_label_edition">Ediție</string>
+    <string name="sets_about_label_min_android">Android minim</string>
+    <string name="sets_about_label_target">Țintă</string>
+    <string name="sets_about_group_open_source">Open source</string>
+    <string name="sets_about_value_compose">Framework UI</string>
+    <string name="sets_about_value_room">Bază de date locală</string>
+    <string name="sets_about_value_hilt">Injectarea dependențelor</string>
+    <string name="sets_about_value_ktor">Client de rețea</string>
+    <string name="sets_about_value_coil">Încărcarea imaginilor</string>
+    <string name="sets_about_value_media3">Clipuri video și redare</string>
+    <string name="sets_about_value_workmanager">Sarcini în fundal</string>
+    <string name="sets_about_value_timber">Jurnalizare</string>
+    <string name="sets_about_group_credits">Mulțumiri</string>
+    <string name="sets_about_label_art_media">Artwork și media</string>
+    <string name="sets_about_label_metadata">Metadate</string>
+    <string name="sets_about_label_inspired">Inspirat de</string>
+    <string name="sets_about_label_see_also">Vezi și</string>
+    <string name="sets_about_value_see_also">Setări ▸ Mulțumiri</string>
+    <string name="sets_about_group_legal">Informații legale</string>
+    <string name="sets_about_legal_independent">Play Field Portal este un proiect independent făcut de fani, neafiliat cu Sony Interactive Entertainment.</string>
+    <string name="sets_about_legal_trademarks">PlayStation, PSP și XMB sunt mărci comerciale ale Sony Interactive Entertainment Inc.</string>
+    <string name="sets_about_title">Despre</string>
+    <string name="sets_about_unknown">necunoscut</string>
+
+    <!-- Artwork orphans -->
+    <string name="sets_orphan_linked">Artwork legat — va rămâne legat la scanările viitoare.</string>
+    <string name="sets_orphan_link_failed">Fișierul nu a putut fi legat — rulează Scanează și leagă din nou, apoi încearcă iar.</string>
+
+    <!-- Settings ▸ Sound -->
+    <string name="sets_audio_custom_sound">Sunet personalizat</string>
+    <string name="sets_audio_import_failed">Sunetul nu a putut fi importat. Încearcă alt fișier.</string>
+
+    <!-- Importing a PSP theme (.ptf) -->
+    <string name="sets_ptf_wallpaper_only">„%1$s” importat — doar imaginea de fundal</string>
+    <plurals name="sets_ptf_icons">
+        <item quantity="one">„%1$s” importat — imaginea de fundal și %2$d pictogramă</item>
+        <item quantity="few">„%1$s” importat — imaginea de fundal și %2$d pictograme</item>
+        <item quantity="other">„%1$s” importat — imaginea de fundal și %2$d de pictograme</item>
+    </plurals>
+    <plurals name="sets_ptf_icons_tint">
+        <item quantity="one">„%1$s” importat — imaginea de fundal și %2$d pictogramă, nuanță potrivită %3$d%%</item>
+        <item quantity="few">„%1$s” importat — imaginea de fundal și %2$d pictograme, nuanță potrivită %3$d%%</item>
+        <item quantity="other">„%1$s” importat — imaginea de fundal și %2$d de pictograme, nuanță potrivită %3$d%%</item>
+    </plurals>
+    <string name="sets_ptf_cxmb_unsupported">Temele CXMB (.ctf) nu sunt acceptate — doar temele oficiale .ptf</string>
+
+    <!-- Connecting services -->
+    <string name="sets_svc_steam_connected">Steam conectat</string>
+    <string name="sets_svc_steam_resolved">Steam conectat — „%1$s” a fost identificat</string>
+    <string name="sets_svc_steam_unresolved">Cheia a fost salvată, dar „%1$s” nu a putut fi identificat. Introdu SteamID64.</string>
+    <string name="sets_svc_valid">Valid</string>
+    <string name="sets_svc_igdb_invalid">Nevalid — verifică Client ID și Secret</string>
+    <string name="sets_svc_screenscraper_invalid">Nevalid — verifică numele de utilizator și parola</string>
+    <plurals name="sets_svc_screenscraper_valid_threads">
+        <item quantity="one">Valid — %1$s fir</item>
+        <item quantity="few">Valid — %1$s fire</item>
+        <item quantity="other">Valid — %1$s de fire</item>
+    </plurals>
+    <plurals name="sets_svc_screenscraper_valid_both">
+        <item quantity="one">Valid — %1$s fir, %2$s cereri/zi</item>
+        <item quantity="few">Valid — %1$s fire, %2$s cereri/zi</item>
+        <item quantity="other">Valid — %1$s de fire, %2$s cereri/zi</item>
+    </plurals>
+    <string name="sets_svc_screenscraper_valid_requests">Valid, %1$s cereri/zi</string>
+
+    <!-- Settings ▸ Controller -->
+    <string name="sets_controller_title">Controler</string>
+    <string name="sets_controller_group_ab">Confirmare și înapoi</string>
+    <string name="sets_controller_ab_help">Controlează ce buton confirmă și care merge înapoi. Se aplică global tuturor meniurilor launcherului.</string>
+    <string name="sets_controller_group_xy">Opțiuni și sortare</string>
+    <string name="sets_controller_xy_help">Inversează acțiunile X și Y doar în interfața launcherului. Nu afectează comenzile emulatorului.</string>
+    <string name="sets_controller_group_type">Tip de controler</string>
+    <string name="sets_controller_type_help">Schimbă pictogramele și etichetele butoanelor afișate în indicațiile de ajutor.</string>
+    <string name="sets_controller_type">Tip</string>
+    <string name="sets_controller_type_sub">Afectează bara de ajutor din partea de jos a launcherului</string>
+    <string name="sets_controller_group_scroll">Viteza de derulare</string>
+    <string name="sets_controller_scroll_help">Cât de repede derulează listele cât timp ții apăsată o direcție. Ținerea mai lungă accelerează; înclinarea completă a stick-ului derulează la viteză maximă.</string>
+    <string name="sets_controller_scroll_sub">Se aplică navigării cu D-pad-ul și stick-ul ținute apăsat</string>
+    <string name="sets_controller_group_navigation">Navigare</string>
+    <string name="sets_controller_left_backs_out">Stânga iese</string>
+    <string name="sets_controller_left_backs_out_help">Apasă STÂNGA pentru a ieși dintr-un dosar sau panou — doar acolo unde STÂNGA nu face altceva</string>
+    <string name="sets_controller_group_keyboard">Tastatură</string>
+    <string name="sets_controller_virtual_keyboard">Tastatură virtuală</string>
+    <string name="sets_controller_virtual_keyboard_help">Tastează cu controlerul pe tastatura proprie a PFP. Când este dezactivată sau când folosești atingerea, se deschide tastatura sistemului</string>
+    <string name="sets_controller_group_reset">Resetare</string>
+    <string name="sets_controller_reset">Resetează toate setările controlerului</string>
+    <string name="sets_controller_reset_help">Restabilește presetările implicite de inversare și tip</string>
+</resources>

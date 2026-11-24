@@ -9,10 +9,12 @@ import com.playfieldportal.core.data.repository.CollectionsOnDelete
 import com.playfieldportal.core.data.repository.CustomIconStore
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.CategoryType
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.icons.CATEGORY_ICON_CATALOG
 import com.playfieldportal.core.ui.icons.FALLBACK_CATEGORY_ICON
 import com.playfieldportal.core.ui.icons.UserCategoryIconKeys
 import com.playfieldportal.core.ui.icons.categoryIconFor
+import com.playfieldportal.feature.settings.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -43,20 +45,20 @@ data class CategoryRow(
     // Custom memory cards homed in this category — deleting it has to say what becomes of them.
     val customCardCount: Int = 0,
     // The column those cards would move to if the category is deleted and they are kept.
-    val cardHomeName: String = "",
+    val cardHomeName: UiText = UiText.raw(""),
     // A picked device image is assigned by file presence (the store's directory is the truth); the
     // row's iconKey stays as the built-in it falls back to when the image is removed.
     val hasImage: Boolean = false,
     // What the detail "Change Icon" value and the list sublabel print instead of the raw key.
-    val iconLabel: String = "",
+    val iconLabel: UiText = UiText.raw(""),
     // The store key a device image for this category lives under; null for protected categories and
     // ids that don't fit the key pattern, which are never offered "From Your Device".
     val deviceImageKey: String? = null,
 )
 
 /** Readable value for a category's icon: the image when it has one, else the catalog label. */
-fun iconValueLabel(iconKey: String, hasImage: Boolean): String =
-    if (hasImage) "Your Image" else categoryIconFor(iconKey).label
+fun iconValueLabel(iconKey: String, hasImage: Boolean): UiText =
+    if (hasImage) UiText.res(R.string.lib_cat_your_image) else UiText.raw(categoryIconFor(iconKey).label)
 
 data class IconOption(val key: String, val label: String)
 
@@ -82,7 +84,7 @@ data class CategoryManagerUiState(
     val renameTargetId: String? = null,
     val returnFocusKey: String? = null,
     // Why the last device-image pick was rejected; shown under the "From Your Device" group.
-    val message: String? = null,
+    val message: UiText? = null,
 ) {
     val detail: CategoryRow? get() = categories.firstOrNull { it.id == detailId }
 }
@@ -128,7 +130,10 @@ class CategoryManagerViewModel @Inject constructor(
                     canHide            = it.id != BuiltInCategory.SETTINGS,
                     customCardCount    = cardCounts[it.id] ?: 0,
                     cardHomeName       = CategoryRepositoryImpl.collectionHomeFor(it.isGamingCategory)
-                        .let { home -> names[home] ?: if (it.isGamingCategory) "Game" else "App Store" },
+                        .let { home ->
+                            names[home]?.let { UiText.raw(it) }
+                                ?: UiText.res(if (it.isGamingCategory) R.string.lib_cat_home_game else R.string.lib_cat_home_app_store)
+                        },
                     hasImage           = hasImage,
                     iconLabel          = iconValueLabel(it.iconKey, hasImage),
                     deviceImageKey     = deviceImageKey,
@@ -219,7 +224,7 @@ class CategoryManagerViewModel @Inject constructor(
         viewModelScope.launch {
             val result = customIconStore.import(key, uri, mime)
             if (!result.ok) {
-                _scratch.update { it.copy(message = result.message) }
+                _scratch.update { it.copy(message = result.message?.let { UiText.raw(it) }) }
                 return@launch
             }
             _scratch.update {
@@ -267,14 +272,14 @@ class CategoryManagerViewModel @Inject constructor(
                 // An image-only category keeps the catalog's own fallback glyph underneath.
                 val iconKey = s.pendingIconKey ?: FALLBACK_CATEGORY_ICON.key
                 val newId = categoryRepository.createCustomCategory(name, iconKey, isGaming)
-                var message: String? = null
+                var message: UiText? = null
                 if (s.pendingHasImage) {
                     val target = UserCategoryIconKeys.keyFor(newId)
                     val moved = target != null && customIconStore.move(UserCategoryIconKeys.DRAFT_KEY, target)
                     if (!moved) {
                         // The category exists either way; don't leave the draft behind for the sweep.
                         customIconStore.clear(UserCategoryIconKeys.DRAFT_KEY)
-                        message = "Category created, but its image could not be saved"
+                        message = UiText.res(R.string.lib_cat_created_image_failed)
                     }
                 }
                 _scratch.update {

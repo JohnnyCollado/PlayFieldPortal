@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui
 
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.domain.model.DetailAction
 import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NotificationDetail
@@ -28,6 +29,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
 /**
  * Which shared modal the XMB shell shows for a given UI state. The mapping carries two rules that
@@ -35,6 +40,8 @@ import org.junit.Test
  * blank value while a collection or playlist name never does, and the Windows setup prompt keeps
  * its own button words.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class ShellModalSpecTest {
 
     private val confirmed = mutableListOf<String>()
@@ -42,6 +49,7 @@ class ShellModalSpecTest {
 
     private fun specFor(state: XMBUiState): PfpModalSpec? = shellModalSpec(
         uiState = state,
+        res = RuntimeEnvironment.getApplication().resources,
         onConfirmAppRename = { confirmed += "app:$it" },
         onCancelAppRename = { cancels++ },
         onConfirmCollectionName = { confirmed += "collection:$it" },
@@ -75,7 +83,7 @@ class ShellModalSpecTest {
 
     @Test
     fun `a collection name can never be blank`() {
-        val spec = specFor(XMBUiState(collectionNameDialog = CollectionNameDialogState(title = "New Collection")))
+        val spec = specFor(XMBUiState(collectionNameDialog = CollectionNameDialogState(title = UiText.raw("New Collection"))))
             as PfpModalSpec.TextEntry
 
         assertEquals("New Collection", spec.title)
@@ -87,12 +95,12 @@ class ShellModalSpecTest {
         val title = specFor(
             XMBUiState(
                 collectionNameDialog = CollectionNameDialogState(
-                    title = "Edit Title", initialText = "Parasite Eve II", editTitleGameId = 7L,
+                    title = UiText.raw("Edit Title"), initialText = "Parasite Eve II", editTitleGameId = 7L,
                 ),
             ),
         ) as PfpModalSpec.TextEntry
         val note = specFor(
-            XMBUiState(collectionNameDialog = CollectionNameDialogState(title = "Edit Note", editNoteGameId = 7L)),
+            XMBUiState(collectionNameDialog = CollectionNameDialogState(title = UiText.raw("Edit Note"), editNoteGameId = 7L)),
         ) as PfpModalSpec.TextEntry
 
         assertEquals("Parasite Eve II", title.initial)
@@ -102,10 +110,10 @@ class ShellModalSpecTest {
 
     @Test
     fun `playlist and theme names route to their own handlers`() {
-        val playlist = specFor(XMBUiState(playlistNameDialog = PlaylistNameDialogState(title = "New Playlist")))
+        val playlist = specFor(XMBUiState(playlistNameDialog = PlaylistNameDialogState(title = UiText.raw("New Playlist"))))
             as PfpModalSpec.TextEntry
         val theme = specFor(
-            XMBUiState(saveThemeNameDialog = PlaylistNameDialogState(title = "Save Current Look as Theme")),
+            XMBUiState(saveThemeNameDialog = PlaylistNameDialogState(title = UiText.raw("Save Current Look as Theme"))),
         ) as PfpModalSpec.TextEntry
 
         playlist.onConfirm("Road Trip")
@@ -118,7 +126,7 @@ class ShellModalSpecTest {
 
     @Test
     fun `the info dialog is a notice with a close button`() {
-        val spec = specFor(XMBUiState(infoDialog = InfoDialogState("Parasite Eve II", "/roms/psx/pe2.cue")))
+        val spec = specFor(XMBUiState(infoDialog = InfoDialogState(UiText.raw("Parasite Eve II"), UiText.raw("/roms/psx/pe2.cue"))))
             as PfpModalSpec.Notice
 
         assertEquals("Parasite Eve II", spec.title)
@@ -154,6 +162,7 @@ class ShellModalSpecTest {
 
     private fun specWithSheets(state: XMBUiState): PfpModalSpec? = shellModalSpec(
         uiState = state,
+        res = RuntimeEnvironment.getApplication().resources,
         onConfirmAppRename = {}, onCancelAppRename = {},
         onConfirmCollectionName = {}, onCancelCollectionName = {},
         onConfirmPlaylistName = {}, onCancelPlaylistName = {},
@@ -202,7 +211,7 @@ class ShellModalSpecTest {
     @Test
     fun `a stop confirm opens on Keep Running`() {
         val state = XMBUiState(
-            notificationPanel = NotificationPanelState(cursor = 1, stopConfirm = StopConfirmState("psx", "Stop \"Scanning\"?", "Kept.")),
+            notificationPanel = NotificationPanelState(cursor = 1, stopConfirm = StopConfirmState("psx", UiText.raw("Stop \"Scanning\"?"), UiText.raw("Kept."))),
         )
         val spec = specWithSheets(state) as PfpModalSpec.Confirm
 
@@ -225,6 +234,7 @@ class ShellModalSpecTest {
         )
         val spec = shellModalSpec(
             uiState = XMBUiState(shortcutReview = request),
+            res = RuntimeEnvironment.getApplication().resources,
             onConfirmAppRename = {}, onCancelAppRename = {},
             onConfirmCollectionName = {}, onCancelCollectionName = {},
             onConfirmPlaylistName = {}, onCancelPlaylistName = {},
@@ -261,11 +271,12 @@ class ShellModalSpecTest {
 
     private fun importReport(playlistId: Long? = 7, error: String? = null) = PlaylistImportReport(
         kind = PlaylistKind.MUSIC, fileName = "road.m3u", playlistName = "Road Trip",
-        playlistId = playlistId, outcomes = emptyList(), error = error,
+        playlistId = playlistId, outcomes = emptyList(), error = error?.let(UiText::raw),
     )
 
     private fun specWithImport(state: XMBUiState): PfpModalSpec? = shellModalSpec(
         uiState = state,
+        res = RuntimeEnvironment.getApplication().resources,
         onConfirmAppRename = {}, onCancelAppRename = {},
         onConfirmCollectionName = {}, onCancelCollectionName = {},
         onConfirmPlaylistName = {}, onCancelPlaylistName = {},
@@ -332,6 +343,7 @@ class ShellModalSpecTest {
 
     private fun specWithConfirm(state: XMBUiState): PfpModalSpec? = shellModalSpec(
         uiState = state,
+        res = RuntimeEnvironment.getApplication().resources,
         onConfirmAppRename = {}, onCancelAppRename = {},
         onConfirmCollectionName = {}, onCancelCollectionName = {},
         onConfirmPlaylistName = {}, onCancelPlaylistName = {},
@@ -346,7 +358,7 @@ class ShellModalSpecTest {
     @Test
     fun `a pending confirm is a destructive confirm that opens on cancel`() {
         val spec = specWithConfirm(
-            XMBUiState(pendingConfirm = XmbConfirm.RemoveGame(gameId = 7, title = "Ape Escape")),
+            XMBUiState(pendingConfirm = XmbConfirm.RemoveGame(gameId = 7, title = UiText.raw("Ape Escape"))),
         ) as PfpModalSpec.Confirm
 
         assertTrue(spec.destructive)
@@ -363,7 +375,7 @@ class ShellModalSpecTest {
             XMBUiState(
                 pendingConfirm = XmbConfirm.RemoveFromCategory(
                     gameId = 7, categoryId = "gaming", categoryName = "Gaming",
-                    title = "Ape Escape", cardNames = listOf("Co-op"),
+                    title = UiText.raw("Ape Escape"), cardNames = listOf("Co-op"),
                 ),
             ),
         ) as PfpModalSpec.Confirm
@@ -379,8 +391,8 @@ class ShellModalSpecTest {
             XMBUiState(
                 notifications = listOf(row),
                 notificationPanel = NotificationPanelState(cursor = 1, sheetNotificationId = 5),
-                infoDialog = InfoDialogState("t", "m"),
-                pendingConfirm = XmbConfirm.DeleteCard(collectionId = 3, title = "RPGs"),
+                infoDialog = InfoDialogState(UiText.raw("t"), UiText.raw("m")),
+                pendingConfirm = XmbConfirm.DeleteCard(collectionId = 3, title = UiText.raw("RPGs")),
             ),
         ) as PfpModalSpec.Confirm
 
@@ -390,8 +402,8 @@ class ShellModalSpecTest {
     @Test
     fun `a name entry wins over the info notice, matching the order presses are forwarded in`() {
         val both = XMBUiState(
-            collectionNameDialog = CollectionNameDialogState(title = "New Collection"),
-            infoDialog = InfoDialogState("t", "m"),
+            collectionNameDialog = CollectionNameDialogState(title = UiText.raw("New Collection")),
+            infoDialog = InfoDialogState(UiText.raw("t"), UiText.raw("m")),
         )
 
         assertTrue(specFor(both) is PfpModalSpec.TextEntry)
@@ -407,6 +419,7 @@ class ShellModalSpecTest {
 
     private fun specWithArtwork(state: XMBUiState): PfpModalSpec? = shellModalSpec(
         uiState = state,
+        res = RuntimeEnvironment.getApplication().resources,
         onConfirmAppRename = {}, onCancelAppRename = {},
         onConfirmCollectionName = {}, onCancelCollectionName = {},
         onConfirmPlaylistName = {}, onCancelPlaylistName = {},
@@ -517,7 +530,7 @@ class ShellModalSpecTest {
         val confirm = specWithArtwork(
             XMBUiState(
                 artworkFolderPrompt = prompt,
-                pendingConfirm = XmbConfirm.DeleteCard(collectionId = 3, title = "RPGs"),
+                pendingConfirm = XmbConfirm.DeleteCard(collectionId = 3, title = UiText.raw("RPGs")),
             ),
         ) as PfpModalSpec.Confirm
         assertEquals("Delete Custom Card", confirm.confirmLabel)
@@ -567,6 +580,7 @@ class ShellModalSpecTest {
 
     private fun specWithChooser(state: XMBUiState): PfpModalSpec? = shellModalSpec(
         uiState = state,
+        res = RuntimeEnvironment.getApplication().resources,
         onConfirmAppRename = {}, onCancelAppRename = {},
         onConfirmCollectionName = {}, onCancelCollectionName = {},
         onConfirmPlaylistName = {}, onCancelPlaylistName = {},
@@ -621,7 +635,7 @@ class ShellModalSpecTest {
     fun `the chooser follows a menu confirm, a notification layer and a name entry`() {
         val row = notification(5, NotificationDetail.Results(items = emptyList()))
         val confirm = specWithChooser(
-            chooserState { copy(pendingConfirm = XmbConfirm.DeleteCard(collectionId = 3, title = "RPGs")) },
+            chooserState { copy(pendingConfirm = XmbConfirm.DeleteCard(collectionId = 3, title = UiText.raw("RPGs"))) },
         )
         assertTrue(confirm is PfpModalSpec.Confirm)
 
@@ -652,6 +666,7 @@ class ShellModalSpecTest {
         actions: MutableList<com.playfieldportal.feature.launcher.LaunchRecoveryAction>,
     ) = shellModalSpec(
         uiState = state,
+        res = RuntimeEnvironment.getApplication().resources,
         onConfirmAppRename = {}, onCancelAppRename = {},
         onConfirmCollectionName = {}, onCancelCollectionName = {},
         onConfirmPlaylistName = {}, onCancelPlaylistName = {},

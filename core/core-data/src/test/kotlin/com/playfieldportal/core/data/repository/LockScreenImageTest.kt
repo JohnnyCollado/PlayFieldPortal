@@ -74,7 +74,8 @@ class LockScreenImageTest {
     fun `a refused system call changes nothing`() = runTest {
         system.accept = false
 
-        assertIs<LockScreenImage.Result.Failed>(lock.set(png(800, 600), LockScreenImage.Source.USER))
+        val failed = assertIs<LockScreenImage.Result.Failed>(lock.set(png(800, 600), LockScreenImage.Source.USER))
+        assertEquals("This device did not accept a lock screen image", failed.reason)
         assertNull(lock.state.first().path)
     }
 

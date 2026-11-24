@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_switch_launcher_chooser">切换启动器</string>
+    <string name="app_shortcut_fallback_name">快捷方式</string>
+    <string name="app_shortcut_fallback_host">其他应用</string>
+</resources>

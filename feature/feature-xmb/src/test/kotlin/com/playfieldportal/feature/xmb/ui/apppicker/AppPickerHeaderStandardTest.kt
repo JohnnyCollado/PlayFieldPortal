@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui.apppicker
 
+import com.playfieldportal.core.domain.text.UiText
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -38,7 +39,7 @@ class AppPickerHeaderStandardTest {
             PfpScreenPreview {
                 AppPickerScreen(
                     state = AppPickerState(
-                        title = "Add Apps",
+                        title = UiText.raw("Add Apps"),
                         target = AppPickerTarget.AndroidGames(platformId = "android"),
                         apps = emptyList(),
                         searchActive = searchActive,

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Localization slice G1: app module -->
+    <string name="app_switch_launcher_chooser">런처 전환</string>
+    <string name="app_shortcut_fallback_name">바로 가기</string>
+    <string name="app_shortcut_fallback_host">다른 앱</string>
+</resources>

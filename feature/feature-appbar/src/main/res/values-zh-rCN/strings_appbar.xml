@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App context menu: group headings -->
+    <string name="apps_menu_group_library">库</string>
+    <string name="apps_menu_group_arrange">排列</string>
+    <string name="apps_menu_group_manage">管理</string>
+
+    <!-- App context menu: rows -->
+    <string name="apps_menu_launch">启动</string>
+    <string name="apps_menu_edit_details">编辑应用详情</string>
+    <string name="apps_menu_mark_game">标记为游戏</string>
+    <string name="apps_menu_unmark_game">取消标记为游戏</string>
+    <string name="apps_menu_favorite">收藏夹</string>
+    <string name="apps_menu_add_to_card">添加到卡片</string>
+    <string name="apps_menu_pin_to_top">置顶</string>
+    <string name="apps_menu_move">移动</string>
+    <string name="apps_menu_move_to_category">移至类别</string>
+    <string name="apps_menu_add_to_category">添加到类别</string>
+    <string name="apps_menu_remove_from_category">从类别中移除</string>
+    <string name="apps_menu_rename_shortcut">重命名快捷方式</string>
+    <string name="apps_menu_hide_from">在“%1$s”中隐藏</string>
+    <string name="apps_menu_hide_everywhere">全部隐藏</string>
+    <string name="apps_menu_app_info">应用信息</string>
+    <string name="apps_menu_uninstall">卸载</string>
+    <string name="apps_value_on">开</string>
+    <string name="apps_value_off">关</string>
+
+    <!-- Uninstall confirmation -->
+    <string name="apps_uninstall_title">要卸载 %1$s 吗？</string>
+    <string name="apps_uninstall_message">此操作会从你的设备中移除 %1$s。Android 会要求你确认。</string>
+
+    <!-- Category tabs and header title -->
+    <string name="apps_filter_all">所有应用</string>
+    <string name="apps_filter_games">游戏</string>
+    <string name="apps_filter_emulators">模拟器</string>
+    <string name="apps_filter_recent">最近使用</string>
+
+    <!-- Header search -->
+    <string name="apps_search_placeholder">搜索…</string>
+    <string name="apps_search_button">搜索</string>
+
+    <!-- Empty states -->
+    <string name="apps_empty_no_match">没有与搜索内容匹配的应用</string>
+    <string name="apps_empty_no_games">未找到游戏</string>
+    <string name="apps_empty_no_emulators">未安装模拟器</string>
+    <string name="apps_empty_usage_access">需要使用情况访问权限</string>
+    <string name="apps_empty_no_recent">暂无最近使用的应用</string>
+    <string name="apps_empty_no_apps">未安装应用</string>
+    <string name="apps_hint_try_search">请尝试其他搜索词</string>
+    <string name="apps_hint_games">在 Play 商店中标记为游戏的应用会显示在这里</string>
+    <string name="apps_hint_emulators">请安装 RetroArch、PPSSPP 或其他模拟器</string>
+    <string name="apps_hint_usage_access">授予权限后，PFP 可按上次使用时间对应用排序</string>
+    <string name="apps_open_usage_access">打开使用情况访问权限</string>
+
+    <!-- Controller hint bar -->
+    <string name="apps_hint_prev">上一个</string>
+    <string name="apps_hint_next">下一个</string>
+    <string name="apps_hint_back">返回</string>
+    <string name="apps_hint_launch">启动</string>
+    <string name="apps_hint_options">选项</string>
+    <string name="apps_hint_search">搜索</string>
+    <string name="apps_drawer_title">应用抽屉</string>
+    <string name="apps_drawer_subtitle">此设备上的应用</string>
+</resources>

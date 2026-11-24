@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">الإعدادات</string>
+    <string name="sound_title">الصوت</string>
+    <string name="sound_group_master">الرئيسي</string>
+    <string name="sound_group_levels">المستويات</string>
+    <string name="sound_group_sounds">الأصوات</string>
+    <string name="sound_master_volume">مستوى الصوت الرئيسي</string>
+    <string name="sound_master_volume_help">يتحكم في جميع أصوات المشغّل. عند 0 يصبح المشغّل صامتًا.</string>
+    <string name="sound_ambience_help">يتكرر أثناء التصفح. يتكرر OGG بسلاسة، وقد يصدر MP3 صوت نقرة.</string>
+    <string name="sound_rejected_title">تعذّر استخدام هذا الصوت</string>
+    <string name="sound_reset_confirm_title">هل تريد إعادة ضبط الصوت إلى الإعدادات الافتراضية؟</string>
+    <string name="sound_reset_confirm_message">يعود كل صوت في القائمة إلى عينة PFP المرفقة، ويعود كل مستوى، بما فيه الرئيسي، إلى الحد الأقصى. لن يتأثر مقطع الخلفية ولا وسائط Boot Video و Game Boot.</string>
+    <string name="sound_reset_confirm_action">إعادة الضبط</string>
+    <string name="sound_reset_row">إعادة ضبط الصوت إلى الإعدادات الافتراضية</string>
+    <string name="sound_reset_row_help">يعيد كل صوت في القائمة إلى عينة PFP المرفقة وكل مستوى إلى الحد الأقصى. يحتفظ بمقطع الخلفية.</string>
+    <string name="sound_channel_navigation">التنقل</string>
+    <string name="sound_channel_back">رجوع / إلغاء</string>
+    <string name="sound_channel_confirm">تأكيد / تطبيق</string>
+    <string name="sound_channel_error">خطأ / غير صالح</string>
+    <string name="sound_channel_notification">إشعار</string>
+    <string name="sound_channel_boot">تسلسل الإقلاع</string>
+    <string name="sound_channel_ambience">صوت الخلفية</string>
+    <string name="sound_slot_navigation">التنقل</string>
+    <string name="sound_slot_back">رجوع / إلغاء</string>
+    <string name="sound_slot_confirm">تأكيد / تطبيق</string>
+    <string name="sound_slot_error">خطأ / غير صالح</string>
+    <string name="sound_slot_notification">إشعار</string>
+    <string name="sound_slot_ambience">مقطع الخلفية</string>
+</resources>

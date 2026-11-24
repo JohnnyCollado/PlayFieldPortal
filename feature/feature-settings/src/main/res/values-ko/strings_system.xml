@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared by several Settings screens. -->
+    <string name="sets_on">켜짐</string>
+    <string name="sets_off">꺼짐</string>
+    <string name="sets_prompt_back">뒤로</string>
+    <string name="sets_prompt_enter">들어가기</string>
+    <string name="sets_prompt_switch">전환</string>
+    <string name="sets_prompt_options">옵션</string>
+    <!-- Settings ▸ Backup & Restore -->
+    <string name="sets_backup_title">백업 및 복원</string>
+    <string name="sets_backup_group_backup">백업</string>
+    <string name="sets_backup_last_backup">마지막 백업</string>
+    <string name="sets_backup_never">없음</string>
+    <string name="sets_backup_folder">백업 폴더</string>
+    <string name="sets_backup_folder_saving_to">저장 위치: %1$s (선택하여 변경)</string>
+    <string name="sets_backup_folder_not_set">설정 안 됨 — 선택하여 백업을 저장할 위치를 지정하세요</string>
+    <!-- Row label: starts a backup immediately. -->
+    <string name="sets_backup_now">지금 백업</string>
+    <string name="sets_backup_now_help">라이브러리, 설정 및 플레이 기록을 저장합니다</string>
+    <string name="sets_backup_choose_folder_first">먼저 백업 폴더를 선택하세요</string>
+    <string name="sets_backup_choose_folder_first_error">먼저 백업 폴더를 선택하세요.</string>
+    <string name="sets_backup_group_saved">저장된 백업</string>
+    <string name="sets_backup_group_included">포함 항목</string>
+    <string name="sets_backup_included_library">게임 라이브러리</string>
+    <string name="sets_backup_included_history">플레이 기록</string>
+    <string name="sets_backup_included_categories">사용자 지정 카테고리</string>
+    <string name="sets_backup_included_settings">설정 및 API 키</string>
+    <string name="sets_backup_included_profiles">에뮬레이터 프로필</string>
+    <string name="sets_backup_rom_files">ROM 파일</string>
+    <string name="sets_backup_not_included">✗  (포함되지 않음)</string>
+    <string name="sets_backup_group_restore">복원</string>
+    <string name="sets_backup_restore_from_file">파일에서 복원</string>
+    <string name="sets_backup_restore_from_file_help">.pfpbackup 파일 찾아보기</string>
+    <string name="sets_backup_after_restoring">복원한 후</string>
+    <string name="sets_backup_after_restoring_help">폴더는 복원되지만 Android의 폴더 접근 권한은 복원되지 않습니다. 각 섹션(라이브러리, 음악, 동영상, 사진)의 루트 접근에서 각 루트를 다시 연결하세요 — 각각 한 단계면 되며, 루트를 다시 연결하면 그 아래의 모든 항목이 한 번에 복원됩니다.</string>
+    <string name="sets_backup_working">작업 중…</string>
+    <string name="sets_backup_error">오류</string>
+    <string name="sets_backup_creating">백업 만드는 중…</string>
+    <string name="sets_backup_restoring">백업 복원 중…</string>
+    <string name="sets_backup_unknown_error">알 수 없는 오류</string>
+    <string name="sets_backup_delete_failed">%1$s을(를) 삭제할 수 없습니다.</string>
+    <!-- Context-menu rows for a saved backup. -->
+    <string name="sets_backup_menu_restore">복원</string>
+    <string name="sets_backup_menu_share">공유</string>
+    <string name="sets_backup_menu_delete">백업 삭제</string>
+    <string name="sets_backup_delete_title">백업을 삭제할까요?</string>
+    <string name="sets_backup_delete_message">\"%1$s\"이(가) 삭제됩니다. 이 작업은 실행취소할 수 없습니다.</string>
+    <string name="sets_backup_delete_confirm">삭제</string>
+    <string name="sets_backup_restore_title">백업을 복원할까요?</string>
+    <string name="sets_backup_restore_message_named">\"%1$s\"이(가) 현재 라이브러리, 설정 및 플레이 기록을 대체합니다. 이 작업은 실행취소할 수 없습니다.</string>
+    <string name="sets_backup_restore_message_picked">이 백업이 현재 라이브러리, 설정 및 플레이 기록을 대체합니다. 이 작업은 실행취소할 수 없습니다.</string>
+    <string name="sets_backup_restore_confirm">복원</string>
+    <!-- Title of the Android share sheet when sharing a backup file. -->
+    <string name="sets_backup_share_chooser">백업 공유</string>
+    <!-- Settings ▸ Credits -->
+    <string name="sets_credits_group_xmb">XMB 디자인 — Sony</string>
+    <string name="sets_credits_xmb_inspired">이 런처의 디자인과 사용감은 Sony가 PlayStation Portable과 PlayStation 3용으로 만든 인터페이스인 XMB(XrossMediaBar)에서 영감을 받았습니다 — 크로스바 레이아웃, 흐르는 웨이브, 탐색 방식 모두 XMB에 대한 오마주입니다.</string>
+    <string name="sets_credits_xmb_trademarks">\"XrossMediaBar\", \"XMB\", \"PSP\", \"PlayStation\"은 Sony Interactive Entertainment Inc.의 상표입니다. Play Field Portal은 독립적인 비상업 팬 프로젝트이며 Sony와 제휴하거나 Sony의 보증 또는 후원을 받지 않습니다. 번들된 UI 아트워크는 커뮤니티 테마 \"XMB Menu for ES-DE\"(아래에 표기)에서 가져온 것이며 각 제작자의 소유입니다. Sony 오디오는 번들되어 있지 않으며, 모든 메뉴 사운드의 출처는 아래에 별도로 표기되어 있습니다.</string>
+    <string name="sets_credits_group_icon">앱 아이콘 및 로고</string>
+    <string name="sets_credits_icon_designed">Play Field Portal 앱 아이콘과 로고는 johakovi가 디자인했습니다. 런처에 정체성을 부여해 준 아트워크에 깊이 감사드립니다.</string>
+    <string name="sets_credits_label_design">디자인</string>
+    <string name="sets_credits_group_artwork">시스템 및 콘솔 아트워크</string>
+    <string name="sets_credits_artwork_from">이 런처 전반에 사용된 시스템, 콘솔 및 카테고리 아이콘은 PSP XMB를 커뮤니티에서 재현한 \"XMB Menu for ES-DE\" 테마에서 가져왔습니다.</string>
+    <string name="sets_credits_artwork_rights">이 아트워크에 대한 모든 권리는 제작자인 Anthony Caccese(InitialDin의 원작 기반)에게 있습니다. 아이콘은 감사한 마음으로 사용하고 있으며 각 제작자의 소유입니다.</string>
+    <string name="sets_credits_label_project">프로젝트</string>
+    <string name="sets_credits_label_authors">제작자</string>
+    <string name="sets_credits_label_source">소스</string>
+    <string name="sets_credits_group_buttons">컨트롤러 버튼 아이콘</string>
+    <string name="sets_credits_buttons_from">화면에 표시되는 모든 버튼 안내 — PlayStation, Xbox, Nintendo 페이스 버튼, 방향 패드, 범퍼, 트리거, 스틱 및 시스템 버튼 — 는 Zacksly의 버튼 아이콘 팩을 Creative Commons Attribution 3.0 라이선스에 따라 사용했습니다.</string>
+    <string name="sets_credits_buttons_unmodified">아트워크는 수정되지 않았습니다. 파일 이름만 Android 리소스 이름으로 바꾸었으며 런처에서 표시하는 아이콘만 번들되어 있습니다.</string>
+    <string name="sets_credits_label_author">제작자</string>
+    <string name="sets_credits_label_website">웹사이트</string>
+    <string name="sets_credits_label_support">후원</string>
+    <string name="sets_credits_label_packs">팩</string>
+    <string name="sets_credits_label_license">라이선스</string>
+    <string name="sets_credits_group_sounds">메뉴 사운드</string>
+    <string name="sets_credits_sounds_built">번들된 메뉴 사운드 — 탐색, 뒤로, 확인, 오류, 실행, 알림, 부팅 차임 — 는 Pixabay에 공개된 로열티 프리 오디오를 런처용으로 편집(자르기, 음정 조정, 레벨 조정, 변환)하여 만들었습니다. 이 사운드의 바탕이 된 작품의 제작자분들께 감사드립니다.</string>
+    <string name="sets_credits_sounds_license">Pixabay 콘텐츠 라이선스는 출처 표기를 요구하지 않지만 감사의 뜻으로 여기에 표기합니다. 제작자 중 한 분으로서 표기를 변경하거나 에셋을 삭제하길 원하시면 연락해 주세요.</string>
+    <string name="sets_credits_group_metadata">게임 아트워크 및 메타데이터</string>
+    <string name="sets_credits_metadata_fetched">박스 아트, 3D 박스, 카트리지/디스크 사진, 히어로 배너, 로고, 아이콘, 설명서, 동영상 스냅 및 게임 메타데이터는 사용자의 요청에 따라 타사 제공자에게서 가져오며 각 소유자의 소유입니다.</string>
+    <string name="sets_credits_label_primary_scraper">기본 스크래퍼</string>
+    <string name="sets_credits_value_screenscraper">ScreenScraper — screenscraper.fr, 커뮤니티에서 관리하는 게임 미디어 데이터베이스</string>
+    <string name="sets_credits_label_artwork">아트워크</string>
+    <string name="sets_credits_label_metadata">메타데이터</string>
+    <string name="sets_credits_group_achievements">도전 과제 — Shiba Coins</string>
+    <string name="sets_credits_achievements_from">Shiba Coins 시스템의 도전 과제 데이터는 다음 서비스 및 프로젝트에서 제공되며 각 소유자의 소유입니다.</string>
+    <string name="sets_credits_value_retroachievements">retroachievements.org — 공식 RetroAchievements Web API 및 api-kotlin 클라이언트를 통한, 커뮤니티가 만든 레트로 게임용 도전 과제 세트 및 달성 데이터</string>
+    <string name="sets_credits_value_steam">Powered by Steam — 본인의 키를 사용해 Steam Web API로 가져오는 도전 과제 스키마 및 달성 데이터. Steam 및 Steam 로고는 Valve Corporation의 상표입니다. steampowered.com</string>
+    <string name="sets_credits_goldberg_bundles">Steam 에뮬레이션 PC 게임의 로컬 도전 과제 추적에는 Goldberg Steam Emulator가 번들되어 있습니다 — 정확히는 Mr. Goldberg의 원본 Goldberg Emulator를 바탕으로 Detanup01과 기여자들이 관리하는 커뮤니티 포크인 gbe_fork입니다.</string>
+    <string name="sets_credits_goldberg_license">이 에뮬레이터는 GNU Lesser General Public License v3.0(LGPL-3.0)에 따라 배포되는 자유 소프트웨어입니다. Play Field Portal은 수정되지 않은 steam_api64.dll 빌드를 번들하며, 해당하는 전체 소스 코드와 라이선스 전문은 아래 링크에서 확인할 수 있습니다.</string>
+    <string name="sets_credits_value_gbe">gbe_fork — Detanup01 및 기여자</string>
+    <string name="sets_credits_label_original_project">원본 프로젝트</string>
+    <string name="sets_credits_value_goldberg_original">Goldberg Emulator by Mr. Goldberg — gitlab.com/Mr_Goldberg/goldberg_emulator</string>
+    <string name="sets_credits_group_support">프로젝트 후원</string>
+    <string name="sets_credits_support_thanks">여러분의 응원에 감사드립니다. 이 프로젝트는 PSP와 PSP를 사랑하는 멋진 커뮤니티에 보내는 러브레터로 만들었기에 앞으로도 영원히 무료로 유지됩니다. 그래도 제 작업이 마음에 들어 다른 방식으로 감사를 표현하고 싶으시다면 타코 하나 사 주셔도 좋습니다. 물론 후원은 언제나 선택 사항이며 절대 필수가 아닙니다. 모두 사랑합니다. 6월 15일을 축하해요.</string>
+    <string name="sets_credits_label_buy_taco">타코 하나 사 주기</string>
+    <string name="sets_credits_group_notes">참고</string>
+    <string name="sets_credits_notes_text">권리 보유자로서 표기를 변경하거나 에셋을 삭제하길 원하시면 연락해 주세요. 신속하게 처리하겠습니다.</string>
+    <string name="sets_credits_title">크레딧</string>
+    <string name="sets_credits_no_browser">웹 링크를 열 수 있는 앱이 없습니다. 브라우저에서 %1$s에 방문하세요.</string>
+    <!-- Settings ▸ Logs -->
+    <string name="sets_logs_title">로그</string>
+    <string name="sets_logs_prompt_share">공유</string>
+    <string name="sets_logs_prompt_open">열기</string>
+    <string name="sets_logs_prompt_clear">지우기</string>
+    <string name="sets_logs_clear_title">모든 로그를 지울까요?</string>
+    <plurals name="sets_logs_clear_message">
+        <item quantity="other">로그 파일 %1$d개(%2$s)가 모두 삭제됩니다. 문제를 신고하려는 경우 먼저 로그를 공유하세요. 지운 로그는 복구할 수 없습니다.</item>
+    </plurals>
+    <string name="sets_logs_clear_confirm">지우기</string>
+    <string name="sets_logs_group_files">로그 파일</string>
+    <string name="sets_logs_empty">아직 로그 파일이 없습니다</string>
+    <string name="sets_logs_empty_help">앱을 실행할 때마다 새 로그가 시작됩니다. 선택하여 다시 확인하세요.</string>
+    <string name="sets_logs_group_manage">관리</string>
+    <string name="sets_logs_clear_row">모든 로그 지우기</string>
+    <string name="sets_logs_clear_row_help">저장된 모든 로그를 삭제합니다. 현재 세션은 새 파일에 계속 기록됩니다.</string>
+    <string name="sets_logs_clear_row_none">지울 항목 없음</string>
+    <string name="sets_logs_group_about">로그 정보</string>
+    <string name="sets_logs_saved">저장되는 내용</string>
+    <string name="sets_logs_saved_help">가장 최근 세션만 보관됩니다(최대 약 2MB). 비밀번호, 토큰, 계정 이름 및 이메일은 기록하기 전에 제거됩니다.</string>
+    <string name="sets_logs_share_file">%1$s 공유</string>
+    <!-- Small badge on the log file this session is writing into. -->
+    <string name="sets_logs_current">현재</string>
+    <string name="sets_logs_open_with">로그 열기 앱 선택</string>
+    <string name="sets_logs_share_subject">Play Field Portal 로그 — %1$s</string>
+    <string name="sets_logs_share_chooser">로그 파일 공유</string>
+    <string name="sets_logs_no_files">파일 없음</string>
+    <plurals name="sets_logs_summary">
+        <item quantity="other">파일 %1$d개 · %2$s</item>
+    </plurals>
+    <plurals name="sets_logs_deleted">
+        <item quantity="other">파일 %1$d개 삭제됨(%2$s)</item>
+    </plurals>
+    <string name="sets_logs_started_today">오늘 %1$s 시작</string>
+    <string name="sets_logs_started_yesterday">어제 %1$s 시작</string>
+    <string name="sets_logs_started_on">%1$s %2$s 시작</string>
+    <!-- Root folders (shared by Music, Video, Photo) -->
+    <string name="sets_roots_group">루트 폴더</string>
+    <string name="sets_scanning">스캔 중…</string>
+    <string name="sets_rescan_help">모든 루트 폴더에서 라이브러리 업데이트</string>
+    <string name="sets_playback_group">재생</string>
+    <string name="sets_root_kind_music">음악</string>
+    <string name="sets_root_kind_video">동영상</string>
+    <string name="sets_root_kind_photo">사진</string>
+    <string name="sets_root_kind_rom">ROM</string>
+    <string name="sets_root_fallback_music">음악</string>
+    <string name="sets_root_fallback_video">동영상</string>
+    <string name="sets_root_fallback_photo">사진</string>
+    <string name="sets_root_none">설정된 %1$s 루트가 없습니다</string>
+    <string name="sets_root_none_help">아래에서 폴더를 추가하여 라이브러리 관리를 시작하세요</string>
+    <string name="sets_root_access_lost">접근 권한 없음 — 편집을 사용해 다시 허용하세요</string>
+    <string name="sets_root_consoles">콘솔: %1$s</string>
+    <string name="sets_root_kind_root">%1$s 루트</string>
+    <string name="sets_label_edit_folder">폴더 편집</string>
+    <string name="sets_label_remove_folder">폴더 제거</string>
+    <string name="sets_label_options_hint">옵션 힌트</string>
+    <string name="sets_label_show_on_bar">바에 표시</string>
+    <string name="sets_label_show_in_games">게임에 표시</string>
+    <string name="sets_label_pin_to_top">맨 위에 고정</string>
+    <string name="sets_root_edit_short">편집</string>
+    <string name="sets_root_remove_short">제거</string>
+    <string name="sets_root_remove_title">이 폴더를 제거할까요?</string>
+    <string name="sets_root_remove_message">PFP가 \"%1$s\"을(를) 더 이상 사용하지 않으며, 그곳에서 찾은 항목은 라이브러리에서 제거됩니다. 저장소의 파일은 삭제되지 않습니다.</string>
+    <string name="sets_root_remove_confirm">제거</string>
+    <!-- Default-player pickers -->
+    <string name="sets_player_builtin">Play Field Portal</string>
+    <string name="sets_player_system_default">시스템 기본값</string>
+    <!-- Settings ▸ Music -->
+    <string name="sets_music_title">음악</string>
+    <string name="sets_music_player_title">기본 음악 플레이어</string>
+    <string name="sets_music_player_none">이 기기에서 다른 음악 플레이어를 찾을 수 없습니다.</string>
+    <string name="sets_music_add_root">음악 루트 추가</string>
+    <string name="sets_music_add_root_help">루트 폴더(예: /Music)에 대한 접근을 허용하세요 — 여러 위치를 사용하려면 여러 개를 추가하세요</string>
+    <string name="sets_music_rescan">음악 라이브러리 다시 스캔</string>
+    <string name="sets_music_player">기본 음악 플레이어</string>
+    <string name="sets_music_player_help">음악 트랙을 여는 앱</string>
+    <!-- Settings ▸ Video -->
+    <string name="sets_video_title">동영상</string>
+    <string name="sets_video_player_title">기본 동영상 플레이어</string>
+    <string name="sets_video_player_none">이 기기에서 외부 동영상 플레이어를 찾을 수 없습니다.</string>
+    <string name="sets_video_add_root">동영상 루트 추가</string>
+    <string name="sets_video_add_root_help">루트 폴더(예: /Movies)에 대한 접근을 허용하세요 — 여러 위치를 사용하려면 여러 개를 추가하세요</string>
+    <string name="sets_video_rescan">동영상 라이브러리 다시 스캔</string>
+    <string name="sets_video_player">기본 동영상 플레이어</string>
+    <string name="sets_video_player_help">Play Field Portal 앱 안에서 재생하거나, 앱을 선택하거나, 매번 묻도록 설정합니다.</string>
+    <!-- Settings ▸ Photo -->
+    <string name="sets_photo_title">사진</string>
+    <string name="sets_photo_add_root">사진 루트 추가</string>
+    <string name="sets_photo_add_root_help">루트 폴더(예: /Pictures)에 대한 접근을 허용하세요 — 여러 위치를 사용하려면 여러 개를 추가하세요</string>
+    <string name="sets_photo_rescan">사진 라이브러리 다시 스캔</string>
+    <string name="sets_photo_group_maintenance">유지 관리</string>
+    <string name="sets_photo_clear_cache">썸네일 캐시 지우기</string>
+    <string name="sets_photo_clear_cache_help">생성된 썸네일을 삭제합니다. 다시 스캔하면 다시 생성됩니다.</string>
+    <plurals name="sets_photo_cache_cleared">
+        <item quantity="other">캐시된 썸네일 %1$d개를 지웠습니다. 다시 생성하려면 다시 스캔하세요.</item>
+    </plurals>
+    <!-- Settings ▸ Interface ▸ Notifications -->
+    <string name="sets_notif_title">알림</string>
+    <string name="sets_notif_record">알림 기록</string>
+    <string name="sets_notif_record_help">스캔, 아트워크, 스크랩 및 도전 과제 작업 기록을 보관합니다. 끄면 새 항목이 기록되지 않지만, 실행 중인 작업의 진행 상황은 계속 표시됩니다.</string>
+    <string name="sets_notif_group_history">기록</string>
+    <string name="sets_notif_keep_for">항목 보관 기간</string>
+    <string name="sets_notif_keep_for_help">오래된 항목은 다음에 새 항목이 기록될 때 삭제됩니다. 어느 경우든 최대 200개까지 보관되며 읽은 항목부터 삭제됩니다.</string>
+    <string name="sets_notif_never">안 함</string>
+    <plurals name="sets_notif_days">
+        <item quantity="other">%1$d일</item>
+    </plurals>
+    <string name="sets_notif_mark_read">모두 읽음으로 표시</string>
+    <string name="sets_notif_mark_read_help">상태 표시줄의 읽지 않은 개수를 지웁니다</string>
+    <plurals name="sets_notif_unread">
+        <item quantity="other">읽지 않음 %1$d개</item>
+    </plurals>
+    <string name="sets_notif_none_unread">읽지 않은 항목 없음</string>
+    <string name="sets_notif_clear_all">모두 지우기</string>
+    <string name="sets_notif_clear_all_help">기록을 비웁니다. 실행 중인 작업에는 영향이 없습니다.</string>
+    <plurals name="sets_notif_stored">
+        <item quantity="other">%1$d개 저장됨</item>
+    </plurals>
+    <!-- Settings ▸ System ▸ System Update -->
+    <string name="sets_update_title">시스템 업데이트</string>
+    <string name="sets_update_group_update">업데이트</string>
+    <string name="sets_update_installed">설치된 버전</string>
+    <string name="sets_update_latest">최신 버전</string>
+    <string name="sets_update_check">업데이트 확인</string>
+    <string name="sets_update_checking">확인 중…</string>
+    <string name="sets_update_notifications">업데이트 알림</string>
+    <string name="sets_update_notifications_help">새 버전이 나오면 알림에서 알려 줍니다(하루 최대 1회)</string>
+    <string name="sets_update_group_changelog">변경 내역</string>
+    <string name="sets_update_no_releases">아직 불러온 릴리스가 없습니다</string>
+    <string name="sets_update_no_releases_help">업데이트를 확인하여 변경 내역을 불러오세요</string>
+    <string name="sets_update_install">%1$s 다운로드 및 설치</string>
+    <string name="sets_update_cannot_install">이 빌드는 여기에서 업데이트를 설치할 수 없습니다</string>
+    <string name="sets_update_handed_over">완료하려면 Android 설치 프로그램에서 확인하세요</string>
+    <string name="sets_update_downloading">다운로드 중…</string>
+    <string name="sets_update_install_help">설치하기 전에 Android에서 확인을 요청합니다</string>
+    <string name="sets_update_no_summary">이 버전의 요약이 없습니다</string>
+    <string name="sets_update_full_notes">전체 릴리스 노트</string>
+    <string name="sets_update_full_notes_help">브라우저에서 GitHub 열기</string>
+    <string name="sets_edition_full">Full</string>
+    <string name="sets_edition_lite">Lite</string>
+    <string name="sets_update_installed_label">%1$s · %2$s</string>
+    <string name="sets_update_unknown_version">알 수 없음</string>
+    <string name="sets_update_available">%1$s 사용 가능</string>
+    <string name="sets_update_not_checked">아직 확인하지 않음</string>
+    <string name="sets_update_up_to_date">최신 상태</string>
+    <string name="sets_update_never_checked">확인한 적 없음</string>
+    <string name="sets_update_checked">%1$s에 확인함</string>
+    <!-- Small badges on changelog entries. -->
+    <string name="sets_update_tag_new">신규</string>
+    <string name="sets_update_tag_installed">설치됨</string>
+    <string name="sets_update_msg_available">새 버전을 사용할 수 있습니다.</string>
+    <string name="sets_update_msg_latest">최신 버전을 사용 중입니다.</string>
+    <string name="sets_update_msg_offline">GitHub에 연결할 수 없습니다. 나중에 다시 시도하세요.</string>
+    <string name="sets_update_msg_invalid">GitHub에서 예기치 않은 응답을 보냈습니다. 나중에 다시 시도하세요.</string>
+    <string name="sets_update_no_apk">버전 %1$s의 %2$s 다운로드가 아직 없습니다. 나중에 다시 시도하세요.</string>
+    <string name="sets_update_download_failed">업데이트를 다운로드할 수 없습니다. 연결을 확인하고 다시 시도하세요.</string>
+    <string name="sets_update_not_newer">다운로드한 파일이 이 앱의 최신 버전이 아니므로 설치하지 않았습니다.</string>
+    <string name="sets_update_no_installer">이 기기에서 Android 설치 프로그램을 열 수 없습니다.</string>
+    <string name="sets_update_reminder_installed">버전 %1$s이(가) 설치되었습니다.</string>
+    <string name="sets_update_reminder_available">버전 %1$s을(를) 사용할 수 있습니다.</string>
+    <!-- Settings ▸ About -->
+    <string name="sets_about_label_version">버전</string>
+    <string name="sets_about_label_build">빌드</string>
+    <string name="sets_about_label_edition">에디션</string>
+    <string name="sets_about_label_min_android">최소 Android</string>
+    <!-- Label: the Android version the app is built to target. -->
+    <string name="sets_about_label_target">대상</string>
+    <string name="sets_about_group_open_source">오픈소스</string>
+    <string name="sets_about_value_compose">UI 프레임워크</string>
+    <string name="sets_about_value_room">로컬 데이터베이스</string>
+    <string name="sets_about_value_hilt">의존성 주입</string>
+    <string name="sets_about_value_ktor">네트워크 클라이언트</string>
+    <string name="sets_about_value_coil">이미지 로딩</string>
+    <string name="sets_about_value_media3">동영상 스냅 및 재생</string>
+    <string name="sets_about_value_workmanager">백그라운드 작업</string>
+    <string name="sets_about_value_timber">로깅</string>
+    <string name="sets_about_group_credits">크레딧</string>
+    <string name="sets_about_label_art_media">아트워크 및 미디어</string>
+    <string name="sets_about_label_metadata">메타데이터</string>
+    <string name="sets_about_label_inspired">영감을 준 작품</string>
+    <string name="sets_about_label_see_also">참고</string>
+    <string name="sets_about_value_see_also">설정 ▸ 크레딧</string>
+    <string name="sets_about_group_legal">법적 고지</string>
+    <string name="sets_about_legal_independent">Play Field Portal은 독립적인 팬 프로젝트이며 Sony Interactive Entertainment와 제휴하지 않았습니다.</string>
+    <string name="sets_about_legal_trademarks">PlayStation, PSP 및 XMB는 Sony Interactive Entertainment Inc.의 상표입니다.</string>
+    <string name="sets_about_title">정보</string>
+    <string name="sets_about_unknown">알 수 없음</string>
+    <string name="sets_orphan_linked">아트워크가 연결되었습니다 — 이후 스캔에서도 연결이 유지됩니다.</string>
+    <string name="sets_orphan_link_failed">파일을 연결할 수 없습니다 — 라이브러리 스캔 및 다시 연결을 실행한 후 다시 시도하세요.</string>
+    <!-- Settings ▸ Sound: parts resolved outside the screen -->
+    <string name="sets_audio_custom_sound">사용자 지정 사운드</string>
+    <string name="sets_audio_import_failed">사운드를 가져올 수 없습니다. 다른 파일을 사용해 보세요.</string>
+    <string name="sets_ptf_wallpaper_only">\"%1$s\" 가져옴 — 배경화면만</string>
+    <plurals name="sets_ptf_icons">
+        <item quantity="other">\"%1$s\" 가져옴 — 배경화면 및 아이콘 %2$d개</item>
+    </plurals>
+    <plurals name="sets_ptf_icons_tint">
+        <item quantity="other">\"%1$s\" 가져옴 — 배경화면 및 아이콘 %2$d개, 색조 일치율 %3$d%%</item>
+    </plurals>
+    <string name="sets_ptf_cxmb_unsupported">CXMB(.ctf) 테마는 지원되지 않습니다 — 공식 .ptf 테마만 지원됩니다</string>
+    <string name="sets_svc_steam_connected">Steam 연결됨</string>
+    <string name="sets_svc_steam_resolved">Steam 연결됨 — \"%1$s\" 확인됨</string>
+    <string name="sets_svc_steam_unresolved">키가 저장되었지만 \"%1$s\"을(를) 확인할 수 없습니다. SteamID64를 입력하세요.</string>
+    <string name="sets_svc_valid">유효함</string>
+    <string name="sets_svc_igdb_invalid">유효하지 않음 — 클라이언트 ID와 시크릿을 확인하세요</string>
+    <string name="sets_svc_screenscraper_invalid">유효하지 않음 — 사용자 이름과 비밀번호를 확인하세요</string>
+    <plurals name="sets_svc_screenscraper_valid_threads">
+        <item quantity="other">유효함 — 스레드 %1$s개</item>
+    </plurals>
+    <plurals name="sets_svc_screenscraper_valid_both">
+        <item quantity="other">유효함 — 스레드 %1$s개, 하루 요청 %2$s회</item>
+    </plurals>
+    <string name="sets_svc_screenscraper_valid_requests">유효함, 하루 요청 %1$s회</string>
+    <!-- Settings ▸ Controller -->
+    <string name="sets_controller_title">컨트롤러</string>
+    <string name="sets_controller_group_ab">확인 및 뒤로</string>
+    <string name="sets_controller_ab_help">확인 버튼과 뒤로 버튼을 지정합니다. 모든 런처 메뉴에 적용됩니다.</string>
+    <string name="sets_controller_group_xy">옵션 및 정렬</string>
+    <string name="sets_controller_xy_help">런처 UI 안에서만 X와 Y 동작을 바꿉니다. 에뮬레이터 조작에는 영향을 주지 않습니다.</string>
+    <string name="sets_controller_group_type">컨트롤러 유형</string>
+    <string name="sets_controller_type_help">도움말 안내에 표시되는 버튼 아이콘과 라벨을 변경합니다.</string>
+    <string name="sets_controller_type">유형</string>
+    <string name="sets_controller_type_sub">런처 하단의 도움말 바에 적용됩니다</string>
+    <string name="sets_controller_group_scroll">스크롤 속도</string>
+    <string name="sets_controller_scroll_help">방향을 누르고 있을 때 목록이 스크롤되는 속도입니다. 오래 누를수록 빨라지며, 스틱을 끝까지 기울이면 최고 속도로 스크롤됩니다.</string>
+    <string name="sets_controller_scroll_sub">방향 패드와 스틱을 누르고 있을 때 적용됩니다</string>
+    <string name="sets_controller_group_navigation">탐색</string>
+    <string name="sets_controller_left_backs_out">왼쪽으로 나가기</string>
+    <string name="sets_controller_left_backs_out_help">왼쪽을 눌러 폴더나 플라이아웃에서 나갑니다 — 왼쪽에 다른 동작이 없는 곳에서만</string>
+    <string name="sets_controller_group_keyboard">키보드</string>
+    <string name="sets_controller_virtual_keyboard">가상 키보드</string>
+    <string name="sets_controller_virtual_keyboard_help">PFP 자체 키보드에서 컨트롤러로 입력합니다. 끄거나 터치를 사용하면 시스템 키보드가 대신 열립니다</string>
+    <string name="sets_controller_group_reset">초기화</string>
+    <string name="sets_controller_reset">모든 컨트롤러 설정 초기화</string>
+    <string name="sets_controller_reset_help">기본 바꾸기 및 유형 프리셋으로 복원합니다</string>
+</resources>

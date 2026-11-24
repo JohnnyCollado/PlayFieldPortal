@@ -9,6 +9,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.playfieldportal.core.domain.model.TaskKind
+import com.playfieldportal.feature.artwork.R
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -39,18 +40,18 @@ class ArtworkImportWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         val planFile = resolvePlanFile(applicationContext, inputData.getString(KEY_PLAN_FILE_NAME))
-            ?: return Result.failure(workDataOf(KEY_ERROR to "Import plan not found"))
+            ?: return Result.failure(workDataOf(KEY_ERROR to applicationContext.getString(R.string.art_import_plan_not_found)))
         val plan = ImportPlan.parse(planFile.readText())
-            ?: return Result.failure(workDataOf(KEY_ERROR to "Import plan unreadable")).also { planFile.delete() }
+            ?: return Result.failure(workDataOf(KEY_ERROR to applicationContext.getString(R.string.art_import_plan_unreadable))).also { planFile.delete() }
         val transfer = runCatching {
             PortableArtworkLibrary.Transfer.valueOf(inputData.getString(KEY_TRANSFER) ?: "")
         }.getOrDefault(PortableArtworkLibrary.Transfer.COPY)
 
-        val label = "Importing artwork — ${plan.sourceLabel}"
+        val label = applicationContext.getString(R.string.art_import_label, plan.sourceLabel)
         tasks.start(
             TASK_ID, label, TaskKind.ARTWORK,
             onStop = { WorkManager.getInstance(applicationContext).cancelUniqueWork(UNIQUE_NAME) },
-            stopNote = "Artwork already imported is kept.",
+            stopNote = applicationContext.getString(R.string.art_import_stop_note),
         )
         var lastShown = 0
 
@@ -82,14 +83,14 @@ class ArtworkImportWorker @AssistedInject constructor(
         } catch (e: Exception) {
             Timber.e(e, "Artwork import failed")
             tasks.fail(
-                TASK_ID, e.message ?: "Unexpected error",
+                TASK_ID, e.message ?: applicationContext.getString(R.string.art_error_unexpected),
                 detail = com.playfieldportal.core.domain.model.NotificationDetail.notes(
                     com.playfieldportal.core.domain.model.PfpErrorCode.AR_9001, summary = e.message,
                     diagnostic = e.stackTraceToString().take(4_000)),
-                title = "Artwork import failed",
+                title = applicationContext.getString(R.string.art_import_failed_title),
             )
             planFile.delete()
-            Result.failure(workDataOf(KEY_ERROR to (e.message ?: "Unexpected error")))
+            Result.failure(workDataOf(KEY_ERROR to (e.message ?: applicationContext.getString(R.string.art_error_unexpected))))
         }
     }
 

@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.database.dao.PlatformDao
@@ -12,7 +13,9 @@ import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 import com.playfieldportal.feature.launcher.AutoCoreMemory
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.LaunchSource
+import com.playfieldportal.feature.settings.R
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -88,12 +91,14 @@ class EmulatorAssignmentViewModel @Inject constructor(
     private val profileRepository: EmulatorProfileRepository,
     private val autoCoreMemory: AutoCoreMemory,
     private val tasks: BackgroundTaskCenter,
+    // Notification text is final strings, so it is resolved here in the user's language.
+    @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
     // Assignment outcomes post to the tray (row + cue) rather than an in-screen row.
     private fun report(message: String) = tasks.report(
         id = "emu_assign",
-        label = "Emulator Assignment",
+        label = appContext.getString(R.string.lib_assign_task_label),
         message = message,
         severity = NotificationSeverity.SUCCESS,
         action = NotificationAction.OpenSettingsScreen("settings_emulators_assign"),
@@ -151,7 +156,7 @@ class EmulatorAssignmentViewModel @Inject constructor(
             ?: row.defaultDisplayName
         viewModelScope.launch {
             memoryCardRepository.setEmulator(platformId, profileId)
-            report("${row.platformName}: default emulator set to ${name ?: profileId}")
+            report(appContext.getString(R.string.lib_assign_default_set, row.platformName, name ?: profileId))
         }
     }
 
@@ -160,7 +165,7 @@ class EmulatorAssignmentViewModel @Inject constructor(
         val row = _uiState.value.platforms.firstOrNull { it.platformId == platformId } ?: return
         viewModelScope.launch {
             memoryCardRepository.setEmulator(platformId, null)
-            report("${row.platformName}: using the recommended emulator")
+            report(appContext.getString(R.string.lib_assign_using_recommended, row.platformName))
         }
     }
 
@@ -180,9 +185,11 @@ class EmulatorAssignmentViewModel @Inject constructor(
         viewModelScope.launch {
             gameRepository.clearPreferredEmulatorForPlatform(platformId)
             _uiState.update { it.copy(confirmClearPlatformId = null) }
+            val cleared = row?.overrideCount ?: 0
             report(
-                "${row?.platformName ?: platformId}: cleared ${row?.overrideCount ?: 0} " +
-                    "per-game override(s) — those games now follow the platform default",
+                appContext.resources.getQuantityString(
+                    R.plurals.lib_assign_overrides_cleared, cleared, row?.platformName ?: platformId, cleared,
+                ),
             )
         }
     }

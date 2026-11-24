@@ -7,6 +7,8 @@ import com.playfieldportal.core.data.repository.CustomIconStore
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.CategoryType
 import com.playfieldportal.core.domain.model.GameCollection
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.settings.R
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -80,8 +82,8 @@ class CategoryManagerDeleteTest {
         advanceUntilIdle()
 
         val rows = vm.uiState.value.categories.associateBy { it.id }
-        assertEquals("Game", rows.getValue("custom_ff_5").cardHomeName)
-        assertEquals("App Store", rows.getValue("custom_stream_6").cardHomeName)
+        assertEquals(UiText.res(R.string.lib_cat_home_game), rows.getValue("custom_ff_5").cardHomeName)
+        assertEquals(UiText.res(R.string.lib_cat_home_app_store), rows.getValue("custom_stream_6").cardHomeName)
         job.cancel()
     }
 

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_title">Vầng sáng tiêu điểm</string>
+    <string name="glow_sub_off">Không có vầng sáng quanh biểu tượng đang chọn.</string>
+    <string name="glow_sub_steady">Ánh sáng dịu quanh biểu tượng đang chọn. Đứng yên.</string>
+    <string name="glow_sub_pulsing">Ánh sáng quanh biểu tượng đang chọn từ từ sáng lên rồi mờ đi. Đứng yên khi “Chuyển động” được đặt thành “Tĩnh”.</string>
+    <string name="glow_value_off">Tắt</string>
+    <string name="glow_value_steady">Đứng yên</string>
+    <string name="glow_value_pulsing">Nhịp đập</string>
+</resources>

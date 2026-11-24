@@ -1,0 +1,330 @@
+# Theme Studio in ar. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	جديد
+Open…	فتح…
+Upgrade folder…	ترقية مجلد…
+Convert .ptf…	تحويل ‎.ptf…
+Batch convert…	تحويل مجمّع…
+Unpack assets…	فك حزمة الموارد…
+Undo	تراجع
+Redo	إعادة
+Export .pfptheme…	تصدير ‎.pfptheme…
+Import PSP theme ▾	استيراد سمة PSP ▾
+Working…	جارٍ العمل…
+Open ▾	فتح ▾
+Open: {0} ▾	فتح: {0} ▾
+XMB (back to the crossbar)	XMB (العودة إلى الشريط)
+Stop {0}	إيقاف {0}
+Play {0}	تشغيل {0}
+Video only — sound plays on the device	فيديو فقط — يُشغَّل الصوت على الجهاز
+This theme uses an older format. Saving upgrades it to the current one.	تستخدم هذه السمة تنسيقًا أقدم. الحفظ يرقّيها إلى التنسيق الحالي.
+See changes	عرض التغييرات
+Something went wrong	حدث خطأ ما
+OK	موافق
+Cancel	إلغاء
+Open theme	فتح سمة
+PSP theme to convert	سمة PSP المراد تحويلها
+Export theme	تصدير السمة
+Info	معلومات
+Color	اللون
+Background	الخلفية
+Legibility	الوضوح
+Layout	التخطيط
+Icons	الأيقونات
+Sounds	الأصوات
+Boot & Game Boot	Boot و Game Boot
+Export check	فحص التصدير
+Untitled	بلا عنوان
+Video	فيديو
+Image	صورة
+Wave	موجة
+Not set	غير معيّن
+Set	معيّن
+Preview only	للمعاينة فقط
+None custom	لا مخصصة
+{0} custom	{0} مخصصة
+None set	لا شيء معيّن
+{0} set	{0} معيّنة
+{0} of 2	{0} من 2
+Ready	جاهز
+Untitled Theme	سمة بلا عنوان
+App Drawer	درج التطبيقات
+Settings	الإعدادات
+App Picker	منتقي التطبيقات
+Game Picker	منتقي الألعاب
+Artwork Studio	استوديو الأعمال الفنية
+Game Detail Screen	تفاصيل اللعبة
+Achievement Screen	الإنجازات
+Per-Game Achievement Screen	إنجازات اللعبة
+Lock Screen	شاشة القفل
+Boot	Boot
+Game Boot	Game Boot
+In this file	في هذا الملف
+Nothing embedded yet	لا شيء مضمَّن بعد
+Theme name	اسم السمة
+Author	المؤلف
+Short description	وصف قصير
+New theme — not saved yet	سمة جديدة — لم تُحفظ بعد
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	محفوظ: الاسم والمؤلف والوصف تنتقل داخل ملف ‎.pfptheme. يُضبط تاريخ التحديث عند التصدير.
+Accent color	لون التمييز
+Auto (from the wallpaper)	تلقائي (من الخلفية)
+Custom	مخصص
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	كل خلفية أو فيديو جديد يضبط لون التمييز. اختر لونًا للاحتفاظ بلونك.
+Your accent stays when the wallpaper or video changes.	يبقى لون التمييز عند تغيير الخلفية أو الفيديو.
+Custom accent	تمييز مخصص
+Icon color	لون الأيقونات
+Auto (follows the theme)	تلقائي (يتبع السمة)
+White	أبيض
+Main text color	لون النص الرئيسي
+Titles and labels: the crossbar, list rows and status strip, and every screen.	العناوين والتسميات: الشريط وصفوف القوائم وشريط الحالة وكل شاشة.
+Auto (built-in colors)	تلقائي (الألوان المضمّنة)
+Use my exact color	استخدام لوني بالضبط
+Subtext color	لون النص الفرعي
+Subtitles, sublabels and values.	العناوين الفرعية والتسميات الفرعية والقيم.
+Same as main text	مثل النص الرئيسي
+Source	المصدر
+Wave motion	حركة الموجة
+Video playback	تشغيل الفيديو
+Moving	متحركة
+Moving, dim	متحركة، خافتة
+Still	ثابتة
+Still, dim	ثابتة، خافتة
+None — live wave background	لا شيء — خلفية موجة حية
+Replace…	استبدال…
+Re-crop…	إعادة القص…
+Clear	مسح
+Clear video	مسح الفيديو
+Pick frame…	اختيار إطار…
+The preview always shows a frozen wave; the style plays on the device.	تعرض المعاينة دائمًا موجة مجمّدة؛ يعمل النمط على الجهاز.
+Lock screen	شاشة القفل
+None — the theme leaves the device lock screen alone	لا شيء — السمة لا تغيّر شاشة قفل الجهاز
+Choose Image…	اختيار صورة…
+Use Poster	استخدام الملصق
+Use Wallpaper	استخدام الخلفية
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	صورة ثابتة فقط. يقصّها الجهاز لتناسب شاشته، ولا يعيّنها إلا إذا وافق المستخدم عند التطبيق.
+Crop	قص
+Zoom	تكبير
+Center	توسيط
+Apply	تطبيق
+Reset	إعادة ضبط
+Text	النص
+Automatic	تلقائي
+None	بلا
+Drop shadow	ظل
+Outline	حد خارجي
+Contrast plate	لوحة تباين
+Offset shadow (dark)	ظل مُزاح (داكن)
+Offset shadow (light)	ظل مُزاح (فاتح)
+Contour dark	محيط داكن
+Contour light	محيط فاتح
+Contour auto	محيط تلقائي
+Solid unfocused icons	أيقونات غير محددة مصمتة
+Older launchers ignore these and show plain text and icons.	تتجاهل المشغّلات الأقدم هذه الإعدادات وتعرض نصًا وأيقونات عادية.
+Preview with my layout	المعاينة بتخطيطي
+Preview only — never saved in the theme. Remembered on this computer.	للمعاينة فقط — لا يُحفظ في السمة أبدًا. يُحفظ على هذا الحاسوب.
+Use my layout in the preview	استخدام تخطيطي في المعاينة
+Scale — {0}	المقياس — {0}
+Horizontal — {0}	أفقي — {0}
+Vertical — {0}	عمودي — {0}
+Biblically Accurate preview	معاينة مطابقة للأصل تمامًا
+Adjust on preview	الضبط على المعاينة
+All {0}	الكل {0}
+Crossbar {0}	الشريط {0}
+Items {0}	العناصر {0}
+Consoles {0}	الأجهزة {0}
+Physical Media {0}	الوسائط المادية {0}
+On screen	على الشاشة
+Customized {0}	مخصّصة {0}
+Showing {0} of {1}	عرض {0} من {1}
+Select a slot to see it at real size, replace it, or export its template.	اختر خانة لرؤيتها بالحجم الحقيقي أو استبدالها أو تصدير قالبها.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	أسقط ملف صورة (png, gif, jpg, bmp, webp) على أي خانة لاستبدال أيقونتها.
+Import icon pack… ▾	استيراد حزمة أيقونات… ▾
+Export templates…	تصدير القوالب…
+Reset all	إعادة ضبط الكل
+Local file…	ملف محلي…
+From theme…	من سمة…
+Export template	تصدير القالب
+Menu sounds	أصوات القائمة
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	كل ما تتركه فارغًا يحتفظ بالصوت المضمّن. يجب أن تلائم المقاطع الحد الأقصى لكل صف.
+Navigation	التنقل
+Category change	تغيير الفئة
+Options panel	لوحة الخيارات
+Back / cancel	رجوع / إلغاء
+Confirm / apply	تأكيد / تطبيق
+Error / invalid	خطأ / غير صالح
+Notification	إشعار
+Ambience (loops)	أجواء (متكررة)
+Built-in	مضمّن
+Up to {0}	حتى {0}
+Choose…	اختيار…
+▶ Play	▶ تشغيل
+■ Stop	■ إيقاف
+Boot sequences	تسلسلات الإقلاع
+Choose the built-in sequence or your own MP4 for each.	اختر التسلسل المضمّن أو ملف MP4 خاصًا بك لكل منها.
+The launcher's own {0} sequence.	تسلسل {0} الخاص بالمشغّل.
+Your own MP4 (H.264).	ملف MP4 خاص بك (H.264).
+Choose MP4…	اختيار MP4…
+Play in preview	تشغيل في المعاينة
+Use built-in	استخدام المضمّن
+All media is within limits	كل الوسائط ضمن الحدود
+Opens on older launchers	تُفتح على المشغّلات الأقدم
+Fix the items marked ✕ before exporting.	أصلح العناصر المعلّمة بـ ✕ قبل التصدير.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	تُنشأ صورة معاينة للسمة المكتملة عند التصدير وتظهر كصورة مصغّرة لها في معرض السمات بالمشغّل.
+Opened {0}	تم فتح {0}
+Exported {0}	تم تصدير {0}
+Folder of .pfptheme files to upgrade	مجلد ملفات .pfptheme المراد ترقيتها
+Folder with .ptf files	مجلد يحتوي على ملفات .ptf
+Output folder for .pfptheme files	مجلد الإخراج لملفات .pfptheme
+PSP theme to unpack	سمة PSP المراد فك حزمتها
+Folder for unpacked assets	مجلد الموارد المستخرجة
+Converting {0}  ({1}/{2})	جارٍ تحويل {0}  ({1}/{2})
+This theme was made by a newer version (format v{0}). Parts this version doesn't know are kept when you save.	أُنشئت هذه السمة بإصدار أحدث (التنسيق v{0}). تُحفظ الأجزاء التي لا يعرفها هذا الإصدار عند الحفظ.
+CXMB theme	سمة CXMB
+This file is a CXMB custom firmware theme (.ctf). Those replace PSP system files rather than describing wallpaper and colors, so they can't be converted. Official PSP themes (.ptf) open fine.	هذا الملف سمة CXMB لبرنامج ثابت مخصص (.ctf). تستبدل هذه السمات ملفات نظام PSP بدلاً من وصف الخلفية والألوان، لذا لا يمكن تحويلها. سمات PSP الرسمية (.ptf) تُفتح دون مشكلة.
+Batch conversion finished	اكتمل التحويل المجمّع
+Converted: {0}	تم التحويل: {0}
+Converted with caveats: {0}	تم التحويل مع ملاحظات: {0}
+Skipped (CXMB): {0} — {1}	تم التخطي (CXMB): {0} — {1}
+Failed: {0}	فشل: {0}
+Theme upgrade finished	اكتملت ترقية السمات
+Upgraded: {0} (originals kept as .bak)	تمت الترقية: {0} (حُفظت الأصول بامتداد .bak)
+Already current: {0}	محدّثة بالفعل: {0}
+Made by a newer version, left alone: {0}	من إصدار أحدث، تُركت كما هي: {0}
+Report: {0}	التقرير: {0}
+Background motion	حركة الخلفية
+Still: frame at {0}	صورة ثابتة: إطار عند {0}
+Still: baked into the theme	صورة ثابتة: مضمّنة في السمة
+Import wallpaper	استيراد خلفية
+Import video	استيراد فيديو
+Lock screen image	صورة شاشة القفل
+(embedded image)	(صورة مضمّنة)
+Fit	الملاءمة
+Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.	خلفية مزدحمة — قد تصعب قراءة التسميات. تعمل الصور الهادئة منخفضة التباين بشكل أفضل.
+The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, a Still style, or Motion set to Static on the device).	الصورة الثابتة هي ملصق الفيديو — تظهر كلما توقف التشغيل (توفير البطارية، أو لعبة، أو نمط ثابت، أو ضبط الحركة على ثابت في الجهاز).
+The theme offers this image for the device lock screen	تعرض السمة هذه الصورة لشاشة قفل الجهاز
+Output {0}×{1}	الإخراج {0}×{1}
+{0}–{1} recommended, {2} max, {3} MB max	{0}–{1} موصى به، {2} حد أقصى، {3} MB حد أقصى
+Whether the boot video and Game Boot play at all is a device setting: {0}	تشغيل فيديو الإقلاع و Game Boot من عدمه هو إعداد في الجهاز: {0}
+This clip is longer than the cap — the launcher will refuse it.	هذا المقطع أطول من الحد — سيرفضه المشغّل.
+Choose a {0} video	اختيار فيديو {0}
+Dark icon color — icons may be hard to see over the wallpaper scrim.	لون أيقونات داكن — قد يصعب رؤية الأيقونات فوق تعتيم الخلفية.
+Saved in the theme for a later update. The launcher currently shows the color exactly as picked.	محفوظ في السمة لتحديث لاحق. يعرض المشغّل اللون حاليًا كما اختير تمامًا.
+Original	الأصلي
+Classic Blue	أزرق كلاسيكي
+Sunset Orange	برتقالي الغروب
+Fresh Green	أخضر منعش
+Royal Purple	بنفسجي ملكي
+Crimson Red	أحمر قرمزي
+Silver	فضي
+Sakura Pink	وردي ساكورا
+Golden Amber	كهرماني ذهبي
+Aqua Teal	فيروزي
+Midnight Navy	أزرق منتصف الليل
+Charcoal	فحمي
+Format: schema {0} → {1}	التنسيق: المخطط {0} → {1}
+Format: new theme → {0}	التنسيق: سمة جديدة → {0}
+Kept	محفوظ
+Added	مضاف
+Repaired	مُصلح
+Can't recover	تعذّر الاسترداد
+What saving does	ما الذي يفعله الحفظ
+Motion has a still poster	للحركة ملصق ثابت
+Motion needs a still wallpaper as its poster - add one or remove the video	تحتاج الحركة إلى خلفية ثابتة كملصق - أضف واحدة أو أزل الفيديو
+Media outside limits: {0}	وسائط خارج الحدود: {0}
+This wallpaper is busy behind the labels - pick a text legibility style so they stay readable	هذه الخلفية مزدحمة خلف التسميات - اختر نمطًا لوضوح النص كي تبقى مقروءة
+Text should read clearly on this wallpaper	يُفترض أن يُقرأ النص بوضوح على هذه الخلفية
+{0} - launchers from before this format refuse files over 64 MB	{0} - المشغّلات الأقدم من هذا التنسيق ترفض الملفات الأكبر من 64 MB
+Opens on older launchers, which ignore sounds, boot clips, legibility and crop	تُفتح على المشغّلات الأقدم، التي تتجاهل الأصوات ومقاطع الإقلاع والوضوح والقص
+{0} is over the {1} MB limit for a theme file	{0} يتجاوز حد {1} MB لملف السمة
+Saving upgrades this theme from {0}; {1} part(s) can't be recovered	يرقّي الحفظ هذه السمة من {0}؛ أجزاء لا يمكن استردادها: {1}
+Saving upgrades this theme from {0}	يرقّي الحفظ هذه السمة من {0}
+an older format	تنسيق أقدم
+Imported from {0}	مستوردة من {0}
+Imported from {0} — firmware {1}	مستوردة من {0} — البرنامج الثابت {1}
+a PSP theme	سمة PSP
+Created {0}	أُنشئت {0}
+On the device these live in {0}.	توجد هذه الإعدادات في الجهاز ضمن {0}.
+Scale	المقياس
+Horizontal	أفقي
+Vertical	عمودي
+This wallpaper is busy behind the labels — a text style helps them stay readable.	هذه الخلفية مزدحمة خلف التسميات — يساعد نمط النص على إبقائها مقروءة.
+Settings › Interface › Display › Adjust XMB Layout	الإعدادات › الواجهة › العرض › ضبط تخطيط XMB
+Settings › Interface › Sound	الإعدادات › الواجهة › الصوت
+Settings › Interface › Display › Show Boot Sequence / Game Boot	الإعدادات › الواجهة › العرض › إظهار تسلسل الإقلاع / Game Boot
+Battery Saver and Thermal Throttle (Settings › Interface › Display) freeze the animated wave on the device.	يجمّد توفير البطارية والحد الحراري (الإعدادات › الواجهة › العرض) الموجة المتحركة على الجهاز.
+Pick…	اختيار…
+Plays on the device	يُشغَّل على الجهاز
+Length unknown	المدة غير معروفة
+Volumes stay on the device: {0}	يبقى مستوى الصوت على الجهاز: {0}
+Couldn't play {0} here — it will play on the device.	تعذّر تشغيل {0} هنا — سيعمل على الجهاز.
+Choose a sound for {0}	اختيار صوت لـ {0}
+Icon image for {0}	صورة أيقونة لـ {0}
+Template for {0}	قالب لـ {0}
+Template written to {0}	حُفظ القالب باسم {0}
+Template export failed: {0}	فشل تصدير القالب: {0}
+Search {0} slots: battery, PS3, voice…	البحث في {0} خانة: البطارية، PS3، الصوت…
+No slot matches. Clear the search or a filter.	لا توجد خانة مطابقة. امسح البحث أو أحد عوامل التصفية.
+Pack folder…	مجلد الحزمة…
+Icon pack folder	مجلد حزمة الأيقونات
+Pack .zip…	حزمة .zip…
+Icon pack zip	حزمة أيقونات .zip
+Folder for icon templates	مجلد قوالب الأيقونات
+Packs are folders or zips of <slot key>.png / .gif, the names the templates use. Multi-frame GIFs animate on the launcher when focused; they must stay within 512px, 120 frames and 10 seconds.	الحزم مجلدات أو ملفات zip تحتوي <مفتاح الخانة>.png / .gif، وهي الأسماء التي تستخدمها القوالب. تتحرك صور GIF متعددة الإطارات في المشغّل عند تحديدها؛ ويجب ألا تتجاوز 512 بكسل و120 إطارًا و10 ثوانٍ.
+Icon pack imported	تم استيراد حزمة الأيقونات
+Icon pack refused	رُفضت حزمة الأيقونات
+{0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	{0}: أضيف {1}، استُبدل {2}، بلا مطابقة {3}، رُفض {4}
+Icon pack {0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	حزمة الأيقونات {0}: أضيف {1}، استُبدل {2}، بلا مطابقة {3}، رُفض {4}
+{0} - did you mean {1}?	{0} - هل تقصد {1}؟
+{0} - no matching slot	{0} - لا توجد خانة مطابقة
+{0} error	الأخطاء: {0}
+{0} errors	الأخطاء: {0}
+{0} warning	التحذيرات: {0}
+{0} warnings	التحذيرات: {0}
+{0} of {1} MB	{0} من {1} MB
+{0} of {1} MB - older launchers refuse over 64 MB	{0} من {1} MB - المشغّلات الأقدم ترفض ما يتجاوز 64 MB
+Wallpaper	الخلفية
+Preview	المعاينة
+Motion	الحركة
+Ambience	الأجواء
+Other files	ملفات أخرى
+{0} is too large to be a theme file	{0} أكبر من أن يكون ملف سمة
+Imported {0}	تم استيراد {0}
+Imported with a caveat	تم الاستيراد مع ملاحظة
+{0} is not a valid .pfptheme bundle	{0} ليس حزمة .pfptheme صالحة
+{0} — {1} icon(s) for parts themes don't customize were left out	{0} — تُركت أيقونات لأجزاء لا تخصصها السمات: {1}
+Motion wallpaper: {0}	الخلفية المتحركة: {0}
+Could not keep: {0}	تعذّر الاحتفاظ بـ: {0}
+Parts of the theme not kept	لم يُحتفظ بأجزاء من السمة
+Motion wallpaper not kept	لم يُحتفظ بالخلفية المتحركة
+{0} is not a readable image	{0} ليست صورة قابلة للقراءة
+{0} converted to H.264 for Android ({1})	حُوّل {0} إلى H.264 لنظام Android ({1})
+Couldn't read that frame of the video	تعذّرت قراءة ذلك الإطار من الفيديو
+The crop does not match this image	القص لا يطابق هذه الصورة
+Wallpaper: {0} ({1}×{2})	الخلفية: {0} ({1}×{2})
+Added {0} — converted to H.264 for Android ({1})	أضيف {0} — حُوّل إلى H.264 لنظام Android ({1})
+Added {0}	أضيف {0}
+Export failed: {0}	فشل التصدير: {0}
+{0} is not a PSP theme file	{0} ليس ملف سمة PSP
+Unpack failed: {0}	فشل فك الحزمة: {0}
+Theme unpacked	تم فك حزمة السمة
+{0} images written to {1} (see report.txt).	كُتبت الصور ({0}) في {1} (راجع report.txt).
+{0} images and {1} data files written to {2} (see report.txt).	كُتبت الصور ({0}) وملفات البيانات ({1}) في {2} (راجع report.txt).
+Unpacked {0}: {1} images	تم فك حزمة {0}: الصور {1}
+Templates exported to {0} ({1} icons)	صُدّرت القوالب إلى {0} (الأيقونات: {1})
+WebM clips can't be checked in the Studio (it reads MP4/H.264 only) — convert the clip to MP4	لا يمكن فحص مقاطع WebM في Studio (يقرأ MP4/H.264 فقط) — حوّل المقطع إلى MP4
+That isn't a media slot this import can fill	هذه ليست خانة وسائط يمكن لهذا الاستيراد ملؤها
+That file is too large for a theme — {0} MB or less	هذا الملف أكبر من أن يكون لسمة — {0} MB أو أقل
+Unsupported video — use an MP4 (H.264)	فيديو غير مدعوم — استخدم MP4 (H.264)
+{0} video isn't guaranteed to play on Android	لا يُضمن تشغيل فيديو {0} على Android
+H.264 {0} doesn't play on Android	لا يعمل H.264 {0} على Android
+{0} video doesn't play on Android	لا يعمل فيديو {0} على Android
+Couldn't convert this video for Android ({0}). Re-encode it as MP4 H.264 and try again.	تعذّر تحويل هذا الفيديو لنظام Android ({0}). أعد ترميزه بصيغة MP4 H.264 وحاول مرة أخرى.
+{0} is not a folder or .zip	{0} ليس مجلدًا ولا ملف .zip
+Pack refused: {0}	رُفضت الحزمة: {0}
+Pack could not be read	تعذّرت قراءة الحزمة
+Pack could not be read: {0}	تعذّرت قراءة الحزمة: {0}
+Pack has more than {0} files	تحتوي الحزمة على أكثر من {0} ملف
+Not a PSP theme file	ليس ملف سمة PSP
+Corrupt or truncated PTF	ملف PTF تالف أو مبتور
+This theme contains no wallpaper image.	لا تحتوي هذه السمة على صورة خلفية.
+The wallpaper could not be extracted: this theme uses a compression method this importer doesn't recognize. The theme was imported without its wallpaper.	تعذّر استخراج الخلفية: تستخدم هذه السمة طريقة ضغط لا يتعرّف عليها هذا المستورد. استُوردت السمة بدون خلفيتها.
+The wallpaper data in this theme is damaged and could not be decoded. The theme was imported without its wallpaper.	بيانات الخلفية في هذه السمة تالفة وتعذّر فك ترميزها. استُوردت السمة بدون خلفيتها.

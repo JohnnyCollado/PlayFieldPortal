@@ -4,6 +4,9 @@ import com.playfieldportal.core.domain.model.ConfirmBackLayout
 import com.playfieldportal.core.domain.model.ControllerDisplayType
 import com.playfieldportal.core.domain.model.ControllerLayoutPrefs
 import com.playfieldportal.core.domain.model.TouchNavButtonMode
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.core.domain.text.labelRes
+import com.playfieldportal.feature.settings.R
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -13,17 +16,20 @@ class SetupSummaryTest {
     // ── Controller ──────────────────────────────────────────────────────────────
 
     @Test fun `controller summary names the pad and its confirm button`() {
-        assertEquals("Xbox · A confirms", controllerSummary(ControllerLayoutPrefs()))
         assertEquals(
-            "Xbox · B confirms",
+            UiText.res(R.string.setup_controller_summary, UiText.res(ControllerDisplayType.XBOX.labelRes), UiText.raw("A")),
+            controllerSummary(ControllerLayoutPrefs()),
+        )
+        assertEquals(
+            UiText.res(R.string.setup_controller_summary, UiText.res(ControllerDisplayType.XBOX.labelRes), UiText.raw("B")),
             controllerSummary(ControllerLayoutPrefs(confirmBackLayout = ConfirmBackLayout.REVERSED)),
         )
         assertEquals(
-            "PlayStation · Cross confirms",
+            UiText.res(R.string.setup_controller_summary, UiText.res(ControllerDisplayType.PLAYSTATION.labelRes), UiText.res(R.string.setup_button_cross)),
             controllerSummary(ControllerLayoutPrefs(displayType = ControllerDisplayType.PLAYSTATION)),
         )
         assertEquals(
-            "PlayStation · Circle confirms",
+            UiText.res(R.string.setup_controller_summary, UiText.res(ControllerDisplayType.PLAYSTATION.labelRes), UiText.res(R.string.setup_button_circle)),
             controllerSummary(
                 ControllerLayoutPrefs(
                     displayType = ControllerDisplayType.PLAYSTATION,
@@ -32,15 +38,18 @@ class SetupSummaryTest {
             ),
         )
         assertEquals(
-            "Nintendo · A confirms",
+            UiText.res(R.string.setup_controller_summary, UiText.res(ControllerDisplayType.NINTENDO.labelRes), UiText.raw("A")),
             controllerSummary(ControllerLayoutPrefs(displayType = ControllerDisplayType.NINTENDO)),
         )
     }
 
     @Test fun `A B swap sublabel spells out which button confirms`() {
-        assertEquals("Off — A confirms, B goes back", confirmSwapSublabel(ControllerLayoutPrefs()))
         assertEquals(
-            "On — B confirms, A goes back",
+            UiText.res(R.string.setup_confirm_swap_off, "A", "B"),
+            confirmSwapSublabel(ControllerLayoutPrefs()),
+        )
+        assertEquals(
+            UiText.res(R.string.setup_confirm_swap_on, "B", "A"),
             confirmSwapSublabel(ControllerLayoutPrefs(confirmBackLayout = ConfirmBackLayout.REVERSED)),
         )
     }
@@ -48,9 +57,9 @@ class SetupSummaryTest {
     // ── Hints & Touch ───────────────────────────────────────────────────────────
 
     @Test fun `hint delay reads in whole or half seconds`() {
-        assertEquals("1 second", hintDelayLabel(1f))
-        assertEquals("2 seconds", hintDelayLabel(2f))
-        assertEquals("2.5 seconds", hintDelayLabel(2.5f))
+        assertEquals(UiText.plural(R.plurals.setup_hints_delay_seconds, 1), hintDelayLabel(1f))
+        assertEquals(UiText.plural(R.plurals.setup_hints_delay_seconds, 2), hintDelayLabel(2f))
+        assertEquals(UiText.res(R.string.setup_hints_delay_fraction, "2.5"), hintDelayLabel(2.5f))
     }
 
     @Test fun `hint delay steps to the next whole second and wraps after five`() {
@@ -61,25 +70,28 @@ class SetupSummaryTest {
     }
 
     @Test fun `touch button modes read like Display settings`() {
-        assertEquals("Auto", touchButtonLabel(TouchNavButtonMode.AUTO))
-        assertEquals("Always Show", touchButtonLabel(TouchNavButtonMode.ALWAYS_SHOW))
-        assertEquals("Always Hide", touchButtonLabel(TouchNavButtonMode.ALWAYS_HIDE))
+        assertEquals(UiText.res(R.string.setup_touch_auto), touchButtonLabel(TouchNavButtonMode.AUTO))
+        assertEquals(UiText.res(R.string.setup_touch_always_show), touchButtonLabel(TouchNavButtonMode.ALWAYS_SHOW))
+        assertEquals(UiText.res(R.string.setup_touch_always_hide), touchButtonLabel(TouchNavButtonMode.ALWAYS_HIDE))
     }
 
     @Test fun `button hints summary`() {
-        assertEquals("On · 2 seconds", hintsSummary(InterfaceHints(enabled = true, delaySeconds = 2f)))
-        assertEquals("Off", hintsSummary(InterfaceHints(enabled = false, delaySeconds = 2f)))
+        assertEquals(
+            UiText.res(R.string.setup_hints_summary_on, UiText.plural(R.plurals.setup_hints_delay_seconds, 2)),
+            hintsSummary(InterfaceHints(enabled = true, delaySeconds = 2f)),
+        )
+        assertEquals(UiText.res(R.string.setup_off), hintsSummary(InterfaceHints(enabled = false, delaySeconds = 2f)))
     }
 
     // ── Finish summary ──────────────────────────────────────────────────────────
 
     @Test fun `home app summary`() {
-        assertEquals("Play Field Portal", homeAppSummary(isHome = true))
-        assertEquals("Not Play Field Portal", homeAppSummary(isHome = false))
+        assertEquals(UiText.res(R.string.setup_home_is_pfp), homeAppSummary(isHome = true))
+        assertEquals(UiText.res(R.string.setup_home_not_pfp), homeAppSummary(isHome = false))
     }
 
     @Test fun `optional folder rows read Not set when unlinked`() {
-        assertEquals("Not set", folderSummary(null))
-        assertEquals("dev_hdd0", folderSummary("dev_hdd0"))
+        assertEquals(UiText.res(R.string.setup_not_set), folderSummary(null))
+        assertEquals(UiText.raw("dev_hdd0"), folderSummary("dev_hdd0"))
     }
 }

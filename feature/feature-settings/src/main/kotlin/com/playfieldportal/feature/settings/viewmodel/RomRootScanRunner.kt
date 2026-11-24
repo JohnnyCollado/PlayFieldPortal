@@ -2,10 +2,12 @@ package com.playfieldportal.feature.settings.viewmodel
 
 import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.data.repository.RomRootRepository
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.library.scanner.LibraryScanner
 import com.playfieldportal.feature.library.scanner.PlatformScanOutcome
 import com.playfieldportal.feature.library.scanner.RomRootDiscoveryScanner
 import com.playfieldportal.feature.library.scanner.ScanStatus
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.feature.settings.pc.PcGameScanner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +26,7 @@ data class RomRootScanReport(
     val totalAdded: Int,
     val skipped: Int,
     val rootsCount: Int,
-    val message: String,
+    val message: UiText,
     /** Every card this pass surveyed, for the Results sheet: which systems failed, and why. */
     val outcomes: List<PlatformScanOutcome> = emptyList(),
 )
@@ -79,7 +81,7 @@ class RomRootScanRunner @Inject constructor(
             return RomRootScanReport(
                 scannedFolders = 0, systemsWithGames = 0, newCards = 0,
                 totalAdded = 0, skipped = 0, rootsCount = 0,
-                message = "Add a ROM Root first in Settings ▸ Library ▸ Library Manager.",
+                message = UiText.res(R.string.setup_rom_scan_no_root),
             )
         }
 
@@ -136,18 +138,28 @@ class RomRootScanRunner @Inject constructor(
             totalAdded += pcReport.newGames
         }
 
-        val rootLabel = "${roots.size} root${if (roots.size == 1) "" else "s"}"
-        val message = buildString {
-            if (platformsWithGames.isEmpty()) {
-                append("Scanned $scannedFolders folder(s) across $rootLabel; no new ROMs found. ")
-                append("Copy games into the matching system folders and try again.")
-            } else {
-                append("Loaded ${platformsWithGames.size} system(s)")
-                if (newCards > 0) append(" ($newCards new console(s))")
-                append(", $totalAdded ROM(s) from $rootLabel.")
-            }
-            if (skipped > 0) append(" $skipped folder(s) skipped (library unreadable).")
+        val rootLabel = UiText.plural(R.plurals.setup_rom_scan_roots, roots.size)
+        val summary = if (platformsWithGames.isEmpty()) {
+            UiText.res(
+                R.string.setup_rom_scan_none,
+                UiText.plural(R.plurals.setup_rom_scan_folders, scannedFolders), rootLabel,
+            )
+        } else {
+            val systems = UiText.plural(R.plurals.setup_rom_scan_systems, platformsWithGames.size)
+            UiText.res(
+                R.string.setup_rom_scan_loaded,
+                if (newCards > 0) {
+                    UiText.res(
+                        R.string.setup_rom_scan_systems_new,
+                        systems, UiText.plural(R.plurals.setup_rom_scan_new_consoles, newCards),
+                    )
+                } else systems,
+                UiText.plural(R.plurals.setup_rom_scan_roms, totalAdded), rootLabel,
+            )
         }
+        val message = if (skipped > 0) {
+            UiText.Joined(listOf(summary, UiText.plural(R.plurals.setup_rom_scan_skipped, skipped)), " ")
+        } else summary
         Timber.i("ROM root autoload — folders=$scannedFolders systems=${platformsWithGames.size} new=$newCards roms=$totalAdded roots=${roots.size}")
         return RomRootScanReport(
             scannedFolders = scannedFolders,

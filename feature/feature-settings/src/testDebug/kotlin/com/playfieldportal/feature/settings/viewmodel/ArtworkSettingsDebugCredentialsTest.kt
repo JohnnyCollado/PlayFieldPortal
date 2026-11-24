@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -100,7 +101,7 @@ class ArtworkSettingsDebugCredentialsTest {
         vm.loadDebugCredentialsText("steamgriddb.apiKey=k")
         advanceUntilIdle()
 
-        assertFalse(vm.uiState.value.unprotectedSecretWarning.isNullOrBlank())
+        assertNotNull(vm.uiState.value.unprotectedSecretWarning)
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,7 +8,7 @@ import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.data.network.NetworkMonitor
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.model.GamepadAction
-import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.components.PspMenuCue
 import com.playfieldportal.core.ui.components.PspMenuNav
 import com.playfieldportal.core.ui.components.PspMenuOutcome
@@ -20,6 +21,7 @@ import com.playfieldportal.feature.achievements.match.RaConsoleOption
 import com.playfieldportal.feature.achievements.preview.AchievementPreviewRepository
 import com.playfieldportal.feature.achievements.preview.PreviewCandidate
 import com.playfieldportal.feature.achievements.preview.PreviewSearch
+import com.playfieldportal.feature.xmb.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -83,7 +85,7 @@ data class PreviewUi(
     val loading: Boolean = false,
     val coins: List<CoinRow> = emptyList(),
     /** Set when the fetch could not produce a set; the list area shows it instead of coins. */
-    val error: String? = null,
+    val error: UiText? = null,
     val filter: CoinFilter = CoinFilter.ALL,
     val query: String = "",
     val searchEditing: Boolean = false,
@@ -119,7 +121,10 @@ data class PreviewUi(
 }
 
 /** A second-level list in the Options menu, opened from its root row (the Icon Display pattern). */
-enum class SearchOptionGroup(val title: String) { PROVIDER("Provider"), CONSOLE("System") }
+enum class SearchOptionGroup(@StringRes val titleRes: Int) {
+    PROVIDER(R.string.det_search_group_provider),
+    CONSOLE(R.string.det_search_group_system),
+}
 
 /** What an Options row does. */
 sealed interface SearchOption {
@@ -133,7 +138,7 @@ sealed interface SearchOption {
 
 /** A row of the Options menu: its label, action, and whether it is the active choice. */
 data class SearchOptionRow(
-    val label: String,
+    val label: UiText,
     val option: SearchOption,
     val checked: Boolean = false,
     /** The row's current setting, drawn at the right edge (Provider: "Steam"). */
@@ -147,7 +152,7 @@ data class SearchOptionsMenu(
     val selectedIndex: Int = 0,
     val group: SearchOptionGroup? = null,
 ) {
-    val title: String get() = group?.title ?: "Options"
+    val title: UiText get() = UiText.res(group?.titleRes ?: R.string.det_options)
 }
 
 @Immutable
@@ -188,14 +193,15 @@ data class SearchOnlineUiState(
     val searchEditingNow: Boolean get() = preview?.searchEditing ?: searchEditing
     val queryNow: String get() = preview?.query ?: query
 
-    val title: String get() = preview?.candidate?.title ?: "Search online"
+    val title: UiText get() = preview?.candidate?.title?.let { UiText.raw(it) } ?: UiText.res(R.string.det_search_title)
 
     /** The header's second line. */
-    val subtitle: String
+    val subtitle: UiText
         get() = when {
-            preview != null -> "${preview.candidate.platformLabel} · Not installed"
-            status == SearchStatus.RESULTS -> "${providerLabel()} · ${resultCount(results.size)}"
-            else -> providerLabel()
+            preview != null -> UiText.res(R.string.det_search_subtitle_not_installed, preview.candidate.platformLabel)
+            status == SearchStatus.RESULTS ->
+                UiText.res(R.string.det_search_subtitle_results, providerLabel(), UiText.plural(R.plurals.det_search_result_count, results.size))
+            else -> UiText.raw(providerLabel())
         }
 
     /** The provider, plus the console a RetroAchievements search is pointed at. */
@@ -204,31 +210,32 @@ data class SearchOnlineUiState(
         SearchProvider.RETRO_ACHIEVEMENTS -> "${SearchProvider.RETRO_ACHIEVEMENTS.label} · ${console.label}"
     }
 
-    val searchPlaceholder: String
-        get() = if (preview != null) "Search coins…" else "Search ${provider.label}…"
+    val searchPlaceholder: UiText
+        get() = if (preview != null) UiText.res(R.string.det_search_placeholder_coins)
+        else UiText.res(R.string.det_search_placeholder_provider, provider.label)
 
     /** What the list area says when it has no rows to show. */
-    val emptyMessage: String
+    val emptyMessage: UiText
         get() {
             val open = preview
             if (open != null) {
                 return when {
-                    open.loading -> "Loading achievements…"
+                    open.loading -> UiText.res(R.string.det_search_loading_achievements)
                     open.error != null -> open.error
-                    open.coins.isEmpty() -> "${open.candidate.title} has no achievements on ${provider.label}."
-                    open.query.isNotBlank() -> "No coins match \"${open.query.trim()}\"."
-                    else -> "No coins in this view."
+                    open.coins.isEmpty() -> UiText.res(R.string.det_search_no_achievements, open.candidate.title, provider.label)
+                    open.query.isNotBlank() -> UiText.res(R.string.det_search_no_coins_match, open.query.trim())
+                    else -> UiText.res(R.string.det_search_no_coins_in_view)
                 }
             }
             return when (status) {
                 SearchStatus.IDLE ->
-                    "Type at least ${AchievementPreviewRepository.MIN_QUERY_LENGTH} letters to search ${provider.label}."
-                SearchStatus.SEARCHING -> "Searching ${provider.label}…"
-                SearchStatus.NO_RESULTS -> "No ${provider.label} games match \"${query.trim()}\"."
-                SearchStatus.OFFLINE -> "Searching needs an internet connection."
-                SearchStatus.NOT_CONNECTED -> "Connect ${provider.label} to search its games."
-                SearchStatus.FAILED -> "${provider.label} couldn't be reached. Try again."
-                SearchStatus.RESULTS -> ""
+                    UiText.res(R.string.det_search_idle, AchievementPreviewRepository.MIN_QUERY_LENGTH, provider.label)
+                SearchStatus.SEARCHING -> UiText.res(R.string.det_search_searching, provider.label)
+                SearchStatus.NO_RESULTS -> UiText.res(R.string.det_search_no_games_match, provider.label, query.trim())
+                SearchStatus.OFFLINE -> UiText.res(R.string.det_search_offline)
+                SearchStatus.NOT_CONNECTED -> UiText.res(R.string.det_search_not_connected, provider.label)
+                SearchStatus.FAILED -> UiText.res(R.string.det_search_failed, provider.label)
+                SearchStatus.RESULTS -> UiText.raw("")
             }
         }
 
@@ -245,9 +252,10 @@ data class SearchOnlineUiState(
 }
 
 /** The one action an error state offers. */
-enum class SearchRecovery(val label: String) { RETRY("Try again"), OPEN_SETTINGS("Open Settings") }
-
-private fun resultCount(count: Int): String = if (count == 1) "1 result" else "$count results"
+enum class SearchRecovery(@StringRes val labelRes: Int) {
+    RETRY(R.string.det_search_retry),
+    OPEN_SETTINGS(R.string.det_search_open_settings),
+}
 
 /**
  * The Options menu rows for [state], shaped like the library's: the root names each list with its
@@ -257,12 +265,12 @@ private fun resultCount(count: Int): String = if (count == 1) "1 result" else "$
 fun searchOptionRows(state: SearchOnlineUiState): List<SearchOptionRow> = when (state.options?.group) {
     null -> buildList {
         if (state.inPreview) {
-            add(SearchOptionRow("Refresh Preview", SearchOption.RefreshPreview))
+            add(SearchOptionRow(UiText.res(R.string.det_search_refresh_preview), SearchOption.RefreshPreview))
             return@buildList
         }
         add(
             SearchOptionRow(
-                label = "Provider",
+                label = UiText.res(R.string.det_search_group_provider),
                 option = SearchOption.OpenGroup(SearchOptionGroup.PROVIDER),
                 value = state.provider.label,
                 opensMenu = true,
@@ -271,7 +279,7 @@ fun searchOptionRows(state: SearchOnlineUiState): List<SearchOptionRow> = when (
         if (state.provider == SearchProvider.RETRO_ACHIEVEMENTS) {
             add(
                 SearchOptionRow(
-                    label = "System",
+                    label = UiText.res(R.string.det_search_group_system),
                     option = SearchOption.OpenGroup(SearchOptionGroup.CONSOLE),
                     value = state.console.label,
                     opensMenu = true,
@@ -279,13 +287,13 @@ fun searchOptionRows(state: SearchOnlineUiState): List<SearchOptionRow> = when (
             )
         }
         // The error's button ("Try again" / "Open Settings") is tap-only on the page itself.
-        state.recovery?.let { add(SearchOptionRow(it.label, SearchOption.Recover(it))) }
+        state.recovery?.let { add(SearchOptionRow(UiText.res(it.labelRes), SearchOption.Recover(it))) }
     }
     SearchOptionGroup.PROVIDER -> SearchProvider.entries.map {
-        SearchOptionRow(it.label, SearchOption.Provider(it), checked = it == state.provider)
+        SearchOptionRow(UiText.raw(it.label), SearchOption.Provider(it), checked = it == state.provider)
     }
     SearchOptionGroup.CONSOLE -> RaConsole.searchable.map {
-        SearchOptionRow(it.label, SearchOption.Console(it), checked = it.consoleId == state.console.consoleId)
+        SearchOptionRow(UiText.raw(it.label), SearchOption.Console(it), checked = it.consoleId == state.console.consoleId)
     }
 }
 
@@ -293,28 +301,36 @@ fun searchOptionRows(state: SearchOnlineUiState): List<SearchOptionRow> = when (
  * The helper footer for [state]: Confirm is named for what it would do on the focused element and
  * is left out when it would do nothing; text entry and the Options menu replace the page hints.
  */
-fun searchOnlineHelperItems(state: SearchOnlineUiState): List<ControllerPromptItem> = when {
+internal fun searchOnlineHelperItems(state: SearchOnlineUiState): List<DetailPrompt> = when {
     state.options != null -> listOf(
-        ControllerPromptItem(GamepadAction.SELECT, "Select"),
-        ControllerPromptItem(GamepadAction.BACK, "Close"),
+        DetailPrompt(GamepadAction.SELECT, UiText.res(R.string.det_search_prompt_select)),
+        DetailPrompt(GamepadAction.BACK, UiText.res(R.string.det_close)),
     )
-    state.searchEditingNow -> listOf(ControllerPromptItem(GamepadAction.BACK, "Done"))
+    state.searchEditingNow -> listOf(DetailPrompt(GamepadAction.BACK, UiText.res(R.string.det_search_prompt_done)))
     state.inPreview -> buildList {
         // Confirm only does something on a hidden coin, so it is named only there.
         val coin = (state.focused as? SearchOnlineRow.Coin)?.coin
         if (coin != null && coin.isHideable) {
-            add(ControllerPromptItem(GamepadAction.SELECT, if (coin.id in state.revealedIds) "Hide" else "Reveal"))
+            add(
+                DetailPrompt(
+                    GamepadAction.SELECT,
+                    UiText.res(if (coin.id in state.revealedIds) R.string.det_search_prompt_hide else R.string.det_search_prompt_reveal),
+                ),
+            )
         }
-        add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"))
-        add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
-        add(ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Change View"))
-        add(ControllerPromptItem(GamepadAction.BACK, "Close Preview"))
+        add(DetailPrompt(GamepadAction.CHANGE_SORT, UiText.res(R.string.det_search_prompt_search)))
+        add(DetailPrompt(GamepadAction.OPEN_CONTEXT_MENU, UiText.res(R.string.det_options)))
+        add(DetailPrompt(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), UiText.res(R.string.det_search_prompt_change_view)))
+        add(DetailPrompt(GamepadAction.BACK, UiText.res(R.string.det_search_prompt_close_preview)))
     }
     else -> listOf(
-        ControllerPromptItem(GamepadAction.SELECT, if (state.searchFocused) "Type" else "Preview"),
-        ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"),
-        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
-        ControllerPromptItem(GamepadAction.BACK, "Back"),
+        DetailPrompt(
+            GamepadAction.SELECT,
+            UiText.res(if (state.searchFocused) R.string.det_search_prompt_type else R.string.det_search_prompt_preview),
+        ),
+        DetailPrompt(GamepadAction.CHANGE_SORT, UiText.res(R.string.det_search_prompt_search)),
+        DetailPrompt(GamepadAction.OPEN_CONTEXT_MENU, UiText.res(R.string.det_options)),
+        DetailPrompt(GamepadAction.BACK, UiText.res(R.string.det_back)),
     )
 }
 
@@ -645,11 +661,11 @@ private fun SyncedCoin.toPreviewRow() = CoinRow(
 )
 
 /** Why a preview could not be shown, in the page's own words — never a key or a URL. */
-private fun ProviderSyncResult.message(): String = when (this) {
-    is ProviderSyncResult.Success -> ""
-    ProviderSyncResult.MissingCredentials -> "Connect this provider in Settings to look its games up."
-    ProviderSyncResult.NotLinked -> "This game has no achievement set to show."
-    ProviderSyncResult.ProfileNotPublic -> "Steam Game Details aren't available for your profile."
-    ProviderSyncResult.NotFound -> "This game has no achievements on this provider."
-    is ProviderSyncResult.Failed -> reason
+private fun ProviderSyncResult.message(): UiText = when (this) {
+    is ProviderSyncResult.Success -> UiText.raw("")
+    ProviderSyncResult.MissingCredentials -> UiText.res(R.string.det_search_err_missing_credentials)
+    ProviderSyncResult.NotLinked -> UiText.res(R.string.det_search_err_not_linked)
+    ProviderSyncResult.ProfileNotPublic -> UiText.res(R.string.det_search_err_profile_private)
+    ProviderSyncResult.NotFound -> UiText.res(R.string.det_search_err_not_found)
+    is ProviderSyncResult.Failed -> UiText.raw(reason)
 }

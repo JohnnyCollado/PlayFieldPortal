@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import android.content.res.Resources
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -27,7 +28,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material3.CircularProgressIndicator
+import com.playfieldportal.core.ui.components.PfpBusyRing
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -42,6 +43,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -55,6 +57,7 @@ import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.LocalCopyOwnership
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.components.ControllerPrompt
 import com.playfieldportal.core.ui.components.PfpCheckMark
 import com.playfieldportal.core.ui.components.PfpModalSpec
@@ -70,8 +73,10 @@ import com.playfieldportal.core.ui.detail.DetailPalette
 import com.playfieldportal.core.ui.detail.PfpDetailBackground
 import com.playfieldportal.core.ui.detail.PfpDetailHelperFooter
 import com.playfieldportal.core.ui.detail.detailPalette
-import java.text.SimpleDateFormat
-import java.util.Date
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.xmb.R
+import com.playfieldportal.core.ui.text.PfpDateFormat
+import com.playfieldportal.core.ui.text.PfpDateStyle
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -101,8 +106,6 @@ private val HeaderTierIconSize = 26.dp
 
 private val TabShape = RoundedCornerShape(999.dp)
 
-private val DATE_FMT = SimpleDateFormat("MMM d, yyyy", Locale.US)
-
 /** Earned reads in the same restrained green the detail pages already use for Launch. */
 private val EarnedColor = DetailLaunchFill
 
@@ -129,6 +132,7 @@ fun ShibaCoinsScreen(
     // goes there first while one is up and only otherwise reaches the page.
     val modal = rememberPfpModalHost(
         spec = coinUnlinkModalSpec(
+            resources = detailResources(),
             state = state,
             onConfirm = viewModel::confirmUnlink,
             onCancel = viewModel::cancelUnlink,
@@ -196,7 +200,7 @@ fun ShibaCoinsScreen(
                 editing = state.searchEditing,
                 focused = state.searchFocused,
                 palette = palette,
-                placeholder = "Search coins…",
+                placeholder = stringResource(R.string.shiba_coins_search_placeholder),
                 onQueryChange = viewModel::setQuery,
                 onClick = viewModel::onSearchClick,
                 onEditEnded = viewModel::onSearchEditEnded,
@@ -215,13 +219,13 @@ fun ShibaCoinsScreen(
             )
 
             // Sync and match results read as a quiet line in the page, not as a modal.
-            state.message?.let { message -> NoticeLine(message, palette, viewModel::dismissMessage) }
+            state.message?.let { message -> NoticeLine(message.asString(), palette, viewModel::dismissMessage) }
 
             Box(Modifier.fillMaxWidth().weight(1f)) {
                 if (state.rows.isEmpty()) {
                     // The shell stays; only the list area explains itself.
                     Text(
-                        text = state.emptyMessage,
+                        text = state.emptyMessage.asString(),
                         color = palette.textMuted,
                         fontSize = 15.sp,
                         modifier = Modifier.padding(horizontal = DetailContentPadding + 10.dp, vertical = 24.dp),
@@ -255,7 +259,7 @@ fun ShibaCoinsScreen(
             }
 
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                PfpDetailHelperFooter(items = shibaCoinsHelperItems(state), visible = !showTouchControls)
+                PfpDetailHelperFooter(items = shibaCoinsHelperItems(state).toPromptItems(), visible = !showTouchControls)
                 // Touch mode: the hints fade; Options is the header's ⋮ (the tabs, rows and ◀ are
                 // tappable already).
             }
@@ -282,8 +286,8 @@ fun ShibaCoinsScreen(
         // Sort, Update Achievements and Change Match: the same right-side menu the library opens on Triangle.
         state.options?.let { menu ->
             PspContextMenuOverlay(
-                title = menu.title,
-                rows = state.optionRows.map { row -> PspMenuRow(label = row.label, isDestructive = row.isDestructive, checked = row.checked, value = row.value, opensMenu = row.opensMenu) },
+                title = menu.title.asString(),
+                rows = state.optionRows.map { row -> PspMenuRow(label = row.label.asString(), isDestructive = row.isDestructive, checked = row.checked, value = row.value?.asString(), opensMenu = row.opensMenu) },
                 selectedIndex = menu.selectedIndex,
                 onRowActivated = viewModel::onOptionActivated,
                 onDismiss = viewModel::closeOptions,
@@ -300,6 +304,7 @@ fun ShibaCoinsScreen(
  * UI state to modal can be tested directly.
  */
 internal fun coinUnlinkModalSpec(
+    resources: Resources,
     state: ShibaCoinsUiState,
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
@@ -307,10 +312,9 @@ internal fun coinUnlinkModalSpec(
     if (!state.unlinkConfirm) return null
     return PfpModalSpec.Confirm(
         key = "unlink_coins:${state.title}",
-        title = "Unlink Game?",
-        message = "${state.title} is no longer matched, so its coins stop showing. The coins already " +
-            "cached stay stored and come back when you match it again.",
-        confirmLabel = "Unlink",
+        title = resources.getString(R.string.shiba_coins_unlink_title),
+        message = resources.getString(R.string.shiba_coins_unlink_message, state.title),
+        confirmLabel = resources.getString(R.string.shiba_coins_unlink_confirm),
         destructive = true,
         onConfirm = onConfirm,
         onCancel = onCancel,
@@ -364,7 +368,7 @@ private fun ShibaCoinsHeader(
             )
             Spacer(Modifier.width(16.dp))
             Text(
-                text = headerSubtitle(state),
+                text = headerSubtitle(state).asString(),
                 color = palette.textMuted,
                 fontSize = 14.sp,
                 maxLines = 1,
@@ -406,7 +410,7 @@ private fun ShibaCoinsHeader(
         ) {
             val summary = state.summary
             HeaderStat(
-                label = "COMPLETION",
+                label = stringResource(R.string.shiba_coins_stat_completion),
                 value = if (summary == null) "—" else "${(summary.progress * 100).roundToInt()}%",
                 palette = palette,
             ) {
@@ -416,7 +420,7 @@ private fun ShibaCoinsHeader(
                 }
             }
             HeaderStat(
-                label = "EARNED",
+                label = stringResource(R.string.shiba_coins_stat_earned),
                 value = if (summary == null) "—" else "${summary.earned.total} / ${summary.total.total}",
                 palette = palette,
             )
@@ -437,19 +441,19 @@ private fun ShibaCoinsHeader(
  * The right of header line 1: where these coins come from and how fresh they are. A game that was
  * never synced says so rather than showing a stale-looking blank.
  */
-private fun headerSubtitle(state: ShibaCoinsUiState): String {
+private fun headerSubtitle(state: ShibaCoinsUiState): UiText {
     val freshness = when {
-        state.lastSyncedAt != null -> "Synced ${relativeTime(state.lastSyncedAt)}"
-        state.showLinkPanel -> "Not linked"
-        else -> "Never synced"
+        state.lastSyncedAt != null -> UiText.res(R.string.shiba_coins_synced, relativeTime(state.lastSyncedAt))
+        state.showLinkPanel -> UiText.res(R.string.shiba_coins_not_linked)
+        else -> UiText.res(R.string.shiba_coins_never_synced)
     }
     val source = listOfNotNull(
-        state.platformLabel.takeIf { it.isNotBlank() },
+        state.platformLabel,
         // Two sets share the platform, so the line names which one is on screen.
-        providerLabel(state.provider).takeIf { state.hasSourceSwitch },
+        UiText.raw(providerLabel(state.provider)).takeIf { state.hasSourceSwitch },
         ownershipTag(state),
     )
-    return (source + freshness).joinToString(" · ")
+    return UiText.Joined(source + freshness, " · ")
 }
 
 /** The Platinum is the set-completion award, so its cell counts the crown, not individual coins. */
@@ -517,7 +521,7 @@ internal fun ShibaCoinsViewTabs(
         if (showKeyCaps) ControllerPrompt(action = GamepadAction.PREV_CATEGORY, label = "", glyphSize = 18.dp)
         CoinFilter.entries.forEach { view ->
             ViewTab(
-                label = "${view.label} ${counts.forView(view)}",
+                label = stringResource(view.tabRes, counts.forView(view)),
                 selected = view == active,
                 palette = palette,
                 onClick = remember(view) { { onSelect(view) } },
@@ -598,21 +602,21 @@ internal fun CoinListRow(
         iconUrl = if (redacted) null else coin.iconUrl,
         tier = coin.tier,
         dimmed = !coin.isEarned,
-        title = if (redacted) "Hidden Coin" else coin.title,
+        title = if (redacted) stringResource(R.string.shiba_coin_hidden_title) else coin.title,
         titleItalic = redacted,
         description = when {
-            redacted -> "Keep playing — or press Confirm to reveal"
+            redacted -> stringResource(R.string.shiba_coin_hidden_hint)
             // Steam's Web API never returns a hidden achievement's description; the sync fills it from
             // Steam Hunters or a community page. This shows only when neither source had it.
-            coin.isHidden && coin.description.isBlank() -> "Steam keeps this one's description secret"
+            coin.isHidden && coin.description.isBlank() -> stringResource(R.string.shiba_coin_description_secret)
             else -> coin.description
         },
         // A negative rarity is the "provider reported no percentage" sentinel.
         metricValue = if (coin.globalRarity < 0) "—" else String.format(Locale.US, "%.1f%%", coin.globalRarity),
         metricFraction = if (coin.globalRarity < 0) 0f else (coin.globalRarity / 100.0).toFloat(),
-        metricLabel = "of players",
+        metricLabel = stringResource(R.string.shiba_coin_metric_of_players),
         earned = coin.isEarned,
-        statusDetail = coin.earnedAt?.let { DATE_FMT.format(Date(it)) },
+        statusDetail = coin.earnedAt?.let { PfpDateFormat.format(PfpDateStyle.Date, it) },
         focused = focused,
         palette = palette,
         onClick = onClick,
@@ -634,12 +638,12 @@ private fun PlatinumCrownRow(
         iconUrl = null,
         tier = ShibaTier.PLATINUM,
         dimmed = !row.isMastered,
-        title = "Platinum Crown",
+        title = stringResource(R.string.shiba_platinum_crown_title),
         titleItalic = false,
-        description = "Earn every other coin in the game",
+        description = stringResource(R.string.shiba_platinum_crown_description),
         metricValue = "${row.earned} / ${row.total}",
         metricFraction = if (row.total == 0) 0f else row.earned.toFloat() / row.total,
-        metricLabel = "coins earned",
+        metricLabel = stringResource(R.string.shiba_platinum_crown_metric),
         earned = row.isMastered,
         statusDetail = null,
         focused = focused,
@@ -733,11 +737,11 @@ private fun StatusColumn(earned: Boolean, detail: String?, palette: DetailPalett
             if (earned) {
                 PfpCheckMark(EarnedColor, size = 14.dp)
                 Spacer(Modifier.width(6.dp))
-                Text("Earned", color = EarnedColor, fontSize = 13.sp, maxLines = 1, softWrap = false)
+                Text(stringResource(R.string.shiba_coin_status_earned), color = EarnedColor, fontSize = 13.sp, maxLines = 1, softWrap = false)
             } else {
                 Icon(Icons.Filled.Lock, contentDescription = null, tint = palette.iconMuted, modifier = Modifier.size(13.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Locked", color = palette.textMuted, fontSize = 13.sp, maxLines = 1, softWrap = false)
+                Text(stringResource(R.string.shiba_coin_status_locked), color = palette.textMuted, fontSize = 13.sp, maxLines = 1, softWrap = false)
             }
         }
         if (earned && detail != null) {
@@ -751,7 +755,7 @@ private fun TierColumn(tier: ShibaTier, palette: DetailPalette) {
     Column(Modifier.width(TierColumnWidth), horizontalAlignment = Alignment.CenterHorizontally) {
         ShibaCoinIcon(tier, Modifier.size(24.dp))
         Text(
-            text = tier.name.lowercase().replaceFirstChar { it.uppercase() },
+            text = stringResource(tier.shibaTierNameRes),
             color = palette.textMuted,
             fontSize = 9.sp,
             lineHeight = 11.sp,
@@ -785,29 +789,21 @@ private fun LinkPanelRow(
         when (state.autoMatchStep) {
             null -> when (state.provider) {
                 AchievementProvider.STEAM -> {
-                    PanelTitle("This game isn't linked yet", palette)
-                    PanelBody(
-                        "Auto-Match asks whether this is a legitimate Steam copy, then resolves it against " +
-                            "Steam or scans your game folders for Steam-emu data.",
-                        palette,
-                    )
+                    PanelTitle(stringResource(R.string.shiba_link_not_linked_yet_game), palette)
+                    PanelBody(stringResource(R.string.shiba_link_steam_body), palette)
                     PanelActions {
-                        PanelButton("Auto-Match", palette, enabled = !state.isMatching, highlighted = focused) {
+                        PanelButton(stringResource(R.string.shiba_link_auto_match), palette, enabled = !state.isMatching, highlighted = focused) {
                             viewModel.startAutoMatch()
                         }
                         if (state.isMatching) PanelSpinner(palette)
                     }
                 }
                 AchievementProvider.RETRO_ACHIEVEMENTS -> {
-                    PanelTitle("This game isn't linked yet", palette)
-                    PanelBody(
-                        "RetroAchievements identifies games by ROM hash. Auto-Match hashes this ROM and looks " +
-                            "it up — only a verified dump registered on RetroAchievements can link.",
-                        palette,
-                    )
+                    PanelTitle(stringResource(R.string.shiba_link_not_linked_yet_game), palette)
+                    PanelBody(stringResource(R.string.shiba_link_retro_body), palette)
                     PanelActions {
                         PanelButton(
-                            label = if (state.isMatching) "Matching…" else "Auto-Match",
+                            label = stringResource(if (state.isMatching) R.string.shiba_link_matching else R.string.shiba_link_auto_match),
                             palette = palette,
                             enabled = !state.isMatching,
                             highlighted = focused,
@@ -817,16 +813,11 @@ private fun LinkPanelRow(
                 // Local Steam links from a folder the user points at — which is something they can
                 // do right here, so the panel offers it instead of sending them to settings.
                 AchievementProvider.LOCAL_STEAM -> {
-                    PanelTitle("Not linked yet", palette)
-                    PanelBody(
-                        "Pick this game's folder and PFP reads its Steam app id — from " +
-                            "steam_appid.txt when it is there, or by matching the title when it is not. " +
-                            "It remembers the folder, so nothing has to search for it again.",
-                        palette,
-                    )
+                    PanelTitle(stringResource(R.string.shiba_link_not_linked_yet), palette)
+                    PanelBody(stringResource(R.string.shiba_link_local_steam_body), palette)
                     PanelActions {
                         PanelButton(
-                            label = if (state.isMatching) "Matching…" else "Pick Game Folder",
+                            label = stringResource(if (state.isMatching) R.string.shiba_link_matching else R.string.shiba_link_pick_game_folder),
                             palette = palette,
                             enabled = !state.isMatching,
                             highlighted = focused,
@@ -834,25 +825,17 @@ private fun LinkPanelRow(
                     }
                 }
                 AchievementProvider.VITA_TROPHY -> {
-                    PanelTitle("Not linked yet", palette)
-                    PanelBody(
-                        "PS Vita trophies link automatically from Vita3K. Set your Vita3K data folder in the " +
-                            "library and scan to link this game.",
-                        palette,
-                    )
+                    PanelTitle(stringResource(R.string.shiba_link_not_linked_yet), palette)
+                    PanelBody(stringResource(R.string.shiba_link_vita_body), palette)
                 }
                 // PS3 is the one local provider with a per-game action: the trophy id comes from
                 // the game's own disc, so Auto-Match can link it here and now.
                 AchievementProvider.PS3_TROPHY -> {
-                    PanelTitle("Not linked yet", palette)
-                    PanelBody(
-                        "PS3 trophies link from the game's own disc — set your PS3 Data Folder in the " +
-                            "library and Auto-Match.",
-                        palette,
-                    )
+                    PanelTitle(stringResource(R.string.shiba_link_not_linked_yet), palette)
+                    PanelBody(stringResource(R.string.shiba_link_ps3_body), palette)
                     PanelActions {
                         PanelButton(
-                            label = if (state.isMatching) "Matching…" else "Auto-Match",
+                            label = stringResource(if (state.isMatching) R.string.shiba_link_matching else R.string.shiba_link_auto_match),
                             palette = palette,
                             enabled = !state.isMatching,
                             highlighted = focused,
@@ -861,15 +844,11 @@ private fun LinkPanelRow(
                 }
                 // Xbox 360 links by the title ID in the game's own file, so it matches here too.
                 AchievementProvider.X360_ACHIEVEMENT -> {
-                    PanelTitle("Not linked yet", palette)
-                    PanelBody(
-                        "Xbox 360 achievements link from the game's own title ID — set the X360 Mobile " +
-                            "or XenDroid Data Folder in the library and Auto-Match.",
-                        palette,
-                    )
+                    PanelTitle(stringResource(R.string.shiba_link_not_linked_yet), palette)
+                    PanelBody(stringResource(R.string.shiba_link_x360_body), palette)
                     PanelActions {
                         PanelButton(
-                            label = if (state.isMatching) "Matching…" else "Auto-Match",
+                            label = stringResource(if (state.isMatching) R.string.shiba_link_matching else R.string.shiba_link_auto_match),
                             palette = palette,
                             enabled = !state.isMatching,
                             highlighted = focused,
@@ -878,32 +857,23 @@ private fun LinkPanelRow(
                 }
             }
             AutoMatchStep.CONFIRM_COPY -> {
-                PanelTitle("Is this a legitimate Steam copy?", palette)
-                PanelBody(
-                    "A legit copy matches against your Steam account. Anything else is tracked from " +
-                        "the game's own folder, which PFP will ask you to point at.",
-                    palette,
-                )
+                PanelTitle(stringResource(R.string.shiba_link_copy_title), palette)
+                PanelBody(stringResource(R.string.shiba_link_copy_body), palette)
                 PanelActions {
-                    PanelButton("Yes", palette, enabled = true, highlighted = state.autoMatchYes) {
+                    PanelButton(stringResource(R.string.shiba_action_yes), palette, enabled = true, highlighted = state.autoMatchYes) {
                         viewModel.chooseAutoMatch(true)
                     }
-                    PanelButton("No", palette, enabled = true, highlighted = !state.autoMatchYes) {
+                    PanelButton(stringResource(R.string.shiba_action_no), palette, enabled = true, highlighted = !state.autoMatchYes) {
                         viewModel.chooseAutoMatch(false)
                     }
                 }
             }
             // The picker owns the screen while it is up; the panel says what PFP is waiting for.
             AutoMatchStep.PICK_FOLDER -> {
-                PanelTitle("Which folder is this game in?", palette)
-                PanelBody(
-                    "Pick the game's own folder — the one its .exe is in. PFP reads the Steam app id " +
-                        "from it and tracks the unlocks the emulator writes there. Your Windows games " +
-                        "can live anywhere; PFP remembers where this one is so it never has to search.",
-                    palette,
-                )
+                PanelTitle(stringResource(R.string.shiba_link_folder_title), palette)
+                PanelBody(stringResource(R.string.shiba_link_folder_body), palette)
                 PanelActions {
-                    PanelButton("Cancel", palette, enabled = true) { viewModel.cancelAutoMatch() }
+                    PanelButton(stringResource(R.string.shiba_action_cancel), palette, enabled = true) { viewModel.cancelAutoMatch() }
                     PanelSpinner(palette)
                 }
             }
@@ -911,58 +881,48 @@ private fun LinkPanelRow(
             // The picker panel renders over the page; this is what shows behind it while the app id
             // is still being worked out.
             AutoMatchStep.IDENTIFY -> {
-                PanelTitle(if (state.steamPick) "Finding the Steam match…" else "Working out the Steam app id…", palette)
+                PanelTitle(
+                    stringResource(if (state.steamPick) R.string.shiba_link_identify_title_steam else R.string.shiba_link_identify_title_appid),
+                    palette,
+                )
                 PanelBody(
-                    if (state.steamPick) {
-                        "Searching Steam for this game's title. Pick the right one to link it again."
-                    } else {
-                        "Reading steam_appid.txt from the folder, and matching the game's title against " +
-                            "Steam if it has none yet."
-                    },
+                    stringResource(if (state.steamPick) R.string.shiba_link_identify_body_steam else R.string.shiba_link_identify_body_appid),
                     palette,
                 )
                 PanelActions {
-                    PanelButton("Cancel", palette, enabled = true) { viewModel.cancelAutoMatch() }
+                    PanelButton(stringResource(R.string.shiba_action_cancel), palette, enabled = true) { viewModel.cancelAutoMatch() }
                     if (state.isMatching) PanelSpinner(palette)
                 }
             }
 
             AutoMatchStep.CONFIRM_KIT -> {
                 val prompt = state.kitPrompt
-                PanelTitle("That folder has no achievement list yet", palette)
+                PanelTitle(stringResource(R.string.shiba_link_kit_title), palette)
                 PanelBody(
                     if (prompt == null) {
-                        "The emulator needs an achievement list before it can record unlocks."
+                        stringResource(R.string.shiba_link_kit_body_generic)
                     } else {
-                        "\"${prompt.folderName}\" is Steam app id ${prompt.appId}, but the emulator has " +
-                            "no achievement list to record against. Install & Link writes " +
-                            "achievements.json, stats.json and configs.user.ini into the folder, " +
-                            "creates a saves folder, and renames steam_api64.dll to steam_api64_o.dll " +
-                            "so the bundled emulator loads through it — back up this game's saves " +
-                            "first. Link Only tracks it at 0% and writes nothing more."
+                        stringResource(R.string.shiba_link_kit_body, prompt.folderName, prompt.appId)
                     },
                     palette,
                 )
                 if (prompt != null && !prompt.installerEnabled) {
-                    PanelBody(
-                        "Install & Link needs Install Goldberg & Convert Games in Achievement settings.",
-                        palette,
-                    )
+                    PanelBody(stringResource(R.string.shiba_link_kit_installer_off), palette)
                 }
                 PanelActions {
                     PanelButton(
-                        label = "Install & Link",
+                        label = stringResource(R.string.shiba_link_kit_install),
                         palette = palette,
                         enabled = prompt?.installerEnabled == true && !state.isMatching,
                         highlighted = prompt?.installSelected == true,
                     ) { viewModel.installKit() }
                     PanelButton(
-                        label = "Link Only",
+                        label = stringResource(R.string.shiba_link_kit_link_only),
                         palette = palette,
                         enabled = !state.isMatching,
                         highlighted = prompt?.installSelected == false,
                     ) { viewModel.linkWithoutKit() }
-                    PanelButton("Cancel", palette, enabled = true) { viewModel.cancelAutoMatch() }
+                    PanelButton(stringResource(R.string.shiba_action_cancel), palette, enabled = true) { viewModel.cancelAutoMatch() }
                     if (state.isMatching) PanelSpinner(palette)
                 }
             }
@@ -970,22 +930,25 @@ private fun LinkPanelRow(
             // Terminal, and it names the actual cause rather than listing setup steps that would not
             // have helped.
             AutoMatchStep.NO_EMU_DATA -> {
-                PanelTitle("Nothing to track in that folder", palette)
-                PanelBody(state.noEmuDataReason ?: "That folder holds no Steam-emulator data.", palette)
+                PanelTitle(stringResource(R.string.shiba_link_no_emu_title), palette)
+                PanelBody(
+                    state.noEmuDataReason?.asString() ?: stringResource(R.string.shiba_link_no_emu_default),
+                    palette,
+                )
                 PanelActions {
-                    PanelButton("Try Another Folder", palette, enabled = true) { viewModel.startAutoMatch() }
-                    PanelButton("Close", palette, enabled = true) { viewModel.cancelAutoMatch() }
+                    PanelButton(stringResource(R.string.shiba_link_try_another_folder), palette, enabled = true) { viewModel.startAutoMatch() }
+                    PanelButton(stringResource(R.string.shiba_action_close), palette, enabled = true) { viewModel.cancelAutoMatch() }
                 }
             }
 
             AutoMatchStep.ENTER_APPID -> {
                 var draft by remember { mutableStateOf("") }
-                PanelTitle("No automatic match found", palette)
-                PanelBody("Enter the game's Steam app id:", palette)
+                PanelTitle(stringResource(R.string.shiba_link_appid_title), palette)
+                PanelBody(stringResource(R.string.shiba_link_appid_body), palette)
                 OutlinedTextField(
                     value = draft,
                     onValueChange = { draft = it },
-                    label = { Text("Steam app id", color = palette.textMuted) },
+                    label = { Text(stringResource(R.string.shiba_link_appid_field), color = palette.textMuted) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = palette.textPrimary,
@@ -997,10 +960,10 @@ private fun LinkPanelRow(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 PanelActions {
-                    PanelButton("Link", palette, enabled = draft.isNotBlank() && !state.isMatching) {
+                    PanelButton(stringResource(R.string.shiba_action_link), palette, enabled = draft.isNotBlank() && !state.isMatching) {
                         viewModel.submitManualAppId(draft)
                     }
-                    PanelButton("Cancel", palette, enabled = true) { viewModel.cancelAutoMatch() }
+                    PanelButton(stringResource(R.string.shiba_action_cancel), palette, enabled = true) { viewModel.cancelAutoMatch() }
                     if (state.isMatching) PanelSpinner(palette)
                 }
             }
@@ -1027,7 +990,7 @@ private fun PanelActions(content: @Composable () -> Unit) {
 
 @Composable
 private fun PanelSpinner(palette: DetailPalette) {
-    CircularProgressIndicator(color = palette.focus, modifier = Modifier.size(16.dp))
+    PfpBusyRing(size = 16.dp, color = palette.focus)
 }
 
 @Composable
@@ -1058,11 +1021,11 @@ private fun PanelButton(
 // tag that fits beside the platform. Wording stays neutral — the owned-list signal can never prove
 // piracy (family sharing, alternate accounts, unplayed free games all look unowned), so "cracked" is
 // never said; an unknown state stays silent rather than guessing.
-private fun ownershipTag(state: ShibaCoinsUiState): String? {
+private fun ownershipTag(state: ShibaCoinsUiState): UiText? {
     if (state.provider != AchievementProvider.LOCAL_STEAM) return null
     return when (state.ownership) {
-        LocalCopyOwnership.OWNED -> "Owned on Steam"
-        LocalCopyOwnership.NOT_IN_LIBRARY -> "Tracked locally"
+        LocalCopyOwnership.OWNED -> UiText.res(R.string.shiba_coins_owned_on_steam)
+        LocalCopyOwnership.NOT_IN_LIBRARY -> UiText.res(R.string.shiba_coins_tracked_locally)
         null -> null
     }
 }

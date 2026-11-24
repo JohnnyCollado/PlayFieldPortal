@@ -8,11 +8,14 @@ import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.XYLayout
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
+import com.playfieldportal.core.ui.text.PfpDateFormat
+import com.playfieldportal.core.ui.text.PfpDateStyle
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import java.io.File
 import java.time.LocalDateTime
+import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -93,7 +96,7 @@ class LogsSettingsViewModelTest {
         val vm = newVm()
         eventually("loaded") { vm.uiState.value.loaded }
         assertTrue(vm.uiState.value.logFiles.isEmpty())
-        assertEquals("No files", vm.uiState.value.totalSummary)
+        assertEquals("No files", vm.uiState.value.totalSummary.resolve(context))
     }
 
     @Test fun `logs load newest first and only the newest is the current session`() = runTest(dispatcher) {
@@ -119,7 +122,7 @@ class LogsSettingsViewModelTest {
 
         val vm = newVm()
         eventually("loaded") { vm.uiState.value.loaded }
-        assertEquals("2 files · 650 KB", vm.uiState.value.totalSummary)
+        assertEquals("2 files · 650 KB", vm.uiState.value.totalSummary.resolve(context))
     }
 
     @Test fun `refresh picks up files written after the screen opened`() = runTest(dispatcher) {
@@ -193,11 +196,22 @@ class LogsSettingsViewModelTest {
 
     @Test fun `started label reads today, yesterday or a date from the file name`() {
         val now = LocalDateTime.of(2026, 9, 23, 9, 0)
-        assertEquals("Started today, 3:18 AM", LogsSettingsViewModel.startedLabel("pfp-20260923-031805.log", now))
-        assertEquals("Started today, 12:09 AM", LogsSettingsViewModel.startedLabel("pfp-20260923-000954.log", now))
-        assertEquals("Started yesterday, 3:40 PM", LogsSettingsViewModel.startedLabel("pfp-20260922-154047.log", now))
-        assertEquals("Started Sep 1, 8:05 AM", LogsSettingsViewModel.startedLabel("pfp-20260901-080500.log", now))
-        assertNull(LogsSettingsViewModel.startedLabel("something-else.txt", now))
+        // Expected text is built with the shared formatter, so the test follows the device locale and
+        // clock setting exactly as the screen does instead of pinning US-English patterns.
+        fun at(y: Int, mo: Int, d: Int, h: Int, mi: Int, style: PfpDateStyle): String =
+            PfpDateFormat.format(
+                context, style,
+                LocalDateTime.of(y, mo, d, h, mi).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+            )
+        fun label(name: String) = LogsSettingsViewModel.startedLabel(context, name, now)?.resolve(context)
+        assertEquals("Started today, ${at(2026, 9, 23, 3, 18, PfpDateStyle.Time)}", label("pfp-20260923-031805.log"))
+        assertEquals("Started today, ${at(2026, 9, 23, 0, 9, PfpDateStyle.Time)}", label("pfp-20260923-000954.log"))
+        assertEquals("Started yesterday, ${at(2026, 9, 22, 15, 40, PfpDateStyle.Time)}", label("pfp-20260922-154047.log"))
+        assertEquals(
+            "Started ${at(2026, 9, 1, 8, 5, PfpDateStyle.ShortDate)}, ${at(2026, 9, 1, 8, 5, PfpDateStyle.Time)}",
+            label("pfp-20260901-080500.log"),
+        )
+        assertNull(LogsSettingsViewModel.startedLabel(context, "something-else.txt", now))
     }
 
     @Test fun `sizes round to whole units and never read as zero`() {

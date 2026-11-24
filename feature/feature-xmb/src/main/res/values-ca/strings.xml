@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="xmb_icons_reset_removed_themed">S\'ha tret la selecció — ara es mostra la icona del tema aplicat.</string>
+    <string name="xmb_icons_reset_themed_slot">No hi ha res a restablir — aquesta icona prové del tema aplicat.</string>
+    <string name="xmb_icons_reset_builtin_slot">No hi ha res a restablir — aquesta posició ja utilitza la icona integrada.</string>
+    <string name="xmb_icons_reset_all_none">No hi ha res a restablir — no has triat cap icona.</string>
+    <string name="xmb_icons_reset_all_themed">S\'han esborrat les seleccions — ara es mostren les icones del tema aplicat.</string>
+</resources>

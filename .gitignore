@@ -116,3 +116,7 @@ pfp-kb-keys/
 
 # MSYS / Git-for-Windows crash dumps.
 *.stackdump
+
+# Reference material kept locally for study only (Sony PSP system software). Never tracked:
+# nothing of Sony's is copied into PFP. Notes derived from it live in docs/audits/.
+assets/resources/

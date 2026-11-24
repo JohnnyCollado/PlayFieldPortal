@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">Rörelse</string>
+    <string name="motion_summary">Hur mycket som rör sig av sig självt.</string>
+    <string name="motion_detail_animated">Allt rör sig</string>
+    <string name="motion_detail_reduced">Bara det valda</string>
+    <string name="motion_detail_static">Inget av sig självt</string>
+    <string name="motion_sub_animated">Allt som kan röra sig gör det: bilder, ikoner, bakgrundsbilder, bakgrunden och glöden. Drar mest batteri.</string>
+    <string name="motion_sub_reduced">Bara det valda rör sig: dess bild, dess videoklipp och dess glöd. Bakgrunden fortsätter röra sig.</string>
+    <string name="motion_sub_static">Inget rör sig av sig självt. Menyer glider fortfarande när du går igenom dem.</string>
+    <string name="motion_holds_background">Stilla så länge ”Rörelse” är inställt på ”Statisk”.</string>
+    <string name="motion_holds_glow">Stilla så länge ”Rörelse” är inställt på ”Statisk”.</string>
+</resources>

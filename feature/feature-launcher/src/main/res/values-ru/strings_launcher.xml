@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="launch_err_custom_command">Профили с пользовательской командой больше не поддерживаются. Переключите эмулятор на способ запуска «Открыть ROM в приложении» или «Открыть экран приложения».</string>
+    <string name="launch_err_shortcut_unsupported">Запуск ярлыка с этого экрана не поддерживается</string>
+    <string name="launch_err_no_package">Для %1$s не записан пакет Android</string>
+    <string name="launch_err_app_not_launchable">Приложение Android не установлено или не запускается: %1$s</string>
+    <string name="launch_err_emulator_not_installed">Эмулятор не установлен: %1$s (%2$s)</string>
+    <string name="launch_err_wrong_build">%1$s (%2$s) — не та сборка: сертификат подписи не совпадает. Переустановите эмулятор из официального источника.</string>
+    <string name="launch_err_no_activity_for_path">Для %1$s не записана activity запуска, поэтому ему нельзя передать путь к файлу. Импортируйте его запись базы знаний заново или определите эмулятор повторно.</string>
+    <string name="launch_err_activity_required">Для этого способа запуска нужно имя экрана приложения — профиль: %1$s</string>
+    <string name="launch_err_activity_gone">%1$s больше не содержит activity запуска (%2$s). Обновите эмулятор или выберите другой для этой платформы.</string>
+    <string name="launch_err_no_launch_id">Для %1$s не записан ID запуска. Просканируйте библиотеку заново.</string>
+    <string name="launch_err_rom_link_invalid">Ссылка на ROM этой игры недействительна. Просканируйте библиотеку заново.</string>
+    <string name="launch_err_lost_access">Play Field Portal потерял доступ к файлу игры. Подключите накопитель снова и пересканируйте библиотеку.</string>
+    <string name="launch_err_rom_path_required">Для запуска %1$s нужен путь к ROM</string>
+    <string name="launch_err_rom_not_found">Файл ROM не найден: %1$s</string>
+    <string name="launch_err_no_core">Для платформы \'%1$s\' в профиле \'%2$s\' не настроено ядро RetroArch. Откройте RetroArch → Core Downloader и установите ядро для этой системы.</string>
+    <string name="launch_err_cannot_open_rom_type">%1$s не может открыть этот тип ROM. Переустановите эмулятор или проверьте его разрешения в настройках Android.</string>
+    <string name="launch_err_no_file_path">У %1$s нет пути к файлу на этом устройстве, поэтому %2$s не узнает, какую игру запускать.</string>
+    <string name="launch_err_not_in_rom_folder">%1$s находится вне настроенной папки ROM, поэтому его нельзя передать в %2$s. Проверьте папку этой карты памяти в настройках.</string>
+    <string name="launch_err_configured_missing">Эмулятор %1$s не установлен или недоступен: %2$s</string>
+    <string name="launch_err_core_not_installed">%1$s выбран как %2$s, но это ядро не установлено в RetroArch. Установите его или выберите другой эмулятор.</string>
+    <string name="launch_err_no_longer_available">%1$s выбран как %2$s, но больше недоступен. Выберите другой эмулятор.</string>
+    <string name="launch_err_not_configured_for_platform">%1$s не настроен для %2$s</string>
+    <string name="launch_err_no_emulator_for_platform">Для %1$s не настроен эмулятор. Выберите эмулятор для этой игры или задайте эмулятор платформы по умолчанию.</string>
+    <string name="launch_source_per_game">Для этой игры</string>
+    <string name="launch_source_per_game_lower">эмулятор для этой игры</string>
+    <string name="launch_source_memory_card">По умолчанию для карты</string>
+    <string name="launch_source_memory_card_lower">эмулятор карты памяти по умолчанию</string>
+    <string name="launch_source_platform">По умолчанию для платформы</string>
+    <string name="launch_source_platform_lower">эмулятор платформы по умолчанию</string>
+    <string name="launch_source_recommended">Рекомендуемый</string>
+    <string name="launch_source_recommended_lower">рекомендуемый</string>
+    <string name="launch_phrase_per_game">для этой игры</string>
+    <string name="launch_phrase_memory_card">карты памяти</string>
+    <string name="launch_phrase_platform">платформы по умолчанию</string>
+
+    <!-- Launch hand-off failures -->
+    <string name="launch_err_emulator_not_found">Эмулятор не найден. Он установлен?</string>
+    <string name="launch_err_permission_denied">Нет разрешения на запуск эмулятора</string>
+    <string name="launch_err_open_emulator">Не удалось открыть эмулятор: %1$s</string>
+    <string name="launch_never_foreground">Эмулятор так и не вышел на передний план после запуска.</string>
+    <string name="launch_never_appeared">Эмулятор так и не появился. Проверьте, что он установлен и обновлён, и запустите снова.</string>
+    <plurals name="launch_history_failed">
+        <item quantity="one">Неудачных запусков этой игры: %1$d из последних %2$d.</item>
+        <item quantity="few">Неудачных запусков этой игры: %1$d из последних %2$d.</item>
+        <item quantity="many">Неудачных запусков этой игры: %1$d из последних %2$d.</item>
+        <item quantity="other">Неудачных запусков этой игры: %1$d из последних %2$d.</item>
+    </plurals>
+
+    <!-- Launch failure notification -->
+    <string name="launch_rec_title">Не удалось запустить %1$s</string>
+    <string name="launch_rec_could_not_start">Не удалось запустить эмулятор</string>
+    <string name="launch_rec_never_foreground">Эмулятор не вышел на передний план</string>
+    <string name="launch_fact_emulator">Эмулятор</string>
+    <string name="launch_fact_core">Ядро</string>
+    <string name="launch_fact_platform">Платформа</string>
+    <string name="launch_fact_recent">Недавние запуски</string>
+    <string name="launch_fact_recent_value">Неудачных: %1$d из последних %2$d</string>
+    <string name="launch_shortcut_request_title">Запрос ярлыка: %1$s (открывает %2$s)</string>
+    <string name="launch_shortcut_request_message">Добавляйте его, только если вы сами только что создали этот ярлык.</string>
+    <string name="launch_shortcut_added_title">Ярлык добавлен: %1$s</string>
+    <string name="launch_shortcut_ignored_title">Ярлык отклонён: %1$s</string>
+    <string name="launch_shortcut_from">От %1$s</string>
+    <string name="launch_windows_added_title">«%1$s» добавлена в игры Windows</string>
+    <string name="launch_windows_added_message">Завершите настройку библиотеки Windows, чтобы просканировать её папку</string>
+
+    <!-- First-run setup prompts -->
+    <string name="launch_setup_add_rom_folder">Добавьте папку ROM, чтобы создать библиотеку</string>
+    <string name="launch_setup_add_console_card">Добавьте карту памяти консоли для сканирования</string>
+    <string name="launch_setup_install_emulator">Установите эмулятор, чтобы играть</string>
+    <string name="launch_inspect_known">Заполнено из встроенного профиля %1$s. Проверьте платформы и сохраните.</string>
+    <string name="launch_inspect_best_guess">Предположение по тому, как приложение открывает файлы ROM. Укажите платформы и проверьте ROM перед сохранением.</string>
+    <string name="launch_inspect_minimal">Не удалось определить, как приложение принимает ROM. Заполните настройки activity / intent вручную и проверьте ROM.</string>
+
+    <!-- Emulator knowledge file updates -->
+    <string name="launch_kb_too_many_files">Можно импортировать не более %1$d файлов знаний; сначала удалите один</string>
+    <string name="launch_kb_installed">Обновлено</string>
+    <string name="launch_kb_not_configured">Обновления в этой сборке не настроены</string>
+    <string name="launch_kb_offline">Не удалось связаться с сервером обновлений</string>
+    <string name="launch_kb_too_large">Файл обновления слишком большой</string>
+    <string name="launch_kb_signature_invalid">Подпись обновления недействительна</string>
+    <string name="launch_kb_needs_app_update">Для этого обновления нужна более новая версия приложения</string>
+    <string name="launch_kb_older">Обновление старее уже установленного</string>
+    <string name="launch_kb_invalid_content">Файл обновления содержит неверные данные</string>
+    <string name="launch_kb_storage_failed">Не удалось сохранить обновление</string>
+    <string name="launch_kb_skipped">Проверка не требовалась</string>
+    <string name="launch_unknown_gamehub_or_bannerhub">возможно, GameHub или BannerHub</string>
+    <string name="launch_unknown_gamehublite_or_bannerhub">возможно, GameHub Lite или BannerHub</string>
+    <string name="launch_unknown_not_in_list">нет в списке PFP</string>
+    <string name="launch_choice_not_a_launcher">Не лаунчер</string>
+    <string name="launch_id_prompt_gamehub">ID игры — на странице игры: нажмите «Копировать» рядом с Local Game ID или ⋮ → Banner Tools → Show Game ID</string>
+    <string name="launch_id_prompt_gamenative">Steam App ID (или ID в магазине) установленной игры</string>
+</resources>

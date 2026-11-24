@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="thm_error_manifest_missing">Falta el archivo obligatorio theme.json en el paquete</string>
+    <string name="thm_error_manifest_invalid">theme.json no válido: %1$s</string>
+    <string name="thm_error_id_invalid">ID de tema no válido \'%1$s\': usa letras, números, \'.\', \'_\' o \'-\' (máx. 64)</string>
+    <string name="thm_error_color_invalid">%1$s no válido \'%2$s\': se esperaba #RRGGBB o #AARRGGBB</string>
+</resources>

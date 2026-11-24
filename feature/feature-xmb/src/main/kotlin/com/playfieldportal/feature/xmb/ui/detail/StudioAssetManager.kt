@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -43,6 +44,7 @@ import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.theme.themedSubText
 import com.playfieldportal.core.ui.theme.themedText
 import com.playfieldportal.feature.artwork.store.StudioArtworkSlot
+import com.playfieldportal.feature.xmb.R
 
 /**
  * The stored-assets manager (task 5.4): the active multi-asset slot's assets in order, with the
@@ -87,12 +89,12 @@ internal fun StudioAssetManagerPanel(
                 .padding(20.dp),
         ) {
             Text(
-                "REORDER " + kindLabel.uppercase(),
+                stringResource(R.string.det_assets_reorder_title, kindLabel).uppercase(),
                 color = themedText(Color.White), fontSize = 14.sp, fontWeight = FontWeight.Bold,
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                "The first one is what the game shows.",
+                stringResource(R.string.det_assets_first_hint),
                 color = themedSubText(Color.White.copy(alpha = 0.55f)), fontSize = 11.sp,
             )
             Spacer(Modifier.height(12.dp))
@@ -100,7 +102,7 @@ internal fun StudioAssetManagerPanel(
             if (assets.isEmpty()) {
                 // Reachable if every record's file was lost between opening the menu and the panel.
                 Text(
-                    "Nothing stored for this slot.",
+                    stringResource(R.string.det_assets_empty),
                     color = themedSubText(Color.White.copy(alpha = 0.6f)), fontSize = 12.sp,
                 )
             } else {
@@ -123,15 +125,15 @@ internal fun StudioAssetManagerPanel(
             Spacer(Modifier.height(14.dp))
             if (showTouchControls) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    XmbHeaderPill(label = "Up", onClick = { if (!busy) onMove(-1) }, leadingGlyph = "▲")
-                    XmbHeaderPill(label = "Down", onClick = { if (!busy) onMove(1) }, leadingGlyph = "▼")
-                    XmbHeaderPill(label = "Make First", onClick = { if (!busy) onMakePrimary() })
+                    XmbHeaderPill(label = stringResource(R.string.det_assets_up), onClick = { if (!busy) onMove(-1) }, leadingGlyph = "▲")
+                    XmbHeaderPill(label = stringResource(R.string.det_assets_down), onClick = { if (!busy) onMove(1) }, leadingGlyph = "▼")
+                    XmbHeaderPill(label = stringResource(R.string.det_assets_make_first), onClick = { if (!busy) onMakePrimary() })
                 }
             } else {
                 ControllerPromptBar(
                     items = listOf(
-                        ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Move"),
-                        ControllerPromptItem(GamepadAction.SELECT, "Make First"),
+                        ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), stringResource(R.string.det_assets_move)),
+                        ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.det_assets_make_first)),
                     ),
                     glyphSize = 16.dp,
                     labelColor = themedSubText(Color.White.copy(alpha = 0.7f)),
@@ -141,18 +143,17 @@ internal fun StudioAssetManagerPanel(
             }
             Spacer(Modifier.height(10.dp))
             Text(
-                "Re-linking a library rebuilds this order from the filenames, which is how artwork " +
-                    "reconnects to re-imported games.",
+                stringResource(R.string.det_assets_relink_note),
                 color = themedSubText(Color.White.copy(alpha = 0.45f)), fontSize = 10.sp, lineHeight = 13.sp,
             )
             Spacer(Modifier.height(12.dp))
             if (showTouchControls) {
-                XmbHeaderPill(label = "Close", onClick = onClose)
+                XmbHeaderPill(label = stringResource(R.string.det_close), onClick = onClose)
             } else {
                 // The backdrop and this prompt stay tappable; B closes.
                 ControllerPrompt(
                     action = GamepadAction.BACK,
-                    label = "Close",
+                    label = stringResource(R.string.det_close),
                     glyphSize = 16.dp,
                     labelColor = themedText(Color.White.copy(alpha = 0.7f)),
                     labelStyle = TextStyle(fontSize = 13.sp),
@@ -222,7 +223,7 @@ private fun StudioAssetRow(
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                if (position == 0) "Primary" else (asset.provider ?: "Stored artwork"),
+                if (position == 0) stringResource(R.string.det_assets_primary) else (asset.provider ?: stringResource(R.string.det_assets_stored_artwork)),
                 color = if (position == 0) accent else themedText(Color.White.copy(alpha = 0.9f)),
                 fontSize = 12.sp,
                 fontWeight = if (position == 0) FontWeight.Bold else FontWeight.Normal,

@@ -195,6 +195,7 @@ class PtfThemeImporterTest {
         val bmp = TestFixtures.buildBmp(8, 4) { _, _ -> wallpaperBlue }
         val cxmb = TestFixtures.buildPtf("C", "6.60", bmp) + "/vsh/resource/x".toByteArray()
         assertIs<PtfThemeImporter.Result.CxmbNotSupported>(importer.import(register(cxmb)))
-        assertIs<PtfThemeImporter.Result.Failed>(importer.import(register(ByteArray(600) { 9 })))
+        val failed = assertIs<PtfThemeImporter.Result.Failed>(importer.import(register(ByteArray(600) { 9 })))
+        assertEquals("Not a PSP theme (.ptf) file", failed.reason)
     }
 }

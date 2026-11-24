@@ -1,0 +1,486 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Slice F: XMB shell, overlays, players, app detail, pickers (feature-xmb) -->
+
+    <!-- Music playback notification -->
+    <string name="xmbu_music_channel_name">Репродукција музике</string>
+    <string name="xmbu_music_channel_description">Контроле тренутне репродукције</string>
+    <!-- Notification action buttons (media controls) -->
+    <string name="xmbu_music_notif_previous">Претходна</string>
+    <string name="xmbu_music_notif_play_pause">Пусти/паузирај</string>
+    <string name="xmbu_music_notif_next">Следећа</string>
+    <string name="xmbu_music_notif_stop">Заустави</string>
+
+    <!-- Floating push-to-talk overlay button shown over a running game; the text starts with a microphone emoji and two spaces (quoted to keep both spaces) -->
+    <string name="xmbu_ptt_hold">"🎙  ДРЖИТЕ"</string>
+
+    <!-- Tray notification when a custom boot / Game Boot video cannot play -->
+    <string name="xmbu_clipfail_boot_label">Секвенца покретања</string>
+    <string name="xmbu_clipfail_gameboot_label">Game Boot</string>
+    <string name="xmbu_clipfail_boot_message">Ваш видео покретања није могао да се репродукује на овом уређају, па је уместо њега репродукована уграђена секвенца. Поново извезите тему из Theme Studio (конвертује видео) или изаберите други снимак у подешавањима екрана.</string>
+    <string name="xmbu_clipfail_gameboot_message">Ваш Game Boot видео није могао да се репродукује на овом уређају, па је уместо њега репродукована уграђена секвенца. Поново извезите тему из Theme Studio (конвертује видео) или изаберите други снимак у подешавањима екрана.</string>
+
+    <!-- Common words reused across the XMB shell screens (buttons, footer prompts, menu titles) -->
+    <string name="xmbu_common_options">Опције</string>
+    <string name="xmbu_common_back">Назад</string>
+    <string name="xmbu_common_cancel">Откажи</string>
+    <string name="xmbu_common_done">Готово</string>
+    <string name="xmbu_common_close">Затвори</string>
+    <string name="xmbu_common_reset">Врати</string>
+    <string name="xmbu_common_remove">Уклони</string>
+    <string name="xmbu_common_open">Отвори</string>
+    <string name="xmbu_common_toggle">Укључи/искључи</string>
+    <string name="xmbu_common_search">Претражи</string>
+    <string name="xmbu_common_artwork">Графика</string>
+    <string name="xmbu_common_edit_title">Измени наслов</string>
+    <string name="xmbu_common_add_to_card">Додај на картицу</string>
+    <string name="xmbu_common_on">Укључено</string>
+    <string name="xmbu_common_off">Искључено</string>
+    <string name="xmbu_common_move">Премести</string>
+    <string name="xmbu_common_navigate">Навигација</string>
+    <string name="xmbu_common_play">Пусти</string>
+    <string name="xmbu_common_pause">Паузирај</string>
+    <string name="xmbu_common_prev_next">Претх. / след.</string>
+    <string name="xmbu_common_seek">Премотај</string>
+    <string name="xmbu_common_confirm">Потврди</string>
+    <string name="xmbu_common_close_search">Затвори претрагу</string>
+    <string name="xmbu_common_ellipsis_search">Претражи…</string>
+
+    <!-- App Detail: Options menu rows -->
+    <string name="xmbu_app_opt_favorite">Омиљено</string>
+    <string name="xmbu_app_opt_app_info">Информације о апликацији</string>
+    <string name="xmbu_app_opt_hide">Сакриј свуда</string>
+    <string name="xmbu_app_opt_change_icon">Промени иконицу</string>
+    <string name="xmbu_app_opt_change_background">Промени позадину</string>
+    <string name="xmbu_app_opt_reset_artwork">Врати сву графику</string>
+
+    <!-- App Detail: artwork kind names, used inside the messages below -->
+    <string name="xmbu_app_art_type_icon">Иконица игре</string>
+    <string name="xmbu_app_art_type_hero">Херој банер</string>
+    <string name="xmbu_app_art_type_background">Позадина</string>
+
+    <!-- App Detail: artwork picker messages. %1$s is an artwork kind name (Game Icon, Hero Banner, Background) -->
+    <string name="xmbu_app_art_no_api_key">SteamGridDB API кључ није подешен — додајте га у подешавањима графике</string>
+    <!-- %1$s is the error text from the server or the network -->
+    <string name="xmbu_app_art_search_failed">Претрага није успела: %1$s</string>
+    <!-- %1$s is the app name that was searched for -->
+    <string name="xmbu_app_art_no_results">Нема резултата за „%1$s“ на SteamGridDB</string>
+    <string name="xmbu_app_art_load_failed">Учитавање графике није успело: %1$s</string>
+    <string name="xmbu_app_art_none_found">На SteamGridDB није пронађена графика: %1$s</string>
+    <string name="xmbu_app_art_download_failed">Преузимање није успело: %1$s</string>
+    <string name="xmbu_app_art_import_failed">Увоз није успео: %1$s</string>
+    <string name="xmbu_app_art_updated">Ажурирано: %1$s</string>
+    <string name="xmbu_app_art_reset">Враћено: %1$s</string>
+    <string name="xmbu_app_art_all_reset">Сва графика је враћена</string>
+    <string name="xmbu_app_no_launchable_package">Ова апликација нема пакет који може да се покрене</string>
+    <string name="xmbu_common_launch">Покрени</string>
+
+    <!-- App Detail screen -->
+    <string name="xmbu_app_breadcrumb_apps">Апликације</string>
+    <string name="xmbu_app_breadcrumb_android_app">Android апликација</string>
+    <!-- Spoken description of the brush button that opens the artwork menu -->
+    <string name="xmbu_app_edit_artwork_description">Измени графику</string>
+    <string name="xmbu_app_no_icon">Нема иконице</string>
+    <!-- Title of the artwork picker; %1$s is an artwork kind name such as Game Icon -->
+    <string name="xmbu_app_art_change">Промени: %1$s</string>
+    <string name="xmbu_app_art_saving">Чување…</string>
+    <string name="xmbu_app_art_pick_local">Изабери локалну датотеку</string>
+    <string name="xmbu_app_art_restore_icon">Врати изворну иконицу</string>
+    <string name="xmbu_app_art_remove_custom">Уклони прилагођену графику</string>
+    <!-- Controller hint line: "A" and "B" are the names of the controller buttons -->
+    <string name="xmbu_app_art_picker_hint">"◄ ►  Прегледај   A  Изабери   B  Назад"</string>
+    <string name="xmbu_app_reset_title">Вратити сву графику?</string>
+    <!-- %1$s is the app name -->
+    <string name="xmbu_app_reset_message">Прилагођена иконица и позадина за %1$s биће уклоњене и вратиће се иконица саме апликације.</string>
+
+    <!-- Add to Card (collection) picker panel -->
+    <!-- Controller hint line: "B" is the name of a controller button -->
+    <string name="xmbu_collection_picker_new_row">"＋  Нова прилагођена меморијска картица"</string>
+    <string name="xmbu_collection_new_title">Нова прилагођена меморијска картица</string>
+    <string name="xmbu_collection_new_placeholder">нпр. RPG, Тренутно играм</string>
+    <!-- Button that confirms the new card name -->
+    <string name="xmbu_collection_new_create">Направи</string>
+    <string name="xmbu_common_sort">Сортирај</string>
+    <string name="xmbu_common_notifications">Обавештења</string>
+
+    <!-- App picker (Add Apps / Remove Apps) -->
+    <string name="xmbu_app_picker_empty">Нема инсталираних апликација</string>
+    <!-- %1$s is the search text the user typed -->
+    <string name="xmbu_app_picker_no_match">Ниједна инсталирана апликација не одговара упиту „%1$s“</string>
+    <!-- Controller prompt on the removal confirmation: move between the two buttons -->
+    <string name="xmbu_app_picker_choose">Изабери</string>
+
+    <!-- Arrange mode bars (moving a card or marking games) -->
+    <!-- Button / footer prompt: drop the item being moved at its new position -->
+    <string name="xmbu_arrange_place">Постави</string>
+    <!-- Footer prompt: tick the focused game -->
+    <string name="xmbu_arrange_mark">Означи</string>
+    <string name="xmbu_arrange_move_left">Помери улево</string>
+    <string name="xmbu_arrange_move_right">Помери удесно</string>
+    <string name="xmbu_arrange_move_up">Помери нагоре</string>
+    <string name="xmbu_arrange_move_down">Помери надоле</string>
+
+    <!-- Color Scheme picker overlay -->
+    <string name="xmbu_color_scheme_title">Шема боја</string>
+    <!-- Name of the shade stepper for the colour's hue variation, and its controller prompt -->
+    <string name="xmbu_color_scheme_tint">Нијанса</string>
+    <!-- Name of the shade stepper for how dark or light the colour is, and its controller prompt -->
+    <string name="xmbu_color_scheme_depth">Дубина</string>
+    <!-- Readability check line. %1$s is a status mark (a tick, a dash or a warning sign); %2$s is a contrast ratio and verdict. "Top" is the top of the screen background -->
+    <string name="xmbu_color_scheme_contrast_top">"%1$s Текст на врху  %2$s"</string>
+    <!-- Same as above for the bottom of the screen background -->
+    <string name="xmbu_color_scheme_contrast_bottom">"%1$s Текст на дну  %2$s"</string>
+    <string name="xmbu_color_scheme_custom_title">Прилагођена боја</string>
+
+    <!-- Customize XMB Icons overlay -->
+    <string name="xmbu_icons_title">Прилагоди XMB иконице</string>
+    <!-- Where the focused icon currently comes from -->
+    <string name="xmbu_icons_source_user">Ваш избор</string>
+    <string name="xmbu_icons_source_theme">Из теме</string>
+    <string name="xmbu_icons_source_default">Подразумевано</string>
+    <!-- %1$s is the icon source (Your pick / From theme / Default); %2$s is the name of the XMB column the icon sits in -->
+    <string name="xmbu_icons_source_with_column">%1$s · колона %2$s</string>
+    <!-- Controller prompt: move between columns of icons -->
+    <string name="xmbu_icons_column">Колона</string>
+    <!-- Controller prompt: switch to the previous / next tab (shoulder buttons) -->
+    <string name="xmbu_icons_tab">Картица</string>
+    <!-- Button and controller prompt: choose a picture for the focused icon -->
+    <string name="xmbu_icons_pick">Изабери</string>
+    <string name="xmbu_icons_reset_all">Врати све</string>
+    <!-- Controller prompt (short) and button (opens a naming dialog) -->
+    <string name="xmbu_icons_save_as_theme">Сачувај као тему</string>
+    <string name="xmbu_icons_save_as_theme_button">Сачувај као тему…</string>
+
+    <!-- Search box -->
+    <string name="xmbu_game_search_placeholder">Претражи игре…</string>
+
+    <!-- Game picker (Add Games to a category) -->
+    <string name="xmbu_picker_in_this_category">У овој категорији</string>
+    <!-- Shelf name; %1$s is the category name -->
+    <string name="xmbu_picker_in_category">У: %1$s</string>
+    <string name="xmbu_picker_custom_cards">Прилагођене меморијске картице</string>
+    <string name="xmbu_picker_no_changes">Нема измена</string>
+    <!-- Options menu rows; "View" opens a list of icon display modes (also the title of that list) -->
+    <string name="xmbu_picker_menu_view">Приказ</string>
+    <string name="xmbu_picker_menu_select_all">Изабери све</string>
+    <!-- Footer hint for touch: tapping a shelf opens it, tapping a tile ticks it -->
+    <string name="xmbu_picker_open_toggle">Отвори / укључи-искључи</string>
+    <string name="xmbu_picker_no_games">Још нема игара у библиотеци</string>
+    <string name="xmbu_picker_add_games">Додај игре</string>
+    <!-- Label on the shelf header showing the icon display mode; %1$s is the mode name (e.g. Box Art) -->
+    <string name="xmbu_picker_view_mode">Приказ: %1$s</string>
+    <!-- Shown before the game title on a tile that is ticked for removal; the trailing space is kept (quoted) -->
+    <string name="xmbu_picker_removing_prefix">"Уклањање · "</string>
+    <string name="xmbu_picker_search_placeholder">Претражи ову полицу…</string>
+    <!-- Footer prompts. "Shelves" = go back up to the list of shelves; "Shelf" = move between shelves -->
+    <string name="xmbu_picker_shelves">Полице</string>
+    <string name="xmbu_picker_shelf">Полица</string>
+
+    <!-- Music browser -->
+    <string name="xmbu_music_breadcrumb_playlists">"Музика  ›  Плејлисте"</string>
+    <string name="xmbu_music_breadcrumb_music">Музика</string>
+    <string name="xmbu_music_breadcrumb_all_tracks">Све нумере</string>
+    <!-- Strip showing the track that was playing; %1$s is the track title -->
+    <string name="xmbu_music_resume">Настави: %1$s</string>
+
+    <!-- Music player -->
+    <string name="xmbu_music_now_playing">Тренутно се репродукује</string>
+    <string name="xmbu_music_nothing_playing">Ништа се не репродукује</string>
+    <!-- Touch button that opens the visualizer picker -->
+    <string name="xmbu_music_visualizer">Визуелизатор</string>
+
+    <!-- Media transport buttons (music and video players): spoken descriptions -->
+    <string name="xmbu_media_previous_track">Претходна нумера</string>
+    <string name="xmbu_media_next_track">Следећа нумера</string>
+    <string name="xmbu_media_previous_video">Претходни видео</string>
+    <string name="xmbu_media_next_video">Следећи видео</string>
+    <string name="xmbu_media_back_10">Назад 10 секунди</string>
+    <string name="xmbu_media_forward_10">Напред 10 секунди</string>
+    <!-- Spoken state of the player: it is playing / it is paused -->
+    <string name="xmbu_media_playing">Репродукује се</string>
+    <string name="xmbu_media_paused">Паузирано</string>
+
+    <!-- Music track picker (add songs to a playlist) -->
+    <!-- %1$s is the playlist name -->
+    <string name="xmbu_track_picker_title">Додај у %1$s</string>
+    <!-- Controller prompt: add the ticked tracks -->
+    <string name="xmbu_track_picker_add">Додај</string>
+    <string name="xmbu_track_picker_empty">Нема више нумера за додавање — свака скенирана песма је већ на овој плејлисти.</string>
+
+    <!-- Notification panel and notification detail sheets -->
+    <string name="xmbu_notif_options_description">Опције обавештења</string>
+    <!-- %1$s is the name of a running background task -->
+    <string name="xmbu_notif_task_stopping">%1$s — Заустављање…</string>
+    <!-- %1$s is a background task name; %2$s is its current detail (for example the file being processed) -->
+    <string name="xmbu_notif_task_detail">%1$s — %2$s</string>
+    <!-- Notification categories shown on the details sheet ("Scan · 12 Minutes Ago") -->
+    <string name="xmbu_notif_kind_scan">Скенирање</string>
+    <string name="xmbu_notif_kind_metadata">Метаподаци</string>
+    <string name="xmbu_notif_kind_achievements">Достигнућа</string>
+    <string name="xmbu_notif_kind_system">Систем</string>
+    <string name="xmbu_notif_kind_download">Преузимање</string>
+    <string name="xmbu_notif_kind_feed">Фид</string>
+    <!-- Buttons on the notification details sheet that go to where the notification points -->
+    <string name="xmbu_notif_action_go_to_game">Иди на игру</string>
+    <string name="xmbu_notif_action_open_card">Отвори меморијску картицу</string>
+    <string name="xmbu_notif_action_open_settings">Отвори подешавања</string>
+    <string name="xmbu_notif_action_open_category">Отвори категорију</string>
+    <string name="xmbu_notif_action_review">Прегледај</string>
+    <string name="xmbu_time_just_now">Управо сада</string>
+
+    <!-- XMB shell: share sheet title when sharing a saved icon theme -->
+    <string name="xmbu_share_theme">Дели тему</string>
+    <!-- Line shown on the row being moved in arrange mode: %1$d is its position, %2$d the number of movable rows -->
+    <string name="xmbu_move_position">Премештање · %1$d од %2$d</string>
+    <string name="xmbu_common_later">Касније</string>
+
+    <!-- XMB shell dialogs -->
+    <string name="xmbu_shell_rename_shortcut">Преименуј пречицу</string>
+    <string name="xmbu_shell_playlist_name">Назив плејлисте</string>
+    <string name="xmbu_shell_theme_name">Назив теме</string>
+    <!-- Choice dialog in the icon editor: where the new icon comes from -->
+    <string name="xmbu_shell_source_theme">Из примењене теме</string>
+    <string name="xmbu_shell_source_device">Са вашег уређаја</string>
+    <!-- Describes the image file types accepted from the device -->
+    <string name="xmbu_shell_source_device_detail">PNG или GIF</string>
+    <string name="xmbu_shell_continue">Настави</string>
+    <string name="xmbu_shell_shortcut_title">Додати пречицу?</string>
+    <!-- %1$s is the shortcut name; %2$s is the app or screen the shortcut opens -->
+    <string name="xmbu_shell_shortcut_message">Апликација је затражила да дода пречицу „%1$s“ која отвара %2$s. Додајте је само ако сте управо сами направили ову пречицу.</string>
+    <string name="xmbu_shell_shortcut_add">Додај</string>
+    <!-- Button: refuse to add the shortcut -->
+    <string name="xmbu_shell_shortcut_ignore">Занемари</string>
+    <string name="xmbu_shell_windows_title">Довршите Windows библиотеку</string>
+    <string name="xmbu_shell_windows_message">Додата је PC игра, али библиотека Windows игара још нема фасциклу. Подесите је у менаџеру библиотеке како би фасцикле игара и достигнућа могли да се скенирају.</string>
+    <string name="xmbu_shell_windows_set_up">Подеси</string>
+    <!-- Playlist import results sheet: %1$d is this file\'s position, %2$d how many files were imported -->
+    <string name="xmbu_shell_import_position">%1$d од %2$d</string>
+    <string name="xmbu_shell_open_playlist">Отвори плејлисту</string>
+    <!-- Confirm dialog for stopping a background task: the button that stops it, and the one that lets it carry on -->
+    <string name="xmbu_shell_stop">Заустави</string>
+    <string name="xmbu_shell_keep_running">Настави рад</string>
+
+    <!-- Launch recovery dialog (a game failed to start) -->
+    <string name="xmbu_recovery_retry">Покушај поново</string>
+    <string name="xmbu_recovery_change_emulator">Промени емулатор</string>
+    <string name="xmbu_recovery_change_default">Промени подразумевано за систем</string>
+    <string name="xmbu_recovery_copy_diagnostics">Копирај дијагностику</string>
+    <!-- %1$s is the game title -->
+    <string name="xmbu_recovery_title">Покретање није успело: %1$s</string>
+    <!-- Button: confirm the highlighted repair choice -->
+    <string name="xmbu_recovery_select">Изабери</string>
+    <string name="xmbu_recovery_dismiss">Одбаци</string>
+
+    <!-- Artwork folder prompts. "PFP" is the app name -->
+    <string name="xmbu_artfolder_unavailable_title">Фасцикла за графику није доступна</string>
+    <!-- %1$s is the folder name -->
+    <string name="xmbu_artfolder_unavailable_message">PFP не може да приступи: %1$s. Нова графика је паузирана док је поново не повежете. Графика коју већ имате и даље се приказује.</string>
+    <string name="xmbu_artfolder_relink">Поново повежи фасциклу</string>
+    <string name="xmbu_artfolder_not_now">Не сада</string>
+    <string name="xmbu_artfolder_move_title">Преместите графику у своју фасциклу</string>
+    <string name="xmbu_artfolder_choose">Изабери фасциклу за графику</string>
+    <string name="xmbu_artfolder_choose_title">Изаберите фасциклу за графику</string>
+    <string name="xmbu_artfolder_choose_message">Нова графика се чува у вашој фасцикли. Изаберите је и PFP ће тамо чувати графику.</string>
+    <string name="xmbu_artfolder_foreign_title">Ова фасцикла садржи другу библиотеку графике</string>
+    <string name="xmbu_artfolder_use_library">Користи ову библиотеку</string>
+    <string name="xmbu_artfolder_choose_another">Изабери другу фасциклу</string>
+
+    <!-- Status strip: spoken descriptions of the icons -->
+    <string name="xmbu_status_controller_connected">Контролер је повезан</string>
+    <string name="xmbu_status_battery">Батерија</string>
+    <string name="xmbu_status_battery_charging">Батерија, пуни се</string>
+    <string name="xmbu_status_battery_plugged">Батерија, прикључено</string>
+
+    <!-- Adjust XMB Layout overlay -->
+    <string name="xmbu_layout_title">Подеси распоред XMB-а</string>
+    <!-- Live read-out: %1$s is the size multiplier (for example 1.20); %2$d and %3$d are percentages of the screen width / height. Spaces between the three parts are kept (quoted) -->
+    <string name="xmbu_layout_readout">"Величина %1$sx    Хоризонтално %2$d%%    Вертикално %3$d%%"</string>
+    <!-- Name of the size slider, and the controller prompt for resizing -->
+    <string name="xmbu_layout_scale">Величина</string>
+    <string name="xmbu_layout_horizontal">Хоризонтално</string>
+    <string name="xmbu_layout_vertical">Вертикално</string>
+    <!-- Controller prompt and button that show the sliders -->
+    <string name="xmbu_layout_sliders">Клизачи</string>
+    <string name="xmbu_layout_hide_sliders">Сакриј клизаче</string>
+    <!-- Controller prompt and button: keep the new layout -->
+    <string name="xmbu_layout_save">Сачувај</string>
+
+    <!-- Theme icon picker -->
+    <string name="xmbu_icon_grid_use">Користи ову иконицу</string>
+    <string name="xmbu_status_cellular_signal">Мобилни сигнал</string>
+
+    <!-- Notification panel section headers (shown in capitals) and empty state -->
+    <string name="xmbu_notif_header_running">У ТОКУ</string>
+    <string name="xmbu_notif_header_earlier">РАНИЈЕ</string>
+    <string name="xmbu_notif_empty">Нема обавештења</string>
+
+    <!-- Video player -->
+    <!-- Screen modes: how the picture fills the screen (fit with bars, crop to zoom, stretch to fill) -->
+    <string name="xmbu_video_fit">Уклопи</string>
+    <string name="xmbu_video_zoom">Зумирај</string>
+    <string name="xmbu_video_fill">Попуни</string>
+    <!-- Options panel rows -->
+    <string name="xmbu_video_speed">Брзина репродукције</string>
+    <string name="xmbu_video_subtitles">Титлови</string>
+    <string name="xmbu_video_audio_track">Аудио запис</string>
+    <string name="xmbu_video_screen_mode">Режим екрана</string>
+    <!-- Shown as the current value when no subtitle / audio track is available -->
+    <string name="xmbu_video_none">Ништа</string>
+    <string name="xmbu_video_default">Подразумевано</string>
+    <!-- Name for a subtitle or audio track that has no language or title -->
+    <string name="xmbu_video_track">Запис</string>
+    <string name="xmbu_video_err_not_found">Видео није пронађен.</string>
+    <string name="xmbu_video_err_permission">Дозвола за ову датотеку је одбијена.</string>
+    <string name="xmbu_video_err_decode">Овај видео не може да се декодира на овом уређају.</string>
+    <string name="xmbu_video_err_unable">Није могуће репродуковати овај видео.</string>
+    <!-- Controller prompt on the error screen: pressing A or B leaves the player -->
+    <string name="xmbu_video_go_back">Назад</string>
+    <!-- Status line on the controller footer. %1$s is the playback speed (for example 1.5); %2$s is the screen mode (Fit, Zoom or Fill) -->
+    <string name="xmbu_video_status">%1$s× · %2$s</string>
+
+    <!-- Photo viewer -->
+    <!-- Options menu rows -->
+    <string name="xmbu_photo_rotate_left">Ротирај улево</string>
+    <string name="xmbu_photo_rotate_right">Ротирај удесно</string>
+    <string name="xmbu_photo_zoom_in">Увећај</string>
+    <string name="xmbu_photo_zoom_out">Умањи</string>
+    <string name="xmbu_photo_reset_zoom">Врати зум</string>
+    <string name="xmbu_photo_set_wallpaper">Подеси као позадину лаунчера</string>
+    <!-- Menu row and the title of its confirmation dialog -->
+    <string name="xmbu_photo_set_lock_screen">Подеси као закључани екран</string>
+    <string name="xmbu_photo_view_info">Прикажи информације</string>
+    <string name="xmbu_photo_show_location">Прикажи локацију датотеке</string>
+    <!-- Menu row and the title of its confirmation dialog -->
+    <string name="xmbu_photo_remove">Уклони из библиотеке</string>
+    <!-- Group headers inside the Options menu -->
+    <string name="xmbu_photo_group_view">Приказ</string>
+    <string name="xmbu_photo_group_manage">Управљање</string>
+    <!-- Message after "Show File Location"; %1$s is the folder path -->
+    <string name="xmbu_photo_in_folder">У: %1$s</string>
+    <string name="xmbu_photo_wallpaper_unreadable">Подешавање позадине није успело — слику није могуће прочитати</string>
+    <string name="xmbu_photo_wallpaper_applied">Позадина је примењена</string>
+    <string name="xmbu_photo_unreadable">Читање те фотографије није успело</string>
+    <string name="xmbu_photo_lock_screen_set">Закључани екран је подешен</string>
+    <!-- Footer prompts: the tap or A button that hides / shows the on-screen controls -->
+    <string name="xmbu_photo_hide_controls">Сакриј контроле</string>
+    <string name="xmbu_photo_show_controls">Прикажи контроле</string>
+    <string name="xmbu_photo_wallpaper_title">Подесити као позадину лаунчера?</string>
+    <string name="xmbu_photo_wallpaper_note">Замењује таласасту позадину XMB-а.</string>
+    <!-- Button (and controller prompt) that confirms the wallpaper; the second form shows while it is working -->
+    <string name="xmbu_photo_apply">Примени</string>
+    <string name="xmbu_photo_applying">Примењивање…</string>
+    <!-- %1$s is the photo file name -->
+    <string name="xmbu_photo_remove_message">„%1$s“ ће бити уклоњена из ове библиотеке. Фотографија на диску се не брише.</string>
+    <string name="xmbu_photo_lock_message">„%1$s“ постаје слика закључаног екрана уређаја, исечена тако да одговара екрану.</string>
+    <!-- Confirm button of the lock screen dialog -->
+    <string name="xmbu_photo_set">Подеси</string>
+    <!-- Photo information lines; each %1$s is the value -->
+    <string name="xmbu_photo_info_resolution">Резолуција: %1$s</string>
+    <string name="xmbu_photo_info_taken">Снимљено: %1$s</string>
+    <string name="xmbu_photo_info_modified">Измењено: %1$s</string>
+    <string name="xmbu_photo_info_size">Величина: %1$s</string>
+    <string name="xmbu_photo_info_type">Тип: %1$s</string>
+    <string name="xmbu_photo_info_location">Локација: %1$s</string>
+    <string name="xmbu_photo_info_file">Датотека: %1$s</string>
+
+    <!-- Music visualizer picker -->
+    <string name="xmbu_visualizer_portal">Портал</string>
+    <string name="xmbu_visualizer_ripple">Таласање</string>
+    <!-- Name of the "no visualizer" choice, shown under its tile -->
+    <string name="xmbu_visualizer_off">Искључено</string>
+    <!-- Text drawn inside the "no visualizer" tile (capitals) -->
+    <string name="xmbu_visualizer_off_tile">ИСКЉ.</string>
+
+    <!-- App picker header: how many apps are ticked -->
+    <plurals name="xmbu_app_picker_selected">
+        <item quantity="one">Изабрана: %d</item>
+        <item quantity="few">Изабране: %d</item>
+        <item quantity="other">Изабрано: %d</item>
+    </plurals>
+
+    <!-- Arrange mode: how many games are marked -->
+    <plurals name="xmbu_arrange_marked">
+        <item quantity="one">Означена: %d</item>
+        <item quantity="few">Означене: %d</item>
+        <item quantity="other">Означено: %d</item>
+    </plurals>
+
+    <!-- Game picker header: pending changes -->
+    <plurals name="xmbu_picker_to_add">
+        <item quantity="one">За додавање: %d</item>
+        <item quantity="few">За додавање: %d</item>
+        <item quantity="other">За додавање: %d</item>
+    </plurals>
+    <plurals name="xmbu_picker_to_remove">
+        <item quantity="one">За уклањање: %d</item>
+        <item quantity="few">За уклањање: %d</item>
+        <item quantity="other">За уклањање: %d</item>
+    </plurals>
+    <!-- Game picker shelf header. %1$d is the number of games on the shelf; %2$d how many are ticked -->
+    <plurals name="xmbu_picker_shelf_games">
+        <item quantity="one">%1$d игра · означено: %2$d</item>
+        <item quantity="few">%1$d игре · означено: %2$d</item>
+        <item quantity="other">%1$d игара · означено: %2$d</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_cards">
+        <item quantity="one">%d картица · избор картице је премешта овде</item>
+        <item quantity="few">%d картице · избор картице је премешта овде</item>
+        <item quantity="other">%d картица · избор картице је премешта овде</item>
+    </plurals>
+    <!-- Number of games in a custom memory card tile -->
+    <plurals name="xmbu_picker_card_games">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игре</item>
+        <item quantity="other">%d игара</item>
+    </plurals>
+
+    <!-- Music track picker -->
+    <!-- Header button: add the ticked tracks (%d = how many are ticked) -->
+    <plurals name="xmbu_track_picker_add_count">
+        <item quantity="one">Додај %d</item>
+        <item quantity="few">Додај %d</item>
+        <item quantity="other">Додај %d</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_selected">
+        <item quantity="one">Изабрано: %d</item>
+        <item quantity="few">Изабрано: %d</item>
+        <item quantity="other">Изабрано: %d</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_add_tracks">
+        <item quantity="one">Додај %d нумеру</item>
+        <item quantity="few">Додај %d нумере</item>
+        <item quantity="other">Додај %d нумера</item>
+    </plurals>
+
+    <!-- Notification age -->
+    <plurals name="xmbu_time_minutes_ago">
+        <item quantity="one">Пре %d минут</item>
+        <item quantity="few">Пре %d минута</item>
+        <item quantity="other">Пре %d минута</item>
+    </plurals>
+    <plurals name="xmbu_time_hours_ago">
+        <item quantity="one">Пре %d сат</item>
+        <item quantity="few">Пре %d сата</item>
+        <item quantity="other">Пре %d сати</item>
+    </plurals>
+
+    <!-- Artwork folder prompts. %d is the number of images stored inside the app -->
+    <plurals name="xmbu_artfolder_move_message">
+        <item quantity="one">%d слика се чува унутар апликације и изгубила би се ако деинсталирате апликацију. Изаберите фасциклу и PFP ће је преместити тамо.</item>
+        <item quantity="few">%d слике се чувају унутар апликације и изгубиле би се ако деинсталирате апликацију. Изаберите фасциклу и PFP ће их преместити тамо.</item>
+        <item quantity="other">%d слика се чува унутар апликације и изгубиле би се ако деинсталирате апликацију. Изаберите фасциклу и PFP ће их преместити тамо.</item>
+    </plurals>
+    <!-- %1$s is the folder name; %2$d is the number of files in it -->
+    <plurals name="xmbu_artfolder_foreign_message">
+        <item quantity="one">%1$s је подесила друга инсталација (%2$d датотека). Користите је и PFP ће поново повезати ваше игре са њеном графиком, или изаберите другу фасциклу.</item>
+        <item quantity="few">%1$s је подесила друга инсталација (%2$d датотеке). Користите је и PFP ће поново повезати ваше игре са њеном графиком, или изаберите другу фасциклу.</item>
+        <item quantity="other">%1$s је подесила друга инсталација (%2$d датотека). Користите је и PFP ће поново повезати ваше игре са њеном графиком, или изаберите другу фасциклу.</item>
+    </plurals>
+
+    <!-- Status strip: spoken description of the notification bell when some are unread -->
+    <plurals name="xmbu_status_notifications_unread">
+        <item quantity="one">Обавештења, %d непрочитано</item>
+        <item quantity="few">Обавештења, %d непрочитана</item>
+        <item quantity="other">Обавештења, %d непрочитаних</item>
+    </plurals>
+</resources>

@@ -18,6 +18,7 @@ import com.playfieldportal.feature.library.scanner.PhotoScanResult
 import com.playfieldportal.feature.library.scanner.PhotoScanner
 import com.playfieldportal.feature.library.scanner.VideoScanResult
 import com.playfieldportal.feature.library.scanner.VideoScanner
+import com.playfieldportal.feature.settings.R
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -214,7 +215,7 @@ class WizardMediaScanRunnerTest {
         val message = runner.scanAllRoots(MediaRootKind.VIDEO, force = true)
         coVerify(exactly = 0) { videoScanner.scan(any(), any(), any(), any()) }
         io.mockk.verify(exactly = 1) { taskCenter.fail("video_scan_video-1", any(), any(), any(), any()) }
-        assertEquals(WizardMediaScanRunner.NOT_READY_MESSAGE, message)
+        assertEquals(context.getString(R.string.setup_media_not_ready), message)
     }
 
     // Automatic and forced scans of a ready folder are untouched: they still scan and still report.

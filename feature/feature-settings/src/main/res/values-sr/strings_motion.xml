@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">Кретање</string>
+    <string name="motion_summary">Колико се тога креће само од себе.</string>
+    <string name="motion_detail_animated">Све се креће</string>
+    <string name="motion_detail_reduced">Само одабрано</string>
+    <string name="motion_detail_static">Ништа само од себе</string>
+    <string name="motion_sub_animated">Креће се све што може: илустрације, иконе, позадинске слике, позадина и сјај. Троши највише батерије.</string>
+    <string name="motion_sub_reduced">Креће се само одабрана ставка: њена илустрација, видео исечак и сјај. Позадина се и даље креће.</string>
+    <string name="motion_sub_static">Ништа се не креће само од себе. Менији и даље клизе док се крећете кроз њих.</string>
+    <string name="motion_holds_background">Заустављено док је „Кретање” подешено на „Статично”.</string>
+    <string name="motion_holds_glow">Мирно док је „Кретање” подешено на „Статично”.</string>
+</resources>

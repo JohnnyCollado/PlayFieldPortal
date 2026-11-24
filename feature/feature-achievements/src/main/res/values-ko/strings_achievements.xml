@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ach_upd_running">설치된 게임의 도전 과제 업데이트 중</string>
+    <string name="ach_upd_running_stop_note">이미 업데이트된 도전 과제는 유지됩니다.</string>
+    <string name="ach_upd_progress">게임 %2$d개 중 %1$d개 확인 중</string>
+    <string name="ach_upd_stopped">도전 과제 업데이트 중지됨</string>
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="other">게임 %d개 확인됨, 저장된 진행 상황은 유지됩니다</item>
+    </plurals>
+    <string name="ach_upd_some_failed">일부 도전 과제를 업데이트하지 못했습니다</string>
+    <plurals name="ach_upd_failed_message">
+        <item quantity="other">게임 %2$d개 중 %1$d개를 다시 시도해야 합니다</item>
+    </plurals>
+    <string name="ach_upd_results_done">업데이트됨</string>
+    <string name="ach_upd_updated">도전 과제 업데이트됨</string>
+    <plurals name="ach_upd_updated_message">
+        <item quantity="other">게임 %1$d개 업데이트됨 · %2$d개 변경 없음</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">도전 과제가 최신 상태입니다</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="other">설치된 게임 %d개 확인됨</item>
+    </plurals>
+    <string name="ach_upd_paused">도전 과제 업데이트 일시 중지됨</string>
+    <string name="ach_upd_fact_service">서비스</string>
+    <string name="ach_upd_pause_offline">인터넷에 연결하세요</string>
+    <string name="ach_upd_pause_reconnect">%1$s 다시 연결</string>
+    <string name="ach_upd_pause_steam_private">Steam 게임 세부 정보를 사용할 수 없습니다</string>
+    <!-- Auto-match notifications -->
+    <string name="ach_match_running">게임 자동 매칭 중</string>
+    <string name="ach_match_running_stop_note">이미 매칭된 게임은 연결이 유지됩니다.</string>
+    <string name="ach_match_stopped_note">이미 매칭된 게임은 연결이 유지됩니다</string>
+    <string name="ach_match_stopped">자동 매칭 중지됨</string>
+    <string name="ach_match_recognized">게임 인식됨</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="other">설치된 게임 %d개를 매칭했습니다. 도전 과제를 업데이트하는 중입니다.</item>
+    </plurals>
+    <!-- Clearing achievement records -->
+    <string name="ach_clear_done">도전 과제 기록 삭제됨</string>
+    <string name="ach_clear_done_message">도전 과제를 다시 표시하려면 설치된 게임을 다시 동기화해야 합니다</string>
+    <string name="ach_clear_failed">도전 과제를 삭제할 수 없습니다</string>
+    <string name="ach_clear_failed_message">아무것도 삭제되지 않았습니다. 설정 ▸ 도전 과제에서 다시 시도하세요</string>
+    <string name="ach_ls_unavail_store">스토어에 요청할 수 없음</string>
+    <string name="ach_ls_unavail_steam">현재 Steam을 사용할 수 없음</string>
+    <string name="ach_ls_steam_unreachable">Steam에 연결할 수 없음</string>
+    <string name="ach_ls_steam_rate_limited">Steam에서 요청 수를 제한하는 중</string>
+    <string name="ach_ls_steam_error">Steam에서 오류를 반환함</string>
+    <string name="ach_ls_steam_needs_key">Steam Web API 키가 필요함</string>
+    <!-- Local Steam: linking a picked game folder -->
+    <string name="ach_link_no_match">Steam에 \"%1$s\"와(과) 일치하는 게임이 없습니다. 폴더 이름을 게임의 Steam 이름으로 바꾸거나, 먼저 게임 세부 정보 ▸ 게임 매칭에서 연결하세요.</string>
+    <string name="ach_link_unavailable">이 폴더의 앱 ID를 확인할 수 없습니다(%1$s). 아무것도 변경되지 않았습니다 — 다시 온라인 상태가 되면 다시 시도하세요.</string>
+    <string name="ach_link_marker_failed">해당 폴더에 steam_appid.txt를 만들 수 없습니다 — PFP에 읽기 권한만 있을 수 있습니다.</string>
+    <string name="ach_link_not_recorded">선택한 매칭을 기록할 수 없습니다.</string>
+    <string name="ach_link_installer_off">PFP가 게임 폴더에 쓰기 전에 도전 과제 설정에서 Goldberg 설치 및 게임 변환을 켜세요.</string>
+    <string name="ach_link_no_app_id">해당 폴더에 더 이상 앱 ID가 지정되어 있지 않습니다 — 다시 선택하세요.</string>
+    <string name="ach_link_need_key">설정 ▸ 도전 과제 ▸ 제공자 인증 정보에서 Steam Web API 키를 추가하세요 — 도전 과제 목록은 이 키로 가져옵니다.</string>
+    <string name="ach_link_no_achievements">Steam에 앱 ID %1$s의 도전 과제가 없으므로 추적할 항목이 없습니다.</string>
+    <string name="ach_link_kit_failed">도전 과제 키트를 쓸 수 없습니다: %1$s</string>
+    <string name="ach_link_read_back_failed">해당 폴더를 다시 읽을 수 없습니다. 이동식 저장소에 있다면 다시 마운트한 후 다시 선택하세요.</string>
+    <string name="ach_link_not_steam_build">해당 폴더 어디에도 Steam 라이브러리 파일(steam_api64.dll)이 없으므로 Steam 빌드가 아니며 에뮬레이터가 추적할 항목이 없습니다. 게임의 .exe가 있는 폴더를 선택하세요.</string>
+    <string name="ach_pick_checking">Steam 확인 중…</string>
+    <plurals name="ach_pick_coins">
+        <item quantity="other">코인 %1$d개  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">Steam에 목록 없음  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">Steam Web API 키 필요  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">Steam 응답 없음  ·  appid %1$s</string>
+    <!-- Local Steam: batch match summary -->
+    <string name="ach_batch_already_running">일괄 매칭이 이미 실행 중입니다.</string>
+    <string name="ach_batch_no_folders">게임 폴더가 없습니다. 게임 하나의 폴더가 아니라 게임 폴더들이 들어 있는 폴더를 선택하세요.</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="other">폴더 %d개를 찾았지만 Steam 빌드가 하나도 없습니다 — steam_api 라이브러리가 없으므로 에뮬레이터가 추적할 항목이 없습니다.</item>
+    </plurals>
+    <string name="ach_batch_linked">%1$d개 라이브러리 게임에 연결됨</string>
+    <string name="ach_batch_tracked">%1$d개 단독 추적</string>
+    <string name="ach_batch_converting">%1$d개 변환 대기 중</string>
+    <plurals name="ach_batch_matched">
+        <item quantity="other">폴더 %2$d개 중 %1$d개를 매칭했습니다.</item>
+    </plurals>
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="other">폴더 %2$d개 중 %1$d개를 매칭했습니다: %3$s.</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="other">%1$d개는 이름으로 식별할 수 없습니다 — 각 게임의 Shiba Coins 페이지를 열고 자동 매칭으로 폴더를 선택하세요.</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="other">%1$d개는 라이브러리에 없습니다 — 먼저 Windows 카드에 추가한 후 다시 매칭하세요.</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="other">%1$d개는 Steam 빌드가 아닙니다.</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="other">%1$d개 실패 — 로그를 확인하세요.</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">해당 폴더를 열 수 없습니다.</string>
+    <string name="ach_batch_fail_read_back">%1$s: 식별 후 다시 읽을 수 없습니다.</string>
+    <string name="ach_batch_fail_reason">%1$s: %2$s.</string>
+    <string name="ach_batch_fail_marker">%1$s: steam_appid.txt를 만들 수 없습니다.</string>
+    <!-- Vita3K library scan results -->
+    <string name="ach_vita_set_folder">먼저 Vita3K 데이터 폴더(ux0)를 설정하세요.</string>
+    <string name="ach_vita_link_invalid">Vita3K 폴더 연결이 잘못되었습니다 — 권한을 다시 부여하세요.</string>
+    <string name="ach_vita_no_ux0">권한이 부여된 폴더에서 ux0/app을 찾을 수 없습니다 — Vita3K ux0 폴더(또는 이를 포함하는 폴더)를 선택하세요.</string>
+    <string name="ach_vita_no_app">ux0 아래에 app/ 폴더가 없습니다 — 권한이 부여된 폴더를 확인하세요.</string>
+    <string name="ach_vita_none_installed">ux0/app 아래에 설치된 Vita 게임이 없습니다. 먼저 Vita3K에서 게임을 설치하세요.</string>
+    <plurals name="ach_vita_no_new">
+        <item quantity="other">새 Vita 게임 없음 — %d개는 이미 라이브러리에 있습니다.</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="other">Vita 게임 %d개를 가져왔습니다.</item>
+    </plurals>
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="other">Vita 게임 %1$d개를 가져오고 %2$d개를 업데이트했습니다.</item>
+    </plurals>
+</resources>

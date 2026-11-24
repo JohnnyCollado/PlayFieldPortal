@@ -11,6 +11,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    // The tests read the module's own generated R class (string ids) to resolve labels to English.
+    testOptions {
+        unitTests { isIncludeAndroidResources = true }
+    }
 }
 
 dependencies {

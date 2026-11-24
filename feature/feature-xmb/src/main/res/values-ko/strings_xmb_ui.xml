@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Music playback notification -->
+    <string name="xmbu_music_channel_name">음악 재생</string>
+    <string name="xmbu_music_channel_description">현재 재생 중 컨트롤</string>
+    <!-- Notification action buttons (media controls) -->
+    <string name="xmbu_music_notif_previous">이전</string>
+    <string name="xmbu_music_notif_play_pause">재생/일시정지</string>
+    <string name="xmbu_music_notif_next">다음</string>
+    <string name="xmbu_music_notif_stop">정지</string>
+    <string name="xmbu_ptt_hold">"🎙  누르고 말하기"</string>
+    <string name="xmbu_clipfail_boot_label">부팅 시퀀스</string>
+    <string name="xmbu_clipfail_gameboot_label">Game Boot</string>
+    <string name="xmbu_clipfail_boot_message">이 기기에서 부팅 동영상을 재생할 수 없어 기본 제공 시퀀스를 대신 재생했습니다. Theme Studio에서 테마를 다시 내보내거나(동영상이 변환됩니다) 디스플레이 설정에서 다른 클립을 선택하세요.</string>
+    <string name="xmbu_clipfail_gameboot_message">이 기기에서 Game Boot 동영상을 재생할 수 없어 기본 제공 시퀀스를 대신 재생했습니다. Theme Studio에서 테마를 다시 내보내거나(동영상이 변환됩니다) 디스플레이 설정에서 다른 클립을 선택하세요.</string>
+    <string name="xmbu_common_options">옵션</string>
+    <string name="xmbu_common_back">뒤로</string>
+    <string name="xmbu_common_cancel">취소</string>
+    <string name="xmbu_common_done">완료</string>
+    <string name="xmbu_common_close">닫기</string>
+    <string name="xmbu_common_reset">초기화</string>
+    <string name="xmbu_common_remove">제거</string>
+    <string name="xmbu_common_open">열기</string>
+    <string name="xmbu_common_toggle">전환</string>
+    <string name="xmbu_common_search">검색</string>
+    <string name="xmbu_common_artwork">아트워크</string>
+    <string name="xmbu_common_edit_title">제목 편집</string>
+    <string name="xmbu_common_add_to_card">카드에 추가</string>
+    <string name="xmbu_common_on">켜짐</string>
+    <string name="xmbu_common_off">꺼짐</string>
+    <string name="xmbu_common_move">이동</string>
+    <string name="xmbu_common_navigate">탐색</string>
+    <string name="xmbu_common_play">재생</string>
+    <string name="xmbu_common_pause">일시정지</string>
+    <string name="xmbu_common_prev_next">이전 / 다음</string>
+    <string name="xmbu_common_seek">탐색 이동</string>
+    <string name="xmbu_common_confirm">확인</string>
+    <string name="xmbu_common_close_search">검색 닫기</string>
+    <string name="xmbu_common_ellipsis_search">검색…</string>
+    <!-- App Detail: Options menu rows -->
+    <string name="xmbu_app_opt_favorite">즐겨찾기</string>
+    <string name="xmbu_app_opt_app_info">앱 정보</string>
+    <string name="xmbu_app_opt_hide">모든 곳에서 숨기기</string>
+    <string name="xmbu_app_opt_change_icon">아이콘 변경</string>
+    <string name="xmbu_app_opt_change_background">배경 변경</string>
+    <string name="xmbu_app_opt_reset_artwork">모든 아트워크 초기화</string>
+    <string name="xmbu_app_art_type_icon">게임 아이콘</string>
+    <string name="xmbu_app_art_type_hero">히어로 배너</string>
+    <string name="xmbu_app_art_type_background">배경</string>
+    <string name="xmbu_app_art_no_api_key">SteamGridDB API 키가 설정되지 않았습니다 — 아트워크 설정에서 추가하세요</string>
+    <string name="xmbu_app_art_search_failed">검색 실패: %1$s</string>
+    <string name="xmbu_app_art_no_results">SteamGridDB에 \"%1$s\" 검색 결과가 없습니다</string>
+    <string name="xmbu_app_art_load_failed">아트워크를 불러오지 못했습니다: %1$s</string>
+    <string name="xmbu_app_art_none_found">SteamGridDB에서 %1$s 아트를 찾을 수 없습니다</string>
+    <string name="xmbu_app_art_download_failed">%1$s을(를) 다운로드할 수 없습니다</string>
+    <string name="xmbu_app_art_import_failed">%1$s을(를) 가져올 수 없습니다</string>
+    <string name="xmbu_app_art_updated">%1$s 업데이트됨</string>
+    <string name="xmbu_app_art_reset">%1$s 초기화됨</string>
+    <string name="xmbu_app_art_all_reset">모든 아트워크 초기화됨</string>
+    <string name="xmbu_app_no_launchable_package">이 앱에는 실행 가능한 패키지가 없습니다</string>
+    <string name="xmbu_common_launch">시작</string>
+    <!-- App Detail screen -->
+    <string name="xmbu_app_breadcrumb_apps">앱</string>
+    <string name="xmbu_app_breadcrumb_android_app">Android 앱</string>
+    <string name="xmbu_app_edit_artwork_description">아트워크 편집</string>
+    <string name="xmbu_app_no_icon">아이콘 없음</string>
+    <string name="xmbu_app_art_change">%1$s 변경</string>
+    <string name="xmbu_app_art_saving">저장 중…</string>
+    <string name="xmbu_app_art_pick_local">로컬 파일 선택</string>
+    <string name="xmbu_app_art_restore_icon">원래 아이콘 복원</string>
+    <string name="xmbu_app_art_remove_custom">사용자 지정 아트 제거</string>
+    <string name="xmbu_app_art_picker_hint">"◄ ►  찾아보기   A  선택   B  뒤로"</string>
+    <string name="xmbu_app_reset_title">모든 아트워크를 초기화할까요?</string>
+    <string name="xmbu_app_reset_message">%1$s의 사용자 지정 아이콘과 배경이 제거되고 앱 자체 아이콘이 다시 표시됩니다.</string>
+    <!-- Add to Card (collection) picker panel -->
+    <string name="xmbu_collection_picker_new_row">"＋  새 사용자 지정 메모리 카드"</string>
+    <string name="xmbu_collection_new_title">새 사용자 지정 메모리 카드</string>
+    <string name="xmbu_collection_new_placeholder">예: RPG, 플레이 중</string>
+    <!-- Button that confirms the new card name -->
+    <string name="xmbu_collection_new_create">만들기</string>
+    <string name="xmbu_common_sort">정렬</string>
+    <string name="xmbu_common_notifications">알림</string>
+    <!-- App picker (Add Apps / Remove Apps) -->
+    <string name="xmbu_app_picker_empty">설치된 앱이 없습니다</string>
+    <string name="xmbu_app_picker_no_match">\"%1$s\"와(과) 일치하는 설치된 앱이 없습니다</string>
+    <string name="xmbu_app_picker_choose">선택</string>
+    <!-- Arrange mode bars (moving a card or marking games) -->
+    <string name="xmbu_arrange_place">놓기</string>
+    <!-- Footer prompt: tick the focused game -->
+    <string name="xmbu_arrange_mark">표시</string>
+    <string name="xmbu_arrange_move_left">왼쪽으로 이동</string>
+    <string name="xmbu_arrange_move_right">오른쪽으로 이동</string>
+    <string name="xmbu_arrange_move_up">위로 이동</string>
+    <string name="xmbu_arrange_move_down">아래로 이동</string>
+    <!-- Color Scheme picker overlay -->
+    <string name="xmbu_color_scheme_title">색 구성표</string>
+    <string name="xmbu_color_scheme_tint">색조</string>
+    <string name="xmbu_color_scheme_depth">농도</string>
+    <string name="xmbu_color_scheme_contrast_top">"%1$s 상단 텍스트  %2$s"</string>
+    <!-- Same as above for the bottom of the screen background -->
+    <string name="xmbu_color_scheme_contrast_bottom">"%1$s 하단 텍스트  %2$s"</string>
+    <string name="xmbu_color_scheme_custom_title">사용자 지정 색상</string>
+    <!-- Customize XMB Icons overlay -->
+    <string name="xmbu_icons_title">XMB 아이콘 사용자 지정</string>
+    <!-- Where the focused icon currently comes from -->
+    <string name="xmbu_icons_source_user">직접 선택</string>
+    <string name="xmbu_icons_source_theme">테마 제공</string>
+    <string name="xmbu_icons_source_default">기본값</string>
+    <string name="xmbu_icons_source_with_column">%1$s · %2$s 열</string>
+    <!-- Controller prompt: move between columns of icons -->
+    <string name="xmbu_icons_column">열</string>
+    <string name="xmbu_icons_tab">탭</string>
+    <string name="xmbu_icons_pick">선택</string>
+    <string name="xmbu_icons_reset_all">모두 초기화</string>
+    <!-- Controller prompt (short) and button (opens a naming dialog) -->
+    <string name="xmbu_icons_save_as_theme">테마로 저장</string>
+    <string name="xmbu_icons_save_as_theme_button">테마로 저장…</string>
+    <!-- Search box -->
+    <string name="xmbu_game_search_placeholder">게임 검색…</string>
+    <!-- Game picker (Add Games to a category) -->
+    <string name="xmbu_picker_in_this_category">이 카테고리에 있음</string>
+    <string name="xmbu_picker_in_category">%1$s에 있음</string>
+    <string name="xmbu_picker_custom_cards">사용자 지정 메모리 카드</string>
+    <string name="xmbu_picker_no_changes">변경 사항 없음</string>
+    <string name="xmbu_picker_menu_view">보기</string>
+    <string name="xmbu_picker_menu_select_all">모두 선택</string>
+    <string name="xmbu_picker_open_toggle">열기 / 전환</string>
+    <string name="xmbu_picker_no_games">라이브러리에 아직 게임이 없습니다</string>
+    <string name="xmbu_picker_add_games">게임 추가</string>
+    <string name="xmbu_picker_view_mode">보기: %1$s</string>
+    <string name="xmbu_picker_removing_prefix">"제거 중 · "</string>
+    <string name="xmbu_picker_search_placeholder">이 선반 검색…</string>
+    <string name="xmbu_picker_shelves">선반 목록</string>
+    <string name="xmbu_picker_shelf">선반</string>
+    <!-- Music browser -->
+    <string name="xmbu_music_breadcrumb_playlists">"음악  ›  재생목록"</string>
+    <string name="xmbu_music_breadcrumb_music">음악</string>
+    <string name="xmbu_music_breadcrumb_all_tracks">모든 트랙</string>
+    <string name="xmbu_music_resume">이어서 재생: %1$s</string>
+    <!-- Music player -->
+    <string name="xmbu_music_now_playing">현재 재생 중</string>
+    <string name="xmbu_music_nothing_playing">재생 중인 항목 없음</string>
+    <!-- Touch button that opens the visualizer picker -->
+    <string name="xmbu_music_visualizer">비주얼라이저</string>
+    <string name="xmbu_media_previous_track">이전 트랙</string>
+    <string name="xmbu_media_next_track">다음 트랙</string>
+    <string name="xmbu_media_previous_video">이전 동영상</string>
+    <string name="xmbu_media_next_video">다음 동영상</string>
+    <string name="xmbu_media_back_10">10초 뒤로</string>
+    <string name="xmbu_media_forward_10">10초 앞으로</string>
+    <!-- Spoken state of the player: it is playing / it is paused -->
+    <string name="xmbu_media_playing">재생 중</string>
+    <string name="xmbu_media_paused">일시정지됨</string>
+    <!-- Music track picker (add songs to a playlist) -->
+    <string name="xmbu_track_picker_title">%1$s에 추가</string>
+    <!-- Controller prompt: add the ticked tracks -->
+    <string name="xmbu_track_picker_add">추가</string>
+    <string name="xmbu_track_picker_empty">추가할 트랙이 더 없습니다 — 스캔한 모든 노래가 이미 이 재생목록에 있습니다.</string>
+    <!-- Notification panel and notification detail sheets -->
+    <string name="xmbu_notif_options_description">알림 옵션</string>
+    <string name="xmbu_notif_task_stopping">%1$s — 중지하는 중…</string>
+    <string name="xmbu_notif_task_detail">%1$s — %2$s</string>
+    <string name="xmbu_notif_kind_scan">스캔</string>
+    <string name="xmbu_notif_kind_metadata">메타데이터</string>
+    <string name="xmbu_notif_kind_achievements">도전 과제</string>
+    <string name="xmbu_notif_kind_system">시스템</string>
+    <string name="xmbu_notif_kind_download">다운로드</string>
+    <string name="xmbu_notif_kind_feed">피드</string>
+    <string name="xmbu_notif_action_go_to_game">게임으로 이동</string>
+    <string name="xmbu_notif_action_open_card">메모리 카드 열기</string>
+    <string name="xmbu_notif_action_open_settings">설정 열기</string>
+    <string name="xmbu_notif_action_open_category">카테고리 열기</string>
+    <string name="xmbu_notif_action_review">검토</string>
+    <string name="xmbu_time_just_now">방금 전</string>
+    <!-- XMB shell: share sheet title when sharing a saved icon theme -->
+    <string name="xmbu_share_theme">테마 공유</string>
+    <string name="xmbu_move_position">이동 중 · %2$d개 중 %1$d번째</string>
+    <string name="xmbu_common_later">나중에</string>
+    <!-- XMB shell dialogs -->
+    <string name="xmbu_shell_rename_shortcut">바로 가기 이름 변경</string>
+    <string name="xmbu_shell_playlist_name">재생목록 이름</string>
+    <string name="xmbu_shell_theme_name">테마 이름</string>
+    <string name="xmbu_shell_source_theme">적용된 테마에서</string>
+    <string name="xmbu_shell_source_device">내 기기에서</string>
+    <!-- Describes the image file types accepted from the device -->
+    <string name="xmbu_shell_source_device_detail">PNG 또는 GIF</string>
+    <string name="xmbu_shell_continue">계속</string>
+    <string name="xmbu_shell_shortcut_title">바로 가기를 추가할까요?</string>
+    <string name="xmbu_shell_shortcut_message">앱에서 %2$s을(를) 여는 바로 가기 \"%1$s\"을(를) 추가하도록 요청했습니다. 이 바로 가기를 방금 직접 만든 경우에만 추가하세요.</string>
+    <string name="xmbu_shell_shortcut_add">추가</string>
+    <!-- Button: refuse to add the shortcut -->
+    <string name="xmbu_shell_shortcut_ignore">무시</string>
+    <string name="xmbu_shell_windows_title">Windows 라이브러리 설정 완료하기</string>
+    <string name="xmbu_shell_windows_message">PC 게임이 추가되었지만 Windows 게임 라이브러리에 아직 폴더가 없습니다. 게임 폴더와 도전 과제를 스캔할 수 있도록 라이브러리 관리자에서 설정하세요.</string>
+    <string name="xmbu_shell_windows_set_up">설정</string>
+    <string name="xmbu_shell_import_position">%2$d개 중 %1$d번째</string>
+    <string name="xmbu_shell_open_playlist">재생목록 열기</string>
+    <string name="xmbu_shell_stop">중지</string>
+    <string name="xmbu_shell_keep_running">계속 실행</string>
+    <!-- Launch recovery dialog (a game failed to start) -->
+    <string name="xmbu_recovery_retry">다시 시도</string>
+    <string name="xmbu_recovery_change_emulator">에뮬레이터 변경</string>
+    <string name="xmbu_recovery_change_default">시스템별 기본값 변경</string>
+    <string name="xmbu_recovery_copy_diagnostics">진단 정보 복사</string>
+    <string name="xmbu_recovery_title">%1$s을(를) 시작할 수 없습니다</string>
+    <!-- Button: confirm the highlighted repair choice -->
+    <string name="xmbu_recovery_select">선택</string>
+    <string name="xmbu_recovery_dismiss">닫기</string>
+    <string name="xmbu_artfolder_unavailable_title">아트워크 폴더를 사용할 수 없음</string>
+    <string name="xmbu_artfolder_unavailable_message">PFP가 %1$s에 접근할 수 없습니다. 다시 연결할 때까지 새 아트워크가 일시 중지됩니다. 기존 아트는 계속 표시됩니다.</string>
+    <string name="xmbu_artfolder_relink">폴더 다시 연결</string>
+    <string name="xmbu_artfolder_not_now">나중에</string>
+    <string name="xmbu_artfolder_move_title">아트워크를 내 폴더로 이동하기</string>
+    <string name="xmbu_artfolder_choose">아트워크 폴더 선택</string>
+    <string name="xmbu_artfolder_choose_title">아트워크 폴더 선택</string>
+    <string name="xmbu_artfolder_choose_message">새 아트워크는 내 폴더에 저장됩니다. 폴더를 선택하면 PFP가 그곳에 아트를 저장합니다.</string>
+    <string name="xmbu_artfolder_foreign_title">이 폴더에는 다른 아트워크 라이브러리가 있습니다</string>
+    <string name="xmbu_artfolder_use_library">이 라이브러리 사용</string>
+    <string name="xmbu_artfolder_choose_another">다른 폴더 선택</string>
+    <!-- Status strip: spoken descriptions of the icons -->
+    <string name="xmbu_status_controller_connected">컨트롤러 연결됨</string>
+    <string name="xmbu_status_battery">배터리</string>
+    <string name="xmbu_status_battery_charging">배터리, 충전 중</string>
+    <string name="xmbu_status_battery_plugged">배터리, 전원 연결됨</string>
+    <!-- Adjust XMB Layout overlay -->
+    <string name="xmbu_layout_title">XMB 레이아웃 조정</string>
+    <string name="xmbu_layout_readout">"크기 %1$s배    가로 %2$d%%    세로 %3$d%%"</string>
+    <string name="xmbu_layout_scale">크기</string>
+    <string name="xmbu_layout_horizontal">가로</string>
+    <string name="xmbu_layout_vertical">세로</string>
+    <!-- Controller prompt and button that show the sliders -->
+    <string name="xmbu_layout_sliders">슬라이더</string>
+    <string name="xmbu_layout_hide_sliders">슬라이더 숨기기</string>
+    <!-- Controller prompt and button: keep the new layout -->
+    <string name="xmbu_layout_save">저장</string>
+    <!-- Theme icon picker -->
+    <string name="xmbu_icon_grid_use">이 아이콘 사용</string>
+    <string name="xmbu_status_cellular_signal">모바일 신호</string>
+    <string name="xmbu_notif_header_running">실행 중</string>
+    <string name="xmbu_notif_header_earlier">이전 알림</string>
+    <string name="xmbu_notif_empty">알림 없음</string>
+    <!-- Video player -->
+    <string name="xmbu_video_fit">맞춤</string>
+    <string name="xmbu_video_zoom">확대</string>
+    <string name="xmbu_video_fill">채우기</string>
+    <!-- Options panel rows -->
+    <string name="xmbu_video_speed">재생 속도</string>
+    <string name="xmbu_video_subtitles">자막</string>
+    <string name="xmbu_video_audio_track">오디오 트랙</string>
+    <string name="xmbu_video_screen_mode">화면 모드</string>
+    <string name="xmbu_video_none">없음</string>
+    <string name="xmbu_video_default">기본값</string>
+    <string name="xmbu_video_track">트랙</string>
+    <string name="xmbu_video_err_not_found">동영상을 찾을 수 없습니다.</string>
+    <string name="xmbu_video_err_permission">이 파일에 대한 권한이 거부되었습니다.</string>
+    <string name="xmbu_video_err_decode">이 기기에서 이 동영상을 디코딩할 수 없습니다.</string>
+    <string name="xmbu_video_err_unable">이 동영상을 재생할 수 없습니다.</string>
+    <string name="xmbu_video_go_back">돌아가기</string>
+    <string name="xmbu_video_status">%1$s× · %2$s</string>
+    <!-- Options menu rows -->
+    <string name="xmbu_photo_rotate_left">왼쪽으로 회전</string>
+    <string name="xmbu_photo_rotate_right">오른쪽으로 회전</string>
+    <string name="xmbu_photo_zoom_in">확대</string>
+    <string name="xmbu_photo_zoom_out">축소</string>
+    <string name="xmbu_photo_reset_zoom">확대/축소 초기화</string>
+    <string name="xmbu_photo_set_wallpaper">런처 배경화면으로 설정</string>
+    <!-- Menu row and the title of its confirmation dialog -->
+    <string name="xmbu_photo_set_lock_screen">잠금 화면으로 설정</string>
+    <string name="xmbu_photo_view_info">정보 보기</string>
+    <string name="xmbu_photo_show_location">파일 위치 표시</string>
+    <!-- Menu row and the title of its confirmation dialog -->
+    <string name="xmbu_photo_remove">라이브러리에서 제거</string>
+    <!-- Group headers inside the Options menu -->
+    <string name="xmbu_photo_group_view">보기</string>
+    <string name="xmbu_photo_group_manage">관리</string>
+    <string name="xmbu_photo_in_folder">위치: %1$s</string>
+    <string name="xmbu_photo_wallpaper_unreadable">배경화면을 설정할 수 없습니다 — 이미지를 읽을 수 없습니다</string>
+    <string name="xmbu_photo_wallpaper_applied">배경화면 적용됨</string>
+    <string name="xmbu_photo_unreadable">사진을 읽을 수 없습니다</string>
+    <string name="xmbu_photo_lock_screen_set">잠금 화면 설정됨</string>
+    <string name="xmbu_photo_hide_controls">컨트롤 숨기기</string>
+    <string name="xmbu_photo_show_controls">컨트롤 표시</string>
+    <string name="xmbu_photo_wallpaper_title">런처 배경화면으로 설정할까요?</string>
+    <string name="xmbu_photo_wallpaper_note">XMB 웨이브 배경을 대체합니다.</string>
+    <string name="xmbu_photo_apply">적용</string>
+    <string name="xmbu_photo_applying">적용 중…</string>
+    <string name="xmbu_photo_remove_message">\"%1$s\"이(가) 이 라이브러리에서 제거됩니다. 디스크의 사진은 삭제되지 않습니다.</string>
+    <string name="xmbu_photo_lock_message">\"%1$s\"이(가) 화면에 맞게 잘려 기기의 잠금 화면 이미지로 설정됩니다.</string>
+    <!-- Confirm button of the lock screen dialog -->
+    <string name="xmbu_photo_set">설정</string>
+    <string name="xmbu_photo_info_resolution">해상도: %1$s</string>
+    <string name="xmbu_photo_info_taken">촬영: %1$s</string>
+    <string name="xmbu_photo_info_modified">수정: %1$s</string>
+    <string name="xmbu_photo_info_size">크기: %1$s</string>
+    <string name="xmbu_photo_info_type">유형: %1$s</string>
+    <string name="xmbu_photo_info_location">위치: %1$s</string>
+    <string name="xmbu_photo_info_file">파일: %1$s</string>
+    <!-- Music visualizer picker -->
+    <string name="xmbu_visualizer_portal">포털</string>
+    <string name="xmbu_visualizer_ripple">물결</string>
+    <string name="xmbu_visualizer_off">끄기</string>
+    <string name="xmbu_visualizer_off_tile">OFF</string>
+    <!-- App picker header: how many apps are ticked -->
+    <plurals name="xmbu_app_picker_selected">
+        <item quantity="other">%d개 선택됨</item>
+    </plurals>
+    <!-- Arrange mode: how many games are marked -->
+    <plurals name="xmbu_arrange_marked">
+        <item quantity="other">%d개 표시됨</item>
+    </plurals>
+    <!-- Game picker header: pending changes -->
+    <plurals name="xmbu_picker_to_add">
+        <item quantity="other">%d개 추가 예정</item>
+    </plurals>
+    <plurals name="xmbu_picker_to_remove">
+        <item quantity="other">%d개 제거 예정</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_games">
+        <item quantity="other">게임 %1$d개 · %2$d개 선택됨</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_cards">
+        <item quantity="other">카드 %d개 · 하나를 선택하면 여기로 이동합니다</item>
+    </plurals>
+    <!-- Number of games in a custom memory card tile -->
+    <plurals name="xmbu_picker_card_games">
+        <item quantity="other">게임 %d개</item>
+    </plurals>
+    <!-- Music track picker -->
+    <plurals name="xmbu_track_picker_add_count">
+        <item quantity="other">%d개 추가</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_selected">
+        <item quantity="other">%d개 선택됨</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_add_tracks">
+        <item quantity="other">트랙 %d개 추가</item>
+    </plurals>
+    <!-- Notification age -->
+    <plurals name="xmbu_time_minutes_ago">
+        <item quantity="other">%d분 전</item>
+    </plurals>
+    <plurals name="xmbu_time_hours_ago">
+        <item quantity="other">%d시간 전</item>
+    </plurals>
+    <plurals name="xmbu_artfolder_move_message">
+        <item quantity="other">이미지 %d개가 앱 내부에 저장되어 있어 앱을 제거하면 사라집니다. 폴더를 선택하면 PFP가 그곳으로 옮깁니다.</item>
+    </plurals>
+    <plurals name="xmbu_artfolder_foreign_message">
+        <item quantity="other">%1$s은(는) 다른 설치본에서 설정한 폴더입니다(파일 %2$d개). 이 폴더를 사용하면 PFP가 게임을 해당 아트에 다시 연결합니다. 또는 다른 폴더를 선택하세요.</item>
+    </plurals>
+    <plurals name="xmbu_status_notifications_unread">
+        <item quantity="other">알림, 읽지 않음 %d개</item>
+    </plurals>
+</resources>

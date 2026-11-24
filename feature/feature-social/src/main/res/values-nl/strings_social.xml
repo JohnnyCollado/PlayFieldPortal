@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- QR login screen -->
+    <string name="soc_qr_preparing">Inloggen voorbereiden…</string>
+    <string name="soc_qr_connected">Verbonden</string>
+    <string name="soc_qr_expired">De code is verlopen.</string>
+    <string name="soc_qr_declined">Inloggen is geweigerd.</string>
+    <string name="soc_qr_error">Inloggen mislukt. %1$s</string>
+    <string name="soc_qr_content_description">QR-code om in te loggen bij Discord</string>
+    <string name="soc_qr_title">Inloggen met Discord</string>
+    <string name="soc_qr_copied">Gekopieerd!</string>
+    <string name="soc_qr_tap_to_copy">Selecteer de code om te kopiëren</string>
+    <string name="soc_qr_instructions">Scan met de camera van je telefoon, of ga naar discord.com/activate en plak de code.</string>
+    <string name="soc_qr_expires_in">Verloopt over %1$ds</string>
+    <string name="soc_qr_expired_short">Verlopen</string>
+    <string name="soc_qr_cancel">Annuleren</string>
+    <string name="soc_qr_try_again">Opnieuw proberen</string>
+</resources>

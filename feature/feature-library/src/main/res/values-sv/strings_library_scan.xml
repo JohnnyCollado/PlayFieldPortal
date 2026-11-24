@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Scan error messages -->
+    <string name="scan_error_card_not_found">Minneskortet hittades inte.</string>
+    <string name="scan_error_scan_failed">Sökningen misslyckades – se loggen.</string>
+    <string name="scan_error_library_unreadable">Det gick inte att läsa biblioteket.</string>
+    <string name="scan_error_save_failed">Det gick inte att spara ett hittat spel.</string>
+    <string name="scan_error_rom_dir_not_found">ROM-mappen hittades inte: %1$s</string>
+    <string name="scan_error_folder_link_invalid">Bibliotekets mapplänk är ogiltig. Lägg till mappen igen.</string>
+    <string name="scan_error_root_unreadable">En ROM-mapp kunde inte läsas. Om den ligger på ett SD-kort kontrollerar du att kortet sitter i.</string>
+    <string name="scan_error_permission_lost">Behörigheten förlorades. Välj mappen igen.</string>
+    <string name="scan_error_partial_read">En del av mappen kunde inte läsas, så inget ändrades. Försök igen om en stund.</string>
+    <string name="scan_outcome_line">%1$s: %2$s</string>
+    <string name="scan_outcome_no_source">Ingen ROM-mapp har konfigurerats.</string>
+    <string name="scan_outcome_busy">sökning pågår redan.</string>
+    <string name="scan_outcome_failed">sökningen misslyckades.</string>
+    <string name="scan_outcome_no_new">inga nya ROM-filer</string>
+    <string name="scan_outcome_no_new_none_missing">inga nya ROM-filer, inga saknas</string>
+    <string name="scan_outcome_no_new_marked_missing">inga nya ROM-filer, %1$d markerade som saknade</string>
+    <plurals name="scan_outcome_added">
+        <item quantity="one">%1$d ny ROM-fil tillagd</item>
+        <item quantity="other">%1$d nya ROM-filer tillagda</item>
+    </plurals>
+    <plurals name="scan_outcome_added_none_missing">
+        <item quantity="one">%1$d ny ROM-fil tillagd, inga saknas</item>
+        <item quantity="other">%1$d nya ROM-filer tillagda, inga saknas</item>
+    </plurals>
+    <plurals name="scan_outcome_added_marked_missing">
+        <item quantity="one">%1$d ny ROM-fil tillagd, %2$d markerade som saknade</item>
+        <item quantity="other">%1$d nya ROM-filer tillagda, %2$d markerade som saknade</item>
+    </plurals>
+    <string name="scan_with_error_note">%1$s (%2$s)</string>
+    <!-- Per-card line in the scan results list -->
+    <string name="scan_badge_no_new">Inga nya</string>
+    <string name="scan_reason_no_new">Inga nya spel</string>
+    <string name="scan_reason_no_new_marked_missing">Inga nya spel, %1$d markerade som saknade</string>
+    <plurals name="scan_reason_added">
+        <item quantity="one">%1$d nytt spel tillagt</item>
+        <item quantity="other">%1$d nya spel tillagda</item>
+    </plurals>
+    <plurals name="scan_reason_added_marked_missing">
+        <item quantity="one">%1$d nytt spel tillagt, %2$d markerade som saknade</item>
+        <item quantity="other">%1$d nya spel tillagda, %2$d markerade som saknade</item>
+    </plurals>
+</resources>

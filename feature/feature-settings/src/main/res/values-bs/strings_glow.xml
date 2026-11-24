@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_title">Sjaj odabira</string>
+    <string name="glow_sub_off">Bez sjaja oko odabrane ikone.</string>
+    <string name="glow_sub_steady">Meko svjetlo oko odabrane ikone. Miruje.</string>
+    <string name="glow_sub_pulsing">Svjetlo oko odabrane ikone polako jača i slabi. Miruje dok je „Kretanje” postavljeno na „Statično”.</string>
+    <string name="glow_value_off">Isključeno</string>
+    <string name="glow_value_steady">Mirno</string>
+    <string name="glow_value_pulsing">Pulsirajuće</string>
+</resources>

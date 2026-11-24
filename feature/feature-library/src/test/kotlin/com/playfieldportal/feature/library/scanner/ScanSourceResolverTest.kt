@@ -3,6 +3,8 @@ package com.playfieldportal.feature.library.scanner
 import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
 import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.domain.model.MemoryCard
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.library.R
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -107,7 +109,7 @@ class ScanSourceResolverTest {
             .filterIsInstance<ScanResult.Error>()
 
         assertEquals(1, errors.size)
-        assertTrue(errors.single().message.contains("could not be read"))
+        assertEquals(UiText.res(R.string.scan_error_root_unreadable), errors.single().message)
     }
 
     @Test

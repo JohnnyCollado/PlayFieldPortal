@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.achievements.provider.localsteam
 
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.achievements.R
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
@@ -235,7 +237,7 @@ class LocalSteamFolderLinkerTest {
         val outcome = linker.link(7L, treeUri)
 
         assertTrue(outcome is LocalSteamFolderLinker.LinkOutcome.NoEmuData)
-        assertTrue(outcome.reason.contains("not a Steam"))
+        assertEquals(UiText.res(R.string.ach_link_not_steam_build), outcome.text)
     }
 
     @Test
@@ -268,7 +270,7 @@ class LocalSteamFolderLinkerTest {
     @Test
     fun `an unreachable store never links and never writes`() = runTest {
         coEvery { identity.identify(anchor, game) } returns
-            LocalSteamIdentityResolver.Outcome.Unavailable("Steam could not be reached")
+            LocalSteamIdentityResolver.Outcome.Unavailable(UiText.res(R.string.ach_ls_steam_unreachable))
 
         val outcome = linker.link(7L, treeUri)
 

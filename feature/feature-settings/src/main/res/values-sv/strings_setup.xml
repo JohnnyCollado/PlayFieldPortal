@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Wizard chrome -->
+    <string name="setup_title">Första konfigurationen</string>
+    <string name="setup_prompt_enter">Öppna</string>
+    <string name="setup_prompt_change">Ändra</string>
+    <string name="setup_prompt_back">Tillbaka</string>
+    <string name="setup_prompt_skip">Hoppa över</string>
+    <string name="setup_row_edit">Redigera</string>
+    <string name="setup_row_remove">Ta bort</string>
+    <string name="setup_message_dismiss_hint">Välj för att stänga – eller bekräfta på den här raden</string>
+    <!-- Page names -->
+    <string name="setup_step_welcome">Välkommen</string>
+    <string name="setup_step_controller">Handkontroll</string>
+    <string name="setup_step_rom_roots">ROM-mappar</string>
+    <string name="setup_step_music">Musik</string>
+    <string name="setup_step_video">Video</string>
+    <string name="setup_step_photo">Foto</string>
+    <string name="setup_step_artwork">Grafik</string>
+    <string name="setup_step_services">Onlinetjänster</string>
+    <string name="setup_step_achievements">Tjänster för prestationer</string>
+    <string name="setup_step_local_achievements">Lokala prestationer</string>
+    <string name="setup_step_retroarch">RetroArch</string>
+    <string name="setup_step_emulators">Emulatorer</string>
+    <string name="setup_step_windows">Windows-spel</string>
+    <string name="setup_step_hints">Tips och pekskärm</string>
+    <string name="setup_step_home_app">Startapp</string>
+    <string name="setup_step_finish">Slutför</string>
+    <!-- Page headings -->
+    <string name="setup_heading_welcome">Välkommen till Play Field Portal.</string>
+    <string name="setup_heading_controller">Välj din handkontroll.</string>
+    <string name="setup_heading_rom_roots">Välj dina ROM-mappar.</string>
+    <string name="setup_heading_music">Välj dina musikmappar.</string>
+    <string name="setup_heading_video">Välj dina videomappar.</string>
+    <string name="setup_heading_photo">Välj dina fotomappar.</string>
+    <string name="setup_heading_artwork">Välj din grafikmapp.</string>
+    <string name="setup_heading_services">Anslut dina grafikkällor.</string>
+    <string name="setup_heading_achievements">Anslut dina tjänster för prestationer.</string>
+    <string name="setup_heading_local_achievements">Länka emulatorernas datamappar.</string>
+    <string name="setup_heading_retroarch">Länka RetroArchs kärnmapp.</string>
+    <string name="setup_heading_emulators">Kontrollera dina emulatorer.</string>
+    <string name="setup_heading_windows">Konfigurera Windows-spel.</string>
+    <string name="setup_heading_hints">Välj hur startprogrammet hjälper dig.</string>
+    <string name="setup_heading_home_app">Gör Play Field Portal till din startskärm.</string>
+    <string name="setup_heading_finish">Allt är klart!</string>
+    <!-- Page hints -->
+    <string name="setup_hint_welcome">De flesta steg är valfria. Du måste välja en grafikmapp.</string>
+    <string name="setup_hint_controller">Anger knappikonerna och vilken knapp som bekräftar, så att varje uppmaning härifrån matchar din handkontroll.</string>
+    <string name="setup_hint_rom_roots">Lägg till en eller flera ROM-mappar – varje konsols spel ligger i en undermapp i dem.</string>
+    <string name="setup_hint_media_roots">Lägg till flera rotmappar för att täcka både intern lagring och ett SD-kort.</string>
+    <string name="setup_hint_artwork">Obligatoriskt. Din grafik ligger här, utanför appen, så att den finns kvar efter en ominstallation.</string>
+    <string name="setup_hint_services">Allt är valfritt och gratis. SteamGridDB, TheGamesDB, IGDB och ScreenScraper hämtar grafik och metadata för spel.</string>
+    <string name="setup_hint_achievements">RetroAchievements och Steam spårar prestationer som Shiba Coins.</string>
+    <string name="setup_hint_local_achievements">Troféer och prestationer som dina emulatorer sparar på enheten. En behörighet per emulator länkar alla titlar.</string>
+    <string name="setup_hint_retroarch">Låter startprogrammet veta exakt vilka kärnor du har, så att bara de erbjuds.</string>
+    <string name="setup_hint_emulators">Standard för varje konsol, vald bland det som är installerat. Ändra dem som ser fel ut.</string>
+    <string name="setup_hint_windows">En Windows-emulator är installerad – välj var dina PC-spel ligger.</string>
+    <string name="setup_hint_hints">Knapptips tonas in när du gör en paus och försvinner så fort du trycker på något.</string>
+    <string name="setup_hint_home_app">Hemknappen tar dig sedan tillbaka hit i stället för till det vanliga startprogrammet.</string>
+    <string name="setup_hint_finish">Allt nedan kan ändras när som helst i Inställningar.</string>
+    <!-- Continue row -->
+    <string name="setup_continue">Fortsätt</string>
+    <string name="setup_continue_next">Nästa: %1$s</string>
+    <string name="setup_continue_blocked">Välj först en mapp</string>
+    <!-- Welcome page -->
+    <string name="setup_welcome_intro">Den här snabba konfigurationen pekar startprogrammet mot dina mediemappar och ansluter onlinetjänsterna som används för grafik och prestationer.</string>
+    <string name="setup_welcome_start">Kom igång</string>
+    <string name="setup_welcome_start_sub">Välj först din handkontroll</string>
+    <string name="setup_welcome_skip">Hoppa över konfigurationen</string>
+    <string name="setup_welcome_skip_sub">Gå direkt till startprogrammet – kör konfigurationsguiden från Inställningar ▸ System när som helst</string>
+    <!-- Folder rows -->
+    <string name="setup_root_access_lost">Åtkomsten förlorades – använd ✎ för att ge åtkomst igen</string>
+    <!-- ROM roots page -->
+    <string name="setup_rom_empty">Inga ROM-mappar ännu. Lägg till mappen där dina konsolspel ligger – en undermapp per konsol, som söks igenom automatiskt.</string>
+    <string name="setup_rom_add">Lägg till ROM-mapp</string>
+    <string name="setup_rom_add_sub">Ge åtkomst till en ROM-mapp med en undermapp per konsol</string>
+    <string name="setup_rom_rescan">Sök igenom ROM-mappar igen</string>
+    <string name="setup_rom_rescan_sub">Identifiera konsoler automatiskt och sök igenom deras spel</string>
+    <string name="setup_rom_root_linked">Länkad – konsolmappar läses härifrån</string>
+    <string name="setup_rom_create_folders">Skapa standardmappar</string>
+    <string name="setup_rom_create_folders_sub">En undermapp per konsol, namngiven för dina spel</string>
+    <!-- Music roots page -->
+    <string name="setup_music_empty">Inga musikrötter ännu. Lägg till mappen där din musik ligger – flera rötter kan täcka både intern lagring och ett SD-kort.</string>
+    <string name="setup_music_add">Lägg till musikrot</string>
+    <string name="setup_music_add_sub">Ge åtkomst till en rotmapp (t.ex. /Music) – lägg till flera för att täcka fler platser</string>
+    <string name="setup_music_root_linked">Musikbiblioteket finns här</string>
+    <string name="setup_music_rescan">Sök igenom musikbiblioteket igen</string>
+    <!-- Video roots page -->
+    <string name="setup_video_empty">Inga videorötter ännu. Lägg till mappen där dina videor ligger – flera rötter kan täcka både intern lagring och ett SD-kort.</string>
+    <string name="setup_video_add">Lägg till videorot</string>
+    <string name="setup_video_add_sub">Ge åtkomst till en rotmapp (t.ex. /Videos) – lägg till flera för att täcka fler platser</string>
+    <string name="setup_video_root_linked">Videobiblioteket finns här</string>
+    <string name="setup_video_rescan">Sök igenom videobiblioteket igen</string>
+    <!-- Photo roots page -->
+    <string name="setup_photo_empty">Inga fotorötter ännu. Lägg till mappen där dina foton ligger – flera rötter kan täcka både intern lagring och ett SD-kort.</string>
+    <string name="setup_photo_add">Lägg till fotorot</string>
+    <string name="setup_photo_add_sub">Ge åtkomst till en rotmapp (t.ex. /Photos) – lägg till flera för att täcka fler platser</string>
+    <string name="setup_photo_root_linked">Fotobiblioteket finns här</string>
+    <string name="setup_photo_rescan">Sök igenom fotobiblioteket igen</string>
+    <string name="setup_media_rescan_sub">Uppdatera biblioteken från alla rotmappar</string>
+    <!-- Artwork page -->
+    <string name="setup_artwork_empty">Välj en skrivbar mapp. Startprogrammet skapar automatiskt ett grafikbibliotek i den – spel får grafik när de läggs till.</string>
+    <string name="setup_artwork_unavailable">Inte tillgänglig. Länka igen för att återuppta ny grafik</string>
+    <string name="setup_artwork_folder_sub">Grafikbibliotek – använd ✎ för att välja en annan mapp</string>
+    <string name="setup_artwork_choose">Välj grafikmapp</string>
+    <string name="setup_artwork_choose_sub">En mapp rymmer grafikbiblioteket</string>
+    <string name="setup_artwork_import_title">Importera grafik nu?</string>
+    <string name="setup_artwork_import_sub_one">Kopiera %1$s från mappens import/ till biblioteket</string>
+    <plurals name="setup_artwork_import_sub_many">
+        <item quantity="one">Kopiera %1$d källmapp från mappens import/ till biblioteket</item>
+        <item quantity="other">Kopiera %1$d källmappar från mappens import/ till biblioteket</item>
+    </plurals>
+    <string name="setup_artwork_import_row">Import av grafik</string>
+    <string name="setup_artwork_import_none_sub">Inget att importera ännu – lägg ett startprograms mediemapp under import/</string>
+    <!-- Online services page -->
+    <string name="setup_services_intro">Alla konton är valfria och gratis. SteamGridDB, TheGamesDB, IGDB och ScreenScraper hämtar grafik och metadata för ditt bibliotek.</string>
+    <string name="setup_field_api_key">API-nyckel</string>
+    <string name="setup_field_api_key_saved">API-nyckel (sparad)</string>
+    <string name="setup_field_web_api_key">Web API-nyckel</string>
+    <string name="setup_field_web_api_key_saved">Web API-nyckel (sparad)</string>
+    <string name="setup_field_client_id">Klient-ID</string>
+    <string name="setup_field_client_id_saved">Klient-ID (sparat)</string>
+    <string name="setup_field_client_secret">Klienthemlighet</string>
+    <string name="setup_field_client_secret_saved">Klienthemlighet (sparad)</string>
+    <string name="setup_field_username">Användarnamn</string>
+    <string name="setup_field_username_saved">Användarnamn (sparat)</string>
+    <string name="setup_field_password">Lösenord</string>
+    <string name="setup_field_password_saved">Lösenord (sparat)</string>
+    <string name="setup_field_steam_id">SteamID64 eller eget namn</string>
+    <string name="setup_field_steam_id_saved">SteamID64 eller eget namn (sparat)</string>
+    <string name="setup_placeholder_tap_to_replace">Välj för att ersätta</string>
+    <string name="setup_placeholder_secret_saved">••••••••  (välj för att ersätta)</string>
+    <string name="setup_placeholder_sgdb_key">Klistra in din SteamGridDB-nyckel</string>
+    <string name="setup_placeholder_tgdb_key">Klistra in din TheGamesDB-nyckel</string>
+    <string name="setup_placeholder_twitch_client_id">Twitch-klient-ID</string>
+    <string name="setup_placeholder_twitch_client_secret">Twitch-klienthemlighet</string>
+    <string name="setup_placeholder_ss_username">Användarnamn för ScreenScraper</string>
+    <string name="setup_placeholder_ss_password">Lösenord för ScreenScraper</string>
+    <string name="setup_placeholder_ra_username">Ditt RA-användarnamn</string>
+    <string name="setup_placeholder_ra_key">Klistra in din RA Web API-nyckel</string>
+    <string name="setup_placeholder_steam_id">7656119… eller ditt eget URL-namn</string>
+    <string name="setup_placeholder_steam_key">Klistra in din Steam Web API-nyckel</string>
+    <!-- Buttons that save the credentials typed above. -->
+    <string name="setup_connect_sgdb">Anslut SteamGridDB</string>
+    <string name="setup_connect_tgdb">Anslut TheGamesDB</string>
+    <string name="setup_connect_igdb">Anslut IGDB</string>
+    <string name="setup_connect_ss">Anslut ScreenScraper</string>
+    <string name="setup_connect_ra">Anslut RetroAchievements</string>
+    <string name="setup_connect_steam">Anslut Steam</string>
+    <string name="setup_test_credentials">Testa inloggningsuppgifter</string>
+    <string name="setup_test_account">Testa kontot</string>
+    <string name="setup_connected_as">Ansluten som</string>
+    <!-- Achievement services page -->
+    <string name="setup_achievements_intro">Valfritt och gratis. RetroAchievements och Steam spårar prestationer som Shiba Coins.</string>
+    <!-- Controller page -->
+    <string name="setup_controller_type">Typ av handkontroll</string>
+    <string name="setup_controller_type_sub">Ändrar knappikonerna i alla uppmaningar</string>
+    <string name="setup_controller_ab_swap">Byt bekräfta och tillbaka</string>
+    <string name="setup_controller_xy_swap">Byt alternativ och sortera</string>
+    <string name="setup_controller_xy_swap_sub">Bara startprogrammets menyer – emulatorernas kontroller påverkas inte</string>
+    <string name="setup_on">På</string>
+    <string name="setup_off">Av</string>
+    <string name="setup_controller_summary">%1$s · %2$s bekräftar</string>
+    <string name="setup_button_circle">Cirkel</string>
+    <string name="setup_button_cross">Kryss</string>
+    <string name="setup_confirm_swap_off">Av – %1$s bekräftar, %2$s går tillbaka</string>
+    <string name="setup_confirm_swap_on">På – %1$s bekräftar, %2$s går tillbaka</string>
+    <!-- Local achievements page -->
+    <string name="setup_local_vita_header">PS Vita · Vita3K</string>
+    <string name="setup_local_vita_set">Ange datamapp för Vita3K</string>
+    <string name="setup_local_vita_set_sub">Ge åtkomst till ux0-mappen (eller mappen som innehåller den)</string>
+    <string name="setup_local_vita_folder_sub">Datamapp för Vita3K – använd ✎ för att välja en annan</string>
+    <string name="setup_local_ps3_header">PS3 · ARMSX3</string>
+    <string name="setup_local_ps3_set">Ange datamapp för ARMSX3</string>
+    <string name="setup_local_ps3_set_sub">Ge åtkomst till PS3/config/dev_hdd0 – eller en mapp ovanför eller under den</string>
+    <string name="setup_local_ps3_folder_sub">Datamapp för ARMSX3 – använd ✎ för att välja en annan</string>
+    <string name="setup_local_x360_header">Xbox 360 · X360 Mobile</string>
+    <string name="setup_local_x360_set">Ange datamapp för X360 Mobile</string>
+    <string name="setup_local_x360_set_sub">Välj X360 Mobile i mappväljarens sidomeny och tillåt sedan åtkomst</string>
+    <string name="setup_local_x360_folder_sub">Datamapp för X360 Mobile – använd ✎ för att välja en annan</string>
+    <string name="setup_local_xendroid_header">Xbox 360 · XenDroid</string>
+    <string name="setup_local_xendroid_set">Ange datamapp för XenDroid</string>
+    <string name="setup_local_xendroid_set_sub">Ge åtkomst till Android/data/xendroid.compose – eller en mapp ovanför eller under den</string>
+    <string name="setup_local_xendroid_folder_sub">Datamapp för XenDroid – använd ✎ för att välja en annan</string>
+    <!-- RetroArch page -->
+    <string name="setup_retroarch_cores_folder">Kärnmapp</string>
+    <plurals name="setup_retroarch_cores_detected">
+        <item quantity="one">%1$d kärna hittades</item>
+        <item quantity="other">%1$d kärnor hittades</item>
+    </plurals>
+    <string name="setup_retroarch_linked">Länkad</string>
+    <string name="setup_retroarch_relink">Länka mappen igen</string>
+    <string name="setup_retroarch_relink_sub">Välj RetroArchs mapp igen</string>
+    <string name="setup_retroarch_recheck">Kontrollera kärnor igen</string>
+    <string name="setup_retroarch_recheck_sub">Efter att du har installerat nya kärnor</string>
+    <string name="setup_retroarch_unlink">Ta bort länk till RetroArch</string>
+    <string name="setup_retroarch_unlink_sub">Återgå till att erbjuda alla utvalda kärnor</string>
+    <string name="setup_retroarch_intro">RetroArch är installerat. Länka dess mapp så att bara de kärnor du faktiskt har erbjuds när spel startas – annars visas alla utvalda kärnor (overifierat).</string>
+    <string name="setup_retroarch_link">Länka RetroArch-mapp</string>
+    <string name="setup_retroarch_link_sub">Välj dokumentträdet com.retroarch</string>
+    <!-- Emulators page -->
+    <string name="setup_emulators_empty">Inga konsoler med spel ännu. När dina ROM-mappar har sökts igenom visas varje konsol här med emulatorn den startar – ändra den när som helst i Inställningar ▸ Emulatorer.</string>
+    <string name="setup_emulators_none">Ingen</string>
+    <!-- Windows games page -->
+    <string name="setup_windows_intro">Välj mappen som innehåller en undermapp per spel. PFP söker igenom den efter dina Windows-spel; inget i den ändras.</string>
+    <string name="setup_windows_detected">Hittad</string>
+    <string name="setup_windows_set">Ange mapp för Windows-spel</string>
+    <string name="setup_windows_change">Byt mapp för Windows-spel</string>
+    <string name="setup_windows_set_sub">Ge åtkomst till mappen där dina spel är installerade</string>
+    <!-- Hints and touch page -->
+    <string name="setup_hints_enabled">Knapptips</string>
+    <string name="setup_hints_enabled_sub">Tipsrutan vid inaktivitet på XMB, i Inställningar och på mediaskärmar</string>
+    <string name="setup_hints_delay">Fördröjning för tips</string>
+    <string name="setup_hints_delay_sub">Hur länge du ska vänta innan tips visas (1–5 sekunder)</string>
+    <plurals name="setup_hints_delay_seconds">
+        <item quantity="one">%1$d sekund</item>
+        <item quantity="other">%1$d sekunder</item>
+    </plurals>
+    <string name="setup_hints_delay_fraction">%1$s sekunder</string>
+    <string name="setup_hints_touch">Pekknapp</string>
+    <string name="setup_hints_touch_sub">Knappen för applådan på skärmen – Auto visar den när du har rört vid skärmen</string>
+    <string name="setup_touch_auto">Auto</string>
+    <string name="setup_touch_always_show">Visa alltid</string>
+    <string name="setup_touch_always_hide">Dölj alltid</string>
+    <string name="setup_hints_summary_on">På · %1$s</string>
+    <!-- Home app page -->
+    <string name="setup_home_intro">Android ber dig välja en startapp och bekräfta den. Du kan byta tillbaka när som helst i Androids inställningar för standardappar.</string>
+    <string name="setup_home_current">Nuvarande startapp</string>
+    <string name="setup_home_set">Ange som startapp</string>
+    <string name="setup_home_set_sub">Öppnar Androids väljare för startapp</string>
+    <string name="setup_home_is_pfp">Play Field Portal</string>
+    <string name="setup_home_not_pfp">Inte Play Field Portal</string>
+    <!-- Finish page -->
+    <string name="setup_finish_nothing">Inget har konfigurerats ännu – alla mappar och tjänster kan läggas till när som helst från Inställningar.</string>
+    <string name="setup_finish_summary">Sammanfattning</string>
+    <string name="setup_summary_controller">Handkontroll</string>
+    <string name="setup_summary_rom">ROM-bibliotek</string>
+    <string name="setup_summary_music">Musik</string>
+    <string name="setup_summary_video">Video</string>
+    <string name="setup_summary_photo">Foto</string>
+    <string name="setup_summary_artwork">Grafikbibliotek</string>
+    <string name="setup_summary_vita">Datamapp för Vita</string>
+    <string name="setup_summary_ps3">Datamapp för PS3</string>
+    <string name="setup_summary_x360">Datamapp för X360 Mobile</string>
+    <string name="setup_summary_xendroid">Datamapp för XenDroid</string>
+    <string name="setup_summary_windows">Windows-spel</string>
+    <string name="setup_summary_hints">Knapptips</string>
+    <string name="setup_summary_home">Startapp</string>
+    <string name="setup_not_set">Inte angivet</string>
+    <string name="setup_connected">Ansluten</string>
+    <string name="setup_retroarch_not_linked">Inte länkad</string>
+    <plurals name="setup_retroarch_cores_count">
+        <item quantity="one">%1$d kärna</item>
+        <item quantity="other">%1$d kärnor</item>
+    </plurals>
+    <string name="setup_roots_more">%1$s +%2$d till</string>
+    <string name="setup_finish_xmb_header">XMB-layout</string>
+    <string name="setup_finish_autofit">Anpassa XMB-layouten automatiskt (PSP-proportioner) – kan ändras när som helst i Inställningar</string>
+    <string name="setup_finish_open_lm">Öppna Bibliotekshanteraren</string>
+    <string name="setup_finish_open_lm_sub">Lägg till konsoler och sök igenom ROM-mapparna du just angav</string>
+    <string name="setup_finish_go_library">Gå till ditt bibliotek</string>
+    <string name="setup_finish_go_library_sub">Gå direkt till Alla spel</string>
+    <string name="setup_finish_done">Slutför</string>
+    <string name="setup_finish_done_sub">Gå till startprogrammet</string>
+    <!-- Messages -->
+    <string name="setup_status_testing">Testar …</string>
+    <plurals name="setup_msg_rom_folders_created">
+        <item quantity="one">Skapade %1$d konsolmapp. Kopiera dina spel till motsvarande mappar.</item>
+        <item quantity="other">Skapade %1$d konsolmappar. Kopiera dina spel till motsvarande mappar.</item>
+    </plurals>
+    <plurals name="setup_msg_rom_folders_created_existing">
+        <item quantity="one">Skapade %1$d konsolmapp (%2$d fanns redan). Kopiera dina spel till motsvarande mappar.</item>
+        <item quantity="other">Skapade %1$d konsolmappar (%2$d fanns redan). Kopiera dina spel till motsvarande mappar.</item>
+    </plurals>
+    <string name="setup_msg_artwork_failed">Det gick inte att skapa ett grafikbibliotek i mappen. Välj en skrivbar mapp.</string>
+    <string name="setup_msg_artwork_reconnected">Det befintliga grafikbiblioteket har anslutits igen.</string>
+    <string name="setup_msg_artwork_created">Grafikbiblioteket har skapats.</string>
+    <plurals name="setup_msg_artwork_games_linked">
+        <item quantity="one">%1$d spel länkades från filer som redan fanns i mappen.</item>
+        <item quantity="other">%1$d spel länkades från filer som redan fanns i mappen.</item>
+    </plurals>
+    <string name="setup_msg_artwork_import_hint">Lägg andra startprograms media i dess import/-mapp för att samla dem här.</string>
+    <string name="setup_msg_import_none_yet">Inget att importera ännu – lägg filer i grafikmappens import/-katalog.</string>
+    <string name="setup_msg_import_unreadable">Det gick inte att läsa importkällan.</string>
+    <string name="setup_msg_import_empty">Inget att importera – allt finns redan.</string>
+    <string name="setup_msg_import_started">Importerar \"%1$s\" – förloppet visas i aviseringar; detaljer hamnar i Inställningar ▸ Import av grafik.</string>
+    <string name="setup_msg_retroarch_linked">RetroArch har länkats – installerade kärnor erbjuds nu under Emulatorer.</string>
+    <string name="setup_msg_retroarch_rechecked">RetroArch-kärnorna har kontrollerats igen.</string>
+    <string name="setup_msg_retroarch_unlinked">Länken till RetroArch togs bort – inga RetroArch-kärnor erbjuds förrän du länkar igen.</string>
+    <string name="setup_msg_vita_set">Datamappen för Vita3K har angetts. Installerade titlar kan sökas igenom från minneskortet för PS Vita i Bibliotekshanteraren.</string>
+    <string name="setup_msg_vita_released">Datamappen för Vita3K har släppts – filerna på disken påverkades inte.</string>
+    <string name="setup_msg_ps3_set">Datamappen för PS3 har angetts. Kör Automatisk matchning i Inställningar ▸ Prestationer ▸ Uppdatera prestationer för att länka PS3-troféer.</string>
+    <string name="setup_msg_ps3_released">Datamappen för PS3 har släppts – filerna på disken påverkades inte.</string>
+    <string name="setup_msg_x360_set">Datamappen för %1$s har angetts. Kör Automatisk matchning i Inställningar ▸ Prestationer ▸ Uppdatera prestationer för att länka Xbox 360-prestationer.</string>
+    <string name="setup_msg_x360_released">Datamappen för %1$s har släppts – filerna på disken påverkades inte.</string>
+    <string name="setup_msg_sgdb_connected">SteamGridDB har anslutits</string>
+    <string name="setup_msg_tgdb_connected">TheGamesDB har anslutits</string>
+    <string name="setup_msg_igdb_connected">IGDB har anslutits</string>
+    <string name="setup_msg_ss_connected">ScreenScraper har anslutits</string>
+    <string name="setup_msg_ra_connected">RetroAchievements har anslutits</string>
+    <!-- ROM root scan report -->
+    <string name="setup_rom_scan_no_root">Lägg först till en ROM-mapp i Inställningar ▸ Bibliotek ▸ Bibliotekshanteraren.</string>
+    <string name="setup_rom_scan_none">Sökte igenom %1$s i %2$s; inga nya ROM-filer hittades. Kopiera spel till motsvarande systemmappar och försök igen.</string>
+    <string name="setup_rom_scan_loaded">Läste in %1$s, %2$s från %3$s.</string>
+    <string name="setup_rom_scan_systems_new">%1$s (%2$s)</string>
+    <plurals name="setup_rom_scan_folders">
+        <item quantity="one">%1$d mapp</item>
+        <item quantity="other">%1$d mappar</item>
+    </plurals>
+    <plurals name="setup_rom_scan_systems">
+        <item quantity="one">%1$d system</item>
+        <item quantity="other">%1$d system</item>
+    </plurals>
+    <plurals name="setup_rom_scan_new_consoles">
+        <item quantity="one">%1$d ny konsol</item>
+        <item quantity="other">%1$d nya konsoler</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roms">
+        <item quantity="one">%1$d ROM</item>
+        <item quantity="other">%1$d ROM</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roots">
+        <item quantity="one">%1$d ROM-mapp</item>
+        <item quantity="other">%1$d ROM-mappar</item>
+    </plurals>
+    <plurals name="setup_rom_scan_skipped">
+        <item quantity="one">%1$d mapp hoppades över (biblioteket kan inte läsas).</item>
+        <item quantity="other">%1$d mappar hoppades över (biblioteket kan inte läsas).</item>
+    </plurals>
+    <!-- Media library scans -->
+    <string name="setup_media_add_root_first">Lägg först till en rotmapp.</string>
+    <string name="setup_media_not_ready">Mappens lagring är inte redo ännu. Försök igen om en stund.</string>
+    <string name="setup_media_scan_failed_title">Sökningen i %1$s misslyckades</string>
+    <string name="setup_media_scan_finished_title">Sökningen i %1$s är klar</string>
+    <string name="setup_media_scan_stopped_title">Sökningen i %1$s stoppades</string>
+    <string name="setup_media_scanning_title">Söker igenom %1$s</string>
+    <string name="setup_media_stop_note">Mappen söks igenom igen nästa gång.</string>
+    <string name="setup_media_stopped">Stoppades innan den blev klar</string>
+    <plurals name="setup_media_tracks">
+        <item quantity="one">%1$d spår</item>
+        <item quantity="other">%1$d spår</item>
+    </plurals>
+    <plurals name="setup_media_photos">
+        <item quantity="one">%1$d foto</item>
+        <item quantity="other">%1$d foton</item>
+    </plurals>
+    <plurals name="setup_media_videos">
+        <item quantity="one">%1$d video</item>
+        <item quantity="other">%1$d videor</item>
+    </plurals>
+    <plurals name="setup_media_roots">
+        <item quantity="one">%1$d rot</item>
+        <item quantity="other">%1$d rötter</item>
+    </plurals>
+    <string name="setup_media_found">Hittade %1$s i %2$s.</string>
+</resources>

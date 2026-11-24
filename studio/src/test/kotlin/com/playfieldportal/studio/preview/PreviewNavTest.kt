@@ -245,7 +245,7 @@ class PreviewNavTest {
         val network = SampleContent.rootRows(categories.indexOfFirst { it.slotKey == "catbar_network" })
         assertTrue(network.none { it.slotKey?.startsWith("status_") == true })
         assertEquals(listOf("PlayerOne"), titles("catbar_social"))
-        assertEquals(listOf("Ruffian", "All Tracked Games", "Untracked"), titles("catbar_achievements"))
+        assertEquals(listOf("Ruffian  •  Lv 27", "All Tracked Games", "Untracked"), titles("catbar_achievements"))
         val games = SampleContent.rootRows(gameIndex)
         assertEquals(listOf("All Games", "Favorites", "Co-op Night"), games.drop(1).take(3).map { it.title })
         val all = games.single { it.title == "All Games" }

@@ -1,0 +1,330 @@
+# Theme Studio in ru. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	Создать
+Open…	Открыть…
+Upgrade folder…	Обновить папку…
+Convert .ptf…	Преобразовать .ptf…
+Batch convert…	Пакетное преобразование…
+Unpack assets…	Распаковать ресурсы…
+Undo	Отменить
+Redo	Повторить
+Export .pfptheme…	Экспорт .pfptheme…
+Import PSP theme ▾	Импорт темы PSP ▾
+Working…	Выполняется…
+Open ▾	Открыть ▾
+Open: {0} ▾	Открыть: {0} ▾
+XMB (back to the crossbar)	XMB (назад к панели)
+Stop {0}	Остановить {0}
+Play {0}	Воспроизвести {0}
+Video only — sound plays on the device	Только видео — звук воспроизводится на устройстве
+This theme uses an older format. Saving upgrades it to the current one.	Эта тема использует старый формат. При сохранении она обновится до текущего.
+See changes	Показать изменения
+Something went wrong	Что-то пошло не так
+OK	ОК
+Cancel	Отмена
+Open theme	Открыть тему
+PSP theme to convert	Тема PSP для преобразования
+Export theme	Экспорт темы
+Info	Сведения
+Color	Цвет
+Background	Фон
+Legibility	Читаемость
+Layout	Расположение
+Icons	Значки
+Sounds	Звуки
+Boot & Game Boot	Boot и Game Boot
+Export check	Проверка экспорта
+Untitled	Без названия
+Video	Видео
+Image	Изображение
+Wave	Волна
+Not set	Не задано
+Set	Задано
+Preview only	Только предпросмотр
+None custom	Нет своих
+{0} custom	Своих: {0}
+None set	Ничего не задано
+{0} set	Задано: {0}
+{0} of 2	{0} из 2
+Ready	Готово
+Untitled Theme	Тема без названия
+App Drawer	Меню приложений
+Settings	Настройки
+App Picker	Выбор приложений
+Game Picker	Выбор игр
+Artwork Studio	Студия обложек
+Game Detail Screen	Сведения об игре
+Achievement Screen	Достижения
+Per-Game Achievement Screen	Достижения игры
+Lock Screen	Экран блокировки
+Boot	Boot
+Game Boot	Game Boot
+In this file	В этом файле
+Nothing embedded yet	Пока ничего не встроено
+Theme name	Название темы
+Author	Автор
+Short description	Краткое описание
+New theme — not saved yet	Новая тема — ещё не сохранена
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	Сохраняется: название, автор и описание хранятся внутри .pfptheme. Дата обновления задаётся при экспорте.
+Accent color	Цвет акцента
+Auto (from the wallpaper)	Авто (по обоям)
+Custom	Свой
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	Каждые новые обои или видео задают акцент. Выберите цвет, чтобы сохранить свой.
+Your accent stays when the wallpaper or video changes.	Ваш акцент сохраняется при смене обоев или видео.
+Custom accent	Свой акцент
+Icon color	Цвет значков
+Auto (follows the theme)	Авто (по теме)
+White	Белый
+Main text color	Цвет основного текста
+Titles and labels: the crossbar, list rows and status strip, and every screen.	Заголовки и подписи: панель, строки списков, строка состояния и все экраны.
+Auto (built-in colors)	Авто (встроенные цвета)
+Use my exact color	Использовать мой точный цвет
+Subtext color	Цвет вспомогательного текста
+Subtitles, sublabels and values.	Подзаголовки, пояснения и значения.
+Same as main text	Как основной текст
+Source	Источник
+Wave motion	Движение волны
+Video playback	Воспроизведение видео
+Moving	В движении
+Moving, dim	В движении, приглушённо
+Still	Неподвижно
+Still, dim	Неподвижно, приглушённо
+None — live wave background	Нет — анимированный фон с волной
+Replace…	Заменить…
+Re-crop…	Обрезать заново…
+Clear	Очистить
+Clear video	Удалить видео
+Pick frame…	Выбрать кадр…
+The preview always shows a frozen wave; the style plays on the device.	В предпросмотре волна всегда неподвижна; стиль воспроизводится на устройстве.
+Lock screen	Экран блокировки
+None — the theme leaves the device lock screen alone	Нет — тема не меняет экран блокировки устройства
+Choose Image…	Выбрать изображение…
+Use Poster	Использовать постер
+Use Wallpaper	Использовать обои
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	Только неподвижное изображение. Устройство обрезает его под свой экран и устанавливает, только если пользователь согласится при применении.
+Crop	Обрезать
+Zoom	Масштаб
+Center	По центру
+Apply	Применить
+Reset	Сбросить
+Text	Текст
+Automatic	Авто
+None	Нет
+Drop shadow	Тень
+Outline	Контур
+Contrast plate	Контрастная подложка
+Offset shadow (dark)	Смещённая тень (тёмная)
+Offset shadow (light)	Смещённая тень (светлая)
+Contour dark	Контур тёмный
+Contour light	Контур светлый
+Contour auto	Контур авто
+Solid unfocused icons	Непрозрачные значки без фокуса
+Older launchers ignore these and show plain text and icons.	Старые лаунчеры игнорируют эти параметры и показывают обычный текст и значки.
+Preview with my layout	Предпросмотр с моим расположением
+Preview only — never saved in the theme. Remembered on this computer.	Только предпросмотр — никогда не сохраняется в теме. Запоминается на этом компьютере.
+Use my layout in the preview	Использовать моё расположение в предпросмотре
+Scale — {0}	Масштаб — {0}
+Horizontal — {0}	По горизонтали — {0}
+Vertical — {0}	По вертикали — {0}
+Biblically Accurate preview	Предпросмотр как в оригинале
+Adjust on preview	Настроить в предпросмотре
+All {0}	Все {0}
+Crossbar {0}	Панель {0}
+Items {0}	Элементы {0}
+Consoles {0}	Консоли {0}
+Physical Media {0}	Физические носители {0}
+On screen	На экране
+Customized {0}	Изменённые {0}
+Showing {0} of {1}	Показано {0} из {1}
+Select a slot to see it at real size, replace it, or export its template.	Выберите слот, чтобы увидеть его в реальном размере, заменить или экспортировать шаблон.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	Перетащите файл изображения (png, gif, jpg, bmp, webp) на любой слот, чтобы заменить его значок.
+Import icon pack… ▾	Импорт набора значков… ▾
+Export templates…	Экспорт шаблонов…
+Reset all	Сбросить всё
+Local file…	Локальный файл…
+From theme…	Из темы…
+Export template	Экспорт шаблона
+Menu sounds	Звуки меню
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	Пустые поля сохраняют встроенный звук. Клипы должны укладываться в лимит каждой строки.
+Navigation	Навигация
+Category change	Смена категории
+Options panel	Панель параметров
+Back / cancel	Назад / отмена
+Confirm / apply	Подтвердить / применить
+Error / invalid	Ошибка / недопустимо
+Notification	Уведомление
+Ambience (loops)	Фоновый звук (по кругу)
+Built-in	Встроенный
+Up to {0}	До {0}
+Choose…	Выбрать…
+▶ Play	▶ Воспроизвести
+■ Stop	■ Остановить
+Boot sequences	Заставки запуска
+Choose the built-in sequence or your own MP4 for each.	Выберите для каждой встроенную заставку или свой MP4.
+The launcher's own {0} sequence.	Собственная заставка {0} лаунчера.
+Your own MP4 (H.264).	Ваш MP4 (H.264).
+Choose MP4…	Выбрать MP4…
+Play in preview	Воспроизвести в предпросмотре
+Use built-in	Использовать встроенную
+All media is within limits	Все медиафайлы в пределах лимитов
+Opens on older launchers	Открывается в старых лаунчерах
+Fix the items marked ✕ before exporting.	Перед экспортом исправьте пункты, отмеченные ✕.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	При экспорте создаётся изображение готовой темы, которое показывается как миниатюра в галерее тем лаунчера.
+Opened {0}	Открыто: {0}
+Exported {0}	Экспортировано: {0}
+Folder of .pfptheme files to upgrade	Папка с файлами .pfptheme для обновления
+Folder with .ptf files	Папка с файлами .ptf
+Output folder for .pfptheme files	Папка для готовых файлов .pfptheme
+PSP theme to unpack	Тема PSP для распаковки
+Folder for unpacked assets	Папка для распакованных ресурсов
+Converting {0}  ({1}/{2})	Конвертация {0}  ({1}/{2})
+This theme was made by a newer version (format v{0}). Parts this version doesn't know are kept when you save.	Эта тема создана в более новой версии (формат v{0}). Части, которые эта версия не знает, сохранятся при сохранении.
+CXMB theme	Тема CXMB
+This file is a CXMB custom firmware theme (.ctf). Those replace PSP system files rather than describing wallpaper and colors, so they can't be converted. Official PSP themes (.ptf) open fine.	Этот файл — тема CXMB для кастомной прошивки (.ctf). Такие темы заменяют системные файлы PSP, а не описывают обои и цвета, поэтому их нельзя конвертировать. Официальные темы PSP (.ptf) открываются без проблем.
+Batch conversion finished	Пакетная конвертация завершена
+Converted: {0}	Конвертировано: {0}
+Converted with caveats: {0}	Конвертировано с оговорками: {0}
+Skipped (CXMB): {0} — {1}	Пропущено (CXMB): {0} — {1}
+Failed: {0}	Ошибки: {0}
+Theme upgrade finished	Обновление тем завершено
+Upgraded: {0} (originals kept as .bak)	Обновлено: {0} (оригиналы сохранены как .bak)
+Already current: {0}	Уже актуальны: {0}
+Made by a newer version, left alone: {0}	Из более новой версии, оставлены без изменений: {0}
+Report: {0}	Отчёт: {0}
+Background motion	Движение фона
+Still: frame at {0}	Кадр-заставка: кадр на {0}
+Still: baked into the theme	Кадр-заставка: встроен в тему
+Import wallpaper	Импорт обоев
+Import video	Импорт видео
+Lock screen image	Изображение экрана блокировки
+(embedded image)	(встроенное изображение)
+Fit	Вписать
+Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.	Пёстрые обои — подписи может быть трудно читать. Лучше всего подходят мягкие малоконтрастные изображения.
+The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, a Still style, or Motion set to Static on the device).	Кадр-заставка — это постер видео; он показывается, когда воспроизведение остановлено (экономия заряда, игра, стиль «Неподвижно» или «Движение» в режиме «Статично» на устройстве).
+The theme offers this image for the device lock screen	Тема предлагает это изображение для экрана блокировки устройства
+Output {0}×{1}	Результат {0}×{1}
+{0}–{1} recommended, {2} max, {3} MB max	{0}–{1} рекомендуется, не более {2}, не более {3} МБ
+Whether the boot video and Game Boot play at all is a device setting: {0}	Проигрываются ли видео загрузки и Game Boot вообще — это настройка устройства: {0}
+This clip is longer than the cap — the launcher will refuse it.	Этот клип длиннее допустимого — лаунчер его отклонит.
+Choose a {0} video	Выбрать видео: {0}
+Dark icon color — icons may be hard to see over the wallpaper scrim.	Тёмный цвет значков — значки может быть плохо видно поверх затемнения обоев.
+Saved in the theme for a later update. The launcher currently shows the color exactly as picked.	Сохраняется в теме для будущего обновления. Пока лаунчер показывает цвет точно таким, как выбран.
+Original	Исходный
+Classic Blue	Классический синий
+Sunset Orange	Оранжевый закат
+Fresh Green	Свежий зелёный
+Royal Purple	Королевский пурпур
+Crimson Red	Малиновый
+Silver	Серебристый
+Sakura Pink	Розовая сакура
+Golden Amber	Золотистый янтарь
+Aqua Teal	Морская волна
+Midnight Navy	Полуночный синий
+Charcoal	Угольный
+Format: schema {0} → {1}	Формат: схема {0} → {1}
+Format: new theme → {0}	Формат: новая тема → {0}
+Kept	Сохранено
+Added	Добавлено
+Repaired	Исправлено
+Can't recover	Не восстановить
+What saving does	Что делает сохранение
+Motion has a still poster	У движения есть кадр-постер
+Motion needs a still wallpaper as its poster - add one or remove the video	Движению нужен неподвижный фон в качестве постера - добавьте его или уберите видео
+Media outside limits: {0}	Медиа вне ограничений: {0}
+This wallpaper is busy behind the labels - pick a text legibility style so they stay readable	Эти обои пёстрые за подписями - выберите стиль читаемости текста, чтобы подписи оставались читаемыми
+Text should read clearly on this wallpaper	Текст должен хорошо читаться на этих обоях
+{0} - launchers from before this format refuse files over 64 MB	{0} - лаунчеры до этого формата отклоняют файлы больше 64 МБ
+Opens on older launchers, which ignore sounds, boot clips, legibility and crop	Открывается в старых лаунчерах, которые игнорируют звуки, клипы загрузки, читаемость и обрезку
+{0} is over the {1} MB limit for a theme file	{0} превышает ограничение {1} МБ для файла темы
+Saving upgrades this theme from {0}; {1} part(s) can't be recovered	Сохранение обновит эту тему из {0}; не удастся восстановить частей: {1}
+Saving upgrades this theme from {0}	Сохранение обновит эту тему из {0}
+an older format	старого формата
+Imported from {0}	Импортировано из {0}
+Imported from {0} — firmware {1}	Импортировано из {0} — прошивка {1}
+a PSP theme	темы PSP
+Created {0}	Создано {0}
+On the device these live in {0}.	На устройстве они находятся в разделе {0}.
+Scale	Масштаб
+Horizontal	По горизонтали
+Vertical	По вертикали
+This wallpaper is busy behind the labels — a text style helps them stay readable.	Эти обои пёстрые за подписями — стиль текста поможет сохранить их читаемыми.
+Settings › Interface › Display › Adjust XMB Layout	Настройки › Интерфейс › Экран › Настроить раскладку XMB
+Settings › Interface › Sound	Настройки › Интерфейс › Звук
+Settings › Interface › Display › Show Boot Sequence / Game Boot	Настройки › Интерфейс › Экран › Показывать загрузку / Game Boot
+Battery Saver and Thermal Throttle (Settings › Interface › Display) freeze the animated wave on the device.	Экономия заряда и Тепловое ограничение (Настройки › Интерфейс › Экран) останавливают анимированную волну на устройстве.
+Pick…	Выбрать…
+Plays on the device	Воспроизводится на устройстве
+Length unknown	Длительность неизвестна
+Volumes stay on the device: {0}	Громкость задаётся на устройстве: {0}
+Couldn't play {0} here — it will play on the device.	Не удалось воспроизвести {0} здесь — на устройстве сработает.
+Choose a sound for {0}	Выбрать звук: {0}
+Icon image for {0}	Изображение значка: {0}
+Template for {0}	Шаблон: {0}
+Template written to {0}	Шаблон сохранён: {0}
+Template export failed: {0}	Не удалось экспортировать шаблон: {0}
+Search {0} slots: battery, PS3, voice…	Поиск по {0} слотам: батарея, PS3, голос…
+No slot matches. Clear the search or a filter.	Нет подходящих слотов. Очистите поиск или фильтр.
+Pack folder…	Папка набора…
+Icon pack folder	Папка набора значков
+Pack .zip…	Набор .zip…
+Icon pack zip	Набор значков .zip
+Folder for icon templates	Папка для шаблонов значков
+Packs are folders or zips of <slot key>.png / .gif, the names the templates use. Multi-frame GIFs animate on the launcher when focused; they must stay within 512px, 120 frames and 10 seconds.	Наборы — это папки или zip-архивы с файлами <ключ слота>.png / .gif, то есть именами шаблонов. Многокадровые GIF анимируются в лаунчере при выделении; они должны укладываться в 512 px, 120 кадров и 10 секунд.
+Icon pack imported	Набор значков импортирован
+Icon pack refused	Набор значков отклонён
+{0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	{0}: добавлено {1}, заменено {2}, без соответствия {3}, отклонено {4}
+Icon pack {0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	Набор значков {0}: добавлено {1}, заменено {2}, без соответствия {3}, отклонено {4}
+{0} - did you mean {1}?	{0} - возможно, вы имели в виду {1}?
+{0} - no matching slot	{0} - нет подходящего слота
+{0} error	Ошибок: {0}
+{0} errors	Ошибок: {0}
+{0} warning	Предупреждений: {0}
+{0} warnings	Предупреждений: {0}
+{0} of {1} MB	{0} из {1} МБ
+{0} of {1} MB - older launchers refuse over 64 MB	{0} из {1} МБ - старые лаунчеры отклоняют больше 64 МБ
+Wallpaper	Обои
+Preview	Предпросмотр
+Motion	Движение
+Ambience	Атмосфера
+Other files	Другие файлы
+{0} is too large to be a theme file	{0} слишком большой для файла темы
+Imported {0}	Импортировано: {0}
+Imported with a caveat	Импортировано с оговоркой
+{0} is not a valid .pfptheme bundle	{0} — не корректный пакет .pfptheme
+{0} — {1} icon(s) for parts themes don't customize were left out	{0} — пропущены значки для частей, которые темы не меняют: {1}
+Motion wallpaper: {0}	Живые обои: {0}
+Could not keep: {0}	Не удалось сохранить: {0}
+Parts of the theme not kept	Части темы не сохранены
+Motion wallpaper not kept	Живые обои не сохранены
+{0} is not a readable image	{0} — не читаемое изображение
+{0} converted to H.264 for Android ({1})	{0} преобразовано в H.264 для Android ({1})
+Couldn't read that frame of the video	Не удалось прочитать этот кадр видео
+The crop does not match this image	Обрезка не подходит к этому изображению
+Wallpaper: {0} ({1}×{2})	Обои: {0} ({1}×{2})
+Added {0} — converted to H.264 for Android ({1})	Добавлено {0} — преобразовано в H.264 для Android ({1})
+Added {0}	Добавлено {0}
+Export failed: {0}	Ошибка экспорта: {0}
+{0} is not a PSP theme file	{0} — не файл темы PSP
+Unpack failed: {0}	Ошибка распаковки: {0}
+Theme unpacked	Тема распакована
+{0} images written to {1} (see report.txt).	Изображений записано: {0}, в {1} (см. report.txt).
+{0} images and {1} data files written to {2} (see report.txt).	Изображений: {0} и файлов данных: {1} записано в {2} (см. report.txt).
+Unpacked {0}: {1} images	Распаковано {0}: изображений {1}
+Templates exported to {0} ({1} icons)	Шаблоны экспортированы в {0} (значков: {1})
+WebM clips can't be checked in the Studio (it reads MP4/H.264 only) — convert the clip to MP4	Клипы WebM нельзя проверить в Studio (он читает только MP4/H.264) — конвертируйте клип в MP4
+That isn't a media slot this import can fill	Это не медиаслот, который может заполнить этот импорт
+That file is too large for a theme — {0} MB or less	Файл слишком большой для темы — не более {0} МБ
+Unsupported video — use an MP4 (H.264)	Неподдерживаемое видео — используйте MP4 (H.264)
+{0} video isn't guaranteed to play on Android	Видео {0} не обязательно воспроизведётся на Android
+H.264 {0} doesn't play on Android	H.264 {0} не воспроизводится на Android
+{0} video doesn't play on Android	Видео {0} не воспроизводится на Android
+Couldn't convert this video for Android ({0}). Re-encode it as MP4 H.264 and try again.	Не удалось преобразовать видео для Android ({0}). Перекодируйте его в MP4 H.264 и попробуйте снова.
+{0} is not a folder or .zip	{0} — не папка и не .zip
+Pack refused: {0}	Набор отклонён: {0}
+Pack could not be read	Не удалось прочитать набор
+Pack could not be read: {0}	Не удалось прочитать набор: {0}
+Pack has more than {0} files	В наборе больше {0} файлов
+Not a PSP theme file	Это не файл темы PSP
+Corrupt or truncated PTF	Повреждённый или неполный PTF
+This theme contains no wallpaper image.	В этой теме нет изображения обоев.
+The wallpaper could not be extracted: this theme uses a compression method this importer doesn't recognize. The theme was imported without its wallpaper.	Не удалось извлечь обои: тема использует метод сжатия, который этот импорт не распознаёт. Тема импортирована без обоев.
+The wallpaper data in this theme is damaged and could not be decoded. The theme was imported without its wallpaper.	Данные обоев в этой теме повреждены и не декодируются. Тема импортирована без обоев.

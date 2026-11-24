@@ -11,8 +11,16 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class NotificationRowsTest {
+
+    private val res get() = RuntimeEnvironment.getApplication().resources
 
     private fun task(id: String) =
         BackgroundTaskInfo(id = id, label = "Scanning $id", kind = TaskKind.SCAN)
@@ -119,7 +127,7 @@ class NotificationRowsTest {
     fun `timestamps read relative while recent and absolute once older`() {
         val now = 1_700_000_000_000L
         fun ago(unit: TimeUnit, amount: Long) =
-            notificationTimestamp(now - unit.toMillis(amount), now, Locale.US)
+            notificationTimestamp(now - unit.toMillis(amount), res, now, is24Hour = false, locale = Locale.US)
 
         assertEquals("Just Now", ago(TimeUnit.SECONDS, 20))
         assertEquals("1 Minute Ago", ago(TimeUnit.MINUTES, 1))
@@ -130,13 +138,15 @@ class NotificationRowsTest {
         // Past a day the hour count stops meaning anything a user can place, so it switches.
         val old = ago(TimeUnit.HOURS, 30)
         assertTrue(!old.endsWith("Ago"), "expected an absolute date past 24h, got $old")
-        assertTrue(old.contains("/"), "expected an absolute date past 24h, got $old")
+        // Short date and time without the year, from the shared formatter: "Nov 13, 5:13 AM", not "11/13 5:13 AM".
+        assertTrue(old.contains("Nov") && !old.contains("2023"), "expected a short date and time past 24h, got $old")
+        assertTrue(!old.contains("/"), "the old US-only M/d pattern is gone, got $old")
     }
 
     @Test
     fun `a row written a moment ahead of the clock does not render as negative`() {
         val now = 1_700_000_000_000L
-        assertEquals("Just Now", notificationTimestamp(now + 5_000, now, Locale.US))
+        assertEquals("Just Now", notificationTimestamp(now + 5_000, res, now, is24Hour = false, locale = Locale.US))
     }
 
     // ── Stoppable running rows ────────────────────────────────────────────────

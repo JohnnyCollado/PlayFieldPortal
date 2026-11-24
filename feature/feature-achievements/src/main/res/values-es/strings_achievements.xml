@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Achievement update notifications -->
+    <string name="ach_upd_running">Actualizando los logros instalados</string>
+    <string name="ach_upd_running_stop_note">Se conservan los logros ya actualizados.</string>
+    <string name="ach_upd_progress">Comprobando %1$d de %2$d juegos</string>
+    <string name="ach_upd_stopped">Actualización de logros detenida</string>
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="one">%d juego comprobado; se conserva el progreso guardado</item>
+        <item quantity="many">%d juegos comprobados; se conserva el progreso guardado</item>
+        <item quantity="other">%d juegos comprobados; se conserva el progreso guardado</item>
+    </plurals>
+    <string name="ach_upd_some_failed">Algunos logros no se pudieron actualizar</string>
+    <plurals name="ach_upd_failed_message">
+        <item quantity="one">%1$d de %2$d juego necesita otro intento</item>
+        <item quantity="many">%1$d de %2$d juegos necesitan otro intento</item>
+        <item quantity="other">%1$d de %2$d juegos necesitan otro intento</item>
+    </plurals>
+    <string name="ach_upd_results_done">Actualizados</string>
+    <string name="ach_upd_updated">Logros actualizados</string>
+    <plurals name="ach_upd_updated_message">
+        <item quantity="one">%1$d juego actualizado · %2$d sin cambios</item>
+        <item quantity="many">%1$d juegos actualizados · %2$d sin cambios</item>
+        <item quantity="other">%1$d juegos actualizados · %2$d sin cambios</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">Los logros están al día</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="one">%d juego instalado comprobado</item>
+        <item quantity="many">%d juegos instalados comprobados</item>
+        <item quantity="other">%d juegos instalados comprobados</item>
+    </plurals>
+    <string name="ach_upd_paused">Actualización de logros en pausa</string>
+    <string name="ach_upd_fact_service">Servicio</string>
+    <string name="ach_upd_pause_offline">Conéctate a internet</string>
+    <string name="ach_upd_pause_reconnect">Vuelve a conectar %1$s</string>
+    <string name="ach_upd_pause_steam_private">Los detalles de juego de Steam no están disponibles</string>
+
+    <!-- Auto-match notifications -->
+    <string name="ach_match_running">Asociando juegos automáticamente</string>
+    <string name="ach_match_running_stop_note">Los juegos ya asociados siguen vinculados.</string>
+    <string name="ach_match_stopped_note">Los juegos ya asociados siguen vinculados</string>
+    <string name="ach_match_stopped">Asociación automática detenida</string>
+    <string name="ach_match_recognized">Juegos reconocidos</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="one">%d juego instalado asociado. Actualizando sus logros.</item>
+        <item quantity="many">%d juegos instalados asociados. Actualizando sus logros.</item>
+        <item quantity="other">%d juegos instalados asociados. Actualizando sus logros.</item>
+    </plurals>
+
+    <!-- Clearing achievement records -->
+    <string name="ach_clear_done">Registros de logros borrados</string>
+    <string name="ach_clear_done_message">Hay que volver a sincronizar los juegos instalados para que muestren los logros de nuevo</string>
+    <string name="ach_clear_failed">No se pudieron borrar los logros</string>
+    <string name="ach_clear_failed_message">No se eliminó nada. Vuelve a intentarlo desde Ajustes ▸ Logros</string>
+
+    <!-- Local Steam: why a game's Steam identity could not be checked -->
+    <string name="ach_ls_unavail_store">no se pudo consultar la tienda</string>
+    <string name="ach_ls_unavail_steam">Steam no está disponible en este momento</string>
+    <string name="ach_ls_steam_unreachable">No se pudo conectar con Steam</string>
+    <string name="ach_ls_steam_rate_limited">Steam está limitando las solicitudes</string>
+    <string name="ach_ls_steam_error">Steam devolvió un error</string>
+    <string name="ach_ls_steam_needs_key">Steam necesita tu clave de Web API</string>
+
+    <!-- Local Steam: linking a picked game folder -->
+    <string name="ach_link_no_match">Steam no tiene ningún juego que coincida con \"%1$s\". Renombra la carpeta con el nombre del juego en Steam o vincúlalo antes desde Detalles del juego ▸ Asociar juego.</string>
+    <string name="ach_link_unavailable">%1$s, así que no se pudo averiguar el app id de esta carpeta. No se cambió nada: vuelve a intentarlo cuando tengas conexión.</string>
+    <string name="ach_link_marker_failed">No se pudo crear steam_appid.txt en esa carpeta: puede que PFP solo tenga acceso de lectura.</string>
+    <string name="ach_link_not_recorded">No se pudo registrar la coincidencia elegida.</string>
+    <string name="ach_link_installer_off">Activa Instalar Goldberg y convertir juegos en los ajustes de Logros antes de que PFP escriba en una carpeta de juego.</string>
+    <string name="ach_link_no_app_id">Esa carpeta ya no declara un app id: vuelve a elegirla.</string>
+    <string name="ach_link_need_key">Añade tu clave de Steam Web API en Ajustes ▸ Logros ▸ Credenciales de proveedores: la lista de logros se obtiene con ella.</string>
+    <string name="ach_link_no_achievements">Steam no tiene logros para el app id %1$s, así que no hay nada que seguir.</string>
+    <string name="ach_link_kit_failed">No se pudo escribir el kit de logros: %1$s</string>
+    <string name="ach_link_read_back_failed">No se pudo volver a leer esa carpeta. Si está en un almacenamiento extraíble, vuelve a montarlo y elígela otra vez.</string>
+    <string name="ach_link_not_steam_build">No hay ningún archivo de biblioteca de Steam (steam_api64.dll) en esa carpeta, así que no es una versión de Steam y el emulador no tiene nada que seguir. Elige la carpeta donde está el .exe del juego.</string>
+
+    <!-- Local Steam: convert picker rows -->
+    <string name="ach_pick_checking">Consultando Steam…</string>
+    <plurals name="ach_pick_coins">
+        <item quantity="one">%1$d moneda  ·  appid %2$s</item>
+        <item quantity="many">%1$d monedas  ·  appid %2$s</item>
+        <item quantity="other">%1$d monedas  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">Sin lista en Steam  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">Necesita tu clave de Steam Web API  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">Steam no respondió  ·  appid %1$s</string>
+
+    <!-- Local Steam: batch match summary -->
+    <string name="ach_batch_already_running">Ya hay una asociación por lotes en curso.</string>
+    <string name="ach_batch_no_folders">No hay carpetas de juegos ahí. Elige la carpeta que CONTIENE tus carpetas de juegos, no la carpeta de un solo juego.</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="one">Se encontró %d carpeta, pero no es una versión de Steam: no tiene biblioteca steam_api, así que el emulador no tiene nada que seguir.</item>
+        <item quantity="many">Se encontraron %d carpetas, pero ninguna es una versión de Steam: no tienen biblioteca steam_api, así que el emulador no tiene nada que seguir.</item>
+        <item quantity="other">Se encontraron %d carpetas, pero ninguna es una versión de Steam: no tienen biblioteca steam_api, así que el emulador no tiene nada que seguir.</item>
+    </plurals>
+    <string name="ach_batch_linked">%1$d vinculadas a juegos de la biblioteca</string>
+    <string name="ach_batch_tracked">%1$d con seguimiento propio</string>
+    <string name="ach_batch_converting">%1$d pendientes de conversión</string>
+    <plurals name="ach_batch_matched">
+        <item quantity="one">Asociada %1$d de %2$d carpeta.</item>
+        <item quantity="many">Asociadas %1$d de %2$d carpetas.</item>
+        <item quantity="other">Asociadas %1$d de %2$d carpetas.</item>
+    </plurals>
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="one">Asociada %1$d de %2$d carpeta: %3$s.</item>
+        <item quantity="many">Asociadas %1$d de %2$d carpetas: %3$s.</item>
+        <item quantity="other">Asociadas %1$d de %2$d carpetas: %3$s.</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="one">%1$d no se pudo identificar por su nombre: abre la página de Shiba Coins del juego y usa Asociar automáticamente para elegir su carpeta.</item>
+        <item quantity="many">%1$d no se pudieron identificar por su nombre: abre la página de Shiba Coins de cada juego y usa Asociar automáticamente para elegir su carpeta.</item>
+        <item quantity="other">%1$d no se pudieron identificar por su nombre: abre la página de Shiba Coins de cada juego y usa Asociar automáticamente para elegir su carpeta.</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="one">%1$d no está en tu biblioteca: añádelo antes a la tarjeta de Windows y vuelve a asociar.</item>
+        <item quantity="many">%1$d no están en tu biblioteca: añádelos antes a la tarjeta de Windows y vuelve a asociar.</item>
+        <item quantity="other">%1$d no están en tu biblioteca: añádelos antes a la tarjeta de Windows y vuelve a asociar.</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="one">%1$d no es una versión de Steam.</item>
+        <item quantity="many">%1$d no son versiones de Steam.</item>
+        <item quantity="other">%1$d no son versiones de Steam.</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="one">%1$d falló: consulta el registro.</item>
+        <item quantity="many">%1$d fallaron: consulta el registro.</item>
+        <item quantity="other">%1$d fallaron: consulta el registro.</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">No se pudo abrir esa carpeta.</string>
+    <string name="ach_batch_fail_read_back">%1$s: no se pudo volver a leer tras identificarla.</string>
+    <string name="ach_batch_fail_reason">%1$s: %2$s.</string>
+    <string name="ach_batch_fail_marker">%1$s: no se pudo crear steam_appid.txt.</string>
+
+    <!-- Vita3K library scan results -->
+    <string name="ach_vita_set_folder">Primero establece tu carpeta de datos de Vita3K (ux0).</string>
+    <string name="ach_vita_link_invalid">El vínculo a esa carpeta de Vita3K no es válido: vuelve a conceder el acceso.</string>
+    <string name="ach_vita_no_ux0">No se encontró ux0/app en la carpeta concedida: elige tu carpeta ux0 de Vita3K (o la carpeta que la contiene).</string>
+    <string name="ach_vita_no_app">No hay carpeta app/ dentro de ux0: revisa la carpeta concedida.</string>
+    <string name="ach_vita_none_installed">No se encontraron juegos de Vita instalados en ux0/app. Instala primero un juego en Vita3K.</string>
+    <plurals name="ach_vita_no_new">
+        <item quantity="one">No hay juegos de Vita nuevos: %d ya está en tu biblioteca.</item>
+        <item quantity="many">No hay juegos de Vita nuevos: %d ya están en tu biblioteca.</item>
+        <item quantity="other">No hay juegos de Vita nuevos: %d ya están en tu biblioteca.</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="one">Se importó %d juego de Vita.</item>
+        <item quantity="many">Se importaron %d juegos de Vita.</item>
+        <item quantity="other">Se importaron %d juegos de Vita.</item>
+    </plurals>
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="one">Se importó %1$d juego de Vita y se actualizaron %2$d.</item>
+        <item quantity="many">Se importaron %1$d juegos de Vita y se actualizaron %2$d.</item>
+        <item quantity="other">Se importaron %1$d juegos de Vita y se actualizaron %2$d.</item>
+    </plurals>
+</resources>

@@ -3,8 +3,13 @@ package com.playfieldportal.feature.xmb.viewmodel
 import com.playfieldportal.themekit.ThemeIconChoices
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /** Where Pick goes: the source chooser when the applied theme has icons, else the file picker. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class CustomIconPickRouteTest {
 
     @Test
@@ -40,7 +45,7 @@ class CustomIconPickRouteTest {
 
     @Test
     fun `the chooser detail counts icons with the singular for one`() {
-        assertEquals("ModNation · 1 icon", sourceChooserFor("catbar_music", "Music", "ModNation", 1).themeDetail)
-        assertEquals("ModNation · 3 icons", sourceChooserFor("catbar_music", "Music", "ModNation", 3).themeDetail)
+        assertEquals("ModNation · 1 icon", sourceChooserFor("catbar_music", "Music", "ModNation", 1).themeDetail.en())
+        assertEquals("ModNation · 3 icons", sourceChooserFor("catbar_music", "Music", "ModNation", 3).themeDetail.en())
     }
 }

@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared -->
+    <string name="art_error_unexpected">Erro inesperado</string>
+    <string name="art_no_folder_linked">Nenhuma pasta de artes associada</string>
+    <string name="art_paused_message">Artes em pausa. Volte a associar a pasta de artes para guardar novas artes.</string>
+    <string name="art_error_game_not_found">Jogo não encontrado</string>
+    <string name="art_error_not_found_any_source">Não encontrado em nenhuma fonte</string>
+    <string name="art_found_via">Encontrado via %1$s</string>
+    <string name="art_results_label_updated">Atualizados</string>
+    <string name="art_results_label_imported">Importados</string>
+    <string name="art_progress_hashing">A calcular hash da ROM…</string>
+    <string name="art_progress_searching">A pesquisar…</string>
+    <string name="art_asset_hero">Hero</string>
+    <string name="art_asset_background">Fundo</string>
+    <string name="art_asset_logo">Logo</string>
+    <string name="art_asset_box_art">Capa</string>
+    <string name="art_asset_physical_media">Multimédia física</string>
+    <string name="art_asset_3d_box">Caixa 3D</string>
+    <string name="art_asset_screenshot">Captura de ecrã</string>
+    <string name="art_asset_manual">Manual</string>
+    <string name="art_asset_video">Vídeo</string>
+    <string name="art_asset_icon_video">Vídeo do ícone</string>
+    <string name="art_asset_icon_video_converting">Vídeo do ícone (a converter)</string>
+    <string name="art_source_storefronts">Lojas</string>
+    <string name="art_field_title">Título</string>
+    <string name="art_field_description">Descrição</string>
+    <string name="art_field_developer">Programadora</string>
+    <string name="art_field_publisher">Editora</string>
+    <string name="art_field_year">Ano</string>
+    <string name="art_field_release_date">Data de lançamento</string>
+    <string name="art_field_genre">Género</string>
+    <string name="art_field_age_rating">Classificação etária</string>
+    <string name="art_field_franchise">Franquia</string>
+    <string name="art_field_rating">Avaliação</string>
+    <string name="art_policy_replace_all">Substituir tudo</string>
+    <string name="art_policy_fill_missing">Só preencher o que falta</string>
+    <string name="art_policy_choose_fields">Escolher campos</string>
+    <string name="art_policy_keep_current">Manter atual</string>
+
+    <!-- Scrape (background task) -->
+    <string name="art_scrape_label_all">A procurar novamente para todos os jogos</string>
+    <string name="art_scrape_label_missing">A procurar artes em falta</string>
+    <string name="art_scrape_stop_note">As artes já obtidas são mantidas.</string>
+    <string name="art_scrape_paused_all_title">Nova pesquisa de artes em pausa</string>
+    <string name="art_scrape_paused_title">Pesquisa de artes em pausa</string>
+    <string name="art_scrape_finished_all_title">Nova pesquisa de artes concluída</string>
+    <string name="art_scrape_finished_title">Pesquisa de artes concluída</string>
+    <string name="art_scrape_stopped_title">Pesquisa de artes interrompida</string>
+    <string name="art_scrape_failed_title">Falha na pesquisa de artes</string>
+    <string name="art_scrape_result">%1$d com sucesso, %2$d com falha de %3$d</string>
+    <plurals name="art_scrape_stopped_after">
+        <item quantity="one">Interrompido após %1$d jogo — as artes obtidas até agora são mantidas</item>
+        <item quantity="many">Interrompido após %1$d jogos — as artes obtidas até agora são mantidas</item>
+        <item quantity="other">Interrompido após %1$d jogos — as artes obtidas até agora são mantidas</item>
+    </plurals>
+
+    <!-- Relink (background task) -->
+    <string name="art_relink_label">A reassociar artes</string>
+    <plurals name="art_relink_label_consoles">
+        <item quantity="one">A reassociar artes de %1$d consola</item>
+        <item quantity="many">A reassociar artes de %1$d consolas</item>
+        <item quantity="other">A reassociar artes de %1$d consolas</item>
+    </plurals>
+    <string name="art_relink_stop_note">As artes já associadas continuam associadas.</string>
+    <string name="art_relink_finished_title">Reassociação de artes concluída</string>
+    <string name="art_relink_stopped_title">Reassociação de artes interrompida</string>
+    <string name="art_relink_stopped_note">As artes associadas até agora são mantidas</string>
+    <string name="art_relink_failed_title">Falha na reassociação de artes</string>
+    <plurals name="art_relink_games_linked">
+        <item quantity="one">%1$d jogo associado</item>
+        <item quantity="many">%1$d jogos associados</item>
+        <item quantity="other">%1$d jogos associados</item>
+    </plurals>
+    <plurals name="art_relink_files">
+        <item quantity="one">%1$d ficheiro</item>
+        <item quantity="many">%1$d ficheiros</item>
+        <item quantity="other">%1$d ficheiros</item>
+    </plurals>
+    <string name="art_relink_result">%1$s de %2$s</string>
+    <string name="art_relink_result_unmatched">%1$s · %2$d sem correspondência</string>
+
+    <!-- Export to ES-DE (background task) -->
+    <string name="art_export_label">A exportar artes para o ES-DE</string>
+    <string name="art_export_stop_note">Os ficheiros já exportados ficam onde estão.</string>
+    <string name="art_export_error_no_destination">Nenhuma pasta de destino</string>
+    <string name="art_export_error_access_lost">O acesso à pasta de artes foi perdido</string>
+    <string name="art_export_dest_not_created">Não foi possível criar a pasta de destino.</string>
+    <plurals name="art_export_files_badge">
+        <item quantity="one">%1$d ficheiro</item>
+        <item quantity="many">%1$d ficheiros</item>
+        <item quantity="other">%1$d ficheiros</item>
+    </plurals>
+    <string name="art_export_failed_title">Falha na exportação de artes</string>
+    <string name="art_export_stopped_title">Exportação de artes interrompida</string>
+    <string name="art_export_finished_title">Exportação de artes concluída</string>
+    <plurals name="art_export_stopped_note">
+        <item quantity="one">%1$d ficheiro exportado antes</item>
+        <item quantity="many">%1$d ficheiros exportados antes</item>
+        <item quantity="other">%1$d ficheiros exportados antes</item>
+    </plurals>
+    <string name="art_export_result">%1$d copiados, %2$d já presentes, %3$d com falha</string>
+    <string name="art_import_plan_not_found">Plano de importação não encontrado</string>
+    <string name="art_import_plan_unreadable">Plano de importação ilegível</string>
+    <string name="art_import_label">A importar artes — %1$s</string>
+    <string name="art_import_stop_note">As artes já importadas são mantidas.</string>
+    <string name="art_import_failed_title">Falha na importação de artes</string>
+    <string name="art_import_cancelled">Importação de artes cancelada</string>
+    <string name="art_import_done">Artes importadas</string>
+    <plurals name="art_import_needs_review">
+        <item quantity="one">Artes importadas, %1$d item precisa de revisão</item>
+        <item quantity="many">Artes importadas, %1$d itens precisam de revisão</item>
+        <item quantity="other">Artes importadas, %1$d itens precisam de revisão</item>
+    </plurals>
+    <string name="art_import_headline">%1$s: %2$s</string>
+    <string name="art_import_counts">%1$d importados, %2$d ignorados, %3$d com falha, %4$d ambíguos, %5$d sem correspondência.</string>
+    <string name="art_import_results_summary">%1$d importados, %2$d ignorados</string>
+    <string name="art_move_label">A mover artes para a sua pasta</string>
+    <string name="art_move_failed_title">Falha ao mover artes</string>
+    <string name="art_move_stopped_title">Movimentação de artes interrompida</string>
+    <string name="art_move_finished_title">Movimentação de artes concluída</string>
+    <plurals name="art_move_stopped_note">
+        <item quantity="one">%1$d ficheiro movido antes</item>
+        <item quantity="many">%1$d ficheiros movidos antes</item>
+        <item quantity="other">%1$d ficheiros movidos antes</item>
+    </plurals>
+    <string name="art_move_result">%1$d movidos, %2$d já presentes, %3$d com falha</string>
+</resources>

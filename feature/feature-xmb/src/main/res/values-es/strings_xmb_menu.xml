@@ -1,0 +1,760 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- App picker -->
+    <string name="xmbm_picker_touch_toggle">Marcar</string>
+    <plurals name="xmbm_picker_remove_from_card">
+        <item quantity="one">¿Quitar %d app de esta tarjeta?</item>
+        <item quantity="many">¿Quitar %d apps de esta tarjeta?</item>
+        <item quantity="other">¿Quitar %d apps de esta tarjeta?</item>
+    </plurals>
+    <plurals name="xmbm_picker_remove_from_library">
+        <item quantity="one">¿Quitar %d app de esta biblioteca?</item>
+        <item quantity="many">¿Quitar %d apps de esta biblioteca?</item>
+        <item quantity="other">¿Quitar %d apps de esta biblioteca?</item>
+    </plurals>
+
+    <!-- Category menu -->
+    <string name="xmbm_catmenu_rename">Renombrar categoría</string>
+    <string name="xmbm_catmenu_change_icon">Cambiar icono</string>
+    <string name="xmbm_catmenu_show_on_bar">Mostrar en la barra</string>
+    <string name="xmbm_catmenu_new_card">Nueva tarjeta personalizada</string>
+    <string name="xmbm_catmenu_manage">Gestionar categorías</string>
+
+    <!-- Shared menu rows -->
+    <string name="xmbm_common_on">Sí</string>
+    <string name="xmbm_common_off">No</string>
+    <string name="xmbm_sort">Ordenar</string>
+    <string name="xmbm_move">Mover</string>
+    <string name="xmbm_resume">Reanudar</string>
+    <string name="xmbm_open">Abrir</string>
+    <string name="xmbm_pin_to_top">Fijar arriba</string>
+    <string name="xmbm_icon_display">Visualización de iconos</string>
+    <string name="xmbm_manage_custom_cards">Gestionar tarjetas personalizadas</string>
+    <string name="xmbm_play_in_background">Reproducir en segundo plano</string>
+    <string name="xmbm_add_to_playlist">Añadir a lista de reproducción</string>
+    <string name="xmbm_remove_from_library">Quitar de la biblioteca</string>
+    <string name="xmbm_remove_from_this_playlist">Quitar de esta lista</string>
+    <string name="xmbm_rename_playlist">Renombrar lista</string>
+    <string name="xmbm_delete_playlist">Eliminar lista</string>
+    <string name="xmbm_manage_in_settings">Gestionar en Ajustes</string>
+    <string name="xmbm_favorite">Favorito</string>
+    <string name="xmbm_visualizer">Visualizador</string>
+    <string name="xmbm_stop_and_close">Detener y cerrar</string>
+    <string name="xmbm_pause">Pausa</string>
+    <string name="xmbm_add_games">Añadir juegos</string>
+    <string name="xmbm_add_apps">Añadir apps</string>
+    <string name="xmbm_pinned">Fijado</string>
+    <string name="xmbm_update_metadata">Actualizar metadatos</string>
+    <string name="xmbm_fetch_missing_artwork">Obtener ilustraciones que faltan</string>
+    <string name="xmbm_library_manager">Gestor de biblioteca</string>
+    <string name="xmbm_default">Predeterminado</string>
+    <string name="xmbm_favorites">Favoritos</string>
+    <string name="xmbm_all_games">Todos los juegos</string>
+    <string name="xmbm_playlists">Listas de reproducción</string>
+    <string name="xmbm_create_new_playlist">Crear lista de reproducción</string>
+
+    <!-- Custom icon source chooser -->
+    <string name="xmbm_srcchooser_title">Elige un icono para %1$s</string>
+    <string name="xmbm_srcchooser_message">Usa uno del tema aplicado o una imagen de tu dispositivo.</string>
+    <plurals name="xmbm_srcchooser_theme_detail">
+        <item quantity="one">%2$s · %1$d icono</item>
+        <item quantity="many">%2$s · %1$d iconos</item>
+        <item quantity="other">%2$s · %1$d iconos</item>
+    </plurals>
+
+    <!-- Theme icon grid -->
+    <string name="xmbm_themegrid_title">%1$s · icono para %2$s</string>
+
+    <!-- Notification panel and music browser list menus -->
+    <string name="xmbm_notifmenu_mark_all_read">Marcar todo como leído</string>
+    <string name="xmbm_notifmenu_clear_read">Borrar leídas</string>
+    <string name="xmbm_notifmenu_clear_all">Borrar todo</string>
+    <string name="xmbm_social_account">Cuenta</string>
+
+    <!-- Playlist list rows -->
+    <string name="xmbm_playlist_create_title">Crear lista</string>
+    <string name="xmbm_playlist_create_music_sub">Empieza una lista de reproducción nueva</string>
+    <string name="xmbm_playlist_create_video_sub">Empieza una lista de videos nueva</string>
+    <string name="xmbm_playlist_import_title">Importar lista</string>
+    <string name="xmbm_playlist_import_sub">Desde un archivo .m3u, .m3u8, .pls o .xspf</string>
+
+    <!-- Menu group headers -->
+    <string name="xmbm_group_play">Jugar</string>
+    <string name="xmbm_group_library">Biblioteca</string>
+    <string name="xmbm_group_arrange">Organizar</string>
+    <string name="xmbm_group_customize">Personalizar</string>
+    <string name="xmbm_group_pc">PC</string>
+    <string name="xmbm_group_manage">Gestionar</string>
+    <string name="xmbm_group_games">Juegos</string>
+    <string name="xmbm_group_update">Actualizar</string>
+    <string name="xmbm_group_display">Visualización</string>
+
+    <!-- Sort and arrange rows -->
+    <string name="xmbm_sort_default">Predeterminado</string>
+    <string name="xmbm_sort_default_order">Orden predeterminado</string>
+    <string name="xmbm_sort_global_value">Global: %1$s</string>
+    <string name="xmbm_sort_use_global">Usar el ajuste global (%1$s)</string>
+    <string name="xmbm_sort_az">A–Z</string>
+    <string name="xmbm_sort_recently_used">Usadas recientemente</string>
+    <string name="xmbm_umd_insert">Insertar como UMD</string>
+    <string name="xmbm_umd_eject">Expulsar UMD</string>
+    <string name="xmbm_card_rename">Renombrar tarjeta</string>
+    <string name="xmbm_card_move_to_category">Mover a categoría</string>
+    <string name="xmbm_card_delete">Eliminar tarjeta personalizada</string>
+    <string name="xmbm_card_in_category">En %1$s</string>
+    <string name="xmbm_card_other_categories">Otras categorías</string>
+    <string name="xmbm_card_new_here">Nueva tarjeta personalizada aquí…</string>
+    <string name="xmbm_sort_all_lists">Todas las listas</string>
+    <plurals name="xmbm_memcard_sub_games">
+        <item quantity="one">Memory Card · %d juego</item>
+        <item quantity="many">Memory Card · %d juegos</item>
+        <item quantity="other">Memory Card · %d juegos</item>
+    </plurals>
+    <plurals name="xmbm_memcard_sub_games_pinned">
+        <item quantity="one">Memory Card · Fijada · %d juego</item>
+        <item quantity="many">Memory Card · Fijada · %d juegos</item>
+        <item quantity="other">Memory Card · Fijada · %d juegos</item>
+    </plurals>
+
+    <!-- Memory Card menus -->
+    <string name="xmbm_card_find_games">Buscar juegos</string>
+    <string name="xmbm_card_scan_roms">Escanear juegos</string>
+    <string name="xmbm_card_import_pc">Importar juegos de PC</string>
+    <string name="xmbm_card_match_achievements">Asociar logros</string>
+    <string name="xmbm_card_hide">Ocultar tarjeta</string>
+    <string name="xmbm_card_remove">Quitar tarjeta</string>
+    <string name="xmbm_card_scan_all">Escanear todas las tarjetas</string>
+    <string name="xmbm_card_relink_artwork">Revincular ilustraciones</string>
+    <string name="xmbm_card_global_sort">Orden global</string>
+    <string name="xmbm_scan_none_new">No se encontraron juegos nuevos</string>
+    <plurals name="xmbm_scan_new_games">
+        <item quantity="one">%d juego nuevo</item>
+        <item quantity="many">%d juegos nuevos</item>
+        <item quantity="other">%d juegos nuevos</item>
+    </plurals>
+    <plurals name="xmbm_scan_cards_scanned">
+        <item quantity="one">%d Memory Card escaneada</item>
+        <item quantity="many">%d Memory Cards escaneadas</item>
+        <item quantity="other">%d Memory Cards escaneadas</item>
+    </plurals>
+    <plurals name="xmbm_scan_cards_failed">
+        <item quantity="one">No se pudo escanear %d tarjeta</item>
+        <item quantity="many">No se pudieron escanear %d tarjetas</item>
+        <item quantity="other">No se pudieron escanear %d tarjetas</item>
+    </plurals>
+
+    <!-- Game row menu -->
+    <string name="xmbm_game_view_details">Ver detalles del juego</string>
+    <string name="xmbm_game_choose_disc">Elegir disco</string>
+    <string name="xmbm_game_view_shiba_coins">Ver Shiba Coins</string>
+    <string name="xmbm_game_change_emulator">Cambiar emulador</string>
+    <string name="xmbm_game_add_to_card">Añadir a tarjeta</string>
+    <string name="xmbm_game_remove_from_card">Quitar de la tarjeta</string>
+    <string name="xmbm_game_select_multiple">Seleccionar varios</string>
+    <string name="xmbm_game_add_to_category">Añadir a categoría</string>
+    <string name="xmbm_game_move_to_category">Mover a categoría</string>
+    <string name="xmbm_game_remove_from_category">Quitar de la categoría</string>
+    <string name="xmbm_game_fetch_artwork">Obtener ilustraciones</string>
+    <string name="xmbm_game_launch_with">Iniciar con</string>
+    <string name="xmbm_game_install_goldberg">Instalar logros de Goldberg</string>
+    <string name="xmbm_game_export">Exportar juego</string>
+    <string name="xmbm_game_file_location">Mostrar ubicación del archivo</string>
+    <string name="xmbm_game_hide_from">Ocultar en %1$s</string>
+    <string name="xmbm_game_remove_permanently">Quitar para siempre</string>
+    <string name="xmbm_game_mark_as_game">Marcar como juego</string>
+    <string name="xmbm_game_unmark_as_game">Desmarcar como juego</string>
+
+    <!-- Media row menus -->
+    <string name="xmbm_play">Reproducir</string>
+    <string name="xmbm_media_view_information">Ver información</string>
+    <string name="xmbm_media_add_tracks">Añadir pistas</string>
+    <string name="xmbm_media_view_details">Ver detalles</string>
+    <string name="xmbm_media_scan_library">Escanear biblioteca</string>
+    <string name="xmbm_media_scan_album">Escanear álbum</string>
+    <string name="xmbm_media_set_wallpaper">Usar como fondo del launcher</string>
+    <string name="xmbm_media_set_lockscreen">Usar como pantalla de bloqueo</string>
+    <string name="xmbm_media_scan_section">Escanear %1$s</string>
+    <string name="xmbm_info_artist">Artista: %1$s</string>
+    <string name="xmbm_info_album">Álbum: %1$s</string>
+    <string name="xmbm_info_duration">Duración: %1$s</string>
+    <string name="xmbm_info_type">Tipo: %1$s</string>
+    <string name="xmbm_info_size">Tamaño: %1$s</string>
+    <string name="xmbm_info_location">Ubicación: %1$s</string>
+    <string name="xmbm_info_file">Archivo: %1$s</string>
+
+    <!-- Confirmation dialogs -->
+    <string name="xmbm_confirm_remove_library_title">¿Quitar \"%1$s\" de la biblioteca?</string>
+    <string name="xmbm_confirm_remove_game_msg">El archivo no se elimina. Un escaneo posterior lo vuelve a añadir si sigue en una carpeta escaneada.</string>
+    <string name="xmbm_confirm_remove">Quitar</string>
+    <string name="xmbm_confirm_remove_missing_title">¿Quitar \"%1$s\" para siempre?</string>
+    <string name="xmbm_confirm_remove_missing_msg">Su archivo ya no está, así que esta entrada no se puede restaurar.</string>
+    <string name="xmbm_confirm_remove_permanently">Quitar para siempre</string>
+    <string name="xmbm_confirm_delete_card_title">¿Eliminar \"%1$s\"?</string>
+    <string name="xmbm_confirm_delete_card_msg">Sus juegos se quedan en tu biblioteca.</string>
+    <string name="xmbm_confirm_delete_card_button">Eliminar tarjeta personalizada</string>
+    <string name="xmbm_confirm_remove_category_title">¿Quitar de %1$s?</string>
+    <string name="xmbm_confirm_remove_category_msg">\"%1$s\" también sale de: %2$s.</string>
+    <string name="xmbm_confirm_remove_android_msg">La app sigue instalada. Buscar juegos puede volver a añadirla.</string>
+    <string name="xmbm_confirm_remove_card_title">¿Quitar la tarjeta \"%1$s\"?</string>
+    <string name="xmbm_confirm_remove_card_android_msg">Sus juegos también salen de tu biblioteca. Las apps siguen instaladas y Buscar juegos puede volver a añadirlas.</string>
+    <string name="xmbm_confirm_remove_card_msg">Sus juegos también salen de tu biblioteca. Los archivos de ROM se quedan en el disco y un escaneo puede recuperarlos.</string>
+    <string name="xmbm_confirm_remove_card_button">Quitar tarjeta</string>
+    <string name="xmbm_confirm_remove_app_row_msg">La app sigue instalada y en sus categorías de apps.</string>
+    <string name="xmbm_confirm_remove_track_msg">El archivo no se elimina. Un escaneo posterior lo vuelve a añadir si sigue en una carpeta de música.</string>
+    <string name="xmbm_confirm_remove_video_msg">El archivo no se elimina. Un escaneo posterior lo vuelve a añadir si sigue en una biblioteca de video.</string>
+    <string name="xmbm_confirm_remove_photo_msg">El archivo no se elimina. Un escaneo posterior lo vuelve a añadir si sigue en un álbum.</string>
+    <string name="xmbm_confirm_delete_music_playlist_msg">Sus pistas se quedan en tu biblioteca.</string>
+    <string name="xmbm_confirm_delete_video_playlist_msg">Sus videos se quedan en tu biblioteca.</string>
+    <string name="xmbm_confirm_delete_playlist_button">Eliminar lista</string>
+    <string name="xmbm_confirm_uninstall_title">¿Desinstalar \"%1$s\"?</string>
+    <string name="xmbm_confirm_uninstall_msg">La app y sus datos se eliminan de este dispositivo.</string>
+    <string name="xmbm_confirm_uninstall_button">Desinstalar</string>
+    <string name="xmbm_confirm_clear_notifs_title">¿Borrar todas las notificaciones?</string>
+    <string name="xmbm_confirm_clear_notifs_msg">Las tareas en curso no se ven afectadas.</string>
+    <string name="xmbm_confirm_clear_all_button">Borrar todo</string>
+
+    <!-- Notification panel -->
+    <string name="xmbm_stop_confirm_title">¿Detener \"%1$s\"?</string>
+    <string name="xmbm_stop_confirm_kept_default">Se conserva el trabajo hecho hasta ahora.</string>
+    <string name="xmbm_stop_confirm_progress">%1$d de %2$d terminados.</string>
+    <string name="xmbm_panel_prompt_open">Abrir</string>
+    <string name="xmbm_panel_prompt_stop">Detener</string>
+    <string name="xmbm_panel_prompt_options">Opciones</string>
+    <string name="xmbm_panel_prompt_close">Cerrar</string>
+
+    <!-- Fetch Artwork notifications -->
+    <string name="xmbm_fetchart_running">Obteniendo ilustraciones: %1$s</string>
+    <string name="xmbm_fetchart_failed">Error al obtener ilustraciones</string>
+    <string name="xmbm_fetchart_failed_title">No se pudieron obtener ilustraciones para %1$s</string>
+    <string name="xmbm_fetchart_paused_title">Ilustraciones en pausa para %1$s</string>
+    <string name="xmbm_fetchart_done_title">Ilustraciones actualizadas para %1$s</string>
+
+    <!-- Playlist import -->
+    <string name="xmbm_plimport_cant_open">No se pudo abrir el archivo</string>
+    <string name="xmbm_plimport_too_large">El archivo supera los %1$d MiB</string>
+    <string name="xmbm_plimport_cant_read">No se pudo leer el archivo</string>
+    <string name="xmbm_plimport_default_name">lista</string>
+    <string name="xmbm_plimport_not_playlist">No es un archivo de lista de reproducción</string>
+    <string name="xmbm_plimport_unexpected">Error inesperado</string>
+    <string name="xmbm_plimport_title_error">No se pudo importar \"%1$s\"</string>
+    <string name="xmbm_plimport_title_ok">Se importó \"%1$s\"</string>
+    <string name="xmbm_plimport_title_none">No se importó nada de \"%1$s\"</string>
+    <string name="xmbm_plimport_reason_web">no es un archivo local</string>
+    <string name="xmbm_plimport_reason_type">tipo de medio incorrecto</string>
+    <string name="xmbm_plimport_reason_dup">ya está en la lista</string>
+    <string name="xmbm_plimport_reason_ambiguous">más de una coincidencia</string>
+    <string name="xmbm_plimport_reason_missing">no está en tu biblioteca</string>
+    <string name="xmbm_plimport_sum_found">%1$d encontrados</string>
+    <string name="xmbm_plimport_sum_missing">%1$d no están en tu biblioteca</string>
+    <string name="xmbm_plimport_sum_skipped">%1$d omitidos</string>
+    <string name="xmbm_plimport_sum_dropped">%1$d ignorados por superar el límite de %2$d entradas</string>
+    <string name="xmbm_plimport_label_found">Encontrados</string>
+    <string name="xmbm_plimport_label_missing">No están en tu biblioteca</string>
+    <string name="xmbm_plimport_label_skipped">Omitidos</string>
+
+    <!-- Settings menu (mirrors Settings screen titles) -->
+    <string name="xmbm_setsec_library_title">Biblioteca</string>
+    <string name="xmbm_setsec_library_sub">Fuentes, tarjetas, ilustraciones y elementos ocultos</string>
+    <string name="xmbm_setsec_emulators_title">Emuladores</string>
+    <string name="xmbm_setsec_emulators_sub">Perfiles de inicio y núcleos de RetroArch</string>
+    <string name="xmbm_setsec_interface_title">Interfaz</string>
+    <string name="xmbm_setsec_interface_sub">Categorías, temas, pantalla y mando</string>
+    <string name="xmbm_setsec_achievements_title">Logros</string>
+    <string name="xmbm_setsec_achievements_sub">RetroAchievements y Steam</string>
+    <string name="xmbm_setsec_media_title">Medios</string>
+    <string name="xmbm_setsec_media_sub">Ajustes de música, video y fotos</string>
+    <string name="xmbm_setsec_system_title">Sistema</string>
+    <string name="xmbm_setsec_system_sub">Acerca de, actualizaciones, registros, copia de seguridad, configuración y créditos</string>
+    <string name="xmbm_setsec_system_sub_nobackup">Acerca de, actualizaciones, registros, configuración y créditos</string>
+    <string name="xmbm_set_library_title">Gestor de biblioteca</string>
+    <string name="xmbm_set_library_sub">Fuentes de ROM y escaneo</string>
+    <string name="xmbm_set_windows_games_title">Juegos de Windows</string>
+    <string name="xmbm_set_windows_games_sub">Juegos de PC, launchers e importaciones</string>
+    <string name="xmbm_set_collections_title">Memory cards personalizadas</string>
+    <string name="xmbm_set_collections_sub">Crea y gestiona memory cards personalizadas</string>
+    <string name="xmbm_set_artwork_title">Ilustraciones</string>
+    <string name="xmbm_set_artwork_sub">Fuentes de obtención y caché</string>
+    <string name="xmbm_set_app_visibility_title">Elementos ocultos</string>
+    <string name="xmbm_set_app_visibility_sub">Revisa las apps y juegos que has ocultado</string>
+    <string name="xmbm_set_emulators_installed_title">Instalados</string>
+    <string name="xmbm_set_emulators_installed_sub">Perfiles de emuladores detectados</string>
+    <string name="xmbm_set_emulators_custom_title">Emuladores personalizados</string>
+    <string name="xmbm_set_emulators_custom_sub">Perfiles personalizados y Añadir emulador personalizado</string>
+    <string name="xmbm_set_emulators_retroarch_title">RetroArch</string>
+    <string name="xmbm_set_emulators_retroarch_sub">Detección y vinculación de núcleos</string>
+    <string name="xmbm_set_emulators_assign_title">Predeterminados por sistema</string>
+    <string name="xmbm_set_emulators_assign_sub">Emulador y núcleo predeterminados por consola, y ajustes por juego</string>
+    <string name="xmbm_set_emulators_knowledge_title">Conocimiento de emuladores</string>
+    <string name="xmbm_set_emulators_knowledge_sub">Actualizaciones, tus propios archivos y restablecer al integrado</string>
+    <string name="xmbm_set_display_title">Pantalla</string>
+    <string name="xmbm_set_display_sub">Onda, fondo, arranque e iconos</string>
+    <string name="xmbm_set_audio_title">Sonido</string>
+    <string name="xmbm_set_audio_sub">Sonidos del menú, niveles y ambiente</string>
+    <string name="xmbm_set_notifications_title">Notificaciones</string>
+    <string name="xmbm_set_notifications_sub">Historial del panel y conservación</string>
+    <string name="xmbm_set_categories_title">Categorías</string>
+    <string name="xmbm_set_categories_sub">Gestiona las categorías del XMB</string>
+    <string name="xmbm_set_themes_title">Temas</string>
+    <string name="xmbm_set_themes_sub">Aspecto, colores e iconos del XMB</string>
+    <string name="xmbm_set_controller_title">Mando</string>
+    <string name="xmbm_set_controller_sub">Asignación de botones</string>
+    <string name="xmbm_set_achievements_player_card_title">Tarjeta de jugador</string>
+    <string name="xmbm_set_achievements_player_card_sub">Niveles, rangos y estado de sincronización</string>
+    <string name="xmbm_set_achievements_credentials_title">Credenciales de proveedores</string>
+    <string name="xmbm_set_achievements_credentials_sub">Cuentas de RetroAchievements y Steam</string>
+    <string name="xmbm_set_achievements_local_windows_title">Windows local</string>
+    <string name="xmbm_set_achievements_local_windows_sub">Sigue juegos locales de Windows (Steam emulado)</string>
+    <string name="xmbm_set_achievements_update_title">Actualizar logros</string>
+    <string name="xmbm_set_achievements_update_sub">Sincroniza y asocia automáticamente los juegos con seguimiento</string>
+    <string name="xmbm_set_music_title">Música</string>
+    <string name="xmbm_set_music_sub">Carpetas de música y reproductor predeterminado</string>
+    <string name="xmbm_set_video_title">Video</string>
+    <string name="xmbm_set_video_sub">Bibliotecas de video, escaneo y reproducción</string>
+    <string name="xmbm_set_photo_title">Fotos</string>
+    <string name="xmbm_set_photo_sub">Bibliotecas de fotos y escaneo</string>
+    <string name="xmbm_set_about_title">Acerca de</string>
+    <string name="xmbm_set_about_sub">Play Field Portal</string>
+    <string name="xmbm_set_system_update_title">Actualización del sistema</string>
+    <string name="xmbm_set_system_update_sub">Versiones nuevas y registro de cambios</string>
+    <string name="xmbm_set_logs_title">Registros</string>
+    <string name="xmbm_set_logs_sub">Abre o comparte los registros de sesión</string>
+    <string name="xmbm_set_backup_title">Copia de seguridad y restauración</string>
+    <string name="xmbm_set_backup_sub">Exportar e importar</string>
+    <string name="xmbm_set_setup_title">Asistente de configuración</string>
+    <string name="xmbm_set_setup_sub">Configuración guiada de carpetas y cuentas</string>
+    <string name="xmbm_set_credits_title">Créditos</string>
+    <string name="xmbm_set_credits_sub">Ilustraciones y atribuciones</string>
+
+    <!-- Media sections -->
+    <string name="xmbm_media_music">Música</string>
+    <string name="xmbm_media_videos">Videos</string>
+    <string name="xmbm_media_photos">Fotos</string>
+    <string name="xmbm_sort_pill">Orden: %1$s</string>
+    <string name="xmbm_filter">Filtrar</string>
+
+    <!-- Sort modes -->
+    <string name="xmbm_sortmode_title">Título</string>
+    <string name="xmbm_sortmode_artist">Artista</string>
+    <string name="xmbm_sortmode_album">Álbum</string>
+    <string name="xmbm_sortmode_recent_played">Jugados recientemente</string>
+    <string name="xmbm_sortmode_date_added">Fecha de adición</string>
+    <string name="xmbm_sortmode_custom">Personalizado</string>
+    <string name="xmbm_filter_search">Buscar</string>
+    <string name="xmbm_filter_none">Ninguno</string>
+    <string name="xmbm_filter_term">\"%1$s\"</string>
+    <string name="xmbm_filter_clear">Borrar búsqueda</string>
+
+    <!-- Local Windows games notifications -->
+    <string name="xmbm_lwm_running">Asociando juegos locales de Windows…</string>
+    <string name="xmbm_lwm_stop_note">Los juegos ya asociados siguen vinculados.</string>
+    <string name="xmbm_task_stopped">Se detuvo antes de terminar</string>
+    <string name="xmbm_lwm_stopped_title">Asociación de logros de Windows detenida</string>
+    <string name="xmbm_lwm_failed">Error en la asociación por lotes</string>
+    <string name="xmbm_lwm_failed_title">Error en la asociación de logros de Windows</string>
+    <string name="xmbm_lwm_done_title">Asociación de logros de Windows terminada</string>
+    <string name="xmbm_schema_label">Esquemas de logros</string>
+    <string name="xmbm_convert_no_ach" formatted="false">%d no tenían logros</string>
+    <string name="xmbm_convert_no_key" formatted="false">%d necesitan una clave de Steam Web API</string>
+    <string name="xmbm_convert_failed" formatted="false">%d fallaron</string>
+    <string name="xmbm_convert_tail">Juega a cada juego para empezar a ganar monedas.</string>
+    <string name="xmbm_convert_linked" formatted="false">%d vinculados a juegos de la biblioteca.</string>
+    <string name="xmbm_diag_copied">Diagnóstico copiado al portapapeles</string>
+    <string name="xmbm_artwork_folder_label">Carpeta de ilustraciones</string>
+    <string name="xmbm_artwork_folder_failed">No se pudo configurar esa carpeta. Elige una carpeta en la que PFP pueda escribir.</string>
+    <plurals name="xmbm_convert_converted">
+        <item quantity="one">Se convirtió %d juego</item>
+        <item quantity="many">Se convirtieron %d juegos</item>
+        <item quantity="other">Se convirtieron %d juegos</item>
+    </plurals>
+
+    <!-- Games and apps list rows -->
+    <string name="xmbm_additem_apps_sub">Elige apps instaladas para añadirlas a esta sección</string>
+    <string name="xmbm_additem_games_sub">Elige juegos y memory cards personalizadas para añadirlos a esta categoría</string>
+    <string name="xmbm_catcard_title">Memory Card de %1$s</string>
+    <string name="xmbm_total_games">Total de juegos: %1$d</string>
+    <string name="xmbm_catcard_loose">Suelto</string>
+    <string name="xmbm_empty_category_title">Aún no hay juegos en esta categoría</string>
+    <string name="xmbm_empty_category_sub">Vuelve atrás y elige Añadir juegos.</string>
+    <plurals name="xmbm_customcard_games">
+        <item quantity="one">Personalizada · %d juego</item>
+        <item quantity="many">Personalizada · %d juegos</item>
+        <item quantity="other">Personalizada · %d juegos</item>
+    </plurals>
+    <plurals name="xmbm_customcard_games_pinned">
+        <item quantity="one">Personalizada · Fijada · %d juego</item>
+        <item quantity="many">Personalizada · Fijada · %d juegos</item>
+        <item quantity="other">Personalizada · Fijada · %d juegos</item>
+    </plurals>
+    <plurals name="xmbm_customcard_apps">
+        <item quantity="one">Personalizada · %d app</item>
+        <item quantity="many">Personalizada · %d apps</item>
+        <item quantity="other">Personalizada · %d apps</item>
+    </plurals>
+    <plurals name="xmbm_customcard_apps_pinned">
+        <item quantity="one">Personalizada · Fijada · %d app</item>
+        <item quantity="many">Personalizada · Fijada · %d apps</item>
+        <item quantity="other">Personalizada · Fijada · %d apps</item>
+    </plurals>
+
+    <!-- Music list rows -->
+    <string name="xmbm_music_now_playing">Reproduciendo</string>
+    <string name="xmbm_music_playlist_title">Lista de reproducción</string>
+    <string name="xmbm_music_playlist_sub">Crea y reproduce tus propias listas de pistas</string>
+    <string name="xmbm_music_apps_title">Apps de música</string>
+    <string name="xmbm_music_apps_sub">Abre tus apps de música instaladas</string>
+    <string name="xmbm_music_add_folder_title">Añadir carpeta de música</string>
+    <string name="xmbm_music_add_folder_sub">Establece tu carpeta raíz de música en Ajustes para empezar</string>
+    <string name="xmbm_music_add_apps_title">Añadir apps de música</string>
+    <string name="xmbm_picker_show_here_sub">Elige apps instaladas para mostrarlas aquí</string>
+    <string name="xmbm_music_add_tracks_title">Añadir pistas</string>
+    <string name="xmbm_music_add_tracks_sub">Elige canciones para añadirlas a esta lista</string>
+    <string name="xmbm_music_empty_title">No se encontró música</string>
+    <string name="xmbm_music_empty_sub">Añade una carpeta de música en Ajustes → Música</string>
+    <string name="xmbm_playlist_empty_title">Esta lista está vacía</string>
+    <string name="xmbm_playlist_empty_sub">Añade pistas abajo o desde el menú Opciones de una canción.</string>
+
+    <!-- Hide locations -->
+    <string name="xmbm_hide_custom_card">Tarjeta personalizada</string>
+    <string name="xmbm_hide_android">Android</string>
+    <string name="xmbm_music_apps_name">Apps de música</string>
+    <string name="xmbm_video_apps_name">Apps de video</string>
+
+    <!-- Video list rows -->
+    <string name="xmbm_video_collections_title">Colecciones</string>
+    <string name="xmbm_video_collections_sub">Vistos recientemente, Favoritos y Listas</string>
+    <string name="xmbm_video_libraries_title">Bibliotecas de video</string>
+    <string name="xmbm_video_apps_sub">Abre tus apps de video instaladas</string>
+    <string name="xmbm_video_add_title">Añadir videos</string>
+    <string name="xmbm_video_add_sub">Establece tu carpeta raíz de video en Ajustes para empezar</string>
+    <string name="xmbm_video_recent_title">Vistos recientemente</string>
+    <string name="xmbm_video_recent_sub">Continúa donde lo dejaste</string>
+    <string name="xmbm_video_favorites_sub">Tus videos destacados</string>
+    <string name="xmbm_video_playlists_sub">Crea y reproduce tus propias listas</string>
+    <string name="xmbm_video_nolibs_title">Aún no hay bibliotecas de video</string>
+    <string name="xmbm_video_nolibs_sub">Establece una carpeta raíz en Ajustes → Video</string>
+    <string name="xmbm_video_add_apps_title">Añadir apps de video</string>
+    <string name="xmbm_video_none_title">No se encontraron videos</string>
+    <string name="xmbm_video_none_sub">Añade una biblioteca de video en Ajustes → Video</string>
+    <string name="xmbm_video_nowatched_title">Aún no has visto nada</string>
+    <string name="xmbm_video_nowatched_sub">Los videos que reproduzcas aparecen aquí</string>
+    <string name="xmbm_video_nofav_title">Aún no hay favoritos</string>
+    <string name="xmbm_video_nofav_sub">Destaca un video desde su menú ⚙ Opciones</string>
+    <string name="xmbm_video_playlist_empty_sub">Añade videos desde el menú ⚙ Opciones de un video</string>
+    <string name="xmbm_video_new_playlist">Nueva lista de videos</string>
+    <string name="xmbm_music_new_playlist">Nueva lista de reproducción</string>
+    <plurals name="xmbm_video_libraries_count">
+        <item quantity="one">%d biblioteca</item>
+        <item quantity="many">%d bibliotecas</item>
+        <item quantity="other">%d bibliotecas</item>
+    </plurals>
+
+    <!-- Photo list rows -->
+    <string name="xmbm_photo_camera_title">Cámara</string>
+    <string name="xmbm_photo_camera_sub">Abre la cámara</string>
+    <string name="xmbm_photo_albums_title">Álbumes</string>
+    <string name="xmbm_photo_apps_title">Apps de fotos</string>
+    <string name="xmbm_photo_apps_sub">Abre tus apps de fotos instaladas</string>
+    <string name="xmbm_photo_add_title">Añadir biblioteca de fotos</string>
+    <string name="xmbm_photo_add_sub">Establece tu carpeta raíz de fotos en Ajustes para empezar</string>
+    <string name="xmbm_photo_add_apps_title">Añadir apps de fotos</string>
+    <string name="xmbm_photo_noalbums_title">Aún no hay álbumes</string>
+    <string name="xmbm_photo_noalbums_sub">Establece una carpeta raíz en Ajustes → Fotos</string>
+    <string name="xmbm_photo_none_title">No se encontraron fotos</string>
+    <string name="xmbm_photo_none_sub">Añade una biblioteca de fotos y escanéala</string>
+    <string name="xmbm_photo_noalbumphotos_title">No hay fotos en este álbum</string>
+    <string name="xmbm_photo_noalbumphotos_sub">Escanéalo desde su menú ⚙ Opciones o en Ajustes → Fotos</string>
+    <plurals name="xmbm_photo_albums_count">
+        <item quantity="one">%d álbum</item>
+        <item quantity="many">%d álbumes</item>
+        <item quantity="other">%d álbumes</item>
+    </plurals>
+
+    <!-- Music browser -->
+    <string name="xmbm_no_matches_title">Sin coincidencias</string>
+    <string name="xmbm_no_matches_sub">Prueba con otra búsqueda.</string>
+    <string name="xmbm_queue_all_music">Toda la música</string>
+
+    <!-- Flyout titles and Social rows -->
+    <string name="xmbm_video_all">Todos los videos</string>
+    <string name="xmbm_photo_all">Todas las fotos</string>
+    <string name="xmbm_missing">Faltantes</string>
+    <string name="xmbm_social_friends">Amigos</string>
+    <string name="xmbm_social_voice">Voz</string>
+    <string name="xmbm_social_voice_settings">Ajustes de voz</string>
+    <string name="xmbm_social_invites">Invitaciones</string>
+    <string name="xmbm_social_invite_friends">Invitar a amigos</string>
+    <string name="xmbm_social_activity_settings">Ajustes de actividad</string>
+    <string name="xmbm_social_discord_settings">Ajustes de Discord</string>
+    <string name="xmbm_android_settings_title">Ajustes de Android</string>
+    <string name="xmbm_android_settings_sub">Abre los ajustes del dispositivo</string>
+    <string name="xmbm_filter_chip">Filtro: %1$s</string>
+    <string name="xmbm_filter_chip_term">Filtro: \"%1$s\" · %2$s</string>
+
+    <!-- Empty rows -->
+    <string name="xmbm_empty_games_assigned_title">No hay juegos asignados.</string>
+    <string name="xmbm_empty_games_assigned_sub">Añade juegos a esta categoría.</string>
+    <string name="xmbm_empty_videos_apps">No se encontraron apps de video.</string>
+    <string name="xmbm_empty_network_apps">No se encontraron navegadores.</string>
+    <string name="xmbm_empty_store_apps">No se encontraron tiendas de apps.</string>
+    <string name="xmbm_empty_music_apps">No se encontraron apps de música.</string>
+    <string name="xmbm_empty_photo_apps">No se encontraron apps de fotos.</string>
+    <string name="xmbm_empty_apps_assigned">No hay apps asignadas.</string>
+    <string name="xmbm_empty_install_apps">Instala algunas apps para empezar.</string>
+    <string name="xmbm_noconsoles_title">No hay consolas configuradas</string>
+    <string name="xmbm_noconsoles_sub">Abre el gestor de biblioteca para añadir una Memory Card</string>
+    <string name="xmbm_gap_press_confirm">Pulsa Confirmar para abrir Ajustes y solucionarlo.</string>
+    <string name="xmbm_nogames_imported_title">Aún no se han importado juegos</string>
+    <string name="xmbm_nogames_imported_sub">Abre una Memory Card para escanear tu biblioteca.</string>
+    <string name="xmbm_emptycard_title">Esta memory card personalizada está vacía</string>
+    <string name="xmbm_emptycard_sub">Añade juegos de cualquier consola con el menú de opciones (△).</string>
+    <string name="xmbm_emptyfav_title">Aún no hay favoritos</string>
+    <string name="xmbm_emptyfav_sub">Marca un juego como favorito desde su menú de opciones (△).</string>
+    <string name="xmbm_emptymissing_title">No falta nada</string>
+    <string name="xmbm_emptymissing_sub">Se encontró el archivo de todos los juegos en el último escaneo.</string>
+    <string name="xmbm_findgames_sub">Elige apps instaladas para añadirlas a esta biblioteca</string>
+    <string name="xmbm_empty_romdir">Directorio de ROM no configurado</string>
+    <string name="xmbm_empty_scan_console">Pulsa ▲ para escanear esta consola</string>
+    <string name="xmbm_empty_folder_title">No se encontraron juegos en esta carpeta</string>
+    <plurals name="xmbm_games_count">
+        <item quantity="one">%d juego</item>
+        <item quantity="many">%d juegos</item>
+        <item quantity="other">%d juegos</item>
+    </plurals>
+
+    <!-- Games search and Shiba Coins hub -->
+    <string name="xmbm_nomatch_title">Ningún juego coincide con \"%1$s\"</string>
+    <string name="xmbm_nomatch_sub">Abre el menú Filtrar para cambiarlo o borrarlo.</string>
+    <string name="xmbm_ach_untracked">Sin seguimiento</string>
+    <string name="xmbm_ach_connect_title">Conectar cuentas</string>
+    <string name="xmbm_ach_connect_sub">Configura Shiba Coins y asocia tu biblioteca automáticamente</string>
+    <string name="xmbm_ach_all_tracked">Todos los juegos con seguimiento</string>
+    <string name="xmbm_ach_matching_progress">Asociando automáticamente…  %1$d / %2$d</string>
+    <string name="xmbm_ach_syncing_progress">Sincronizando monedas…  %1$d / %2$d</string>
+    <string name="xmbm_ach_summary">%1$s / %2$s monedas  •  %3$d con seguimiento  •  %4$d dominados</string>
+    <string name="xmbm_ach_level_badge">Nv %1$d</string>
+    <plurals name="xmbm_ach_games_count">
+        <item quantity="one">%d juego</item>
+        <item quantity="many">%d juegos</item>
+        <item quantity="other">%d juegos</item>
+    </plurals>
+
+    <!-- Games menus -->
+    <string name="xmbm_icon_global_value">Global: %1$s</string>
+    <string name="xmbm_icon_use_global">Usar el ajuste global (%1$s)</string>
+    <string name="xmbm_ach_player_card">Tarjeta de jugador</string>
+    <string name="xmbm_ach_auto_matching_busy">Asociando automáticamente…</string>
+    <string name="xmbm_ach_auto_matching">Asociación automática</string>
+    <string name="xmbm_ach_updating_busy">Actualizando…</string>
+    <string name="xmbm_ach_update_installed">Actualizar logros instalados</string>
+
+    <!-- Game and app menus -->
+    <string name="xmbm_move_card_to">Mover tarjeta personalizada a</string>
+    <string name="xmbm_move_to">Mover a…</string>
+    <string name="xmbm_add_to">Añadir a…</string>
+    <string name="xmbm_move_game_to">Mover juego a</string>
+    <string name="xmbm_add_game_to">Añadir juego a</string>
+    <string name="xmbm_picker_add_apps_named">Añadir apps · %1$s</string>
+    <string name="xmbm_picker_add_android_apps">Añadir apps de Android</string>
+    <string name="xmbm_icon_use_default">Usar predeterminado (%1$s)</string>
+    <string name="xmbm_emu_use_platform_default">Usar predeterminado de la plataforma</string>
+    <string name="xmbm_emu_choose">Elegir emulador</string>
+    <string name="xmbm_launchwith_imported_from">Importado desde</string>
+    <string name="xmbm_disc_n">Disco %1$d</string>
+    <string name="xmbm_disc_unnumbered">Lista de reproducción</string>
+    <string name="xmbm_card_new_title">Nueva memory card personalizada</string>
+    <string name="xmbm_card_rename_title">Renombrar memory card personalizada</string>
+    <plurals name="xmbm_marked_add_to_card">
+        <item quantity="one">Añadir %d juego a la tarjeta</item>
+        <item quantity="many">Añadir %d juegos a la tarjeta</item>
+        <item quantity="other">Añadir %d juegos a la tarjeta</item>
+    </plurals>
+
+    <!-- Game info dialogs -->
+    <string name="xmbm_info_package">Paquete: %1$s</string>
+    <string name="xmbm_info_no_location">No hay ninguna ubicación de archivo registrada</string>
+    <string name="xmbm_info_export_failed">Error en la exportación: consulta el registro.</string>
+    <string name="xmbm_goldberg_off">La instalación de logros de Goldberg está desactivada. Activa \"Instalar Goldberg y convertir juegos\" en Ajustes ▸ Logros ▸ Windows local y vuelve a intentarlo.</string>
+    <string name="xmbm_goldberg_no_setup">No se encontró ninguna configuración de emulación de Steam (steam_settings) para este juego.</string>
+    <string name="xmbm_goldberg_has_schema">%1$s ya tiene datos de logros.</string>
+    <string name="xmbm_goldberg_installed">Logros de Goldberg instalados. Juega con el emulador para empezar a ganar monedas.</string>
+    <string name="xmbm_goldberg_none">Este juego no tiene logros que instalar.</string>
+    <string name="xmbm_goldberg_no_key">Añade primero tu clave de Steam Web API en los ajustes de Logros.</string>
+    <string name="xmbm_goldberg_failed">No se pudieron instalar los logros de este juego.</string>
+
+    <!-- Scan and artwork notifications -->
+    <string name="xmbm_scan_running">Escaneando %1$s…</string>
+    <string name="xmbm_scan_stop_note">Se conservan los juegos encontrados hasta ahora.</string>
+    <string name="xmbm_scan_stopped_title">Escaneo de %1$s detenido</string>
+    <string name="xmbm_scan_failed_title">Error al escanear %1$s</string>
+    <string name="xmbm_scan_finished_title">Escaneo de %1$s terminado</string>
+    <string name="xmbm_scan_skipped_title">Escaneo de %1$s omitido</string>
+    <string name="xmbm_pcscan_failed">Error en el escaneo de PC</string>
+    <string name="xmbm_pcscan_no_new">No se encontraron juegos de PC nuevos</string>
+    <string name="xmbm_scanall_running">Escaneando todas las Memory Cards…</string>
+    <string name="xmbm_scanall_stop_note">Las tarjetas ya escaneadas conservan sus juegos nuevos.</string>
+    <string name="xmbm_scanall_nothing">Ninguna Memory Card tiene carpeta que escanear</string>
+    <string name="xmbm_scanall_nothing_title">Nada que escanear</string>
+    <string name="xmbm_scanall_stopped_title">Escaneo de todas las Memory Cards detenido</string>
+    <string name="xmbm_scanall_failed_title">Error al escanear todas las Memory Cards</string>
+    <string name="xmbm_scanall_finished_title">Escaneo de todas las Memory Cards terminado</string>
+    <string name="xmbm_scrape_running">Obteniendo ilustraciones que faltan: %1$s</string>
+    <string name="xmbm_scrape_stop_note">Se conservan las ilustraciones ya obtenidas.</string>
+    <string name="xmbm_scrape_paused_title">Obtención de ilustraciones en pausa: %1$s</string>
+    <string name="xmbm_scrape_none_missing">A ningún juego le faltan ilustraciones</string>
+    <string name="xmbm_scrape_finished_title">Obtención de ilustraciones terminada: %1$s</string>
+    <string name="xmbm_scrape_stopped_title">Obtención de ilustraciones detenida: %1$s</string>
+    <string name="xmbm_scrape_failed_title">Error al obtener ilustraciones: %1$s</string>
+    <string name="xmbm_meta_running">Actualizando metadatos: %1$s</string>
+    <string name="xmbm_meta_stop_note">Los juegos ya actualizados conservan sus detalles.</string>
+    <string name="xmbm_meta_no_games_library">No hay juegos en la biblioteca</string>
+    <string name="xmbm_meta_no_games_card">No hay juegos en esta tarjeta</string>
+    <string name="xmbm_meta_finished_title">Actualización de metadatos terminada: %1$s</string>
+    <string name="xmbm_meta_stopped_title">Actualización de metadatos detenida: %1$s</string>
+    <string name="xmbm_meta_failed">Error al actualizar los metadatos</string>
+    <string name="xmbm_meta_failed_title">Error al actualizar los metadatos: %1$s</string>
+    <plurals name="xmbm_scanall_stopped_after">
+        <item quantity="one">Detenido tras %1$d de %2$d tarjeta</item>
+        <item quantity="many">Detenido tras %1$d de %2$d tarjetas</item>
+        <item quantity="other">Detenido tras %1$d de %2$d tarjetas</item>
+    </plurals>
+    <plurals name="xmbm_scrape_updated">
+        <item quantity="one">%1$d de %2$d juego actualizado</item>
+        <item quantity="many">%1$d de %2$d juegos actualizados</item>
+        <item quantity="other">%1$d de %2$d juegos actualizados</item>
+    </plurals>
+    <plurals name="xmbm_stopped_after_games">
+        <item quantity="one">Detenido tras %d juego</item>
+        <item quantity="many">Detenido tras %d juegos</item>
+        <item quantity="other">Detenido tras %d juegos</item>
+    </plurals>
+
+    <!-- Notifications panel and shortcut requests -->
+    <string name="xmbm_shortcut_request_title">Solicitud de acceso directo</string>
+    <string name="xmbm_shortcut_request_handled">Esta solicitud ya se atendió.</string>
+    <string name="xmbm_notifications_title">Notificaciones</string>
+
+    <!-- Discord Social rows -->
+    <string name="xmbm_social_signin_title">Iniciar sesión con Discord</string>
+    <string name="xmbm_social_signin_sub">Escanea un código QR con tu teléfono</string>
+    <string name="xmbm_social_connected">Conectado a Discord</string>
+    <string name="xmbm_social_online">En línea</string>
+    <string name="xmbm_social_offline">Desconectado</string>
+    <string name="xmbm_social_connecting">Conectando…</string>
+    <string name="xmbm_social_idle">Ausente</string>
+    <string name="xmbm_social_dnd">No molestar</string>
+    <string name="xmbm_social_streaming">Transmitiendo</string>
+    <string name="xmbm_social_friends_unknown">Mira quién está en línea</string>
+    <string name="xmbm_social_friends_none_online">No hay amigos en línea</string>
+    <string name="xmbm_social_voice_sub">Habla en una sala compartida</string>
+    <string name="xmbm_social_activity_sub">Comparte a qué estás jugando</string>
+    <string name="xmbm_social_discord_sub">Cuenta y cerrar sesión</string>
+    <string name="xmbm_social_share_title">Compartir actividad</string>
+    <string name="xmbm_social_share_on">Sí · tus amigos pueden ver que estás en Playfield Portal</string>
+    <string name="xmbm_social_share_off">No · no se comparte nada con tus amigos</string>
+    <string name="xmbm_social_generic_title">Modo genérico</string>
+    <string name="xmbm_social_generic_on">Sí · muestra \"un juego\" en lugar del nombre de la app</string>
+    <string name="xmbm_social_generic_off">No · muestra el nombre de la app</string>
+    <string name="xmbm_social_signout_title">Cerrar sesión</string>
+    <string name="xmbm_social_signout_named">Desconectar %1$s</string>
+    <string name="xmbm_social_signout_sub">Desconecta esta cuenta de Discord</string>
+    <string name="xmbm_social_you_offline">No tienes conexión</string>
+    <string name="xmbm_social_friends_reconnect">Vuelve a conectarte para ver a tus amigos</string>
+    <string name="xmbm_social_no_friends">No hay amigos que mostrar</string>
+    <string name="xmbm_social_in_lobby">En una sala de voz · Pide unirte</string>
+    <string name="xmbm_social_playing">Jugando a %1$s</string>
+    <string name="xmbm_social_voice_reconnect">Vuelve a conectarte para usar la voz</string>
+    <string name="xmbm_social_invites_none">No hay invitaciones pendientes</string>
+    <string name="xmbm_social_create_lobby">Crear sala</string>
+    <string name="xmbm_social_create_lobby_sub">Crea una sala privada e invita a tus amigos</string>
+    <string name="xmbm_social_someone">Alguien</string>
+    <string name="xmbm_social_participant_you">%1$s (tú)</string>
+    <string name="xmbm_social_muted">Silenciado</string>
+    <string name="xmbm_social_speaking">Hablando</string>
+    <string name="xmbm_social_waiting_others">Esperando a que se unan otros</string>
+    <string name="xmbm_social_invite_friends_sub">Trae a tus amigos a esta sala</string>
+    <string name="xmbm_social_unmute">Activar micrófono</string>
+    <string name="xmbm_social_mute">Silenciar</string>
+    <string name="xmbm_social_mic_off">Tu micrófono está desactivado</string>
+    <string name="xmbm_social_mic_on">Tu micrófono está activado</string>
+    <string name="xmbm_social_leave_voice">Salir de la voz</string>
+    <string name="xmbm_social_leave_voice_sub">Desconéctate de la sala</string>
+    <string name="xmbm_social_no_invites">No hay invitaciones</string>
+    <string name="xmbm_social_no_invites_sub">Aquí aparecen las invitaciones y solicitudes para unirse</string>
+    <string name="xmbm_social_wants_to_join">%1$s quiere unirse</string>
+    <string name="xmbm_social_join_lobby">Unirse a la sala de %1$s</string>
+    <string name="xmbm_social_select_approve">Selecciona para aprobar</string>
+    <string name="xmbm_social_select_join">Selecciona para unirte</string>
+    <string name="xmbm_social_invite_offline">Vuelve a conectarte para invitar a amigos</string>
+    <string name="xmbm_social_invited">Invitado ✓</string>
+    <string name="xmbm_social_already_lobby">Ya está en una sala</string>
+    <string name="xmbm_social_select_invite">Selecciona para invitar</string>
+    <string name="xmbm_social_voice_settings_sub">Sensibilidad del micrófono, filtro de ruido, volumen</string>
+    <string name="xmbm_social_vs_toggle_on">Sí · %1$s</string>
+    <string name="xmbm_social_vs_sens_title">Sensibilidad del micrófono</string>
+    <string name="xmbm_social_vs_sens_value">%1$s · más baja filtra los clics</string>
+    <string name="xmbm_social_vs_noise_title">Cancelación de ruido</string>
+    <string name="xmbm_social_vs_noise_on">Krisp elimina el ruido de fondo y los clics de botones</string>
+    <string name="xmbm_social_vs_echo_title">Cancelación de eco</string>
+    <string name="xmbm_social_vs_echo_on">evita el acople del altavoz</string>
+    <string name="xmbm_social_vs_agc_title">Control automático de ganancia</string>
+    <string name="xmbm_social_vs_agc_on">nivela el volumen de tu micrófono</string>
+    <string name="xmbm_social_vs_input_title">Volumen del micrófono</string>
+    <string name="xmbm_social_vs_balance_title">Balance de audio</string>
+    <string name="xmbm_social_vs_balance_bar">Juego ◀%1$s▶ Voz</string>
+    <string name="xmbm_social_vs_ptt_title">Pulsar para hablar</string>
+    <string name="xmbm_social_vs_ptt_on">mantén pulsado para hablar; si no, el micrófono permanece cerrado</string>
+    <string name="xmbm_social_vs_overlay_title">Botón flotante para hablar</string>
+    <string name="xmbm_social_vs_overlay_needs">No · necesita \"Mostrar sobre otras apps\"</string>
+    <string name="xmbm_social_vs_overlay_on">Sí · botón flotante de mantener para hablar</string>
+    <string name="xmbm_social_vs_overlay_hidden">No · oculto (usa un botón del mando)</string>
+    <string name="xmbm_social_vs_pttbtn_title">Botón PTT</string>
+    <string name="xmbm_social_vs_pttbtn_press">Pulsa un botón del mando…</string>
+    <string name="xmbm_social_vs_pttbtn_set">%1$s  ·  mantén pulsado para hablar en Playfield Portal</string>
+    <string name="xmbm_social_vs_pttbtn_unset">Sin asignar · selecciona para asignar un botón del mando</string>
+    <string name="xmbm_social_hint_cancel">cancelar</string>
+    <string name="xmbm_ptt_not_set">Sin asignar</string>
+    <string name="xmbm_ptt_l3">L3 (pulsar stick izquierdo)</string>
+    <string name="xmbm_ptt_r3">R3 (pulsar stick derecho)</string>
+    <string name="xmbm_ptt_select">Select</string>
+    <string name="xmbm_ptt_start">Start</string>
+    <plurals name="xmbm_social_friends_online">
+        <item quantity="one">%d en línea</item>
+        <item quantity="many">%d en línea</item>
+        <item quantity="other">%d en línea</item>
+    </plurals>
+    <plurals name="xmbm_social_invites_waiting">
+        <item quantity="one">%d en espera</item>
+        <item quantity="many">%d en espera</item>
+        <item quantity="other">%d en espera</item>
+    </plurals>
+
+    <!-- Launch, shortcut and theme messages -->
+    <string name="xmbm_missing_reason">No se encontró el archivo en el último escaneo</string>
+    <string name="xmbm_social_reconnect">Volver a conectar</string>
+    <string name="xmbm_launch_failed">No se pudo iniciar: %1$s</string>
+    <string name="xmbm_launch_could_not">No se pudo iniciar %1$s</string>
+    <string name="xmbm_launch_no_emulator">No hay ningún emulador configurado para %1$s. Asigna uno en Ajustes ▸ Emuladores ▸ Predeterminados por sistema.</string>
+    <string name="xmbm_shortcut_fav_added">Añadido a Favoritos</string>
+    <string name="xmbm_shortcut_fav_removed">Quitado de Favoritos</string>
+    <string name="xmbm_shortcut_fav_failed">No se pudieron actualizar los Favoritos: %1$s</string>
+    <string name="xmbm_shortcut_create_failed">No se pudo crear el acceso directo: %1$s</string>
+    <string name="xmbm_scheme_original_sub">Cambia con el mes</string>
+    <string name="xmbm_scheme_fixed_sub">Color predefinido fijo</string>
+    <string name="xmbm_scheme_custom">Personalizado</string>
+    <string name="xmbm_scheme_custom_sub">Ajusta cualquier color con controles deslizantes</string>
+    <string name="xmbm_theme_current">Tema actual</string>
+    <string name="xmbm_theme_save_title">Guardar el aspecto actual como tema</string>
+    <string name="xmbm_theme_save_failed">No se pudo guardar el tema</string>
+    <string name="xmbm_theme_saved">Tema guardado: %1$s</string>
+    <string name="xmbm_gameboot_preview_title">Vista previa</string>
+    <string name="xmbm_drawer_all_title">Todas las apps</string>
+    <string name="xmbm_drawer_all_sub">Explora todas las apps instaladas</string>
+    <string name="xmbm_drawer_games_title">Juegos</string>
+    <string name="xmbm_drawer_games_sub">Apps clasificadas como juegos</string>
+    <string name="xmbm_drawer_emulators_title">Emuladores</string>
+    <string name="xmbm_drawer_emulators_sub">RetroArch, PPSSPP, Dolphin y más</string>
+    <string name="xmbm_drawer_recent_title">Usadas recientemente</string>
+    <string name="xmbm_drawer_recent_sub">Apps que has usado últimamente</string>
+    <string name="xmbm_shortcut_unsafe">No es seguro abrir el acceso directo capturado</string>
+</resources>

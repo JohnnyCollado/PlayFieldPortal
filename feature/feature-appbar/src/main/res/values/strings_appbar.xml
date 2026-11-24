@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slice H2: feature-appbar (App Drawer) -->
+<resources>
+    <!-- App context menu: group headings -->
+    <string name="apps_menu_group_library">Library</string>
+    <string name="apps_menu_group_arrange">Arrange</string>
+    <string name="apps_menu_group_manage">Manage</string>
+
+    <!-- App context menu: rows -->
+    <string name="apps_menu_launch">Launch</string>
+    <string name="apps_menu_edit_details">Edit App Details</string>
+    <string name="apps_menu_mark_game">Mark as Game</string>
+    <string name="apps_menu_unmark_game">Unmark as Game</string>
+    <string name="apps_menu_favorite">Favorite</string>
+    <!-- "Card" is a user-made shelf of games and apps in the launcher -->
+    <string name="apps_menu_add_to_card">Add to Card</string>
+    <string name="apps_menu_pin_to_top">Pin to Top</string>
+    <string name="apps_menu_move">Move</string>
+    <string name="apps_menu_move_to_category">Move to Category</string>
+    <string name="apps_menu_add_to_category">Add to Category</string>
+    <string name="apps_menu_remove_from_category">Remove from Category</string>
+    <string name="apps_menu_rename_shortcut">Rename Shortcut</string>
+    <!-- %1$s is the name of the category the app is shown in -->
+    <string name="apps_menu_hide_from">Hide from %1$s</string>
+    <string name="apps_menu_hide_everywhere">Hide Everywhere</string>
+    <string name="apps_menu_app_info">App Info</string>
+    <!-- Menu row and the confirm button of the uninstall dialog -->
+    <string name="apps_menu_uninstall">Uninstall</string>
+    <!-- State shown beside a toggle row (Favorite, Mark as Game, Pin to Top) -->
+    <string name="apps_value_on">On</string>
+    <string name="apps_value_off">Off</string>
+
+    <!-- Uninstall confirmation. %1$s is the app name -->
+    <string name="apps_uninstall_title">Uninstall %1$s?</string>
+    <string name="apps_uninstall_message">This removes %1$s from your device. Android will ask you to confirm.</string>
+
+    <!-- Category tabs and header title -->
+    <string name="apps_filter_all">All Apps</string>
+    <string name="apps_filter_games">Games</string>
+    <string name="apps_filter_emulators">Emulators</string>
+    <string name="apps_filter_recent">Recently Used</string>
+
+    <!-- Header search -->
+    <string name="apps_search_placeholder">Search…</string>
+    <string name="apps_search_button">Search</string>
+
+    <!-- Empty states -->
+    <string name="apps_empty_no_match">No apps match your search</string>
+    <string name="apps_empty_no_games">No games found</string>
+    <string name="apps_empty_no_emulators">No emulators installed</string>
+    <string name="apps_empty_usage_access">Usage access needed</string>
+    <string name="apps_empty_no_recent">No recently used apps yet</string>
+    <string name="apps_empty_no_apps">No apps installed</string>
+    <string name="apps_hint_try_search">Try a different search term</string>
+    <string name="apps_hint_games">Apps marked as games in the Play Store appear here</string>
+    <string name="apps_hint_emulators">Install RetroArch, PPSSPP, or another emulator</string>
+    <string name="apps_hint_usage_access">Grant access so PFP can sort apps by last used time</string>
+    <!-- Button that opens Android's Usage Access settings -->
+    <string name="apps_open_usage_access">Open Usage Access</string>
+
+    <!-- Controller hint bar: short labels beside a button glyph -->
+    <string name="apps_hint_prev">Prev</string>
+    <string name="apps_hint_next">Next</string>
+    <string name="apps_hint_back">Back</string>
+    <string name="apps_hint_launch">Launch</string>
+    <string name="apps_hint_options">Options</string>
+    <string name="apps_hint_search">Search</string>
+    <!-- The App Drawer header: the screen's name, and under it what the screen holds. -->
+    <string name="apps_drawer_title">App Drawer</string>
+    <string name="apps_drawer_subtitle">Apps on this device</string>
+</resources>

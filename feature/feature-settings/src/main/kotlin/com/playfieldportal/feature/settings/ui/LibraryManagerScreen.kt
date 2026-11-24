@@ -15,6 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.settings.R
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -225,7 +229,7 @@ private fun LibraryManagerContent(
             rows = picker.rows.map {
                 LocalSteamConvertRow(
                     folderName = it.folderName,
-                    note = it.note,
+                    note = it.note.asString(),
                     selected = it.selected,
                     unselectable = it.unselectable,
                 )
@@ -278,8 +282,8 @@ private fun LibraryListContent(
     val removeGate = rememberRootRemoveGate()
     val removeModal = rememberSettingsModal(removeGate.spec)
     SettingsScaffold(
-        title = "Settings",
-        subtitle = "Library Manager",
+        title = stringResource(R.string.settings_title),
+        subtitle = stringResource(R.string.lib_lm_title),
         onBack = onBack,
         modifier = modifier,
         restoreFocusKey = state.returnFocusKey,
@@ -292,11 +296,12 @@ private fun LibraryListContent(
 
             // ── ROM Root Access ─────────────────────────────────────────────────
             RootAccessSection(
-                groupTitle  = "ROM root access",
+                groupTitle  = stringResource(R.string.lib_lm_root_group),
                 rootKind    = "ROM",
+                rootKindRes = R.string.sets_root_kind_rom,
                 roots       = state.romRoots,
-                addLabel    = "Add ROM root",
-                addSublabel = "Grant a root folder (e.g. /Roms) — or a second location like an SD card",
+                addLabel    = stringResource(R.string.lib_lm_root_add),
+                addSublabel = stringResource(R.string.lib_lm_root_add_sub),
                 onAddRoot    = { addRootPicker.launch(null) },
                 onRelinkRoot = { 
                     relinkTarget = it
@@ -306,75 +311,74 @@ private fun LibraryListContent(
                 // The scan the ES-DE setup tells the user to run once their games are copied in.
                 // The row was wired but never drawn, so nothing could pick those games up short
                 // of re-adding the root (survey U13).
-                autoDetectLabel = if (state.romRoots.isNotEmpty()) "Scan ROM roots" else null,
-                autoDetectSublabel = "Find the console folders in your ROM roots and add their games",
+                autoDetectLabel = if (state.romRoots.isNotEmpty()) stringResource(R.string.lib_lm_root_scan) else null,
+                autoDetectSublabel = stringResource(R.string.lib_lm_root_scan_sub),
                 onAutoDetect = onScanRomRoot,
             )
 
-            SettingsGroup("Consoles")
+            SettingsGroup(stringResource(R.string.lib_lm_group_consoles))
 
             val consoleCards = state.cards.filterNot { it.platformId == "windows" }
             if (consoleCards.isEmpty()) {
-                Hint("No consoles configured. Add a console to create a Memory Card that appears inside Games.")
+                Hint(stringResource(R.string.lib_lm_no_consoles))
             } else {
                 consoleCards.forEach { card ->
                     SettingsRow(
-                        label    = card.displayName + if (!card.enabled) "  (Hidden)" else "",
+                        label    = if (card.enabled) card.displayName else stringResource(R.string.lib_lm_card_hidden, card.displayName),
                         sublabel = cardSublabel(card),
                         focusKey = card.platformId,
-                        trailing = { if (card.pinned) Text("PINNED", color = SettingsAccent) },
+                        trailing = { if (card.pinned) Text(stringResource(R.string.lib_lm_pinned), color = SettingsAccent) },
                         onClick  = { onOpenCardDetail(card.platformId) },
                     )
                 }
             }
 
-            SettingsGroup("Manage")
+            SettingsGroup(stringResource(R.string.lib_lm_group_manage))
 
             SettingsRow(
-                label    = "Add console",
-                sublabel = "Pick a platform — its games live in the matching folder under your ROM Root",
+                label    = stringResource(R.string.lib_lm_add_console),
+                sublabel = stringResource(R.string.lib_lm_add_console_sub),
                 focusKey = ADD_CONSOLE_FOCUS_KEY,
                 onClick  = { onStartAddConsole() },
             )
             SettingsRow(
-                label    = "Set up ROM folders (ES-DE)",
-                sublabel = "Pick an empty folder — PFP creates the standard ES-DE system folders " +
-                    "(gba, snes, psx…) for you to copy games into. No guessing folder names",
+                label    = stringResource(R.string.lib_lm_setup_folders),
+                sublabel = stringResource(R.string.lib_lm_setup_folders_sub),
                 onClick  = { onRequestRomFolderSetup() },
             )
             val anyScannable = state.cards.any { it.enabled && (it.treeUri != null || it.romDirectory != null) }
             SettingsRow(
-                label    = "Scan all consoles",
+                label    = stringResource(R.string.lib_lm_scan_all),
                 sublabel = when {
-                    state.scanningPlatformIds.isNotEmpty() -> "Scanning ${state.scanningPlatformIds.size}…"
-                    state.cards.none { it.treeUri != null || it.romDirectory != null } -> "Configure a ROM folder first"
-                    else -> "Scan every enabled console's folder"
+                    state.scanningPlatformIds.isNotEmpty() -> stringResource(R.string.lib_lm_scanning_count, state.scanningPlatformIds.size)
+                    state.cards.none { it.treeUri != null || it.romDirectory != null } -> stringResource(R.string.lib_lm_configure_first)
+                    else -> stringResource(R.string.lib_lm_scan_all_sub)
                 },
                 onClick  = if (anyScannable) ({ onScanAllConsoles(false) }) else null,
             )
             var confirmRescanAll by remember { mutableStateOf(false) }
             if (!confirmRescanAll) {
                 SettingsRow(
-                    label    = "Re-scan all (mark missing)",
-                    sublabel = "Also marks games whose ROM file is gone as missing. They stay in your library",
+                    label    = stringResource(R.string.lib_lm_rescan_all),
+                    sublabel = stringResource(R.string.lib_lm_rescan_all_sub),
                     onClick  = if (anyScannable) ({ confirmRescanAll = true }) else null,
                 )
             } else {
                 SettingsRow(
-                    label    = "Confirm: Re-scan and mark missing games?",
-                    sublabel = "Marks games whose ROM file is gone as missing; favorites, play time and artwork are kept. This can take a while with a large library",
+                    label    = stringResource(R.string.lib_lm_rescan_confirm),
+                    sublabel = stringResource(R.string.lib_lm_rescan_confirm_sub),
                     onClick  = {
                         confirmRescanAll = false
                         onScanAllConsoles(true)
                     },
                 )
                 SettingsRow(
-                    label   = "Cancel",
+                    label   = stringResource(R.string.lib_lm_cancel),
                     onClick = { confirmRescanAll = false },
                 )
             }
 
-            state.message?.let { MessageRow(it) { onDismissMessage() } }
+            state.message?.let { MessageRow(it.asString()) { onDismissMessage() } }
         }
     }
 
@@ -390,14 +394,14 @@ private fun PickPlatformContent(
     onPlatformChosen: (PlatformOption) -> Unit,
     modifier: Modifier,
 ) {
-    SettingsScaffold(title = "Add Console", subtitle = "Choose Platform", onBack = onBack, modifier = modifier) {
+    SettingsScaffold(title = stringResource(R.string.lib_lm_add_console_title), subtitle = stringResource(R.string.lib_lm_choose_platform), onBack = onBack, modifier = modifier) {
         // Registered like the list screens: the scaffold needs a scroll owner here for its
         // chrome drag-to-scroll and for controller keep-in-view. Registering is the whole fix;
         // the body itself is unchanged.
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
-            SettingsGroup("Supported platforms")
+            SettingsGroup(stringResource(R.string.lib_lm_group_platforms))
             state.platformOptions.forEach { option ->
                 SettingsRow(
                     label    = option.name,
@@ -418,19 +422,22 @@ private fun PickEmulatorContent(
     onEmulatorChosen: (EmulatorOption) -> Unit,
     modifier: Modifier,
 ) {
-    SettingsScaffold(title = "Add Console", subtitle = "Assign Emulator", onBack = onBack, modifier = modifier) {
+    SettingsScaffold(title = stringResource(R.string.lib_lm_add_console_title), subtitle = stringResource(R.string.lib_lm_assign_emulator), onBack = onBack, modifier = modifier) {
         // Registered like the list screens: the scaffold needs a scroll owner here for its
         // chrome drag-to-scroll and for controller keep-in-view. Registering is the whole fix;
         // the body itself is unchanged.
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
-            SettingsGroup(state.pendingPlatformName ?: "Emulator")
+            SettingsGroup(state.pendingPlatformName ?: stringResource(R.string.lib_lm_emulator))
             if (state.emulatorOptions.all { it.id == null }) {
-                Hint("No installed emulators detected for this platform. You can assign one later from the console's detail screen.")
+                Hint(stringResource(R.string.lib_lm_no_emulators))
             }
             state.emulatorOptions.forEach { option ->
-                SettingsRow(label = option.name, onClick = { onEmulatorChosen(option) })
+                SettingsRow(
+                    label = if (option.id == null) stringResource(R.string.lib_lm_decide_later) else option.name,
+                    onClick = { onEmulatorChosen(option) },
+                )
             }
         }
     }
@@ -445,27 +452,27 @@ private fun ScanPromptContent(
     onConfirmAddConsole: (Boolean) -> Unit,
     modifier: Modifier,
 ) {
-    SettingsScaffold(title = "Add Console", subtitle = "Scan Now?", onBack = onBack, modifier = modifier) {
+    SettingsScaffold(title = stringResource(R.string.lib_lm_add_console_title), subtitle = stringResource(R.string.lib_lm_scan_now_title), onBack = onBack, modifier = modifier) {
         // Registered like the list screens: the scaffold needs a scroll owner here for its
         // chrome drag-to-scroll and for controller keep-in-view. Registering is the whole fix;
         // the body itself is unchanged.
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
-            SettingsGroup(state.pendingPlatformName ?: "New Console")
+            SettingsGroup(state.pendingPlatformName ?: stringResource(R.string.lib_lm_new_console))
             SettingsValueRow(
-                label = "ROM directory",
-                value = state.pendingDirectory?.substringAfterLast('/') ?: "Not set",
+                label = stringResource(R.string.lib_lm_rom_directory),
+                value = state.pendingDirectory?.substringAfterLast('/') ?: stringResource(R.string.lib_lm_not_set),
                 sublabel = state.pendingDirectory,
             )
             SettingsRow(
-                label    = "Scan now",
-                sublabel = "Create the Memory Card and scan its folder immediately",
+                label    = stringResource(R.string.lib_lm_scan_now),
+                sublabel = stringResource(R.string.lib_lm_scan_now_sub),
                 onClick  = { onConfirmAddConsole(true) },
             )
             SettingsRow(
-                label    = "Add without scanning",
-                sublabel = "Create the Memory Card now, scan later",
+                label    = stringResource(R.string.lib_lm_add_no_scan),
+                sublabel = stringResource(R.string.lib_lm_add_no_scan_sub),
                 onClick  = { onConfirmAddConsole(false) },
             )
         }
@@ -501,6 +508,12 @@ private fun CardDetailContent(
     modifier: Modifier,
 ) {
     val card = state.detailCard ?: return
+    // Read here: the per-item menus are built in click handlers, which cannot read resources.
+    val removeFromLibraryLabel = stringResource(R.string.lib_lm_remove_from_library)
+    val removeExtensionLabel = stringResource(R.string.lib_lm_remove_extension)
+    val currentLabel = stringResource(R.string.lib_lm_current)
+    val setEmulatorLabel = stringResource(R.string.lib_lm_set_emulator)
+    val decideLaterLabel = stringResource(R.string.lib_lm_decide_later)
 
     var showRemoveConfirm  by remember { mutableStateOf(false) }
     var appToRemove        by remember { mutableStateOf<LibraryAppRow?>(null) }
@@ -531,18 +544,17 @@ private fun CardDetailContent(
         when {
             renameTargetId != null -> PfpModalSpec.TextEntry(
                 key = "rename:$renameTargetId",
-                title = "Rename Memory Card",
+                title = stringResource(R.string.lib_lm_rename_title),
                 initial = state.cards.firstOrNull { it.platformId == renameTargetId }?.displayName.orEmpty(),
-                placeholder = "Memory Card name",
+                placeholder = stringResource(R.string.lib_lm_rename_placeholder),
                 onConfirm = onConfirmRename,
                 onCancel = onCancelRename,
             )
             showRemoveConfirm -> PfpModalSpec.Confirm(
                 key = "remove:${card.platformId}",
-                title = "Remove ${card.displayName}?",
-                message = "This removes the console and its scanned games from the library. " +
-                    "ROM files on disk are not deleted.",
-                confirmLabel = "Remove",
+                title = stringResource(R.string.lib_lm_remove_card_title, card.displayName),
+                message = stringResource(R.string.lib_lm_remove_card_message),
+                confirmLabel = stringResource(R.string.lib_lm_remove),
                 destructive = true,
                 onConfirm = { showRemoveConfirm = false; onRemoveCard(card.platformId) },
                 onCancel = { showRemoveConfirm = false },
@@ -550,9 +562,9 @@ private fun CardDetailContent(
             appToRemove != null -> appToRemove?.let { app ->
                 PfpModalSpec.Confirm(
                     key = "removeApp:${app.gameId}",
-                    title = "Remove ${app.label}?",
-                    message = "This removes the app from this library. The app itself stays installed.",
-                    confirmLabel = "Remove",
+                    title = stringResource(R.string.lib_lm_remove_card_title, app.label),
+                    message = stringResource(R.string.lib_lm_remove_app_message),
+                    confirmLabel = stringResource(R.string.lib_lm_remove),
                     destructive = true,
                     onConfirm = { appToRemove = null; onRemoveApp(app.gameId) },
                     onCancel = { appToRemove = null },
@@ -564,7 +576,7 @@ private fun CardDetailContent(
 
     Box(modifier = modifier) {
     SettingsScaffold(
-        title = "Library Manager",
+        title = stringResource(R.string.lib_lm_title),
         subtitle = card.displayName,
         onBack = onBack,
         modifier = Modifier.fillMaxSize(),
@@ -581,19 +593,19 @@ private fun CardDetailContent(
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
 
             if (isWindows) {
-                SettingsGroup("Library")
+                SettingsGroup(stringResource(R.string.lib_lm_group_library))
                 SettingsValueRow(
-                    label    = "Games directory",
-                    value    = card.romDirectory?.substringAfterLast('/') ?: "Not set",
+                    label    = stringResource(R.string.lib_lm_games_directory),
+                    value    = card.romDirectory?.substringAfterLast('/') ?: stringResource(R.string.lib_lm_not_set),
                     sublabel = card.romDirectory
-                        ?: "Add a ROM Root — PFP creates and uses <root>/windows automatically",
+                        ?: stringResource(R.string.lib_lm_windows_no_root),
                 )
-                SettingsValueRow(label = "Games", value = card.gameCount.toString())
+                SettingsValueRow(label = stringResource(R.string.lib_lm_games), value = card.gameCount.toString())
 
-                SettingsGroup("Actions")
+                SettingsGroup(stringResource(R.string.lib_lm_group_actions))
                 SettingsRow(
-                    label    = "Game list",
-                    sublabel = "Label each Windows game Steam, Non-Steam or Local, and link Local folders",
+                    label    = stringResource(R.string.lib_lm_game_list),
+                    sublabel = stringResource(R.string.lib_lm_game_list_sub),
                     focusKey = WINDOWS_GAME_LIST_FOCUS_KEY,
                     trailing = {
                         Icon(
@@ -605,42 +617,42 @@ private fun CardDetailContent(
                     onClick  = onOpenWindowsGameList,
                 )
                 SettingsRow(
-                    label    = "Import PC games",
-                    sublabel = "Exported games, Add by ID, and launcher status",
+                    label    = stringResource(R.string.lib_lm_import_pc),
+                    sublabel = stringResource(R.string.lib_lm_import_pc_sub),
                     focusKey = IMPORT_PC_FOCUS_KEY,
                     onClick  = onOpenImportPcGames,
                 )
             } else if (isVita) {
-                SettingsGroup("Library")
+                SettingsGroup(stringResource(R.string.lib_lm_group_library))
                 SettingsValueRow(
-                    label    = "Vita3K data folder",
-                    value    = state.vita3KFolderLabel ?: "Not set",
+                    label    = stringResource(R.string.lib_lm_vita_folder),
+                    value    = state.vita3KFolderLabel ?: stringResource(R.string.lib_lm_not_set),
                     sublabel = state.vita3KFolderLabel
-                        ?.let { "Reading installed titles from this ux0 folder" }
-                        ?: "Pick your Vita3K ux0 folder (e.g. Roms/vita/ux0) so PFP can find games",
+                        ?.let { stringResource(R.string.lib_lm_vita_folder_set) }
+                        ?: stringResource(R.string.lib_lm_vita_folder_unset),
                     onClick  = { vitaFolderPicker.launch(null) },
                 )
-                SettingsValueRow(label = "Games", value = card.gameCount.toString())
+                SettingsValueRow(label = stringResource(R.string.lib_lm_games), value = card.gameCount.toString())
 
-                SettingsGroup("Actions")
+                SettingsGroup(stringResource(R.string.lib_lm_group_actions))
                 SettingsRow(
-                    label    = "Scan for Vita games",
-                    sublabel = "Reads installed titles from ux0/app in your Vita3K data folder",
+                    label    = stringResource(R.string.lib_lm_scan_vita),
+                    sublabel = stringResource(R.string.lib_lm_scan_vita_sub),
                     onClick  = if (!isScanning && state.vita3KFolderLabel != null) ({ onScanVitaGames() }) else null,
                 )
             } else if (isAndroid) {
-                SettingsGroup("Apps")
+                SettingsGroup(stringResource(R.string.lib_lm_group_apps))
                 SettingsRow(
-                    label    = "Add apps",
-                    sublabel = "Pick installed apps to add to this library",
+                    label    = stringResource(R.string.lib_lm_add_apps),
+                    sublabel = stringResource(R.string.lib_lm_add_apps_sub),
                     onClick  = onAddAndroidApps,
                 )
                 if (state.androidApps.isEmpty()) {
-                    Hint("No apps yet — use Add Apps to pick installed apps for this library.")
+                    Hint(stringResource(R.string.lib_lm_no_apps))
                 } else {
                     state.androidApps.forEach { app ->
                         val openMenu = {
-                            itemMenu.show(app.label, libraryAppMenuRows(app.gameId) { appToRemove = app })
+                            itemMenu.show(app.label, libraryAppMenuRows(app.gameId, removeFromLibraryLabel) { appToRemove = app })
                         }
                         SettingsRow(
                             label       = app.label,
@@ -650,26 +662,26 @@ private fun CardDetailContent(
                     }
                 }
             } else {
-                SettingsGroup("Library")
+                SettingsGroup(stringResource(R.string.lib_lm_group_library))
                 SettingsValueRow(
-                    label    = "ROM directory",
-                    value    = card.romDirectory?.substringAfterLast('/') ?: "Not set",
+                    label    = stringResource(R.string.lib_lm_rom_directory),
+                    value    = card.romDirectory?.substringAfterLast('/') ?: stringResource(R.string.lib_lm_not_set),
                     sublabel = card.romDirectory
-                        ?: "Scans this console's folder under your ROM Root",
+                        ?: stringResource(R.string.lib_lm_rom_directory_default),
                 )
                 SettingsValueRow(
-                    label   = "Emulator",
-                    value   = card.emulatorName ?: "None",
+                    label   = stringResource(R.string.lib_lm_emulator),
+                    value   = card.emulatorName ?: stringResource(R.string.lib_lm_none),
                     // The shared item menu: the pad drives it through itemMenu.intercept, like
                     // every other menu on this screen.
                     onClick = {
                         onLoadEmulatorOptions { options ->
                             itemMenu.show(
-                                "Set Emulator",
+                                setEmulatorLabel,
                                 options.map { option ->
                                     SettingsMenuItem(
-                                        option.name,
-                                        value = "Current".takeIf {
+                                        if (option.id == null) decideLaterLabel else option.name,
+                                        value = currentLabel.takeIf {
                                             option.id != null && option.name == card.emulatorName
                                         },
                                     ) { onSetEmulatorForDetail(option) }
@@ -678,15 +690,15 @@ private fun CardDetailContent(
                         }
                     },
                 )
-                SettingsValueRow(label = "Games", value = card.gameCount.toString())
+                SettingsValueRow(label = stringResource(R.string.lib_lm_games), value = card.gameCount.toString())
 
-                SettingsGroup("Supported files")
+                SettingsGroup(stringResource(R.string.lib_lm_group_files))
                 if (card.extensions.isEmpty()) {
-                    Hint("No extensions set — add at least one so scanning can match this console's ROMs.")
+                    Hint(stringResource(R.string.lib_lm_no_extensions))
                 } else {
                     card.extensions.forEach { ext ->
                         val openMenu = {
-                            itemMenu.show(".$ext", libraryExtensionMenuRows(card.platformId, ext, onRemoveExtension))
+                            itemMenu.show(".$ext", libraryExtensionMenuRows(card.platformId, ext, removeExtensionLabel, onRemoveExtension))
                         }
                         SettingsRow(
                             label       = ".$ext",
@@ -696,29 +708,29 @@ private fun CardDetailContent(
                     }
                 }
                 SettingsTextFieldRow(
-                    label         = "Add extension",
+                    label         = stringResource(R.string.lib_lm_add_extension),
                     value         = newExt,
                     onValueChange = { newExt = it },
-                    placeholder   = "e.g. iso, chd, zip",
-                    helper        = "Matched case-insensitively when scanning.",
-                    helperPrompt  = ControllerPromptItem(GamepadAction.SELECT, "Type"),
+                    placeholder   = stringResource(R.string.lib_lm_extension_hint),
+                    helper        = stringResource(R.string.lib_lm_extension_helper),
+                    helperPrompt  = ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.lib_lm_prompt_type)),
                 )
                 newExt.trim().lowercase().removePrefix(".").filter { it.isLetterOrDigit() }
                     .takeIf { it.isNotBlank() }
                     ?.let { clean ->
                         SettingsRow(
-                            label   = "Add \".$clean\"",
+                            label   = stringResource(R.string.lib_lm_add_extension_named, clean),
                             onClick = { onAddExtension(card.platformId, newExt); newExt = "" },
                         )
                     }
 
-                SettingsGroup("Actions")
+                SettingsGroup(stringResource(R.string.lib_lm_group_actions))
                 SettingsRow(
-                    label    = "Scan this console",
+                    label    = stringResource(R.string.lib_lm_scan_console),
                     sublabel = when {
-                        isScanning -> "Scanning…"
-                        card.romDirectory == null -> "ROM directory not configured"
-                        else -> "Scan only this console's folder"
+                        isScanning -> stringResource(R.string.lib_lm_scanning_ellipsis)
+                        card.romDirectory == null -> stringResource(R.string.lib_lm_rom_dir_unconfigured)
+                        else -> stringResource(R.string.lib_lm_scan_console_sub)
                     },
                     onClick  = if (!isScanning && card.romDirectory != null) ({ onScanConsole(card.platformId) }) else null,
                 )
@@ -727,76 +739,68 @@ private fun CardDetailContent(
             // PS3 games scan as ordinary ROMs; this grant only unlocks trophy reading from
             // ARMSX3's own data folder. Nothing is ever written into it.
             if (isPs3) {
-                SettingsGroup("Achievements")
+                SettingsGroup(stringResource(R.string.lib_lm_group_achievements))
                 SettingsValueRow(
-                    label    = "PS3 data folder",
-                    value    = state.ps3FolderLabel ?: "Not set",
+                    label    = stringResource(R.string.lib_lm_ps3_folder),
+                    value    = state.ps3FolderLabel ?: stringResource(R.string.lib_lm_not_set),
                     sublabel = state.ps3FolderLabel
-                        ?.let { "Reading trophies from this ARMSX3 PS3 folder" }
-                        ?: "Pick your ARMSX3 PS3 folder so PFP can read trophies",
+                        ?.let { stringResource(R.string.lib_lm_ps3_folder_set_sub) }
+                        ?: stringResource(R.string.lib_lm_ps3_folder_unset),
                     onClick  = { ps3FolderPicker.launch(null) },
                 )
                 if (state.ps3FolderLabel == null) {
-                    Hint(
-                        "Grant the ARMSX3 PS3 folder (the one holding config/dev_hdd0), then run " +
-                            "Auto-Match in Settings ▸ Achievements ▸ Update Achievements. Trophy ids come from each game's " +
-                            "own disc, so a game can link before you have ever booted it.",
-                    )
+                    Hint(stringResource(R.string.lib_lm_ps3_hint))
                 }
             }
 
             // Xbox 360 games scan as ordinary ROMs too; each grant only unlocks achievement reading
             // from that emulator's Xenia profiles. Both may be set — an unlock in either counts.
             if (isX360) {
-                SettingsGroup("Achievements")
+                SettingsGroup(stringResource(R.string.lib_lm_group_achievements))
                 SettingsValueRow(
-                    label    = "X360 Mobile data folder",
-                    value    = state.x360MobileFolderLabel ?: "Not set",
+                    label    = stringResource(R.string.lib_lm_x360_folder),
+                    value    = state.x360MobileFolderLabel ?: stringResource(R.string.lib_lm_not_set),
                     sublabel = state.x360MobileFolderLabel
-                        ?.let { "Reading achievements from X360 Mobile's profiles" }
-                        ?: "Pick X360 Mobile in the folder picker's side menu",
+                        ?.let { stringResource(R.string.lib_lm_x360_folder_set_sub) }
+                        ?: stringResource(R.string.lib_lm_x360_folder_unset),
                     onClick  = { x360MobileFolderPicker.launch(Xbox360Emulator.X360_MOBILE.pickerStartUri) },
                 )
                 SettingsValueRow(
-                    label    = "XenDroid data folder",
-                    value    = state.xenDroidFolderLabel ?: "Not set",
+                    label    = stringResource(R.string.lib_lm_xendroid_folder),
+                    value    = state.xenDroidFolderLabel ?: stringResource(R.string.lib_lm_not_set),
                     sublabel = state.xenDroidFolderLabel
-                        ?.let { "Reading achievements from XenDroid's profiles" }
-                        ?: "Pick Android/data/xendroid.compose",
+                        ?.let { stringResource(R.string.lib_lm_xendroid_folder_set_sub) }
+                        ?: stringResource(R.string.lib_lm_xendroid_folder_unset),
                     onClick  = { xenDroidFolderPicker.launch(Xbox360Emulator.XENDROID.pickerStartUri) },
                 )
                 if (state.x360MobileFolderLabel == null && state.xenDroidFolderLabel == null) {
-                    Hint(
-                        "Grant the data folder of the emulator you play in, then run Auto-Match in " +
-                            "Settings ▸ Achievements ▸ Update Achievements. Title IDs come from each game's own file, so a " +
-                            "game can link before you have ever booted it.",
-                    )
+                    Hint(stringResource(R.string.lib_lm_x360_hint))
                 }
             }
 
-            if (isAndroid) SettingsGroup("Actions")
-            SettingsRow(label = "Rename Memory Card", onClick = { onBeginRename(card.platformId) })
+            if (isAndroid) SettingsGroup(stringResource(R.string.lib_lm_group_actions))
+            SettingsRow(label = stringResource(R.string.lib_lm_rename_card), onClick = { onBeginRename(card.platformId) })
             SettingsToggleRow(
-                label    = SettingsLabels.SHOW_IN_GAMES,
-                sublabel = "Enable or hide this Memory Card",
+                label    = stringResource(SettingsLabels.SHOW_IN_GAMES_RES),
+                sublabel = stringResource(R.string.lib_lm_show_in_games_sub),
                 checked  = card.enabled,
                 onToggle = { onToggleEnabled(card.platformId, it) },
             )
             SettingsToggleRow(
-                label    = SettingsLabels.PIN_TO_TOP,
+                label    = stringResource(SettingsLabels.PIN_TO_TOP_RES),
                 checked  = card.pinned,
                 onToggle = { onTogglePinned(card.platformId, it) },
             )
-            SettingsRow(label = "Move up",   onClick = { onMoveCard(card.platformId, true) })
-            SettingsRow(label = "Move down", onClick = { onMoveCard(card.platformId, false) })
+            SettingsRow(label = stringResource(R.string.lib_lm_move_up),   onClick = { onMoveCard(card.platformId, true) })
+            SettingsRow(label = stringResource(R.string.lib_lm_move_down), onClick = { onMoveCard(card.platformId, false) })
 
             // The Windows Memory Card is managed by the PC import system and cannot be removed.
             if (!isWindows) {
-                SettingsGroup("Danger zone")
+                SettingsGroup(stringResource(R.string.lib_lm_group_danger))
                 SettingsRow(
-                    label    = "Remove Memory Card",
-                    sublabel = "Removes this console and its games. ROM files are not deleted.",
-                    trailing = { Text("Remove", color = SettingsAccent) },
+                    label    = stringResource(R.string.lib_lm_remove_card),
+                    sublabel = stringResource(R.string.lib_lm_remove_card_sub),
+                    trailing = { Text(stringResource(R.string.lib_lm_remove), color = SettingsAccent) },
                     onClick  = { showRemoveConfirm = true },
                 )
             }
@@ -809,17 +813,18 @@ private fun CardDetailContent(
 }
 
 /** An Android app row's menu. Removing drops the game from the library, so the row is red and the screen confirms it. */
-internal fun libraryAppMenuRows(gameId: Long, onRequestRemove: (Long) -> Unit): List<SettingsMenuItem> = listOf(
-    SettingsMenuItem("Remove from Library", destructive = true) { onRequestRemove(gameId) },
+internal fun libraryAppMenuRows(gameId: Long, removeLabel: String, onRequestRemove: (Long) -> Unit): List<SettingsMenuItem> = listOf(
+    SettingsMenuItem(removeLabel, destructive = true) { onRequestRemove(gameId) },
 )
 
 /** An extension row's menu. Removing is reversible (add it back), so the row is plain and unconfirmed. */
 internal fun libraryExtensionMenuRows(
     platformId: String,
     ext: String,
+    removeLabel: String,
     onRemove: (platformId: String, ext: String) -> Unit,
 ): List<SettingsMenuItem> = listOf(
-    SettingsMenuItem("Remove Extension") { onRemove(platformId, ext) },
+    SettingsMenuItem(removeLabel) { onRemove(platformId, ext) },
 )
 
 // ── IMPORT PC GAMES ─────────────────────────────────────────────────────────────
@@ -884,8 +889,8 @@ private fun ImportPcGamesContent(
     )
 
     SettingsScaffold(
-        title = "Library",
-        subtitle = "Import PC Games",
+        title = stringResource(R.string.lib_lm_library_title),
+        subtitle = stringResource(R.string.lib_lm_import_pc_title),
         onBack = onBack,
         modalOpen = goldbergModal.open,
         // The convert panel is modal: it takes Up/Down/Select before the rows behind it see them.
@@ -901,32 +906,25 @@ private fun ImportPcGamesContent(
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
 
-            state.message?.let { MessageRow(it) { onDismissMessage() } }
+            state.message?.let { MessageRow(it.asString()) { onDismissMessage() } }
 
-            SettingsGroup("Add to home capture")
+            SettingsGroup(stringResource(R.string.lib_lm_group_home))
             SettingsValueRow(
-                label    = "Play Field Portal as home",
-                value    = if (state.isHomeLauncher) "Active" else "Set…",
-                sublabel = if (state.isHomeLauncher)
-                    "Using \"Add to home\" inside a supported launcher imports the game here automatically"
-                else
-                    "Set PFP as your Home app so a launcher's \"Add to home\" option imports the game into PFP",
+                label    = stringResource(R.string.lib_lm_home_label),
+                value    = stringResource(if (state.isHomeLauncher) R.string.lib_lm_home_active else R.string.lib_lm_home_set),
+                sublabel = stringResource(if (state.isHomeLauncher) R.string.lib_lm_home_active_sub else R.string.lib_lm_home_set_sub),
                 onClick  = { runCatching { homeLauncher.launch(homeRoleIntentProvider()) } },
             )
 
-            SettingsGroup("Exported games")
+            SettingsGroup(stringResource(R.string.lib_lm_group_exported))
             SettingsRow(
-                label    = "Scan import folder",
-                sublabel = "Every scan already reads <ROM Root>/windows/import on its own. This row is " +
-                    "a one-time pick for a folder somewhere else — PFP scans it for GameNative / " +
-                    "Winlator exports (.steam · .epic · .gog · .amazon · .pcgame · .desktop) and PFP's " +
-                    "own .pfpgame exports, and imports them",
+                label    = stringResource(R.string.lib_lm_scan_import),
+                sublabel = stringResource(R.string.lib_lm_scan_import_sub),
                 onClick  = { importPicker.launch(null) },
             )
             SettingsRow(
-                label    = "Export manual games",
-                sublabel = "Writes a .pfpgame file into <windows>/import for each game added by ID or captured, " +
-                    "and each pin with artwork, so a fresh install can bring them back with their artwork",
+                label    = stringResource(R.string.lib_lm_export_manual),
+                sublabel = stringResource(R.string.lib_lm_export_manual_sub),
                 onClick  = onExportManualPcGames,
             )
 
@@ -934,55 +932,46 @@ private fun ImportPcGamesContent(
             // Achievement tracking for Windows games run through a Steam emulator. Separate from
             // the groups above because it is about where the GAME FOLDERS are, not about how a game
             // launches — and because those folders can live anywhere, so PFP has to be told.
-            SettingsGroup("Local Windows")
+            SettingsGroup(stringResource(R.string.lib_lm_group_local))
             SettingsRow(
-                label    = "Batch match Local games",
-                sublabel = "Pick the folder that CONTAINS your game folders. Each one that is already " +
-                    "in your Windows library is identified, remembered and linked; the rest are left " +
-                    "untouched",
+                label    = stringResource(R.string.lib_lm_batch_match),
+                sublabel = stringResource(R.string.lib_lm_batch_match_sub),
                 onClick  = { batchMatchPicker.launch(null) },
             )
             SettingsValueRow(
-                label    = "Matched Local Games (${state.localSteamFolders.size})",
-                value    = if (state.localSteamFolders.isEmpty()) "None yet" else "",
-                sublabel = if (state.localSteamFolders.isEmpty()) {
-                    "Nothing pointed at yet — Batch Match above, or Auto-Match one game from its Shiba Coins page"
-                } else {
-                    "Forget removes only PFP's note of where a folder is; earned coins stay"
-                },
+                label    = stringResource(R.string.lib_lm_matched_local, state.localSteamFolders.size),
+                value    = if (state.localSteamFolders.isEmpty()) stringResource(R.string.lib_lm_none_yet) else "",
+                sublabel = stringResource(
+                    if (state.localSteamFolders.isEmpty()) R.string.lib_lm_matched_local_empty else R.string.lib_lm_matched_local_forget_note,
+                ),
             )
             state.localSteamFolders.forEach { row ->
                 LocalSteamFolderSettingsRow(row, onForget = { onForgetLocalSteamFolder(row.appId) })
             }
             SettingsValueRow(
-                label    = "Goldberg installer",
-                value    = if (state.goldbergInstallerEnabled) "On" else "Off",
-                sublabel = "Lets PFP write an achievement list into a game folder and swap in the " +
-                    "bundled Steam emulator. The same switch as Settings ▸ Achievements ▸ Local Windows",
+                label    = stringResource(R.string.lib_lm_goldberg),
+                value    = stringResource(if (state.goldbergInstallerEnabled) R.string.lib_lm_on else R.string.lib_lm_off),
+                sublabel = stringResource(R.string.lib_lm_goldberg_sub),
                 onClick  = {
                     if (state.goldbergInstallerEnabled) onSetGoldbergInstaller(false) else showGoldbergWarning = true
                 },
             )
-            Hint(
-                "Back up the save files of any game you already played before converting it — the " +
-                    "emulator starts reading from a new save location, and PFP cannot put the old " +
-                    "one back for you."
-            )
+            Hint(stringResource(R.string.lib_lm_goldberg_backup))
 
-            SettingsGroup("PC launchers")
+            SettingsGroup(stringResource(R.string.lib_lm_group_launchers))
             state.pcLaunchers.forEach { launcher ->
                 when {
-                    !launcher.installed -> SettingsValueRow(label = launcher.name, value = "Not installed")
+                    !launcher.installed -> SettingsValueRow(label = launcher.name, value = stringResource(R.string.lib_lm_not_installed))
                     launcher.canAddById -> SettingsValueRow(
                         label    = launcher.name,
-                        value    = "Add by ID…",
-                        sublabel = "Add a game by its ID — or use the app's own Add-to-home option",
+                        value    = stringResource(R.string.lib_lm_add_by_id),
+                        sublabel = stringResource(R.string.lib_lm_add_by_id_sub),
                         onClick  = { addTarget = launcher },
                     )
                     else -> SettingsValueRow(
                         label    = launcher.name,
-                        value    = "Installed",
-                        sublabel = "No add-by-ID support — export the game to <windows>/import instead",
+                        value    = stringResource(R.string.lib_lm_installed),
+                        sublabel = stringResource(R.string.lib_lm_no_add_by_id),
                     )
                 }
             }
@@ -990,16 +979,16 @@ private fun ImportPcGamesContent(
             // Apps PFP cannot identify with confidence: the user says what each one is. A choice
             // is stored per install and outranks every automatic rule.
             if (state.unknownLaunchers.isNotEmpty() || state.hiddenUnknownLaunchers.isNotEmpty()) {
-                SettingsGroup("Unknown Windows emulators")
+                SettingsGroup(stringResource(R.string.lib_lm_group_unknown))
                 state.unknownLaunchers.forEach { app ->
                     SettingsRow(
                         label    = app.label,
-                        sublabel = app.sublabel,
+                        sublabel = app.sublabel.asString(),
                         focusKey = "unknown_${app.packageName}",
                         leading  = { AppIcon(app.packageName) },
                         trailing = {
                             Text(
-                                text = "◀  ${app.value}  ▶",
+                                text = "◀  ${app.value.asString()}  ▶",
                                 color = SettingsText,
                                 fontSize = 13.sp,
                                 style = TextStyle(shadow = SettingsTextShadow),
@@ -1011,30 +1000,29 @@ private fun ImportPcGamesContent(
                 val hidden = state.hiddenUnknownLaunchers.size
                 if (hidden > 0) {
                     SettingsValueRow(
-                        label    = "Show hidden apps",
+                        label    = stringResource(R.string.lib_lm_show_hidden),
                         value    = hidden.toString(),
-                        sublabel = (if (hidden == 1) "1 app" else "$hidden apps") +
-                            " marked Not a launcher — bring them back to choose again",
+                        sublabel = pluralStringResource(R.plurals.lib_lm_show_hidden_sub, hidden, hidden),
                         onClick  = onShowHiddenUnknownLaunchers,
                     )
                 }
             }
 
-            SettingsGroup("Found Games (${state.pcGames.size})")
+            SettingsGroup(stringResource(R.string.lib_lm_group_found, state.pcGames.size))
             if (state.pcGames.isEmpty()) {
-                Hint("No PC games captured yet.")
+                Hint(stringResource(R.string.lib_lm_no_found))
             } else {
                 state.pcGames.forEach { row ->
                     SettingsValueRow(
                         label    = row.title,
                         sublabel = row.launcherName,
-                        value    = "Import",
+                        value    = stringResource(R.string.lib_lm_import),
                         onClick  = { onImportPcGame(row) },
                     )
                 }
                 SettingsRow(
-                    label    = "Import all",
-                    sublabel = "Move every found game into the Windows Games Memory Card",
+                    label    = stringResource(R.string.lib_lm_import_all),
+                    sublabel = stringResource(R.string.lib_lm_import_all_sub),
                     onClick  = onImportAllPcGames,
                 )
             }
@@ -1078,11 +1066,11 @@ private fun AddPcGameStep(
     val modal = rememberSettingsModal(
         when (editing) {
             "id" -> PfpModalSpec.TextEntry(
-                key = "pc_add_id", title = "Game ID", initial = id, label = "Game ID",
+                key = "pc_add_id", title = stringResource(R.string.lib_lm_game_id), initial = id, label = stringResource(R.string.lib_lm_game_id),
                 onConfirm = { id = it; editing = null }, onCancel = { editing = null },
             )
             "title" -> PfpModalSpec.TextEntry(
-                key = "pc_add_title", title = "Game name", initial = title, label = "Game name",
+                key = "pc_add_title", title = stringResource(R.string.lib_lm_game_name), initial = title, label = stringResource(R.string.lib_lm_game_name),
                 onConfirm = { title = it; editing = null }, onCancel = { editing = null },
             )
             else -> null
@@ -1090,8 +1078,8 @@ private fun AddPcGameStep(
     )
 
     SettingsScaffold(
-        title = "Library",
-        subtitle = "Add ${launcher.name} Game",
+        title = stringResource(R.string.lib_lm_library_title),
+        subtitle = stringResource(R.string.lib_lm_add_game_title, launcher.name),
         onBack = onBack,
         modalOpen = modal.open,
         onInterceptAction = modal.intercept,
@@ -1100,27 +1088,27 @@ private fun AddPcGameStep(
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
-            adapter?.idPrompt?.let { Hint(it) }
-            SettingsGroup("Game")
-            SettingsValueRow(label = "Game ID", value = id.ifBlank { "Not set" }, onClick = { editing = "id" })
-            SettingsValueRow(label = "Game name", value = title.ifBlank { "Not set" }, onClick = { editing = "title" })
+            adapter?.idPrompt?.let { Hint(it.asString()) }
+            SettingsGroup(stringResource(R.string.lib_lm_group_game))
+            SettingsValueRow(label = stringResource(R.string.lib_lm_game_id), value = id.ifBlank { stringResource(R.string.lib_lm_not_set) }, onClick = { editing = "id" })
+            SettingsValueRow(label = stringResource(R.string.lib_lm_game_name), value = title.ifBlank { stringResource(R.string.lib_lm_not_set) }, onClick = { editing = "title" })
             if (sources.isNotEmpty()) {
                 SettingsValueRow(
-                    label = "Source",
+                    label = stringResource(R.string.lib_lm_source),
                     value = source.orEmpty(),
-                    sublabel = "Press to switch store",
+                    sublabel = stringResource(R.string.lib_lm_source_sub),
                     onClick = { source = nextPcSource(sources, source) },
                 )
             }
-            SettingsGroup("Add")
+            SettingsGroup(stringResource(R.string.lib_lm_group_add))
             SettingsRow(
-                label = "Test launch",
-                sublabel = "Open the game in ${launcher.name} to check the ID",
+                label = stringResource(R.string.lib_lm_test_launch),
+                sublabel = stringResource(R.string.lib_lm_test_launch_sub, launcher.name),
                 onClick = if (canTestPcGame(id)) ({ onTest(id.trim(), source) }) else null,
             )
             SettingsRow(
-                label = "Add game",
-                sublabel = if (canAddPcGame(id, title)) "Add it to your Windows library" else "Set a Game ID and a name first",
+                label = stringResource(R.string.lib_lm_add_game),
+                sublabel = stringResource(if (canAddPcGame(id, title)) R.string.lib_lm_add_game_sub else R.string.lib_lm_add_game_blocked),
                 onClick = if (canAddPcGame(id, title)) ({ onAdd(id.trim(), title.trim(), source) }) else null,
             )
         }
@@ -1139,18 +1127,20 @@ private fun AddPcGameStep(
 private fun LocalSteamFolderSettingsRow(row: LocalSteamFolderRow, onForget: () -> Unit) {
     SettingsValueRow(
         label    = row.folderName,
-        value    = "Forget",
-        sublabel = row.detail,
+        value    = stringResource(R.string.lib_lm_forget),
+        sublabel = row.detail.asString(),
         onClick  = onForget,
     )
 }
 
 // ── Shared bits ─────────────────────────────────────────────────────────────────
 
-private fun cardSublabel(card: LibraryCardRow): String = buildString {
-    append(card.romDirectory ?: "No ROM directory")
-    append("  ·  ${card.gameCount} game${if (card.gameCount == 1) "" else "s"}")
-}
+@Composable
+private fun cardSublabel(card: LibraryCardRow): String = stringResource(
+    R.string.lib_lm_card_sub,
+    card.romDirectory ?: stringResource(R.string.lib_lm_no_rom_directory),
+    pluralStringResource(R.plurals.lib_lm_game_count, card.gameCount, card.gameCount),
+)
 
 @Composable
 private fun Hint(text: String) {
@@ -1161,7 +1151,7 @@ private fun Hint(text: String) {
 private fun MessageRow(message: String, onDismiss: () -> Unit) {
     SettingsRow(
         label    = message,
-        sublabel = "Tap to dismiss",
+        sublabel = stringResource(R.string.lib_lm_tap_dismiss),
         trailing = { Text("✕", color = SettingsAccent, fontWeight = FontWeight.Bold) },
         onClick  = onDismiss,
     )

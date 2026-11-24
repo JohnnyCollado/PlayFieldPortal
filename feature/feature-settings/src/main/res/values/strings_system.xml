@@ -1,0 +1,415 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Localization slice C2: the remaining Settings screens (Backup, Controller, Credits, About, Logs, Music, Video, Photo, Notifications, System Update, shared rows and modals). -->
+
+    <!-- Shared by several Settings screens. -->
+    <string name="sets_on">On</string>
+    <string name="sets_off">Off</string>
+    <!-- Controller footer prompt: the button that goes back one screen. -->
+    <string name="sets_prompt_back">Back</string>
+    <!-- Controller footer prompts. Each names what the button does on the focused row. -->
+    <string name="sets_prompt_enter">Enter</string>
+    <string name="sets_prompt_switch">Switch</string>
+    <string name="sets_prompt_options">Options</string>
+
+    <!-- Settings ▸ Backup & Restore -->
+    <string name="sets_backup_title">Backup &amp; Restore</string>
+    <string name="sets_backup_group_backup">Backup</string>
+    <string name="sets_backup_last_backup">Last backup</string>
+    <string name="sets_backup_never">Never</string>
+    <string name="sets_backup_folder">Backup folder</string>
+    <!-- %1$s is the name of the chosen backup folder. -->
+    <string name="sets_backup_folder_saving_to">Saving to: %1$s  (select to change)</string>
+    <string name="sets_backup_folder_not_set">Not set — select to choose where backups are saved</string>
+    <!-- Row label: starts a backup immediately. -->
+    <string name="sets_backup_now">Back up now</string>
+    <string name="sets_backup_now_help">Saves library, settings, and play history</string>
+    <string name="sets_backup_choose_folder_first">Choose a backup folder first</string>
+    <string name="sets_backup_choose_folder_first_error">Choose a backup folder first.</string>
+    <string name="sets_backup_group_saved">Saved backups</string>
+    <string name="sets_backup_group_included">What\'s included</string>
+    <string name="sets_backup_included_library">Game Library</string>
+    <string name="sets_backup_included_history">Play History</string>
+    <string name="sets_backup_included_categories">Custom Categories</string>
+    <string name="sets_backup_included_settings">Settings &amp; API Keys</string>
+    <string name="sets_backup_included_profiles">Emulator Profiles</string>
+    <string name="sets_backup_rom_files">ROM files</string>
+    <string name="sets_backup_not_included">✗  (not included)</string>
+    <string name="sets_backup_group_restore">Restore</string>
+    <string name="sets_backup_restore_from_file">Restore from file</string>
+    <string name="sets_backup_restore_from_file_help">Browse to a .pfpbackup file</string>
+    <string name="sets_backup_after_restoring">After restoring</string>
+    <string name="sets_backup_after_restoring_help">Your folders come back, but Android\'s access to them does not. Re-link each root under its section\'s Root Access (Library, Music, Video, Photo) — one step each; re-linking a root restores everything under it at once.</string>
+    <string name="sets_backup_working">Working…</string>
+    <string name="sets_backup_error">Error</string>
+    <string name="sets_backup_creating">Creating backup…</string>
+    <string name="sets_backup_restoring">Restoring backup…</string>
+    <string name="sets_backup_unknown_error">Unknown error</string>
+    <!-- %1$s is a backup file name. -->
+    <string name="sets_backup_delete_failed">Could not delete %1$s.</string>
+    <!-- Context-menu rows for a saved backup. -->
+    <string name="sets_backup_menu_restore">Restore</string>
+    <string name="sets_backup_menu_share">Share</string>
+    <string name="sets_backup_menu_delete">Delete Backup</string>
+    <string name="sets_backup_delete_title">Delete Backup?</string>
+    <!-- %1$s is a backup file name. -->
+    <string name="sets_backup_delete_message">\"%1$s\" will be deleted. This can\'t be undone.</string>
+    <string name="sets_backup_delete_confirm">Delete</string>
+    <string name="sets_backup_restore_title">Restore Backup?</string>
+    <!-- %1$s is a backup file name. -->
+    <string name="sets_backup_restore_message_named">\"%1$s\" will replace your current library, settings and play history. This can\'t be undone.</string>
+    <string name="sets_backup_restore_message_picked">This backup will replace your current library, settings and play history. This can\'t be undone.</string>
+    <string name="sets_backup_restore_confirm">Restore</string>
+    <!-- Title of the Android share sheet when sharing a backup file. -->
+    <string name="sets_backup_share_chooser">Share backup</string>
+
+    <!-- Settings ▸ Credits -->
+    <string name="sets_credits_group_xmb">XMB design — Sony</string>
+    <string name="sets_credits_xmb_inspired">The look and feel of this launcher is inspired by the XMB (XrossMediaBar), the interface Sony created for the PlayStation Portable and PlayStation 3 — the cross-bar layout, the flowing wave, and the navigation model are all homages to it.</string>
+    <string name="sets_credits_xmb_trademarks">\"XrossMediaBar\", \"XMB\", \"PSP\" and \"PlayStation\" are trademarks of Sony Interactive Entertainment Inc. Play Field Portal is an independent, non-commercial fan project — not affiliated with, endorsed by, or sponsored by Sony. Bundled UI artwork comes from the community \"XMB Menu for ES-DE\" theme (credited below) and remains the property of its respective authors. No Sony audio is bundled: every menu sound is credited separately below.</string>
+    <string name="sets_credits_group_icon">App icon &amp; logo</string>
+    <string name="sets_credits_icon_designed">The Play Field Portal app icon and logo were designed by johakovi. Huge thanks for the artwork that gives the launcher its identity.</string>
+    <!-- Row label: the role of the person credited (designer of the app icon). -->
+    <string name="sets_credits_label_design">Design</string>
+    <string name="sets_credits_group_artwork">System &amp; console artwork</string>
+    <string name="sets_credits_artwork_from">The system, console and category icons used throughout this launcher are from the \"XMB Menu for ES-DE\" theme — a community recreation of the PSP XMB.</string>
+    <string name="sets_credits_artwork_rights">All rights to this artwork belong to its creators — Anthony Caccese, building on the original work by InitialDin. The icons are used here with gratitude and remain the property of their respective authors.</string>
+    <string name="sets_credits_label_project">Project</string>
+    <string name="sets_credits_label_authors">Authors</string>
+    <string name="sets_credits_label_source">Source</string>
+    <string name="sets_credits_group_buttons">Controller button icons</string>
+    <string name="sets_credits_buttons_from">Every on-screen button prompt — the PlayStation, Xbox and Nintendo face buttons, D-pads, bumpers, triggers, sticks and system buttons — is drawn from Zacksly\'s button icon packs, used under the Creative Commons Attribution 3.0 license.</string>
+    <string name="sets_credits_buttons_unmodified">The artwork is unmodified: only the file names were changed to Android resource names, and just the icons the launcher renders are bundled.</string>
+    <string name="sets_credits_label_author">Author</string>
+    <string name="sets_credits_label_website">Website</string>
+    <string name="sets_credits_label_support">Support</string>
+    <string name="sets_credits_label_packs">Packs</string>
+    <string name="sets_credits_label_license">License</string>
+    <string name="sets_credits_group_sounds">Menu sounds</string>
+    <string name="sets_credits_sounds_built">The bundled menu sounds — navigation, back, confirm, error, launch, notification and the boot chime — are built from royalty-free audio published on Pixabay, edited for the launcher: trimmed, re-pitched, re-levelled and converted. Thanks to the creators whose work the set is built from.</string>
+    <string name="sets_credits_sounds_license">The Pixabay Content License does not require attribution; it is given here with thanks anyway. If you are one of these creators and would like the credit changed or an asset removed, please reach out.</string>
+    <string name="sets_credits_group_metadata">Game artwork &amp; metadata</string>
+    <string name="sets_credits_metadata_fetched">Box art, 3D boxes, cartridge/disc shots, hero banners, logos, icons, manuals, video snaps and game metadata are fetched at your request from third-party providers and remain the property of their respective owners.</string>
+    <string name="sets_credits_label_primary_scraper">Primary scraper</string>
+    <string name="sets_credits_value_screenscraper">ScreenScraper — screenscraper.fr, community-maintained game media database</string>
+    <string name="sets_credits_label_artwork">Artwork</string>
+    <string name="sets_credits_label_metadata">Metadata</string>
+    <string name="sets_credits_group_achievements">Achievements — Shiba Coins</string>
+    <string name="sets_credits_achievements_from">Achievement data for the Shiba Coins system comes from the following services and projects, and remains the property of their respective owners.</string>
+    <string name="sets_credits_value_retroachievements">retroachievements.org — community-made achievement sets and unlock data for retro games, via the official RetroAchievements Web API and api-kotlin client</string>
+    <string name="sets_credits_value_steam">Powered by Steam — achievement schemas and unlock data via the Steam Web API, using your own key. Steam and the Steam logo are trademarks of Valve Corporation. steampowered.com</string>
+    <string name="sets_credits_goldberg_bundles">Local achievement tracking for Steam-emulated PC games bundles the Goldberg Steam Emulator — specifically gbe_fork, the community fork maintained by Detanup01 and contributors, building on the original Goldberg Emulator by Mr. Goldberg.</string>
+    <string name="sets_credits_goldberg_license">The emulator is free software licensed under the GNU Lesser General Public License v3.0 (LGPL-3.0). Play Field Portal bundles an unmodified build of its steam_api64.dll; the complete corresponding source code and the full license text are available at the links below.</string>
+    <string name="sets_credits_value_gbe">gbe_fork — Detanup01 and contributors</string>
+    <string name="sets_credits_label_original_project">Original project</string>
+    <string name="sets_credits_value_goldberg_original">Goldberg Emulator by Mr. Goldberg — gitlab.com/Mr_Goldberg/goldberg_emulator</string>
+    <string name="sets_credits_group_support">Support the project</string>
+    <string name="sets_credits_support_thanks">Thank you all for your support. I created this as a love letter to the PSP and the amazing community that loves it as well, so this project will forever remain free. With that said, if you appreciate what I do and would like to show that appreciation in another way, you can buy me a taco. Of course, donations are always optional and never required. Love y\'all, and Happy June 15th.</string>
+    <!-- Link row label. A light-hearted pun on donating ("buy me a coffee"); keep the playful tone. -->
+    <string name="sets_credits_label_buy_taco">Buy me a Taco</string>
+    <string name="sets_credits_group_notes">Notes</string>
+    <string name="sets_credits_notes_text">If you are a rights holder and would like attribution changed or any asset removed, please reach out and it will be addressed promptly.</string>
+    <string name="sets_credits_title">Credits</string>
+    <!-- %1$s is a web address. Shown in the notification tray when no app can open web links. -->
+    <string name="sets_credits_no_browser">No app can open web links. Visit %1$s in a browser.</string>
+
+    <!-- Settings ▸ Logs -->
+    <string name="sets_logs_title">Logs</string>
+    <!-- Controller footer prompts: each names what the highlighted button does here. -->
+    <string name="sets_logs_prompt_share">Share</string>
+    <string name="sets_logs_prompt_open">Open</string>
+    <string name="sets_logs_prompt_clear">Clear</string>
+    <string name="sets_logs_clear_title">Clear All Logs?</string>
+    <!-- %1$d is how many log files exist; %2$s is their total size, e.g. "650 KB". -->
+    <plurals name="sets_logs_clear_message">
+        <item quantity="one">The log file (%2$s) will be deleted. If you\'re about to report a problem, share the log first. A cleared log can\'t be recovered.</item>
+        <item quantity="other">All %1$d log files (%2$s) will be deleted. If you\'re about to report a problem, share the log first. A cleared log can\'t be recovered.</item>
+    </plurals>
+    <string name="sets_logs_clear_confirm">Clear</string>
+    <string name="sets_logs_group_files">Log files</string>
+    <string name="sets_logs_empty">No log files yet</string>
+    <string name="sets_logs_empty_help">A new log starts with every app launch. Select to check again.</string>
+    <string name="sets_logs_group_manage">Manage</string>
+    <string name="sets_logs_clear_row">Clear all logs</string>
+    <string name="sets_logs_clear_row_help">Deletes every saved log. This session keeps logging into a fresh file.</string>
+    <string name="sets_logs_clear_row_none">Nothing to clear</string>
+    <string name="sets_logs_group_about">About logs</string>
+    <string name="sets_logs_saved">What gets saved</string>
+    <string name="sets_logs_saved_help">Only the most recent sessions are kept (about 2 MB at most). Passwords, tokens, account names and emails are removed before anything is written.</string>
+    <!-- %1$s is a log file name. Button label / accessibility text on the share action. -->
+    <string name="sets_logs_share_file">Share %1$s</string>
+    <!-- Small badge on the log file this session is writing into. -->
+    <string name="sets_logs_current">CURRENT</string>
+    <!-- Title of the Android "open with" chooser. -->
+    <string name="sets_logs_open_with">Open log with</string>
+    <!-- %1$s is a log file name. Subject line of the shared email/message. -->
+    <string name="sets_logs_share_subject">Play Field Portal log — %1$s</string>
+    <string name="sets_logs_share_chooser">Share log file</string>
+    <string name="sets_logs_no_files">No files</string>
+    <!-- %1$d is the number of log files; %2$s is their total size, e.g. "650 KB". -->
+    <plurals name="sets_logs_summary">
+        <item quantity="one">%1$d file · %2$s</item>
+        <item quantity="other">%1$d files · %2$s</item>
+    </plurals>
+    <!-- %1$d is how many log files were deleted; %2$s is their total size. -->
+    <plurals name="sets_logs_deleted">
+        <item quantity="one">Deleted %1$d file (%2$s)</item>
+        <item quantity="other">Deleted %1$d files (%2$s)</item>
+    </plurals>
+    <!-- %1$s is a time of day, e.g. "3:18 AM". -->
+    <string name="sets_logs_started_today">Started today, %1$s</string>
+    <string name="sets_logs_started_yesterday">Started yesterday, %1$s</string>
+    <!-- %1$s is a date like "Sep 1"; %2$s is a time of day. -->
+    <string name="sets_logs_started_on">Started %1$s, %2$s</string>
+
+    <!-- Root folders (shared by Music, Video, Photo) -->
+    <string name="sets_roots_group">Root folders</string>
+    <string name="sets_scanning">Scanning…</string>
+    <string name="sets_rescan_help">Update the libraries from every root folder</string>
+    <string name="sets_playback_group">Playback</string>
+    <!-- The kind of media a root folder holds. Inserted into sentences such as "No %1$s roots configured". -->
+    <string name="sets_root_kind_music">Music</string>
+    <string name="sets_root_kind_video">Video</string>
+    <string name="sets_root_kind_photo">Photo</string>
+    <string name="sets_root_kind_rom">ROM</string>
+    <!-- Names shown for a root folder whose real name cannot be read. -->
+    <string name="sets_root_fallback_music">Music</string>
+    <string name="sets_root_fallback_video">Videos</string>
+    <string name="sets_root_fallback_photo">Photos</string>
+    <!-- %1$s is a media kind (Music, Video, Photo or ROM). -->
+    <string name="sets_root_none">No %1$s roots configured</string>
+    <string name="sets_root_none_help">Add a folder below to start managing your library</string>
+    <string name="sets_root_access_lost">Access lost — use Edit to re-grant access</string>
+    <!-- %1$s is a comma-separated list of console names. -->
+    <string name="sets_root_consoles">Consoles: %1$s</string>
+    <!-- %1$s is a media kind (Music, Video, Photo or ROM). -->
+    <string name="sets_root_kind_root">%1$s root</string>
+    <!-- Glossary labels for the buttons on a root-folder row; the same words are used in the setup wizard. -->
+    <string name="sets_label_edit_folder">Edit Folder</string>
+    <string name="sets_label_remove_folder">Remove Folder</string>
+    <string name="sets_label_options_hint">Options Hint</string>
+    <string name="sets_label_show_on_bar">Show on Bar</string>
+    <string name="sets_label_show_in_games">Show in Games</string>
+    <string name="sets_label_pin_to_top">Pin to Top</string>
+    <!-- Short captions on the two inline buttons of a root-folder row. -->
+    <string name="sets_root_edit_short">Edit</string>
+    <string name="sets_root_remove_short">Remove</string>
+    <string name="sets_root_remove_title">Remove this folder?</string>
+    <!-- %1$s is the folder's name or path. -->
+    <string name="sets_root_remove_message">PFP will stop using \"%1$s\", and what it found there leaves the library. No files are deleted from your storage.</string>
+    <string name="sets_root_remove_confirm">Remove</string>
+    <!-- Default-player pickers -->
+    <string name="sets_player_builtin">Play Field Portal</string>
+    <string name="sets_player_system_default">System Default</string>
+
+    <!-- Settings ▸ Music -->
+    <string name="sets_music_title">Music</string>
+    <string name="sets_music_player_title">Default Music Player</string>
+    <string name="sets_music_player_none">No other music players found on this device.</string>
+    <string name="sets_music_add_root">Add music root</string>
+    <string name="sets_music_add_root_help">Grant a root folder (e.g. /Music) — add several to span locations</string>
+    <string name="sets_music_rescan">Rescan music library</string>
+    <string name="sets_music_player">Default music player</string>
+    <string name="sets_music_player_help">App that opens music tracks</string>
+
+    <!-- Settings ▸ Video -->
+    <string name="sets_video_title">Video</string>
+    <string name="sets_video_player_title">Default Video Player</string>
+    <string name="sets_video_player_none">No external video players found on this device.</string>
+    <string name="sets_video_add_root">Add video root</string>
+    <string name="sets_video_add_root_help">Grant a root folder (e.g. /Movies) — add several to span locations</string>
+    <string name="sets_video_rescan">Rescan video library</string>
+    <string name="sets_video_player">Default video player</string>
+    <string name="sets_video_player_help">Play Field Portal plays in-app; or pick an app / be asked each time.</string>
+
+    <!-- Settings ▸ Photo -->
+    <string name="sets_photo_title">Photo</string>
+    <string name="sets_photo_add_root">Add photo root</string>
+    <string name="sets_photo_add_root_help">Grant a root folder (e.g. /Pictures) — add several to span locations</string>
+    <string name="sets_photo_rescan">Rescan photo library</string>
+    <string name="sets_photo_group_maintenance">Maintenance</string>
+    <string name="sets_photo_clear_cache">Clear thumbnail cache</string>
+    <string name="sets_photo_clear_cache_help">Delete generated thumbnails. A rescan regenerates them.</string>
+    <!-- %1$d is how many cached thumbnails were deleted. -->
+    <plurals name="sets_photo_cache_cleared">
+        <item quantity="one">Cleared %1$d cached thumbnail. Rescan to regenerate.</item>
+        <item quantity="other">Cleared %1$d cached thumbnails. Rescan to regenerate.</item>
+    </plurals>
+
+    <!-- Settings ▸ Interface ▸ Notifications -->
+    <string name="sets_notif_title">Notifications</string>
+    <string name="sets_notif_record">Record notifications</string>
+    <string name="sets_notif_record_help">Keep a history of scans, artwork, scraping and achievement work. Off stops new entries; running work still shows its progress.</string>
+    <string name="sets_notif_group_history">History</string>
+    <string name="sets_notif_keep_for">Keep entries for</string>
+    <string name="sets_notif_keep_for_help">Older entries are dropped the next time something is recorded. A cap of 200 entries applies either way, and read entries go first.</string>
+    <string name="sets_notif_never">Never</string>
+    <!-- %1$d is a number of days. -->
+    <plurals name="sets_notif_days">
+        <item quantity="one">%1$d Day</item>
+        <item quantity="other">%1$d Days</item>
+    </plurals>
+    <string name="sets_notif_mark_read">Mark all read</string>
+    <string name="sets_notif_mark_read_help">Clears the unread count on the status bar</string>
+    <!-- %1$d is how many notifications are unread. -->
+    <plurals name="sets_notif_unread">
+        <item quantity="one">%1$d unread</item>
+        <item quantity="other">%1$d unread</item>
+    </plurals>
+    <string name="sets_notif_none_unread">None unread</string>
+    <string name="sets_notif_clear_all">Clear all</string>
+    <string name="sets_notif_clear_all_help">Empties the history. Work that is still running is not affected.</string>
+    <!-- %1$d is how many notifications are stored in the history. -->
+    <plurals name="sets_notif_stored">
+        <item quantity="one">%1$d stored</item>
+        <item quantity="other">%1$d stored</item>
+    </plurals>
+
+    <!-- Settings ▸ System ▸ System Update -->
+    <string name="sets_update_title">System Update</string>
+    <string name="sets_update_group_update">Update</string>
+    <string name="sets_update_installed">Installed version</string>
+    <string name="sets_update_latest">Latest version</string>
+    <string name="sets_update_check">Check for updates</string>
+    <string name="sets_update_checking">Checking…</string>
+    <string name="sets_update_notifications">Update notifications</string>
+    <string name="sets_update_notifications_help">Remind me in Notifications when a new version is out, at most once a day</string>
+    <string name="sets_update_group_changelog">Changelog</string>
+    <string name="sets_update_no_releases">No releases loaded yet</string>
+    <string name="sets_update_no_releases_help">Check for updates to load the changelog</string>
+    <!-- %1$s is a version number such as 1.3.4. Row label. -->
+    <string name="sets_update_install">Download and install %1$s</string>
+    <string name="sets_update_cannot_install">This build can\'t install updates from here</string>
+    <string name="sets_update_handed_over">Confirm in Android\'s installer to finish</string>
+    <string name="sets_update_downloading">Downloading…</string>
+    <string name="sets_update_install_help">Android asks you to confirm before anything is installed</string>
+    <string name="sets_update_no_summary">No summary for this version</string>
+    <string name="sets_update_full_notes">Full release notes</string>
+    <string name="sets_update_full_notes_help">Opens GitHub in your browser</string>
+    <!-- Which build of the app: the full one or the lite one without the Discord SDK. -->
+    <string name="sets_edition_full">Full</string>
+    <string name="sets_edition_lite">Lite</string>
+    <!-- %1$s is the installed version number (or "Unknown"); %2$s is the edition (Full or Lite). -->
+    <string name="sets_update_installed_label">%1$s · %2$s</string>
+    <string name="sets_update_unknown_version">Unknown</string>
+    <!-- %1$s is a version number. -->
+    <string name="sets_update_available">%1$s available</string>
+    <string name="sets_update_not_checked">Not checked yet</string>
+    <string name="sets_update_up_to_date">Up to date</string>
+    <string name="sets_update_never_checked">Never checked</string>
+    <!-- %1$s is a date and time such as "Nov 3, 14:20". -->
+    <string name="sets_update_checked">Checked %1$s</string>
+    <!-- Small badges on changelog entries. -->
+    <string name="sets_update_tag_new">New</string>
+    <string name="sets_update_tag_installed">Installed</string>
+    <string name="sets_update_msg_available">A new version is available.</string>
+    <string name="sets_update_msg_latest">You have the latest version.</string>
+    <string name="sets_update_msg_offline">Couldn\'t reach GitHub. Try again later.</string>
+    <string name="sets_update_msg_invalid">GitHub sent an unexpected answer. Try again later.</string>
+    <!-- %1$s is a version number; %2$s is the edition (Full or Lite). -->
+    <string name="sets_update_no_apk">Version %1$s has no %2$s download yet. Try again later.</string>
+    <string name="sets_update_download_failed">Couldn\'t download the update. Check your connection and try again.</string>
+    <string name="sets_update_not_newer">The download is not a newer version of this app, so it was not installed.</string>
+    <string name="sets_update_no_installer">Android\'s installer couldn\'t be opened on this device.</string>
+    <!-- %1$s is a version number. Notification text. -->
+    <string name="sets_update_reminder_installed">Version %1$s is installed.</string>
+    <string name="sets_update_reminder_available">Version %1$s is available.</string>
+
+    <!-- Settings ▸ About -->
+    <string name="sets_about_label_version">Version</string>
+    <string name="sets_about_label_build">Build</string>
+    <string name="sets_about_label_edition">Edition</string>
+    <string name="sets_about_label_min_android">Min Android</string>
+    <!-- Label: the Android version the app is built to target. -->
+    <string name="sets_about_label_target">Target</string>
+    <string name="sets_about_group_open_source">Open source</string>
+    <string name="sets_about_value_compose">UI framework</string>
+    <string name="sets_about_value_room">Local database</string>
+    <string name="sets_about_value_hilt">Dependency injection</string>
+    <string name="sets_about_value_ktor">Network client</string>
+    <string name="sets_about_value_coil">Image loading</string>
+    <string name="sets_about_value_media3">Video snaps &amp; playback</string>
+    <string name="sets_about_value_workmanager">Background tasks</string>
+    <string name="sets_about_value_timber">Logging</string>
+    <string name="sets_about_group_credits">Credits</string>
+    <string name="sets_about_label_art_media">Artwork &amp; media</string>
+    <string name="sets_about_label_metadata">Metadata</string>
+    <string name="sets_about_label_inspired">Inspired by</string>
+    <string name="sets_about_label_see_also">See also</string>
+    <!-- Points the reader to another Settings screen; keep the ▸ separator. -->
+    <string name="sets_about_value_see_also">Settings ▸ Credits</string>
+    <string name="sets_about_group_legal">Legal</string>
+    <string name="sets_about_legal_independent">Play Field Portal is an independent fan project, not affiliated with Sony Interactive Entertainment.</string>
+    <string name="sets_about_legal_trademarks">PlayStation, PSP and XMB are trademarks of Sony Interactive Entertainment Inc.</string>
+    <string name="sets_about_title">About</string>
+    <!-- Shown when the installed version or build number cannot be read. -->
+    <string name="sets_about_unknown">unknown</string>
+
+    <!-- Artwork orphans (notice shown after linking a file to a game) -->
+    <string name="sets_orphan_linked">Artwork linked — it will stay linked through future scans.</string>
+    <string name="sets_orphan_link_failed">Couldn\'t link that file — run Scan &amp; Relink and try again.</string>
+
+    <!-- Settings ▸ Sound: parts resolved outside the screen -->
+    <!-- Row value when the user picked a sound but its file name is not known. -->
+    <string name="sets_audio_custom_sound">Custom sound</string>
+    <string name="sets_audio_import_failed">That sound couldn\'t be imported. Try another file.</string>
+
+    <!-- Importing a PSP theme (.ptf): the notification text. %1$s is the theme\'s name. -->
+    <string name="sets_ptf_wallpaper_only">Imported \"%1$s\" — wallpaper only</string>
+    <!-- %1$s is the theme\'s name; %2$d is how many icons came across. -->
+    <plurals name="sets_ptf_icons">
+        <item quantity="one">Imported \"%1$s\" — wallpaper and %2$d icon</item>
+        <item quantity="other">Imported \"%1$s\" — wallpaper and %2$d icons</item>
+    </plurals>
+    <!-- %1$s is the theme\'s name; %2$d is how many icons came across; %3$d is how well the icon tint matched, as a percentage. -->
+    <plurals name="sets_ptf_icons_tint">
+        <item quantity="one">Imported \"%1$s\" — wallpaper and %2$d icon, tint matched %3$d%%</item>
+        <item quantity="other">Imported \"%1$s\" — wallpaper and %2$d icons, tint matched %3$d%%</item>
+    </plurals>
+    <string name="sets_ptf_cxmb_unsupported">CXMB (.ctf) themes aren\'t supported — only official .ptf themes</string>
+
+    <!-- Connecting services (Steam, IGDB, ScreenScraper): the status line shown after a check. -->
+    <string name="sets_svc_steam_connected">Steam connected</string>
+    <!-- %1$s is the name the user typed (a Steam custom-URL name). -->
+    <string name="sets_svc_steam_resolved">Steam connected — resolved \"%1$s\"</string>
+    <string name="sets_svc_steam_unresolved">Key saved, but \"%1$s\" couldn\'t be resolved. Enter your SteamID64.</string>
+    <string name="sets_svc_valid">Valid</string>
+    <string name="sets_svc_igdb_invalid">Invalid — check Client ID and Secret</string>
+    <string name="sets_svc_screenscraper_invalid">Invalid — check username and password</string>
+    <!-- %1$s is how many download threads the account may use. -->
+    <plurals name="sets_svc_screenscraper_valid_threads">
+        <item quantity="one">Valid — %1$s thread</item>
+        <item quantity="other">Valid — %1$s threads</item>
+    </plurals>
+    <!-- %1$s is the thread limit; %2$s is the daily request limit. -->
+    <plurals name="sets_svc_screenscraper_valid_both">
+        <item quantity="one">Valid — %1$s thread, %2$s requests/day</item>
+        <item quantity="other">Valid — %1$s threads, %2$s requests/day</item>
+    </plurals>
+    <!-- %1$s is the daily request limit. -->
+    <string name="sets_svc_screenscraper_valid_requests">Valid, %1$s requests/day</string>
+
+    <!-- Settings ▸ Controller -->
+    <string name="sets_controller_title">Controller</string>
+    <!-- Group title and row label for swapping the confirm and back buttons. -->
+    <string name="sets_controller_group_ab">Confirm and back</string>
+    <string name="sets_controller_ab_help">Controls which button confirms and which goes back. Applies globally to all launcher menus.</string>
+    <string name="sets_controller_group_xy">Options and sort</string>
+    <string name="sets_controller_xy_help">Swaps X and Y actions within the launcher UI only. Does not affect emulator controls.</string>
+    <string name="sets_controller_group_type">Controller type</string>
+    <string name="sets_controller_type_help">Changes which button icons and labels are shown in help prompts.</string>
+    <string name="sets_controller_type">Type</string>
+    <string name="sets_controller_type_sub">Affects the help bar at the bottom of the launcher</string>
+    <string name="sets_controller_group_scroll">Scroll speed</string>
+    <string name="sets_controller_scroll_help">How fast lists scroll while a direction is held. Holding longer accelerates; full stick tilt scrolls at top speed.</string>
+    <string name="sets_controller_scroll_sub">Applies to held D-pad and stick navigation</string>
+    <string name="sets_controller_group_navigation">Navigation</string>
+    <string name="sets_controller_left_backs_out">Left backs out</string>
+    <string name="sets_controller_left_backs_out_help">Press LEFT to leave a folder or flyout — only where LEFT does nothing else</string>
+    <string name="sets_controller_group_keyboard">Keyboard</string>
+    <string name="sets_controller_virtual_keyboard">Virtual keyboard</string>
+    <string name="sets_controller_virtual_keyboard_help">Type with the controller on PFP\'s own keyboard. Off, or when you use touch, the system keyboard opens instead</string>
+    <string name="sets_controller_group_reset">Reset</string>
+    <string name="sets_controller_reset">Reset all controller settings</string>
+    <string name="sets_controller_reset_help">Restores default swap and type presets</string>
+</resources>

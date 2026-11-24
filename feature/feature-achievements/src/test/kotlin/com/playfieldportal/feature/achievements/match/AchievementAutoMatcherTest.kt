@@ -318,14 +318,14 @@ class AchievementAutoMatcherTest {
     }
 
     @Test
-    fun `a Local-labelled game with no folder says to pick one in Game List`() = runTest {
+    fun `a Local-labelled game with no folder says to pick one in Windows Games`() = runTest {
         stubGames(game(1, "windows", title = "Half-Life 2").copy(windowsLabel = WindowsGameLabel.LOCAL))
 
         val report = matcher.matchUnlinked()
 
         assertEquals(0, report.matched)
         assertEquals(
-            "Labelled Local — pick its folder in Windows ▸ Game List",
+            "Labelled Local — pick its folder in Windows Games",
             report.unmatched.single().reason,
         )
     }

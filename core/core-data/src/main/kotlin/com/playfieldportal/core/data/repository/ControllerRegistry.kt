@@ -5,6 +5,7 @@ import android.hardware.input.InputManager
 import android.os.Handler
 import android.os.Looper
 import android.view.InputDevice
+import com.playfieldportal.core.data.R
 import com.playfieldportal.core.domain.model.ControllerDevice
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +27,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class ControllerRegistry @Inject constructor(
-    @ApplicationContext context: Context,
+    @ApplicationContext private val context: Context,
 ) {
     private val _connectedControllers = MutableStateFlow<List<ControllerDevice>>(emptyList())
     val connectedControllers: StateFlow<List<ControllerDevice>> = _connectedControllers.asStateFlow()
@@ -84,7 +85,7 @@ class ControllerRegistry @Inject constructor(
         val sources = device.sources
         return ControllerDevice(
             deviceId = device.id,
-            name = device.name ?: "Controller",
+            name = device.name ?: context.getString(R.string.data_controller_fallback_name),
             vendorId = device.vendorId,
             productId = device.productId,
             isGamepad = sources and InputDevice.SOURCE_GAMEPAD != 0,

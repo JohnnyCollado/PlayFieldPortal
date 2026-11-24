@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- QR login screen -->
+    <string name="soc_qr_preparing">正在准备登录…</string>
+    <string name="soc_qr_connected">已连接</string>
+    <string name="soc_qr_expired">代码已过期。</string>
+    <string name="soc_qr_declined">登录被拒绝。</string>
+    <string name="soc_qr_error">无法登录。%1$s</string>
+    <string name="soc_qr_content_description">Discord 登录二维码</string>
+    <string name="soc_qr_title">使用 Discord 登录</string>
+    <string name="soc_qr_copied">已复制！</string>
+    <string name="soc_qr_tap_to_copy">选择代码即可复制</string>
+    <string name="soc_qr_instructions">用手机相机扫描，或前往 discord.com/activate 并粘贴代码。</string>
+    <string name="soc_qr_expires_in">%1$d 秒后过期</string>
+    <string name="soc_qr_expired_short">已过期</string>
+    <string name="soc_qr_cancel">取消</string>
+    <string name="soc_qr_try_again">重试</string>
+</resources>

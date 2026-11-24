@@ -1,0 +1,811 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings ▸ Hidden Items -->
+    <string name="lib_hidden_items_title">숨긴 항목</string>
+    <string name="lib_hidden_items_group">숨긴 항목</string>
+    <string name="lib_hidden_items_help">숨긴 앱과 게임을 항목별로 묶고 각각 숨긴 위치를 함께 표시합니다. 옵션 메뉴에서 항목을 숨기고, 여기에서 숨기기를 해제하세요.</string>
+    <string name="lib_hidden_items_empty">숨긴 항목이 없습니다.</string>
+    <string name="lib_hidden_unhide">숨기기 해제</string>
+    <string name="lib_hidden_all_locations">모든 위치</string>
+    <string name="lib_hidden_unhide_all">모두 숨기기 해제</string>
+    <string name="lib_hidden_everywhere">모든 곳</string>
+    <!-- Button: confirms the highlighted player app as the default. -->
+    <string name="lib_player_use_this">이 플레이어 사용</string>
+    <!-- Button: closes the player picker without changing anything. -->
+    <string name="lib_player_close">닫기</string>
+    <!-- Settings ▸ Categories -->
+    <string name="lib_cat_title">카테고리</string>
+    <string name="lib_cat_scaffold_title">카테고리</string>
+    <string name="lib_cat_group_manage">관리</string>
+    <string name="lib_cat_create">카테고리 만들기</string>
+    <string name="lib_cat_create_sub">XMB 바에 새 카테고리 추가</string>
+    <string name="lib_cat_group_xmb">XMB 카테고리</string>
+    <string name="lib_cat_row_hidden">"%1$s  (숨김)"</string>
+    <string name="lib_cat_row_sub_builtin">"아이콘: %1$s  ·  기본 제공"</string>
+    <string name="lib_cat_row_sub_custom">"아이콘: %1$s  ·  사용자 지정"</string>
+    <string name="lib_cat_home_game">게임</string>
+    <string name="lib_cat_home_app_store">앱 스토어</string>
+    <string name="lib_cat_created_image_failed">카테고리를 만들었지만 이미지를 저장할 수 없습니다</string>
+    <!-- Name entry dialog -->
+    <string name="lib_cat_rename_title">카테고리 이름 변경</string>
+    <string name="lib_cat_new_title">새 카테고리</string>
+    <string name="lib_cat_name_placeholder">카테고리 이름</string>
+    <string name="lib_cat_save">저장</string>
+    <string name="lib_cat_next">다음</string>
+    <!-- Delete dialog -->
+    <string name="lib_cat_delete_title">카테고리 삭제</string>
+    <!-- Button in the delete dialog. -->
+    <string name="lib_cat_delete">삭제</string>
+    <string name="lib_cat_delete_games_message">\"%1$s\"이(가) 삭제됩니다. 게임은 라이브러리에 그대로 남습니다.</string>
+    <string name="lib_cat_delete_apps_message">\"%1$s\"이(가) 삭제됩니다. 앱은 제거되지 않습니다.</string>
+    <plurals name="lib_cat_delete_cards_games_message">
+        <item quantity="other">\"%1$s\"이(가) 삭제됩니다. 게임은 라이브러리에 그대로 남습니다. 사용자 지정 메모리 카드 %2$d개는 어떻게 할까요?</item>
+    </plurals>
+    <plurals name="lib_cat_delete_cards_apps_message">
+        <item quantity="other">\"%1$s\"이(가) 삭제됩니다. 앱은 제거되지 않습니다. 사용자 지정 메모리 카드 %2$d개는 어떻게 할까요?</item>
+    </plurals>
+    <string name="lib_cat_delete_move_cards">사용자 지정 카드를 %1$s(으)로 이동</string>
+    <string name="lib_cat_delete_cards_too">사용자 지정 카드도 삭제</string>
+    <!-- Pick icon -->
+    <string name="lib_cat_choose_icon">아이콘 선택</string>
+    <string name="lib_cat_change_icon_title">아이콘 변경</string>
+    <string name="lib_cat_group_device">내 기기에서</string>
+    <string name="lib_cat_choose_image">이미지 선택…</string>
+    <string name="lib_cat_choose_image_sub">PNG, JPG, WEBP, BMP, HEIC 또는 GIF · 애니메이션 GIF 재생됨</string>
+    <string name="lib_cat_your_image_row">내 이미지</string>
+    <string name="lib_cat_image_animated_in_use">애니메이션 · 사용 중</string>
+    <string name="lib_cat_image_in_use">사용 중</string>
+    <string name="lib_cat_your_image">내 이미지</string>
+    <string name="lib_cat_replace_image">이미지 교체…</string>
+    <string name="lib_cat_replace_image_sub">다른 파일 선택</string>
+    <string name="lib_cat_remove_image">이미지 제거</string>
+    <string name="lib_cat_remove_image_sub">기본 제공 아이콘(%1$s)으로 되돌리기</string>
+    <string name="lib_cat_group_builtin">기본 제공 · %1$s</string>
+    <string name="lib_cat_icon_fallback">아이콘</string>
+    <!-- Pick type -->
+    <string name="lib_cat_content_type">콘텐츠 유형</string>
+    <string name="lib_cat_type_group">카테고리 유형</string>
+    <string name="lib_cat_type_gaming">게임용</string>
+    <string name="lib_cat_type_gaming_sub">게임 및 사용자 지정 메모리 카드용</string>
+    <string name="lib_cat_type_non_gaming">비게임용</string>
+    <string name="lib_cat_type_non_gaming_sub">동영상, 음악, 사진 등의 앱용</string>
+    <!-- Category detail -->
+    <string name="lib_cat_group_edit">편집</string>
+    <string name="lib_cat_rename">카테고리 이름 변경</string>
+    <string name="lib_cat_change_icon">아이콘 변경</string>
+    <string name="lib_cat_show_on_bar_sub">XMB에서 이 카테고리 숨기기 또는 표시</string>
+    <string name="lib_cat_type">유형</string>
+    <!-- Value: a category that holds apps rather than games. -->
+    <string name="lib_cat_type_apps">앱</string>
+    <string name="lib_cat_type_gaming_note">게임과 사용자 지정 메모리 카드를 담습니다. 카테고리를 만들 때 설정됩니다.</string>
+    <string name="lib_cat_type_apps_note">앱과 사용자 지정 메모리 카드를 담습니다. 카테고리를 만들 때 설정됩니다.</string>
+    <string name="lib_cat_group_order">순서</string>
+    <!-- Row label: reorders the category along the XMB bar. -->
+    <string name="lib_cat_move">이동</string>
+    <string name="lib_cat_move_sub">왼쪽과 오른쪽으로 XMB를 따라 이동한 후 확인하여 배치하세요</string>
+    <string name="lib_cat_move_disabled_sub">이 카테고리를 이동하려면 바에 표시를 켜세요</string>
+    <string name="lib_cat_group_danger">위험 구역</string>
+    <string name="lib_cat_delete_row">카테고리 삭제</string>
+    <string name="lib_cat_delete_row_sub">이 사용자 지정 카테고리를 제거합니다. 게임과 앱은 라이브러리에 그대로 남습니다.</string>
+    <!-- Settings ▸ Custom Memory Cards -->
+    <string name="lib_coll_title">사용자 지정 메모리 카드</string>
+    <string name="lib_coll_group_manage">관리</string>
+    <string name="lib_coll_new">새 사용자 지정 메모리 카드</string>
+    <string name="lib_coll_new_sub">게임 또는 앱용(예: RPG, 플레이 중, 업무용 앱)</string>
+    <string name="lib_coll_group_yours">내 사용자 지정 메모리 카드</string>
+    <string name="lib_coll_none">아직 사용자 지정 메모리 카드가 없습니다</string>
+    <string name="lib_coll_none_sub">위에서 만들거나 게임 또는 앱의 옵션 메뉴에서 카드에 추가를 사용하세요.</string>
+    <!-- What a custom card holds: the number of games or apps on it. -->
+    <plurals name="lib_coll_games_count">
+        <item quantity="other">게임 %d개</item>
+    </plurals>
+    <plurals name="lib_coll_apps_count">
+        <item quantity="other">앱 %d개</item>
+    </plurals>
+    <!-- Name entry dialog -->
+    <string name="lib_coll_new_title">새 사용자 지정 메모리 카드</string>
+    <string name="lib_coll_rename_title">사용자 지정 메모리 카드 이름 변경</string>
+    <string name="lib_coll_name_placeholder">카드 이름</string>
+    <string name="lib_coll_save">저장</string>
+    <string name="lib_coll_next">다음</string>
+    <string name="lib_coll_delete_title">사용자 지정 카드 삭제</string>
+    <string name="lib_coll_delete_apps_message">\"%1$s\"이(가) 삭제됩니다. 카드에 있는 앱은 설치된 상태로 유지됩니다.</string>
+    <string name="lib_coll_delete_games_message">\"%1$s\"이(가) 삭제됩니다. 카드에 있는 게임은 라이브러리에 그대로 남습니다.</string>
+    <string name="lib_coll_delete">삭제</string>
+    <!-- Menu on a game inside a custom card -->
+    <string name="lib_coll_menu_view_details">게임 세부 정보 보기</string>
+    <string name="lib_coll_menu_remove">카드에서 제거</string>
+    <!-- Card detail -->
+    <string name="lib_coll_group_card">사용자 지정 메모리 카드</string>
+    <string name="lib_coll_rename">이름 변경</string>
+    <string name="lib_coll_change_icon">아이콘 변경</string>
+    <string name="lib_coll_default_icon">기본값(메모리 카드)</string>
+    <string name="lib_coll_move_up">위로 이동</string>
+    <string name="lib_coll_move_down">아래로 이동</string>
+    <string name="lib_coll_delete_row">사용자 지정 카드 삭제</string>
+    <string name="lib_coll_delete_row_apps_sub">카드를 제거합니다. 앱은 설치된 상태로 유지됩니다</string>
+    <string name="lib_coll_delete_row_games_sub">카드를 제거합니다. 게임은 라이브러리에 그대로 남습니다</string>
+    <string name="lib_coll_group_apps">앱(%1$d)</string>
+    <string name="lib_coll_group_games">게임(%1$d)</string>
+    <string name="lib_coll_no_apps">이 카드에 앱이 없습니다</string>
+    <string name="lib_coll_no_apps_sub">앱의 옵션 메뉴에서 카드에 추가로 앱을 추가하세요.</string>
+    <string name="lib_coll_no_games">이 카드에 게임이 없습니다</string>
+    <string name="lib_coll_no_games_sub">게임의 옵션 메뉴에서 카드에 추가로 게임을 추가하세요.</string>
+    <!-- Category picker for a new card -->
+    <string name="lib_coll_card_kind_game">게임 카드</string>
+    <string name="lib_coll_card_kind_app">앱 카드</string>
+    <string name="lib_coll_pick_category_title">카테고리에 추가</string>
+    <string name="lib_coll_pick_category_message">\"%1$s\"을(를) 어느 열에 표시할까요?</string>
+    <!-- Button: creates the card in the chosen category. -->
+    <string name="lib_coll_create">만들기</string>
+    <!-- Card icon step -->
+    <string name="lib_coll_icon_title">카드 아이콘 · %1$s</string>
+    <string name="lib_coll_group_device">내 기기에서</string>
+    <string name="lib_coll_group_theme">적용된 테마에서</string>
+    <!-- Subtitle of a theme icon that is an animation. -->
+    <string name="lib_coll_animated">애니메이션</string>
+    <string name="lib_coll_group_builtin">기본 제공</string>
+    <string name="lib_coll_image_unusable">이미지를 사용할 수 없습니다.</string>
+    <!-- Settings ▸ Emulators -->
+    <string name="lib_emu_title">에뮬레이터</string>
+    <string name="lib_emu_subtitle_installed">에뮬레이터 · 설치됨</string>
+    <string name="lib_emu_subtitle_custom">에뮬레이터 · 사용자 지정</string>
+    <string name="lib_emu_subtitle_retroarch">에뮬레이터 · RetroArch</string>
+    <string name="lib_emu_add_title">에뮬레이터 추가</string>
+    <string name="lib_emu_detecting">감지 중…</string>
+    <string name="lib_emu_inspecting">설치된 앱 검사 중…</string>
+    <string name="lib_emu_reset_title">에뮬레이터 구성을 초기화할까요?</string>
+    <string name="lib_emu_reset_message">자동 감지된 에뮬레이터 실행 설정과 사용자 지정 실행 설정을 모두 지우고 기본 제공 기본값으로 복원합니다.\n\n게임 라이브러리, ROM 경로, 아트워크, 메타데이터 및 세이브 데이터에는 영향이 없습니다.</string>
+    <!-- Button in the reset confirmation. -->
+    <string name="lib_emu_reset">초기화</string>
+    <string name="lib_emu_group_installed">설치됨</string>
+    <string name="lib_emu_none_installed">이 기기에서 지원되는 에뮬레이터가 감지되지 않았습니다</string>
+    <string name="lib_emu_group_available">사용 가능(설치되지 않음)</string>
+    <string name="lib_emu_all_installed">알려진 모든 에뮬레이터가 설치되어 있습니다</string>
+    <string name="lib_emu_group_custom">사용자 지정 프로필</string>
+    <string name="lib_emu_none_custom">아직 사용자 지정 프로필이 없습니다</string>
+    <string name="lib_emu_add_custom">사용자 지정 에뮬레이터 추가</string>
+    <string name="lib_emu_add_custom_sub">앱을 선택하면 실행 설정을 자동으로 감지합니다</string>
+    <string name="lib_emu_group_ra_detection">RetroArch 코어 감지</string>
+    <string name="lib_emu_ra_scanning">RetroArch에서 설치된 코어를 스캔하는 중…</string>
+    <plurals name="lib_emu_ra_linked">
+        <item quantity="other">연결됨 — 코어 %d개 감지됨. 설치된 코어만 제안되므로 코어가 없어서 검은 화면이 나타나는 일은 없습니다.</item>
+    </plurals>
+    <string name="lib_emu_ra_access_lost">연결되어 있지만 접근 권한이 사라졌습니다(예: 재설치 후). 코어를 다시 감지하려면 RetroArch를 다시 연결하세요.</string>
+    <string name="lib_emu_ra_not_linked">연결되지 않음. PFP가 설치된 RetroArch 코어를 확인할 수 없어 모든 코어를 제안합니다 — 설치되지 않은 코어로 실행하면 검은 화면이 나타납니다. 설치된 코어를 감지하려면 RetroArch를 연결하세요.</string>
+    <string name="lib_emu_ra_relink">RetroArch 폴더 다시 연결</string>
+    <string name="lib_emu_ra_link">RetroArch를 연결하여 코어 감지</string>
+    <string name="lib_emu_ra_link_sub">선택기에서 RetroArch 폴더를 선택(접근 허용)하면 PFP가 설치된 코어를 읽을 수 있습니다</string>
+    <string name="lib_emu_group_cores">사용 가능한 코어</string>
+    <string name="lib_emu_ra_no_cores">아직 감지된 RetroArch 코어가 없습니다.</string>
+    <string name="lib_emu_ra_core_available">RetroArch에서 사용 가능</string>
+    <string name="lib_emu_ra_rescan">설치된 코어 다시 스캔</string>
+    <string name="lib_emu_ra_rescan_sub">RetroArch의 코어 다운로더에서 코어를 더 받은 후 실행하세요</string>
+    <string name="lib_emu_ra_unlink">RetroArch 연결 해제</string>
+    <string name="lib_emu_ra_unlink_sub">확인되지 않은 모든 코어를 제안하는 방식으로 되돌리기</string>
+    <string name="lib_emu_group_maintenance">유지 관리</string>
+    <string name="lib_emu_reset_row">에뮬레이터 구성 초기화</string>
+    <string name="lib_emu_reset_row_sub">실행 설정을 지우고 기본값으로 복원합니다. 게임, 아트워크 및 세이브에는 영향이 없습니다.</string>
+    <!-- Add emulator wizard -->
+    <string name="lib_emu_pick_app">앱 선택</string>
+    <string name="lib_emu_group_apps">설치된 앱</string>
+    <string name="lib_emu_no_apps">실행 가능한 앱이 없습니다.</string>
+    <!-- Test launch -->
+    <string name="lib_emu_test_title">테스트 실행</string>
+    <string name="lib_emu_test_pick_rom">ROM 선택</string>
+    <string name="lib_emu_test_group_roms">내 ROM</string>
+    <string name="lib_emu_test_no_roms">테스트할 스캔된 ROM이 없습니다. 먼저 콘솔을 스캔하거나, 저장한 후 라이브러리에서 시도해 보세요.</string>
+    <string name="lib_emu_preview_group">인텐트 미리보기</string>
+    <!-- Labels of a read-only technical preview; shown in capitals. -->
+    <string name="lib_emu_preview_package">Package</string>
+    <string name="lib_emu_preview_activity">Activity</string>
+    <string name="lib_emu_preview_activity_default">(패키지로 확인)</string>
+    <string name="lib_emu_preview_action">Action</string>
+    <string name="lib_emu_preview_mime">MIME</string>
+    <string name="lib_emu_preview_uri_mode">URI 모드</string>
+    <string name="lib_emu_preview_rom">ROM</string>
+    <string name="lib_emu_preview_extras">Extras</string>
+    <string name="lib_emu_preview_flags">Flags</string>
+    <string name="lib_emu_none">(없음)</string>
+    <string name="lib_emu_uri_mode_raw_path">원시 경로(에뮬레이터가 파일을 직접 엶)</string>
+    <string name="lib_emu_uri_mode_saf">content://(FileProvider, 읽기 허용)</string>
+    <string name="lib_emu_uri_mode_file">file://(API 24 이상에서는 content://)</string>
+    <string name="lib_emu_action_unsupported">(지원되지 않음)</string>
+    <string name="lib_emu_action_shortcut">(바로 가기)</string>
+    <string name="lib_emu_result_group">결과</string>
+    <string name="lib_emu_actions_group">작업</string>
+    <string name="lib_emu_launch_now">지금 실행</string>
+    <string name="lib_emu_launch_now_sub">앱에 인텐트 보내기</string>
+    <string name="lib_emu_pick_other_rom">다른 ROM 선택</string>
+    <string name="lib_emu_test_rom_unloadable">ROM을 불러올 수 없습니다.</string>
+    <string name="lib_emu_test_resolves_ok">정상적으로 확인됨 — 지금 실행을 눌러 시도해 보세요.</string>
+    <string name="lib_emu_test_launched">실행됨 — 에뮬레이터를 확인하세요.</string>
+    <string name="lib_emu_error_activity_not_found">해당 앱 화면을 찾을 수 없거나 앱이 외부에서 여는 것을 허용하지 않습니다. 화면 이름을 확인하거나 \"앱으로 ROM 열기\" 실행 방식을 대신 시도해 보세요.</string>
+    <string name="lib_emu_error_permission_denied">권한이 거부되었습니다 — 앱이 ROM URI를 거부했습니다. SAF(content://)와 file URI를 바꿔 보세요.</string>
+    <string name="lib_emu_error_rom_not_accepted">%1$s 앱이 이 MIME 유형 / URI 모드를 허용하지 않았습니다 — 다른 URI 모드를 시도해 보세요.</string>
+    <string name="lib_emu_error_unknown">알 수 없는 이유로 실행에 실패했습니다.</string>
+    <string name="lib_emu_error_name_required">이름이 필요합니다</string>
+    <string name="lib_emu_error_package_required">패키지 이름이 필요합니다</string>
+    <string name="lib_emu_row_sub">"%1$s  ·  %2$s"</string>
+    <string name="lib_emu_row_sub_retroarch_core">"%1$s  ·  %2$s  ·  RetroArch 코어"</string>
+    <string name="lib_emu_row_sub_auto">"%1$s  ·  %2$s  ·  자동 감지됨"</string>
+    <!-- Small badges beside a profile row. -->
+    <string name="lib_emu_badge_unavailable">사용할 수 없음</string>
+    <string name="lib_emu_badge_auto">자동</string>
+    <string name="lib_emu_badge_edited">편집됨</string>
+    <!-- Label on a row: opens the profile editor. -->
+    <string name="lib_emu_edit">편집</string>
+    <!-- Emulator profile editor -->
+    <string name="lib_prof_new">새 프로필</string>
+    <string name="lib_prof_edit">프로필 편집</string>
+    <string name="lib_prof_group_templates">권장 템플릿</string>
+    <string name="lib_emu_template_view_content">앱으로 ROM 열기(content:// 링크)</string>
+    <string name="lib_emu_template_view_content_desc">대부분의 최신 에뮬레이터(Eden, Azahar, PPSSPP) · ACTION_VIEW</string>
+    <string name="lib_emu_template_view_file">앱으로 ROM 열기(파일 경로)</string>
+    <string name="lib_emu_template_view_file_desc">원시 파일 경로를 읽는 이전 에뮬레이터 · ACTION_VIEW</string>
+    <string name="lib_emu_template_component">부트 경로로 앱 화면 열기</string>
+    <string name="lib_emu_template_component_desc">DuckStation / AetherSX2 방식 · COMPONENT</string>
+    <string name="lib_emu_template_retroarch">RetroArch 코어(ROM + LIBRETRO)</string>
+    <string name="lib_emu_template_retroarch_desc">LIBRETRO에 코어 경로 설정</string>
+    <string name="lib_prof_group_required">필수</string>
+    <string name="lib_prof_display_name">표시 이름</string>
+    <string name="lib_prof_display_name_hint">예: 내 에뮬레이터</string>
+    <string name="lib_prof_package">패키지 이름</string>
+    <string name="lib_prof_package_hint">예: com.example.emulator</string>
+    <string name="lib_prof_group_launch">실행 방식</string>
+    <string name="lib_prof_type_view">앱으로 ROM 열기 — 대부분의 에뮬레이터(PPSSPP, Dolphin, DuckStation…). Android 용어: ACTION_VIEW</string>
+    <string name="lib_prof_type_component">앱 화면 열기 — RetroArch 및 특정 화면을 지정해야 하는 앱. Android 용어: COMPONENT</string>
+    <string name="lib_prof_type_shortcut">홈 화면 바로 가기 — Winlator, GameHub 및 사용자 지정 런처</string>
+    <string name="lib_prof_type_custom">지원되지 않음 — 사용자 지정 명령은 실행 시 거부됩니다</string>
+    <string name="lib_prof_group_optional">선택 사항</string>
+    <string name="lib_prof_activity">앱 화면(Activity class)</string>
+    <string name="lib_prof_activity_hint">예: com.example.emulator.MainActivity(기본값을 사용하려면 비워 두세요)</string>
+    <string name="lib_prof_platforms">지원 플랫폼</string>
+    <string name="lib_prof_platforms_hint">psx,psp,ps2  (쉼표로 구분한 플랫폼 ID)</string>
+    <string name="lib_prof_mime">MIME 유형</string>
+    <string name="lib_prof_mime_hint">예: application/octet-stream</string>
+    <string name="lib_prof_notes">메모</string>
+    <string name="lib_prof_notes_hint">이 프로필에 대한 메모(선택 사항)</string>
+    <string name="lib_prof_group_uri">URI 플래그</string>
+    <string name="lib_prof_use_file_uri">file URI 사용</string>
+    <string name="lib_prof_use_file_uri_sub">ROM 경로를 file:// URI로 전달(대부분의 에뮬레이터)</string>
+    <string name="lib_prof_use_saf_uri">SAF URI 사용</string>
+    <string name="lib_prof_use_saf_uri_sub">파일 경로 대신 SAF content:// URI 전달</string>
+    <string name="lib_prof_group_advanced">고급</string>
+    <string name="lib_prof_intent_help">사용자 지정 인텐트 작동 방식</string>
+    <string name="lib_prof_intent_help_hide">눌러서 항목 안내 숨기기</string>
+    <string name="lib_prof_intent_help_show">마우스를 올리거나 눌러서 항목 안내 표시</string>
+    <string name="lib_prof_intent_action">인텐트 액션</string>
+    <string name="lib_prof_intent_action_hint">예: me.magnum.melonds.LAUNCH_ROM(비워 두면 기본값)</string>
+    <string name="lib_prof_intent_extras">인텐트 extras</string>
+    <string name="lib_prof_intent_extras_hint">한 줄에 key=value 하나. {rom_path}, {rom_uri}, {core_path} 토큰 사용 가능. true/false = 불리언.</string>
+    <string name="lib_prof_intent_flags">인텐트 플래그</string>
+    <string name="lib_prof_intent_flags_hint">CLEAR_TASK, CLEAR_TOP, NEW_TASK(쉼표로 구분)</string>
+    <string name="lib_prof_intent_category">인텐트 카테고리</string>
+    <string name="lib_prof_intent_category_hint">예: android.intent.category.LEANBACK_LAUNCHER</string>
+    <string name="lib_prof_core_path">RetroArch 코어 경로</string>
+    <string name="lib_prof_extensions">지원 확장자</string>
+    <string name="lib_prof_extensions_hint">iso,cso,chd  (참고용)</string>
+    <string name="lib_prof_group_test">테스트</string>
+    <string name="lib_prof_test">ROM으로 테스트 실행</string>
+    <string name="lib_prof_test_sub">스캔된 ROM을 선택하고 인텐트를 미리 본 후 실행해 보기</string>
+    <string name="lib_prof_group_actions">작업</string>
+    <string name="lib_prof_saving">저장 중…</string>
+    <string name="lib_prof_save">프로필 저장</string>
+    <string name="lib_prof_save_new_sub">사용자 지정 프로필에 추가</string>
+    <string name="lib_prof_save_edit_sub">이 프로필 업데이트</string>
+    <string name="lib_prof_delete">프로필 삭제</string>
+    <string name="lib_prof_delete_sub">이 사용자 지정 프로필을 영구적으로 제거</string>
+    <!-- Label on the delete row (a button). -->
+    <string name="lib_prof_delete_button">삭제</string>
+    <string name="lib_help_launch_method">실행 방식</string>
+    <string name="lib_help_launch_view">앱으로 ROM 열기 — ROM을 파일 링크로 앱에 전달합니다(ACTION_VIEW). 대부분의 에뮬레이터.</string>
+    <string name="lib_help_launch_component">앱 화면 열기 — 추가 설정과 함께 앱의 특정 화면을 시작합니다(COMPONENT). RetroArch, DuckStation.</string>
+    <string name="lib_help_action">인텐트 액션</string>
+    <string name="lib_help_action_line">에뮬레이터 액티비티가 기대하는 액션입니다. 비워 두면 기본값(VIEW / MAIN).</string>
+    <string name="lib_help_action_examples">"예: me.magnum.melonds.LAUNCH_ROM   또는   android.nfc.action.TECH_DISCOVERED"</string>
+    <string name="lib_help_extras">"인텐트 extras  (한 줄에 key=value 하나)"</string>
+    <string name="lib_help_extras_tokens">토큰은 실행 시 다음으로 대체됩니다:</string>
+    <string name="lib_help_extras_rom_uri">"   {rom_uri} — content:// URI  (권장, 범위 지정 저장소에서 작동)"</string>
+    <string name="lib_help_extras_rom_path">"   {rom_path} — 원시 파일 경로      {core_path}   {package}   {platform}"</string>
+    <string name="lib_help_extras_boolean">true 또는 false 값은 불리언 extra로 전송됩니다.</string>
+    <string name="lib_help_extras_examples">"예:   bootPath={rom_uri}      resumeState=false"</string>
+    <string name="lib_help_flags">인텐트 플래그</string>
+    <string name="lib_help_flags_line">"쉼표로 구분:  CLEAR_TASK, CLEAR_TOP, NEW_TASK"</string>
+    <string name="lib_help_category">인텐트 카테고리</string>
+    <string name="lib_help_category_line">예: android.intent.category.LEANBACK_LAUNCHER</string>
+    <string name="lib_help_tip">팁</string>
+    <string name="lib_help_tip_line1">\"SAF URI 사용\"을 켜고 {rom_uri}를 사용하는 것이 좋습니다 — 에뮬레이터가</string>
+    <string name="lib_help_tip_line2">전체 저장소 권한 없이도 해당 ROM 하나에 대한 읽기 권한을 얻습니다.</string>
+    <!-- Settings ▸ Emulators ▸ Per-System Defaults -->
+    <string name="lib_assign_title">시스템별 기본값</string>
+    <!-- Heading of a notification row about emulator defaults. -->
+    <string name="lib_assign_task_label">에뮬레이터 지정</string>
+    <string name="lib_assign_default_set">%1$s: 기본 에뮬레이터를 %2$s(으)로 설정함</string>
+    <string name="lib_assign_using_recommended">%1$s: 권장 에뮬레이터 사용 중</string>
+    <plurals name="lib_assign_overrides_cleared">
+        <item quantity="other">%1$s: 게임별 지정 %2$d개를 지웠습니다 — 해당 게임은 이제 플랫폼 기본값을 따릅니다</item>
+    </plurals>
+    <string name="lib_assign_group_consoles">게임이 있는 콘솔</string>
+    <string name="lib_assign_none">아직 게임이 있는 콘솔이 없습니다 — 먼저 콘솔을 스캔한 후 여기에서 기본 에뮬레이터와 코어를 설정하세요.</string>
+    <string name="lib_assign_overridden">%1$d개 개별 지정</string>
+    <!-- Warning badges (capitals on purpose). -->
+    <string name="lib_assign_badge_core_missing">코어 없음</string>
+    <string name="lib_assign_badge_no_emulator">에뮬레이터 없음</string>
+    <string name="lib_assign_badge_active">사용 중</string>
+    <string name="lib_assign_badge_default">기본값</string>
+    <string name="lib_assign_badge_recommended">권장</string>
+    <string name="lib_assign_default_is">기본값: %1$s</string>
+    <string name="lib_assign_no_emulator">에뮬레이터 없음</string>
+    <string name="lib_assign_core_is">코어: %1$s</string>
+    <plurals name="lib_assign_game_count">
+        <item quantity="other">게임 %d개</item>
+    </plurals>
+    <!-- Clear-overrides dialog. -->
+    <plurals name="lib_assign_clear_title">
+        <item quantity="other">개별 지정 %d개를 지울까요?</item>
+    </plurals>
+    <string name="lib_assign_clear_message">이 %1$s 게임들은 고정된 에뮬레이터가 따로 있어 이 플랫폼의 기본값을 무시합니다. 지우면 %1$s의 모든 게임이 기본값을 사용합니다.</string>
+    <!-- Button in the dialog. -->
+    <string name="lib_assign_clear">지우기</string>
+    <string name="lib_assign_group_current">현재 기본값</string>
+    <string name="lib_assign_emulator">에뮬레이터</string>
+    <string name="lib_assign_none_value">없음</string>
+    <string name="lib_assign_ra_core">RetroArch 코어</string>
+    <string name="lib_assign_group_choose">기본값 선택</string>
+    <string name="lib_assign_automatic">자동(권장)</string>
+    <string name="lib_assign_automatic_sub">처음 설치된 에뮬레이터 — RetroArch 코어보다 독립 실행형 우선</string>
+    <string name="lib_assign_no_candidates">이 플랫폼을 실행할 수 있는 설치된 에뮬레이터가 없습니다. 에뮬레이터를 설치하거나 RetroArch를 연결해 코어 감지로 프로필을 생성하면 실행이 자동으로 처리됩니다.</string>
+    <string name="lib_assign_group_overrides">게임별 지정</string>
+    <string name="lib_assign_overrides_label">개별 에뮬레이터가 지정된 게임</string>
+    <string name="lib_assign_overrides_value">%2$d개 중 %1$d개</string>
+    <string name="lib_assign_overrides_none">없음 — 모든 게임이 위의 기본값을 따릅니다</string>
+    <string name="lib_assign_overrides_some">이 게임들은 고정된 개별 에뮬레이터로 실행되며 기본값을 무시합니다</string>
+    <plurals name="lib_assign_clear_all">
+        <item quantity="other">개별 지정 %d개 모두 지우기</item>
+    </plurals>
+    <string name="lib_assign_clear_all_sub">이 게임들이 플랫폼 기본값을 따르도록 초기화</string>
+    <string name="lib_assign_source_card">콘솔 기본값 — 여기 또는 라이브러리 관리자에서 설정</string>
+    <string name="lib_assign_source_platform">플랫폼 기본값</string>
+    <string name="lib_assign_source_game">게임별 지정</string>
+    <string name="lib_assign_source_auto">자동 — 처음 설치된 에뮬레이터</string>
+    <string name="lib_assign_source_stored_missing">저장된 기본값(%1$s)이 설치되어 있지 않거나 이 플랫폼을 실행할 수 없습니다</string>
+    <string name="lib_assign_source_platform_missing">플랫폼 기본값이 설치되어 있지 않거나 이 플랫폼을 실행할 수 없습니다</string>
+    <string name="lib_assign_source_none">이 플랫폼용으로 설치된 에뮬레이터가 없습니다</string>
+    <!-- Settings ▸ Emulators ▸ Emulator knowledge -->
+    <string name="lib_kb_title">에뮬레이터 지식</string>
+    <string name="lib_kb_status_builtin">기본 제공만</string>
+    <string name="lib_kb_status_not_configured">기본 제공 · 업데이트가 설정되지 않음</string>
+    <string name="lib_kb_status_official">공식</string>
+    <string name="lib_kb_status_official_version">공식 v%1$s</string>
+    <string name="lib_kb_status_verified">확인됨</string>
+    <!-- Counted nouns used inside status lines and button labels. -->
+    <plurals name="lib_kb_emulators_count">
+        <item quantity="other">에뮬레이터 %d개</item>
+    </plurals>
+    <plurals name="lib_kb_consoles_count">
+        <item quantity="other">콘솔 %d개</item>
+    </plurals>
+    <plurals name="lib_kb_console_updates_count">
+        <item quantity="other">콘솔 업데이트 %d개</item>
+    </plurals>
+    <string name="lib_kb_checked_today">오늘 %1$s에 확인</string>
+    <string name="lib_kb_checked_yesterday">어제 %1$s에 확인</string>
+    <string name="lib_kb_checked_on">%1$s %2$s에 확인</string>
+    <string name="lib_kb_import_label">%1$s 가져오기</string>
+    <string name="lib_kb_update_label">%1$s 업데이트</string>
+    <string name="lib_kb_import_and_update_label">%1$s 가져오기 및 %2$s 업데이트</string>
+    <string name="lib_kb_export_label">%1$s 내보내기</string>
+    <string name="lib_kb_group_status">상태</string>
+    <string name="lib_kb_new_file_types">새 파일 형식</string>
+    <string name="lib_kb_new_file_types_sub">%1$s 라이브러리를 다시 스캔하면 반영됩니다.</string>
+    <string name="lib_kb_group_updates">업데이트</string>
+    <string name="lib_kb_check">업데이트 확인</string>
+    <string name="lib_kb_check_sub">PlayFieldPortal에서 서명한 파일만</string>
+    <string name="lib_kb_checking">확인 중…</string>
+    <string name="lib_kb_not_available">이 빌드에서는 사용할 수 없음</string>
+    <string name="lib_kb_auto_update">자동 업데이트</string>
+    <string name="lib_kb_auto_update_sub">하루 최대 1회</string>
+    <string name="lib_kb_check_failed">확인을 완료할 수 없습니다.</string>
+    <string name="lib_kb_group_files">파일</string>
+    <string name="lib_kb_import">지식 파일 가져오기</string>
+    <string name="lib_kb_import_sub">이 기기의 .json 파일, 먼저 검토됨</string>
+    <string name="lib_kb_group_your_files">내 파일</string>
+    <string name="lib_kb_file_unreadable_sub">읽을 수 없음 · 서명되지 않음</string>
+    <plurals name="lib_kb_file_sub">
+        <item quantity="other">에뮬레이터 %d개 · 서명되지 않음</item>
+    </plurals>
+    <string name="lib_kb_remove_file">%1$s 제거</string>
+    <string name="lib_kb_badge_custom">사용자 지정</string>
+    <string name="lib_kb_badge_unreadable">읽을 수 없음</string>
+    <string name="lib_kb_export">내 에뮬레이터 내보내기</string>
+    <string name="lib_kb_export_sub">사용자 지정 및 편집한 에뮬레이터를 .json 하나로 공유</string>
+    <string name="lib_kb_group_reset">초기화</string>
+    <string name="lib_kb_reset_row">기본 제공으로 초기화</string>
+    <string name="lib_kb_reset_row_sub">업데이트와 내 파일을 삭제합니다</string>
+    <string name="lib_kb_remove_title">파일을 제거할까요?</string>
+    <string name="lib_kb_remove_message">\"%1$s\"이(가) 이 기기에서 제거됩니다. 기본 제공 및 공식 에뮬레이터 지식에는 영향이 없습니다.</string>
+    <!-- Button -->
+    <string name="lib_kb_remove">제거</string>
+    <string name="lib_kb_remove_failed_title">파일을 제거할 수 없습니다</string>
+    <string name="lib_kb_remove_failed_message">파일을 제거할 수 없습니다.</string>
+    <!-- Reset dialog -->
+    <string name="lib_kb_reset_title">기본 제공으로 초기화할까요?</string>
+    <string name="lib_kb_reset_message">다운로드한 업데이트와 가져온 파일이 삭제됩니다. PlayField Portal에 기본 제공되는 에뮬레이터 지식은 유지됩니다.</string>
+    <!-- Button -->
+    <string name="lib_kb_reset">초기화</string>
+    <string name="lib_kb_reset_failed_title">초기화할 수 없습니다</string>
+    <string name="lib_kb_reset_failed_message">에뮬레이터 지식을 초기화할 수 없습니다.</string>
+    <!-- Import problems -->
+    <string name="lib_kb_import_failed_title">파일을 가져올 수 없습니다</string>
+    <string name="lib_kb_import_too_large">파일이 너무 커서 에뮬레이터 지식 파일일 수 없습니다.</string>
+    <string name="lib_kb_import_unreadable">파일을 읽을 수 없습니다.</string>
+    <string name="lib_kb_import_nothing">이 파일에는 이 기기로 가져올 항목이 없습니다.</string>
+    <string name="lib_kb_import_save_failed">이 기기에 파일을 저장할 수 없습니다.</string>
+    <string name="lib_kb_import_refresh_failed">파일은 저장되었지만 에뮬레이터 감지를 새로 고치지 못했습니다.</string>
+    <!-- Import review -->
+    <string name="lib_kb_review_title">%1$s 검토</string>
+    <string name="lib_kb_review_unsigned">서명되지 않음 · 이 기기의 파일</string>
+    <string name="lib_kb_review_unsigned_sub">신뢰할 수 있는 파일만 가져오세요: 이 파일은 PFP에 어떤 앱으로 게임을 열지 알려 줍니다.</string>
+    <string name="lib_kb_badge_unsigned">서명 없음</string>
+    <string name="lib_kb_group_new">새 에뮬레이터</string>
+    <string name="lib_kb_review_add">%1$s 추가</string>
+    <string name="lib_kb_group_existing">이미 이 기기에 있음</string>
+    <string name="lib_kb_review_override">%1$s 재정의</string>
+    <string name="lib_kb_badge_overrides_official">공식 항목 재정의</string>
+    <string name="lib_kb_badge_your_edit">내가 편집함</string>
+    <string name="lib_kb_group_consoles">콘솔</string>
+    <string name="lib_kb_review_update">%1$s 업데이트</string>
+    <string name="lib_kb_review_extensions">+ 확장자: %1$s</string>
+    <string name="lib_kb_group_blocked">차단됨</string>
+    <string name="lib_kb_review_entry">항목 %1$d</string>
+    <string name="lib_kb_review_unchanged">%1$d개 이미 최신 상태</string>
+    <string name="lib_kb_group_finish">완료</string>
+    <string name="lib_kb_cancel">취소</string>
+    <!-- Controller prompts at the bottom of the screen. -->
+    <string name="lib_kb_prompt_toggle">전환</string>
+    <string name="lib_kb_prompt_cancel">취소</string>
+    <string name="lib_kb_opens_game_file">게임 파일을 엶</string>
+    <string name="lib_kb_opens_own_activity">자체 액티비티로 엶</string>
+    <string name="lib_kb_opens_shortcut">바로 가기로 엶</string>
+    <string name="lib_kb_opens_custom_command">사용자 지정 명령으로 엶</string>
+    <string name="lib_kb_intent_view">ROM 파일을 엶</string>
+    <string name="lib_kb_intent_component">특정 화면을 엶</string>
+    <string name="lib_kb_intent_shortcut">바로 가기로 엶</string>
+    <!-- Export picker -->
+    <string name="lib_kb_export_title_sub">공유할 수 있는 .json 하나로 저장됨</string>
+    <string name="lib_kb_export_select_all">모두 선택</string>
+    <string name="lib_kb_export_selected">%2$d개 중 %1$d개 선택됨</string>
+    <string name="lib_kb_group_custom">사용자 지정 에뮬레이터</string>
+    <string name="lib_kb_group_edited">편집한 공식 에뮬레이터</string>
+    <string name="lib_kb_export_changes_only">내 변경 사항만 · %1$s</string>
+    <string name="lib_kb_export_privacy">실행 설정만 저장됩니다. 게임 목록, ROM 경로, 계정 정보는 저장되지 않습니다.</string>
+    <string name="lib_kb_group_cant_share">공유할 수 없음</string>
+    <string name="lib_kb_export_nothing_title">내보낼 항목 없음</string>
+    <string name="lib_kb_export_none_message">아직 공유할 사용자 지정 또는 편집한 에뮬레이터가 없습니다.</string>
+    <string name="lib_kb_export_none_shareable">공유할 수 있는 에뮬레이터가 없습니다</string>
+    <string name="lib_kb_exported_title">내보냄</string>
+    <plurals name="lib_kb_exported_message">
+        <item quantity="other">에뮬레이터 %d개를 내보냈습니다</item>
+    </plurals>
+    <string name="lib_kb_export_failed_title">내보낼 수 없습니다</string>
+    <string name="lib_kb_export_failed_message">파일을 저장할 수 없습니다.</string>
+    <!-- Windows ▸ Game List -->
+    <string name="lib_win_title">Windows 게임</string>
+    <plurals name="lib_win_game_count">
+        <item quantity="other">게임 %d개</item>
+    </plurals>
+    <string name="lib_win_empty">아직 Windows 게임이 없습니다 — 먼저 PC 게임 가져오기에서 가져오세요.</string>
+    <string name="lib_win_working">작업 중…</string>
+    <!-- Marks the label a game already has in the label menu. -->
+    <string name="lib_win_current">현재</string>
+    <!-- Accessibility names of the folder button on a game row. -->
+    <string name="lib_win_link_folder">폴더 연결</string>
+    <string name="lib_win_change_folder">연결된 폴더 변경</string>
+    <string name="lib_win_label_non_steam">비 Steam(보유)</string>
+    <string name="lib_win_label_local">로컬</string>
+    <string name="lib_win_auto_value">자동: %1$s</string>
+    <string name="lib_win_auto_option">자동(%1$s)</string>
+    <string name="lib_win_auto">자동</string>
+    <string name="lib_win_not_set">설정 안 됨</string>
+    <string name="lib_win_label_save_failed">라벨을 저장할 수 없습니다.</string>
+    <string name="lib_win_label_steam_not_found">Steam으로 라벨을 지정했지만 일치하는 Steam 게임이 없어 아무것도 연결하지 않았습니다.</string>
+    <string name="lib_win_folder_unreadable">해당 폴더를 읽을 수 없습니다. 다시 선택하거나 폴더가 있는 저장소를 다시 마운트하세요.</string>
+    <string name="lib_win_several_matches">\"%1$s\"와(과) 일치하는 Steam 게임이 여러 개입니다. 올바른 게임을 선택할 수 있는 게임의 Shiba Coins 페이지에서 이 폴더 연결을 완료하세요.</string>
+    <string name="lib_win_kit_title">\"%1$s\"에 도전 과제 목록이 없습니다</string>
+    <string name="lib_win_kit_message_installer">이 폴더에는 아직 에뮬레이터 도전 과제 데이터가 없습니다. 그대로 연결하거나 먼저 에뮬레이터 키트를 설치하세요.</string>
+    <string name="lib_win_kit_message_no_installer">이 폴더에는 아직 에뮬레이터 도전 과제 데이터가 없습니다. 그대로 연결하거나, 키트를 설치하려면 설정 ▸ 도전 과제 ▸ 로컬 Windows에서 Goldberg 설치 및 게임 변환을 켜세요.</string>
+    <string name="lib_win_kit_link_only">연결만 하기</string>
+    <string name="lib_win_kit_install_and_link">키트 설치 후 연결</string>
+    <!-- Button: links the folder. -->
+    <string name="lib_win_kit_link">연결</string>
+    <string name="lib_pc_scan_no_root">먼저 ROM 폴더를 추가하세요 — PFP가 내보낸 게임용으로 &lt;ROM 폴더&gt;/windows/import를 만듭니다.</string>
+    <string name="lib_pc_scan_folder_unreadable">해당 폴더를 읽을 수 없습니다. 런처가 게임을 내보내는 폴더를 선택하세요.</string>
+    <string name="lib_pc_scan_none_found">선택한 폴더에서 내보낸 PC 게임을 찾을 수 없습니다.</string>
+    <plurals name="lib_pc_scan_imported">
+        <item quantity="other">PC 게임 %1$d개를 가져왔습니다.</item>
+    </plurals>
+    <plurals name="lib_pc_scan_imported_skipped">
+        <item quantity="other">PC 게임 %1$d개를 가져오고 %2$d개를 건너뛰었습니다(일치하는 런처가 설치되어 있지 않음).</item>
+    </plurals>
+    <plurals name="lib_pc_scan_restored">
+        <item quantity="other">.pfpgame 파일에서 게임 %1$d개를 복원하고 %2$d개를 매칭했습니다.</item>
+    </plurals>
+    <plurals name="lib_pc_scan_restore_skipped">
+        <item quantity="other">.pfpgame 파일 %d개를 건너뛰었습니다: 런처가 설치되어 있지 않거나, 모호하거나, 고정 항목이 라이브러리에 없습니다.</item>
+    </plurals>
+    <plurals name="lib_pc_scan_restore_untrusted">
+        <item quantity="other">.pfpgame 파일 %d개를 읽을 수 없거나 신뢰할 수 없어 무시했습니다.</item>
+    </plurals>
+    <plurals name="lib_pc_scan_relinked">
+        <item quantity="other">내보낸 아트워크를 이름으로 다시 연결했습니다(게임 %d개 업데이트됨).</item>
+    </plurals>
+    <string name="lib_pc_scan_relink_no_folder">내보낸 아트워크를 다시 연결하려면 아트워크 폴더를 연결한 후 다시 스캔하세요.</string>
+    <string name="lib_pc_scan_relink_failed">내보낸 아트워크를 다시 연결하지 못했습니다 — 로그를 확인하세요.</string>
+    <plurals name="lib_pc_scan_pins_reconciled">
+        <item quantity="other">고정된 바로 가기 %d개를 조정했습니다.</item>
+    </plurals>
+    <string name="lib_pc_export_game_gone">이 게임은 더 이상 라이브러리에 없습니다.</string>
+    <string name="lib_pc_export_pc_only">PC 게임만 내보낼 수 있습니다.</string>
+    <string name="lib_pc_export_no_launcher">%1$s은(는) 다시 불러올 런처가 없어 내보낼 수 없습니다.</string>
+    <string name="lib_pc_export_one_done">%1$s을(를) windows/import에 %2$s(으)로 내보냈습니다.</string>
+    <string name="lib_pc_export_one_failed">%1$s을(를) windows/import에 쓸 수 없습니다.</string>
+    <string name="lib_pc_export_no_root">먼저 ROM 폴더를 추가하세요 — PFP는 PC 게임을 &lt;ROM 폴더&gt;/windows/import로 내보냅니다.</string>
+    <string name="lib_pc_export_no_folder">&lt;windows&gt;/import를 열 수 없습니다. ROM 폴더를 다시 연결하고 다시 시도하세요.</string>
+    <string name="lib_pc_export_nothing_needed">내보내기 파일이 필요한 PC 게임이 없습니다: 런처에서 내보낸 게임과 아트워크가 없는 고정 항목은 자동으로 돌아옵니다.</string>
+    <plurals name="lib_pc_export_bulk_done">
+        <item quantity="other">PC 게임 %d개를 windows/import로 내보냈습니다</item>
+    </plurals>
+    <string name="lib_pc_export_bulk_skipped">%1$d개는 파일이 필요 없음</string>
+    <string name="lib_pc_export_bulk_failed">%1$d개는 쓸 수 없음</string>
+    <!-- Settings ▸ Library Manager -->
+    <string name="lib_lm_title">라이브러리 관리자</string>
+    <string name="lib_lm_library_title">라이브러리</string>
+    <string name="lib_lm_root_group">ROM 폴더 접근</string>
+    <string name="lib_lm_root_add">ROM 폴더 추가</string>
+    <string name="lib_lm_root_add_sub">ROM 폴더(예: /Roms) 또는 SD 카드 같은 두 번째 위치에 대한 접근 허용</string>
+    <string name="lib_lm_root_scan">ROM 폴더 스캔</string>
+    <string name="lib_lm_root_scan_sub">ROM 폴더 안에서 콘솔 폴더를 찾아 게임 추가</string>
+    <string name="lib_lm_group_consoles">콘솔</string>
+    <string name="lib_lm_no_consoles">설정된 콘솔이 없습니다. 콘솔을 추가하면 게임 안에 표시되는 메모리 카드가 만들어집니다.</string>
+    <string name="lib_lm_card_hidden">"%1$s  (숨김)"</string>
+    <!-- Badge on a console row that is pinned to the top. -->
+    <string name="lib_lm_pinned">고정됨</string>
+    <string name="lib_lm_group_manage">관리</string>
+    <string name="lib_lm_add_console">콘솔 추가</string>
+    <string name="lib_lm_add_console_sub">플랫폼을 선택하세요 — 게임은 메인 ROM 폴더 안의 해당 폴더에 있습니다</string>
+    <string name="lib_lm_setup_folders">ROM 폴더 설정(ES-DE)</string>
+    <string name="lib_lm_setup_folders_sub">빈 폴더를 선택하세요 — PFP가 게임을 복사할 표준 ES-DE 시스템 폴더(gba, snes, psx…)를 만들어 줍니다. 폴더 이름을 추측할 필요가 없습니다</string>
+    <string name="lib_lm_scan_all">모든 콘솔 스캔</string>
+    <string name="lib_lm_scanning_count">%1$d개 스캔 중…</string>
+    <string name="lib_lm_configure_first">먼저 ROM 폴더를 설정하세요</string>
+    <string name="lib_lm_scan_all_sub">사용 설정된 모든 콘솔의 폴더 스캔</string>
+    <string name="lib_lm_rescan_all">모두 다시 스캔(누락 표시)</string>
+    <string name="lib_lm_rescan_all_sub">ROM 파일이 없어진 게임도 누락으로 표시합니다. 게임은 라이브러리에 남습니다</string>
+    <string name="lib_lm_rescan_confirm">확인: 다시 스캔하고 누락된 게임을 표시할까요?</string>
+    <string name="lib_lm_rescan_confirm_sub">ROM 파일이 없어진 게임을 누락으로 표시하며 즐겨찾기, 플레이 시간, 아트워크는 유지됩니다. 라이브러리가 크면 시간이 걸릴 수 있습니다</string>
+    <string name="lib_lm_cancel">취소</string>
+    <!-- Add console flow -->
+    <string name="lib_lm_add_console_title">콘솔 추가</string>
+    <string name="lib_lm_choose_platform">플랫폼 선택</string>
+    <string name="lib_lm_group_platforms">지원 플랫폼</string>
+    <string name="lib_lm_assign_emulator">에뮬레이터 지정</string>
+    <string name="lib_lm_emulator">에뮬레이터</string>
+    <string name="lib_lm_no_emulators">이 플랫폼용으로 설치된 에뮬레이터가 감지되지 않았습니다. 나중에 콘솔 세부 정보 화면에서 지정할 수 있습니다.</string>
+    <!-- Option: skip choosing an emulator for now. -->
+    <string name="lib_lm_decide_later">나중에 결정</string>
+    <string name="lib_lm_scan_now_title">지금 스캔할까요?</string>
+    <string name="lib_lm_new_console">새 콘솔</string>
+    <string name="lib_lm_rom_directory">ROM 폴더</string>
+    <string name="lib_lm_not_set">설정 안 됨</string>
+    <!-- Button -->
+    <string name="lib_lm_scan_now">지금 스캔</string>
+    <string name="lib_lm_scan_now_sub">메모리 카드를 만들고 폴더를 바로 스캔</string>
+    <string name="lib_lm_add_no_scan">스캔하지 않고 추가</string>
+    <string name="lib_lm_add_no_scan_sub">지금 메모리 카드를 만들고 나중에 스캔</string>
+    <!-- Console (Memory Card) detail -->
+    <string name="lib_lm_rename_title">메모리 카드 이름 변경</string>
+    <string name="lib_lm_rename_placeholder">메모리 카드 이름</string>
+    <string name="lib_lm_remove_card_title">%1$s을(를) 제거할까요?</string>
+    <string name="lib_lm_remove_card_message">라이브러리에서 콘솔과 스캔한 게임을 제거합니다. ROM 파일은 기기에 그대로 남습니다.</string>
+    <string name="lib_lm_remove_app_message">이 라이브러리에서 앱을 제거합니다. 앱 자체는 설치된 상태로 유지됩니다.</string>
+    <!-- Button -->
+    <string name="lib_lm_remove">제거</string>
+    <string name="lib_lm_group_library">라이브러리</string>
+    <string name="lib_lm_games_directory">게임 폴더</string>
+    <string name="lib_lm_windows_no_root">ROM 폴더를 추가하세요 — PFP가 &lt;ROM 폴더&gt;/windows를 자동으로 만들어 사용합니다</string>
+    <string name="lib_lm_games">게임</string>
+    <string name="lib_lm_group_actions">작업</string>
+    <string name="lib_lm_game_list">Windows 게임</string>
+    <string name="lib_lm_game_list_sub">각 Windows 게임에 Steam, 비 Steam 또는 로컬 라벨을 지정하고 로컬 폴더 연결</string>
+    <string name="lib_lm_import_pc">PC 게임 가져오기</string>
+    <string name="lib_lm_import_pc_sub">내보낸 게임, ID로 추가 및 런처 상태</string>
+    <string name="lib_lm_vita_folder">Vita3K 데이터 폴더</string>
+    <string name="lib_lm_vita_folder_set">이 ux0 폴더에서 설치된 타이틀을 읽는 중</string>
+    <string name="lib_lm_vita_folder_unset">PFP가 게임을 찾을 수 있도록 Vita3K ux0 폴더(예: Roms/vita/ux0)를 선택하세요</string>
+    <string name="lib_lm_scan_vita">Vita 게임 스캔</string>
+    <string name="lib_lm_scan_vita_sub">Vita3K 데이터 폴더의 ux0/app에서 설치된 타이틀을 읽습니다</string>
+    <string name="lib_lm_group_apps">앱</string>
+    <string name="lib_lm_add_apps">앱 추가</string>
+    <string name="lib_lm_add_apps_sub">이 라이브러리에 추가할 설치된 앱 선택</string>
+    <string name="lib_lm_no_apps">아직 앱이 없습니다 — 앱 추가를 사용해 이 라이브러리에 넣을 설치된 앱을 선택하세요.</string>
+    <string name="lib_lm_rom_directory_default">메인 ROM 폴더 안의 이 콘솔 폴더를 스캔합니다</string>
+    <string name="lib_lm_none">없음</string>
+    <!-- Title of the menu that picks the console\'s emulator. -->
+    <string name="lib_lm_set_emulator">에뮬레이터 설정</string>
+    <!-- Marks the emulator that is already chosen. -->
+    <string name="lib_lm_current">현재</string>
+    <string name="lib_lm_group_files">지원 파일</string>
+    <string name="lib_lm_no_extensions">설정된 확장자가 없습니다 — 스캔 시 이 콘솔의 ROM을 찾을 수 있도록 하나 이상 추가하세요.</string>
+    <string name="lib_lm_remove_extension">확장자 제거</string>
+    <string name="lib_lm_remove_from_library">라이브러리에서 제거</string>
+    <string name="lib_lm_add_extension">확장자 추가</string>
+    <string name="lib_lm_extension_hint">예: iso, chd, zip</string>
+    <string name="lib_lm_extension_helper">스캔할 때 대소문자를 구분하지 않고 일치시킵니다.</string>
+    <!-- Controller prompt: the button that starts typing. -->
+    <string name="lib_lm_prompt_type">입력</string>
+    <string name="lib_lm_add_extension_named">\".%1$s\" 추가</string>
+    <string name="lib_lm_scan_console">이 콘솔 스캔</string>
+    <string name="lib_lm_scanning_ellipsis">스캔 중…</string>
+    <string name="lib_lm_rom_dir_unconfigured">ROM 폴더가 설정되지 않았습니다</string>
+    <string name="lib_lm_scan_console_sub">이 콘솔의 폴더만 스캔</string>
+    <string name="lib_lm_group_achievements">도전 과제</string>
+    <string name="lib_lm_ps3_folder">PS3 데이터 폴더</string>
+    <string name="lib_lm_ps3_folder_set_sub">이 ARMSX3 PS3 폴더에서 트로피를 읽는 중</string>
+    <string name="lib_lm_ps3_folder_unset">PFP가 트로피를 읽을 수 있도록 ARMSX3 PS3 폴더를 선택하세요</string>
+    <string name="lib_lm_ps3_hint">ARMSX3 PS3 폴더(config/dev_hdd0가 있는 폴더)에 대한 접근을 허용한 후 설정 ▸ 도전 과제 ▸ 도전 과제 업데이트에서 자동 매칭을 실행하세요. 트로피 ID는 각 게임 디스크에서 가져오므로 한 번도 실행하지 않은 게임도 연결할 수 있습니다.</string>
+    <string name="lib_lm_x360_folder">X360 Mobile 데이터 폴더</string>
+    <string name="lib_lm_x360_folder_set_sub">X360 Mobile 프로필에서 도전 과제를 읽는 중</string>
+    <string name="lib_lm_x360_folder_unset">폴더 선택기의 측면 메뉴에서 X360 Mobile을 선택하세요</string>
+    <string name="lib_lm_xendroid_folder">XenDroid 데이터 폴더</string>
+    <string name="lib_lm_xendroid_folder_set_sub">XenDroid 프로필에서 도전 과제를 읽는 중</string>
+    <string name="lib_lm_xendroid_folder_unset">Android/data/xendroid.compose를 선택하세요</string>
+    <string name="lib_lm_x360_hint">플레이하는 에뮬레이터의 데이터 폴더에 대한 접근을 허용한 후 설정 ▸ 도전 과제 ▸ 도전 과제 업데이트에서 자동 매칭을 실행하세요. 타이틀 ID는 각 게임 파일에서 가져오므로 한 번도 실행하지 않은 게임도 연결할 수 있습니다.</string>
+    <string name="lib_lm_rename_card">메모리 카드 이름 변경</string>
+    <string name="lib_lm_show_in_games_sub">이 메모리 카드 사용 또는 숨기기</string>
+    <string name="lib_lm_move_up">위로 이동</string>
+    <string name="lib_lm_move_down">아래로 이동</string>
+    <string name="lib_lm_group_danger">위험 구역</string>
+    <string name="lib_lm_remove_card">메모리 카드 제거</string>
+    <string name="lib_lm_remove_card_sub">이 콘솔과 게임을 제거합니다. ROM 파일은 기기에 그대로 남습니다.</string>
+    <string name="lib_lm_card_sub">"%1$s  ·  %2$s"</string>
+    <string name="lib_lm_no_rom_directory">ROM 폴더 없음</string>
+    <plurals name="lib_lm_game_count">
+        <item quantity="other">게임 %d개</item>
+    </plurals>
+    <string name="lib_lm_tap_dismiss">선택하여 닫기</string>
+    <!-- Import PC games -->
+    <string name="lib_lm_import_pc_title">PC 게임 가져오기</string>
+    <string name="lib_lm_group_home">홈 화면 추가 감지</string>
+    <string name="lib_lm_home_label">Play Field Portal을 홈으로</string>
+    <string name="lib_lm_home_active">사용 중</string>
+    <string name="lib_lm_home_set">설정…</string>
+    <string name="lib_lm_home_active_sub">지원되는 런처에서 \"홈 화면에 추가\"를 사용하면 게임을 여기로 자동으로 가져옵니다</string>
+    <string name="lib_lm_home_set_sub">런처의 \"홈 화면에 추가\" 옵션으로 게임을 PFP에 가져오려면 PFP를 홈 앱으로 설정하세요</string>
+    <string name="lib_lm_group_exported">내보낸 게임</string>
+    <string name="lib_lm_scan_import">가져오기 폴더 스캔</string>
+    <string name="lib_lm_scan_import_sub">모든 스캔은 이미 &lt;ROM 폴더&gt;/windows/import를 자동으로 읽습니다. 이 행은 다른 위치의 폴더를 한 번 선택하는 용도입니다 — PFP가 GameNative / Winlator 내보내기(.steam · .epic · .gog · .amazon · .pcgame · .desktop)와 PFP 자체 .pfpgame 내보내기를 스캔하여 가져옵니다</string>
+    <string name="lib_lm_export_manual">수동 추가 게임 내보내기</string>
+    <string name="lib_lm_export_manual_sub">ID로 추가했거나 감지한 각 게임과 아트워크가 있는 각 고정 항목에 대해 &lt;windows&gt;/import에 .pfpgame 파일을 씁니다. 새로 설치할 때 아트워크와 함께 다시 불러올 수 있습니다</string>
+    <string name="lib_lm_group_local">로컬 Windows</string>
+    <string name="lib_lm_batch_match">로컬 게임 일괄 매칭</string>
+    <string name="lib_lm_batch_match_sub">게임 폴더들이 들어 있는 폴더를 선택하세요. Windows 라이브러리에 이미 있는 게임은 각각 식별, 기억 및 연결되며 나머지는 그대로 둡니다</string>
+    <string name="lib_lm_matched_local">매칭된 로컬 게임(%1$d)</string>
+    <string name="lib_lm_none_yet">아직 없음</string>
+    <string name="lib_lm_matched_local_empty">아직 지정된 항목이 없습니다 — 위의 일괄 매칭을 사용하거나 게임의 Shiba Coins 페이지에서 게임 하나를 자동 매칭하세요</string>
+    <string name="lib_lm_matched_local_forget_note">삭제하면 폴더 위치에 대한 PFP의 기록만 제거되며 획득한 코인은 유지됩니다</string>
+    <!-- Goldberg is the name of a Steam emulator. -->
+    <string name="lib_lm_goldberg">Goldberg 설치 프로그램</string>
+    <string name="lib_lm_on">켜짐</string>
+    <string name="lib_lm_off">꺼짐</string>
+    <string name="lib_lm_goldberg_sub">PFP가 게임 폴더에 도전 과제 목록을 쓰고 번들된 Steam 에뮬레이터로 교체할 수 있게 합니다. 설정 ▸ 도전 과제 ▸ 로컬 Windows의 스위치와 같습니다</string>
+    <string name="lib_lm_goldberg_backup">이미 플레이한 게임은 변환하기 전에 세이브 파일을 백업하세요 — 에뮬레이터가 새 세이브 위치에서 읽기 시작하며, PFP가 이전 세이브를 되돌려 줄 수 없습니다.</string>
+    <string name="lib_lm_group_launchers">PC 런처</string>
+    <string name="lib_lm_not_installed">설치되지 않음</string>
+    <string name="lib_lm_add_by_id">ID로 추가…</string>
+    <string name="lib_lm_add_by_id_sub">ID로 게임을 추가하거나 앱 자체의 홈 화면에 추가 옵션을 사용하세요</string>
+    <string name="lib_lm_installed">설치됨</string>
+    <string name="lib_lm_no_add_by_id">ID로 추가를 지원하지 않음 — 대신 게임을 &lt;windows&gt;/import로 내보내세요</string>
+    <string name="lib_lm_group_unknown">알 수 없는 Windows 에뮬레이터</string>
+    <string name="lib_lm_unknown_choose">선택…</string>
+    <string name="lib_lm_show_hidden">숨긴 앱 표시</string>
+    <plurals name="lib_lm_show_hidden_sub">
+        <item quantity="other">앱 %d개가 런처 아님으로 표시됨 — 다시 선택하려면 되돌리세요</item>
+    </plurals>
+    <string name="lib_lm_group_found">찾은 게임(%1$d)</string>
+    <string name="lib_lm_no_found">아직 감지한 PC 게임이 없습니다.</string>
+    <string name="lib_lm_import">가져오기</string>
+    <string name="lib_lm_import_all">모두 가져오기</string>
+    <string name="lib_lm_import_all_sub">찾은 모든 게임을 Windows 게임 메모리 카드로 이동</string>
+    <!-- Local Windows folder row: a button that forgets the folder. -->
+    <string name="lib_lm_forget">삭제</string>
+    <!-- Add a game by its ID -->
+    <string name="lib_lm_add_game_title">%1$s 게임 추가</string>
+    <string name="lib_lm_group_game">게임</string>
+    <string name="lib_lm_game_id">게임 ID</string>
+    <string name="lib_lm_game_name">게임 이름</string>
+    <string name="lib_lm_source">소스</string>
+    <string name="lib_lm_source_sub">눌러서 스토어 전환</string>
+    <string name="lib_lm_group_add">추가</string>
+    <string name="lib_lm_test_launch">테스트 실행</string>
+    <string name="lib_lm_test_launch_sub">%1$s에서 게임을 열어 ID 확인</string>
+    <string name="lib_lm_add_game">게임 추가</string>
+    <string name="lib_lm_add_game_sub">Windows 라이브러리에 추가</string>
+    <string name="lib_lm_add_game_blocked">먼저 게임 ID와 이름을 설정하세요</string>
+    <string name="lib_lm_all_platforms_added">지원되는 모든 플랫폼에 이미 메모리 카드가 있습니다.</string>
+    <string name="lib_lm_android_added_title">Android 라이브러리 추가됨</string>
+    <string name="lib_lm_android_added_message">게임 → 게임 찾기에서 열어 앱을 추가하세요.</string>
+    <string name="lib_lm_need_rom_root">먼저 ROM 폴더를 설정하세요 — ROM 폴더 접근에서 접근을 허용한 후 콘솔을 추가하세요.</string>
+    <string name="lib_lm_ps3_folder_set">PS3 데이터 폴더가 설정되었습니다. PS3 트로피를 연결하려면 설정 ▸ 도전 과제 ▸ 도전 과제 업데이트에서 자동 매칭을 실행하세요.</string>
+    <string name="lib_lm_x360_folder_set">%1$s 데이터 폴더가 설정되었습니다. Xbox 360 도전 과제를 연결하려면 설정 ▸ 도전 과제 ▸ 도전 과제 업데이트에서 자동 매칭을 실행하세요.</string>
+    <string name="lib_lm_invalid_game_id">올바른 게임 ID를 입력하세요 — 숫자 또는 런처의 게임 페이지에서 복사한 local_… ID.</string>
+    <string name="lib_lm_test_launch_failed">테스트 실행 실패: %1$s. 런처가 외부 실행을 차단할 수 있습니다.</string>
+    <string name="lib_lm_enter_game_name">게임 이름을 입력하세요 — %1$s에서 ID 옆에 표시됩니다.</string>
+    <!-- Task heading in the notification list. -->
+    <string name="lib_lm_windows_games">Windows 게임</string>
+    <string name="lib_lm_pc_game_added">\"%1$s\"이(가) Windows 게임에 추가되었습니다.</string>
+    <string name="lib_lm_pc_add_failed">게임을 추가할 수 없습니다: %1$s</string>
+    <string name="lib_lm_pc_import_failed">\"%1$s\"을(를) 가져올 수 없습니다: %2$s</string>
+    <string name="lib_lm_game_not_found">게임을 찾을 수 없습니다</string>
+    <string name="lib_lm_scanning">%1$s 스캔 중</string>
+    <string name="lib_lm_scanning_vita">PS Vita 스캔 중</string>
+    <string name="lib_lm_scanning_windows">Windows 게임 스캔 중</string>
+    <string name="lib_lm_scanning_rom_root">ROM 폴더 스캔 중</string>
+    <string name="lib_lm_stop_note_games">지금까지 찾은 게임은 유지됩니다.</string>
+    <string name="lib_lm_rom_root_stop_note">이미 스캔한 시스템의 새 게임은 유지됩니다.</string>
+    <string name="lib_lm_matching_stop_note">이미 매칭된 게임은 연결이 유지됩니다.</string>
+    <string name="lib_lm_stopped">완료되기 전에 중지됨</string>
+    <string name="lib_lm_scan_stopped">%1$s 스캔 중지됨</string>
+    <string name="lib_lm_scan_finished">%1$s 스캔 완료</string>
+    <string name="lib_lm_scan_failed">%1$s 스캔 실패</string>
+    <string name="lib_lm_scan_skipped">%1$s 스캔 건너뜀</string>
+    <string name="lib_lm_vita_finished">PS Vita 스캔 완료</string>
+    <string name="lib_lm_vita_failed">PS Vita 스캔 실패</string>
+    <string name="lib_lm_vita_failed_message">Vita 스캔 실패</string>
+    <string name="lib_lm_vita_stopped">PS Vita 스캔 중지됨</string>
+    <string name="lib_lm_windows_scan_stopped">Windows 게임 스캔 중지됨</string>
+    <string name="lib_lm_windows_scan_failed">Windows 게임 스캔 실패</string>
+    <string name="lib_lm_windows_scan_finished">Windows 게임 스캔 완료</string>
+    <string name="lib_lm_pc_scan_failed_message">PC 스캔 실패</string>
+    <string name="lib_lm_rom_root_stopped">ROM 폴더 스캔 중지됨</string>
+    <string name="lib_lm_rom_root_finished">ROM 폴더 스캔 완료</string>
+    <string name="lib_lm_matching">로컬 Windows 게임 매칭 중</string>
+    <string name="lib_lm_match_stopped">Windows 도전 과제 매칭 중지됨</string>
+    <string name="lib_lm_match_failed">Windows 도전 과제 매칭 실패</string>
+    <string name="lib_lm_match_failed_message">일괄 매칭 실패</string>
+    <string name="lib_lm_match_finished">Windows 도전 과제 매칭 완료</string>
+    <string name="lib_lm_convert_label">Goldberg 변환</string>
+    <string name="lib_lm_convert_linked">%1$d개 라이브러리 게임에 연결되었습니다.</string>
+    <plurals name="lib_lm_converted">
+        <item quantity="other">게임 %d개 변환됨</item>
+    </plurals>
+    <string name="lib_lm_convert_no_achievements">%1$d개는 도전 과제가 없음</string>
+    <string name="lib_lm_convert_no_key">%1$d개는 Steam Web API 키 필요</string>
+    <string name="lib_lm_convert_failed">%1$d개 실패</string>
+    <string name="lib_lm_convert_play_note">각 게임을 에뮬레이터로 플레이하면 코인을 획득할 수 있습니다.</string>
+    <string name="lib_lm_export_label">수동 추가 게임 내보내기</string>
+    <string name="lib_lm_export_failed">내보내기 실패 — 로그를 확인하세요.</string>
+    <string name="lib_lm_rom_root_ready">ROM 폴더 준비 완료</string>
+    <plurals name="lib_lm_folders_created">
+        <item quantity="other">폴더 %d개 만들어짐</item>
+    </plurals>
+    <string name="lib_lm_folders_existing">%1$d개는 이미 있음</string>
+    <string name="lib_lm_rom_root_next">해당하는 폴더에 게임을 복사한 후 ROM 폴더 스캔을 선택하세요.</string>
+    <plurals name="lib_lm_import_all_done">
+        <item quantity="other">PC 게임 %d개를 Windows 게임으로 가져왔습니다.</item>
+    </plurals>
+    <plurals name="lib_lm_import_all_none">
+        <item quantity="other">PC 게임 %d개를 하나도 가져올 수 없습니다.</item>
+    </plurals>
+    <plurals name="lib_lm_import_all_some">
+        <item quantity="other">PC 게임 %1$d개를 Windows 게임으로 가져왔습니다. %2$d개는 가져올 수 없습니다.</item>
+    </plurals>
+    <string name="lib_lm_local_appid">appid %1$s</string>
+    <string name="lib_lm_local_from_marker">steam_appid.txt 기준</string>
+    <string name="lib_lm_local_from_stored">저장된 Steam 매칭 기준</string>
+    <string name="lib_lm_local_by_title">제목으로 매칭됨</string>
+    <string name="lib_lm_local_tracking">추적 중</string>
+    <string name="lib_lm_local_no_list">아직 도전 과제 목록 없음</string>
+    <string name="lib_kb_import_invalid">이 파일은 PlayFieldPortal 에뮬레이터 정보 파일이 아니거나 손상되었습니다.</string>
+    <string name="lib_kb_import_too_many">이 파일에는 PlayFieldPortal이 가져올 수 있는 것보다 많은 에뮬레이터나 기종이 들어 있습니다.</string>
+</resources>

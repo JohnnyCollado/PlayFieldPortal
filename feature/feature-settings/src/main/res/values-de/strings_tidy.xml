@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tidy_controller_swap_confirm_back">Bestätigen und Zurück tauschen</string>
+    <string name="tidy_controller_swap_options_sort">Optionen und Sortieren tauschen</string>
+    <string name="tidy_group_text_icons">Text und Symbole</string>
+    <string name="tidy_wizard_step_of">Schritt %1$d von %2$d</string>
+</resources>

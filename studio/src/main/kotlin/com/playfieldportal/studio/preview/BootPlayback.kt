@@ -77,7 +77,7 @@ import org.jetbrains.skia.Image as SkiaImage
 
 enum class BootKind(val slotKey: String, val label: String) {
     BOOT("boot_video", "Boot"),
-    GAMEBOOT("gameboot_video", "GameBoot"),
+    GAMEBOOT("gameboot_video", "Game Boot"),
 }
 
 /** [kind] null = nothing playing. [clip] null = the built-in sequence for [kind]. */

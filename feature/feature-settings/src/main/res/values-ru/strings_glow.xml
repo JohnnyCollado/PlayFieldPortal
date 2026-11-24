@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_title">Свечение выбора</string>
+    <string name="glow_sub_off">Без свечения вокруг выбранного значка.</string>
+    <string name="glow_sub_steady">Мягкий свет вокруг выбранного значка. Он неподвижен.</string>
+    <string name="glow_sub_pulsing">Свет вокруг выбранного значка медленно усиливается и гаснет. Он неподвижен, пока для параметра «Движение» выбрано «Статично».</string>
+    <string name="glow_value_off">Выкл.</string>
+    <string name="glow_value_steady">Постоянное</string>
+    <string name="glow_value_pulsing">Пульсация</string>
+</resources>

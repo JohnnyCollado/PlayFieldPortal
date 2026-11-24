@@ -1,0 +1,597 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Localization slice E1: game detail, Artwork Studio, storefront matching, search online -->
+    <!-- Stored-assets manager -->
+    <string name="det_assets_reorder_title">%1$s neu ordnen</string>
+    <string name="det_assets_first_hint">Das erste wird im Spiel angezeigt.</string>
+    <string name="det_assets_empty">Für diesen Platz ist nichts gespeichert.</string>
+    <string name="det_assets_up">Hoch</string>
+    <string name="det_assets_down">Runter</string>
+    <string name="det_assets_make_first">An erste Stelle</string>
+    <string name="det_assets_move">Verschieben</string>
+    <string name="det_assets_relink_note">Das erneute Verknüpfen einer Bibliothek baut diese Reihenfolge aus den Dateinamen neu auf – so verbindet sich Artwork wieder mit neu importierten Spielen.</string>
+    <string name="det_assets_primary">Primär</string>
+    <string name="det_assets_stored_artwork">Gespeichertes Artwork</string>
+
+    <!-- Shared -->
+    <string name="det_close">Schließen</string>
+
+    <!-- Crop preview captions -->
+    <string name="det_crop_caption_tile">XMB-Kachel</string>
+    <string name="det_crop_caption_icon_anim">XMB-Symbolanimation</string>
+    <string name="det_crop_caption_box_art">Cover-Kachel</string>
+    <string name="det_crop_caption_box_3d">3D-Box-Kachel</string>
+    <string name="det_crop_caption_phys_media">Datenträger-Kachel</string>
+    <string name="det_crop_caption_media_strip">Medienleiste</string>
+
+    <!-- Artwork Studio: filters -->
+    <string name="det_filter_filters">Filter</string>
+    <string name="det_filter_style">Stil</string>
+    <string name="det_filter_dimensions">Abmessungen</string>
+    <string name="det_filter_animation">Animation</string>
+    <string name="det_filter_region">Region</string>
+    <string name="det_filter_media">Medien</string>
+    <string name="det_filter_all">Alle</string>
+    <string name="det_filter_anim_static">Statisch</string>
+    <string name="det_filter_anim_animated">Animiert</string>
+    <string name="det_filter_on">Ein</string>
+    <string name="det_filter_off">Aus</string>
+    <string name="det_filter_active">Aktiv</string>
+    <string name="det_filter_n_of_m">%1$d von %2$d</string>
+    <string name="det_filter_mature">Nicht jugendfrei</string>
+    <string name="det_filter_humor">Humor</string>
+    <string name="det_filter_epilepsy">Epilepsiewarnung</string>
+    <string name="det_filter_clear">Filter löschen</string>
+    <string name="det_filter_region_from_disc">%1$s · von der Disc</string>
+    <!-- ScreenScraper media type names -->
+    <string name="det_ssmedia_mix_v2">Mix v2</string>
+    <string name="det_ssmedia_mix_v1">Mix v1</string>
+    <string name="det_ssmedia_marquee">Marquee</string>
+    <string name="det_ssmedia_steam_grid">Steam Grid</string>
+    <string name="det_ssmedia_box_2d">Cover 2D</string>
+    <string name="det_ssmedia_box_3d">Cover 3D</string>
+    <string name="det_ssmedia_disc_art_2d">Disc-Bild 2D</string>
+    <string name="det_ssmedia_disc_texture">Disc-Textur</string>
+    <string name="det_ssmedia_fan_art">Fanart</string>
+    <string name="det_ssmedia_screenshot">Screenshot</string>
+    <string name="det_ssmedia_title_screen">Titelbildschirm</string>
+    <string name="det_ssmedia_logo">Logo</string>
+    <string name="det_ssmedia_logo_hd">Logo HD</string>
+    <string name="det_ssmedia_manual">Handbuch</string>
+    <string name="det_ssmedia_video">Video</string>
+    <string name="det_ssmedia_video_normalized">Video (normalisiert)</string>
+
+    <!-- Steam artwork tile captions -->
+    <string name="det_steam_art_library_capsule">Bibliotheks-Kapsel</string>
+    <string name="det_steam_art_library_hero">Bibliotheks-Hero</string>
+    <string name="det_steam_art_logo">Logo</string>
+    <string name="det_steam_art_header">Header</string>
+    <string name="det_steam_art_store_capsule">Store-Kapsel</string>
+    <string name="det_steam_art_store_background">Store-Hintergrund</string>
+    <string name="det_steam_art_screenshot_n">Screenshot %1$d</string>
+    <string name="det_steam_art_trailer_short">%1$s · kurz</string>
+    <string name="det_art_best_title_match">beste Titelübereinstimmung</string>
+
+    <!-- Artwork Studio: page line, paging and pick status -->
+    <string name="det_page_range">%1$d–%2$d von %3$d</string>
+    <string name="det_page_range_shown">%1$d–%2$d · %3$d von %4$d angezeigt</string>
+    <string name="det_page_prev">‹ Zurück</string>
+    <string name="det_page_next">Weiter ›</string>
+    <string name="det_page_n_of_m">Seite %1$d / %2$d</string>
+    <string name="det_picks_add">%1$d hinzuzufügen</string>
+    <string name="det_picks_remove">%1$d zu entfernen</string>
+    <string name="det_picks_add_remove">%1$d hinzuzufügen · %2$d zu entfernen</string>
+    <string name="det_picks_apply_pill">Anwenden ›</string>
+    <string name="det_picks_apply">Anwenden</string>
+    <string name="det_picks_progress">%1$d von %2$d hinzugefügt</string>
+    <string name="det_picks_progress_failed">%1$d von %2$d hinzugefügt · %3$d fehlgeschlagen</string>
+    <string name="det_picks_retry">Erneut versuchen</string>
+    <string name="det_picks_remove_failed">Entfernen</string>
+    <string name="det_options">Optionen</string>
+
+    <!-- Storefront match picker ("Match Game") -->
+    <string name="det_store_match_title">Spiel zuordnen</string>
+    <string name="det_store_hint_multi">"Hoch/Runter  Zeilen  •  L1/R1  Store  •  Select  Wählen  •  △  Mehr Informationen  •  B  Abbrechen"</string>
+    <string name="det_store_hint_single">"Hoch/Runter  Zeilen  •  Select  Wählen  •  △  Mehr Informationen  •  B  Abbrechen"</string>
+    <string name="det_store_notice_tied">Zwei Store-Einträge tragen genau diesen Titel. Ein Gleichstand bei identischem Namen lässt sich nicht durch Hinweise auflösen, daher wird nichts verknüpft, bis du wählst.</string>
+    <string name="det_store_notice_low">Keiner davon ist eine sichere Übereinstimmung – die Namen stimmen nur teilweise überein. Prüfe Jahr und Entwickler, bevor du wählst, oder lass es unverknüpft.</string>
+    <string name="det_store_empty_unavailable_title">%1$s hat nicht geantwortet.</string>
+    <string name="det_store_empty_unavailable_detail">Es wurde nichts geändert. Das ist ein Verbindungsproblem, kein fehlendes Spiel – versuche es später erneut.</string>
+    <string name="det_store_empty_not_windows_title">Das ist kein Windows-Spiel.</string>
+    <string name="det_store_empty_not_windows_detail">Store-Identitäten gibt es nur für PC-Spiele. Konsolen-ROMs werden über ihre Datei zugeordnet.</string>
+    <string name="det_store_empty_settled_title">Bereits zugeordnet.</string>
+    <string name="det_store_empty_settled_detail">%1$s – es gab nichts zu wählen. Nutze „Store-Zuordnung“, um es zu ändern.</string>
+    <string name="det_store_empty_typed_title">Kein Store hat „%1$s“.</string>
+    <string name="det_store_empty_typed_detail">Es wurde nichts geändert und nichts verknüpft. Geh zurück und versuche einen anderen Namen.</string>
+    <string name="det_store_empty_none_title">Kein Store hat dieses Spiel.</string>
+    <string name="det_store_empty_none_detail">Es wurde nichts geändert und nichts verknüpft. Nutze die Suchleiste in „Store-Zuordnung“, um einen anderen Namen zu versuchen.</string>
+    <string name="det_store_note_unreachable">%1$s hat nicht geantwortet, daher stammt diese Liste nur von %2$s. Versuche es für %1$s später erneut.</string>
+    <string name="det_store_note_linked">Bereits verknüpft auf %1$s. Diese Verknüpfung wird hier nicht geändert.</string>
+    <string name="det_store_your_game">Dein Spiel</string>
+    <string name="det_store_searched_as">Gesucht als</string>
+    <string name="det_store_quoted">„%1$s“</string>
+    <string name="det_store_score">Punkte %1$d</string>
+    <string name="det_store_no_match">Keine richtige Übereinstimmung</string>
+    <string name="det_store_no_match_detail">%1$s unverknüpft lassen. Es wird nichts geschrieben, und du kannst es später erneut versuchen.</string>
+    <string name="det_store_choose">Wählen</string>
+    <string name="det_store_more_info">Mehr Informationen</string>
+    <string name="det_store_hint_more_info">"Select  Dieses Spiel wählen  •  B  Zurück"</string>
+    <string name="det_store_why_ranked">Warum es hier eingestuft ist</string>
+    <string name="det_store_total">Gesamt</string>
+    <string name="det_store_notice_rival">Weiterhin nicht automatisch verknüpft: Ein anderer Store-Eintrag (%1$s) trägt genau denselben Titel, und ein identischer Name darf nicht über Punkte entschieden werden.</string>
+    <string name="det_store_choose_this">Dieses Spiel wählen</string>
+    <string name="det_store_back_to_matches">Zurück zu den Treffern</string>
+    <string name="det_store_id_steam">appid %1$s</string>
+    <string name="det_store_id_gog">product %1$s</string>
+    <string name="det_store_id_epic">catalog %1$s</string>
+    <string name="det_signal_chip_store_id">Store-ID</string>
+    <string name="det_signal_chip_exact_title">Exakter Titel</string>
+    <string name="det_signal_chip_developer">Entwickler passt</string>
+    <string name="det_signal_chip_publisher">Publisher passt</string>
+    <string name="det_signal_chip_year">Jahr passt</string>
+    <string name="det_signal_chip_other_edition">Gleiches Spiel, andere Edition</string>
+    <string name="det_signal_chip_partial_title">Teilweiser Titel</string>
+    <string name="det_signal_chip_year_conflict">Jahr weicht ab</string>
+    <string name="det_signal_desc_store_id">Store-ID – der Launcher hat diese ID selbst gemeldet</string>
+    <string name="det_signal_desc_exact_title">Exakter Titel – die normalisierten Namen sind identisch</string>
+    <string name="det_signal_desc_developer">Entwickler – passt zu dem deiner Kopie</string>
+    <string name="det_signal_desc_publisher">Publisher – passt zu dem deiner Kopie</string>
+    <string name="det_signal_desc_year">Erscheinungsjahr – passt zu dem deiner Kopie</string>
+    <string name="det_signal_desc_other_edition">Gleiches Spiel, andere Edition</string>
+    <string name="det_signal_desc_partial_title">Teilweiser Titel – ein Name enthält den anderen</string>
+    <string name="det_signal_desc_year_conflict">Erscheinungsjahr – weicht von deiner Kopie ab</string>
+    <string name="det_signal_field_release_year">Erscheinungsjahr</string>
+    <string name="det_signal_field_developer">Entwickler</string>
+    <string name="det_signal_field_publisher">Publisher</string>
+    <string name="det_signal_absent_no_match">%1$s – keine Übereinstimmung mit deiner Kopie</string>
+    <string name="det_signal_absent_silent">%1$s – der Store hat keine Angabe gemacht</string>
+
+    <!-- Storefront rematch ("Store Match") -->
+    <string name="det_rematch_title">Store-Zuordnung</string>
+    <string name="det_rematch_hint_editing">"Tastatur-Suche  Treffer finden  •  B  Eingabe beenden"</string>
+    <string name="det_rematch_hint_query">"Hoch/Runter  Zeilen  •  Select  Namen eingeben  •  B  Schließen"</string>
+    <string name="det_rematch_hint_rows">"Hoch/Runter  Zeilen  •  Links/Rechts  Aktion  •  Select  Bestätigen  •  B  Schließen"</string>
+    <string name="det_rematch_remove_note">Das Entfernen einer Verknüpfung entfernt nur die Verknüpfung. Deine Beschreibung, der Entwickler und alle anderen Felder bleiben genau so, wie sie sind – auch alles, was du von Hand eingegeben hast.</string>
+    <string name="det_rematch_searching">Suche läuft…</string>
+    <string name="det_rematch_search_all">Alle Stores erneut durchsuchen</string>
+    <string name="det_rematch_search_by_name">Nach Namen suchen</string>
+    <string name="det_rematch_search">Suchen</string>
+    <string name="det_rematch_replace">Ersetzen</string>
+    <string name="det_rematch_remove">Entfernen</string>
+    <string name="det_rematch_search_help">Durchsucht die Stores nach diesem Namen. Der Titel deines Spiels wird nicht geändert.</string>
+    <string name="det_rematch_confirmed">Von dir bestätigt</string>
+    <string name="det_rematch_not_linked">Nicht verknüpft</string>
+    <string name="det_rematch_note_not_searchable">Nicht durchsuchbar – dieser Store hat keinen öffentlichen Katalog</string>
+    <string name="det_rematch_note_nothing_stored">Für diesen Store ist nichts gespeichert</string>
+    <string name="det_rematch_note_auto">Automatisch zugeordnet</string>
+
+    <!-- Shared buttons -->
+    <string name="det_cancel">Abbrechen</string>
+    <string name="det_back">Zurück</string>
+
+    <!-- Metadata preview ("Update Metadata") -->
+    <string name="det_meta_title">Metadaten aktualisieren</string>
+    <string name="det_meta_failed_title">Die Metadatenquellen haben nicht geantwortet.</string>
+    <string name="det_meta_unreadable_title">Dieses Spiel konnte nicht gelesen werden.</string>
+    <string name="det_meta_failed_detail">Es wurde nichts geändert. Prüfe die Verbindung und versuche es erneut.</string>
+    <string name="det_meta_unreadable_detail">Es wurde nichts geändert. Öffne dieses Spiel erneut.</string>
+    <string name="det_meta_no_source">Keine Quelle hat dieses Spiel erkannt – fülle die gewünschten Felder von Hand aus.</string>
+    <string name="det_meta_col_field">Feld</string>
+    <string name="det_meta_col_current">Aktuell</string>
+    <string name="det_meta_col_yours">Dein Wert</string>
+    <string name="det_meta_col_incoming">Neu</string>
+    <string name="det_meta_applying">Wird angewendet…</string>
+    <string name="det_meta_keep_close">Aktuelles behalten &amp; schließen</string>
+    <string name="det_meta_nothing_to_change">Nichts zu ändern</string>
+    <string name="det_meta_tap_to_type">Zum Eingeben auswählen</string>
+    <plurals name="det_meta_apply_changes">
+        <item quantity="one">%1$d Änderung anwenden</item>
+        <item quantity="other">%1$d Änderungen anwenden</item>
+    </plurals>
+
+    <!-- Search online (achievement preview lookup) -->
+    <string name="det_search_title">Online suchen</string>
+    <string name="det_search_group_provider">Anbieter</string>
+    <string name="det_search_group_system">System</string>
+    <string name="det_search_subtitle_not_installed">%1$s · Nicht installiert</string>
+    <string name="det_search_subtitle_results">%1$s · %2$s</string>
+    <plurals name="det_search_result_count">
+        <item quantity="one">%1$d Ergebnis</item>
+        <item quantity="other">%1$d Ergebnisse</item>
+    </plurals>
+    <string name="det_search_placeholder_coins">Münzen suchen…</string>
+    <string name="det_search_placeholder_provider">%1$s durchsuchen…</string>
+    <string name="det_search_loading_achievements">Errungenschaften werden geladen…</string>
+    <string name="det_search_no_achievements">%1$s hat keine Errungenschaften auf %2$s.</string>
+    <string name="det_search_no_coins_match">Keine Münzen passen zu \"%1$s\".</string>
+    <string name="det_search_no_coins_in_view">Keine Münzen in dieser Ansicht.</string>
+    <string name="det_search_idle">Gib mindestens %1$d Buchstaben ein, um %2$s zu durchsuchen.</string>
+    <string name="det_search_searching">%1$s wird durchsucht…</string>
+    <string name="det_search_no_games_match">Keine %1$s-Spiele passen zu \"%2$s\".</string>
+    <string name="det_search_offline">Für die Suche ist eine Internetverbindung nötig.</string>
+    <string name="det_search_not_connected">Verbinde %1$s, um seine Spiele zu durchsuchen.</string>
+    <string name="det_search_failed">%1$s war nicht erreichbar. Versuche es erneut.</string>
+    <string name="det_search_retry">Erneut versuchen</string>
+    <string name="det_search_open_settings">Einstellungen öffnen</string>
+    <string name="det_search_refresh_preview">Vorschau aktualisieren</string>
+    <string name="det_search_prompt_select">Auswählen</string>
+    <string name="det_search_prompt_done">Fertig</string>
+    <string name="det_search_prompt_hide">Verbergen</string>
+    <string name="det_search_prompt_reveal">Aufdecken</string>
+    <string name="det_search_prompt_search">Suchen</string>
+    <string name="det_search_prompt_change_view">Ansicht ändern</string>
+    <string name="det_search_prompt_close_preview">Vorschau schließen</string>
+    <string name="det_search_prompt_type">Tippen</string>
+    <string name="det_search_prompt_preview">Vorschau</string>
+    <string name="det_search_err_missing_credentials">Verbinde diesen Anbieter in den Einstellungen, um seine Spiele nachzuschlagen.</string>
+    <string name="det_search_err_not_linked">Dieses Spiel hat kein Errungenschaftsset zum Anzeigen.</string>
+    <string name="det_search_err_profile_private">Steam-Spieldetails sind für dein Profil nicht verfügbar.</string>
+    <string name="det_search_err_not_found">Dieses Spiel hat bei diesem Anbieter keine Errungenschaften.</string>
+    <string name="det_search_lookup_only">Ergebnisse werden nur nachgeschlagen – hier wird nichts zu deiner Bibliothek oder deiner Münzbörse hinzugefügt.</string>
+    <string name="det_search_available">VERFÜGBAR</string>
+    <plurals name="det_search_achievement_count">
+        <item quantity="one">%1$d Errungenschaft</item>
+        <item quantity="other">%1$d Errungenschaften</item>
+    </plurals>
+    <string name="det_search_preview_chip">VORSCHAU</string>
+    <string name="det_search_preview_notice">Nur Vorschau. Dieses Spiel ist nicht auf diesem Gerät, daher wird hier nichts verfolgt, gezählt oder synchronisiert. Beim Schließen der Vorschau wird sie verworfen.</string>
+    <string name="det_search_candidate_app">%1$s · App %2$s</string>
+    <string name="det_search_candidate_game">%1$s · Spiel %2$s</string>
+
+    <!-- Game Detail page -->
+    <string name="det_library">Bibliothek</string>
+    <string name="det_game_not_found">Spiel nicht gefunden</string>
+    <string name="det_game_gone">Dieses Spiel ist nicht mehr in deiner Bibliothek.</string>
+    <string name="det_game_gone_hint">Drücke Zurück, um zur Bibliothek zurückzukehren.</string>
+    <string name="det_meta_replace_title">Deinen Titel ersetzen?</string>
+    <string name="det_meta_replace_message">Du hast diesen Titel von Hand festgelegt. Wird der neue angewendet, wird deiner gelöscht.\n\nDeiner: %1$s\nNeu: %2$s</string>
+    <string name="det_meta_replace">Ersetzen</string>
+    <string name="det_meta_keep_mine">Meinen behalten</string>
+    <string name="det_meta_edit_field">%1$s bearbeiten</string>
+    <string name="det_remove_title">Aus Bibliothek entfernen</string>
+    <string name="det_remove_message">\"%1$s\" wird aus deiner Bibliothek entfernt. Die Dateien bleiben auf deinem Gerät.</string>
+    <string name="det_remove">Entfernen</string>
+    <string name="det_edit_note">Notiz bearbeiten</string>
+    <string name="det_edit_title">Titel bearbeiten</string>
+    <string name="det_fact_last_played">Zuletzt gespielt: %1$s</string>
+    <string name="det_fact_play_time">Spielzeit: %1$s</string>
+    <!-- Main buttons -->
+    <string name="det_launch">Starten</string>
+    <string name="det_favorite">Favorit</string>
+    <string name="det_favorite_remove_cd">Aus Favoriten entfernen</string>
+    <string name="det_favorite_add_cd">Zu Favoriten hinzufügen</string>
+    <string name="det_artwork">Artwork</string>
+    <string name="det_artwork_edit_cd">Artwork bearbeiten</string>
+    <string name="det_manual">Handbuch</string>
+    <string name="det_manual_open_cd">Handbuch öffnen</string>
+    <string name="det_get_help">Hilfe erhalten</string>
+    <string name="det_shiba_coins">Shiba Coins</string>
+    <string name="det_coins_not_tracked">Noch nicht verfolgt</string>
+    <string name="det_no_description">Keine Beschreibung verfügbar.</string>
+    <string name="det_overview">Überblick</string>
+    <string name="det_media_preview">Medienvorschau</string>
+    <string name="det_media_play_video_cd">Video abspielen</string>
+    <string name="det_media_screenshot_cd">Screenshot</string>
+    <string name="det_media_preview_cd">Medienvorschau</string>
+    <string name="det_manual_viewer_title">%1$s – Handbuch</string>
+    <!-- Disc row for multi-disc games -->
+    <string name="det_discs">Discs</string>
+    <string name="det_disc_n">Disc %1$d</string>
+    <string name="det_disc_playlist">Playlist</string>
+    <string name="det_disc_missing">Fehlt</string>
+    <string name="det_disc_preferred">Bevorzugt</string>
+    <string name="det_disc_available">Verfügbar</string>
+    <!-- Game information fields -->
+    <string name="det_info_released">Erschienen</string>
+    <string name="det_info_developer">Entwickler</string>
+    <string name="det_info_publisher">Publisher</string>
+    <string name="det_info_genre">Genre</string>
+    <string name="det_info_last_played">Zuletzt gespielt</string>
+    <string name="det_info_play_time">Spielzeit</string>
+    <string name="det_info_emulator">Emulator</string>
+    <string name="det_info_core">Core: %1$s</string>
+    <!-- Helper footer prompts -->
+    <string name="det_prompt_page">Seite</string>
+    <string name="det_prompt_scroll">Scrollen</string>
+    <string name="det_prompt_navigate">Navigieren</string>
+    <string name="det_prompt_apply_toggle">Anwenden / Umschalten</string>
+    <string name="det_prompt_policy">Regel</string>
+    <string name="det_prompt_source">Quelle</string>
+    <string name="det_prompt_toggle">Umschalten</string>
+    <string name="det_prompt_select">Auswählen</string>
+    <string name="det_choose">Wählen</string>
+    <string name="det_confirm_play">Abspielen</string>
+    <string name="det_confirm_preview">Vorschau</string>
+    <string name="det_confirm_view">Ansehen</string>
+    <string name="det_confirm_collapse">Einklappen</string>
+    <string name="det_confirm_read_more">Mehr lesen</string>
+    <string name="det_confirm_choose_disc">Disc wählen</string>
+    <string name="det_confirm_change_emulator">Emulator ändern</string>
+    <string name="det_kind_app">App</string>
+    <string name="det_kind_pc_shortcut">PC-Verknüpfung</string>
+    <string name="det_kind_game_app">Spiele-App</string>
+    <string name="det_kind_rom">ROM</string>
+    <!-- Play time -->
+    <string name="det_time_under_minute">Unter einer Minute</string>
+    <string name="det_time_minutes">%1$d Min.</string>
+    <string name="det_time_hours_minutes">%1$d Std. %2$d Min.</string>
+    <string name="det_days_today">Heute</string>
+    <string name="det_days_yesterday">Gestern</string>
+    <plurals name="det_days_ago">
+        <item quantity="one">vor %1$d Tag</item>
+        <item quantity="other">vor %1$d Tagen</item>
+    </plurals>
+    <string name="det_fetching_artwork">Artwork wird geladen…</string>
+    <string name="det_none">Keine</string>
+    <string name="det_emulator_picker_title">Emulator wählen</string>
+
+    <!-- Options menu: panel titles, group headings and row labels -->
+    <string name="det_menu_options">Optionen</string>
+    <string name="det_menu_artwork">Artwork</string>
+    <string name="det_menu_information">Informationen</string>
+    <string name="det_menu_file">Datei</string>
+    <string name="det_group_library">Bibliothek</string>
+    <string name="det_group_play">Spielen</string>
+    <string name="det_group_customize">Anpassen</string>
+    <string name="det_group_manage">Verwalten</string>
+    <string name="det_action_favorite">Favorit</string>
+    <string name="det_action_collections">Zu Karte hinzufügen</string>
+    <string name="det_action_emulator">Emulator</string>
+    <string name="det_action_manual">Handbuch</string>
+    <string name="det_action_menu_artwork">Artwork</string>
+    <string name="det_action_menu_information">Informationen</string>
+    <string name="det_action_menu_file">Datei</string>
+    <string name="det_action_remove">Aus Bibliothek entfernen</string>
+    <string name="det_action_artwork_studio">Artwork Studio</string>
+    <string name="det_action_fetch_artwork">Artwork laden</string>
+    <string name="det_action_metadata">Metadaten aktualisieren</string>
+    <string name="det_action_rename">Titel bearbeiten</string>
+    <string name="det_action_edit_note">Notiz bearbeiten</string>
+    <string name="det_action_storefront">Store-Zuordnung</string>
+    <string name="det_action_location">Speicherort anzeigen</string>
+    <string name="det_action_export">Spiel exportieren</string>
+    <string name="det_arttype_icon">Spielsymbol</string>
+    <string name="det_arttype_hero">Hero-Banner</string>
+    <string name="det_arttype_background">Hintergrund</string>
+
+    <!-- Game Detail messages -->
+    <string name="det_location_package">Paket: %1$s</string>
+    <string name="det_location_none">Kein Speicherort hinterlegt</string>
+    <string name="det_export_failed">Export fehlgeschlagen – siehe Protokoll.</string>
+    <string name="det_no_video_snap">Kein Videoclip – aktiviere „Videoclips herunterladen“ und scrape erneut</string>
+    <string name="det_no_manual">Für dieses Spiel ist kein Handbuch verfügbar</string>
+    <string name="det_launch_loading">Spiel wird noch geladen</string>
+    <string name="det_launch_file_missing">Datei beim letzten Scan nicht gefunden. Verbinde die Karte erneut oder stelle die Datei wieder her und scanne dann neu.</string>
+    <string name="det_launching">%1$s wird gestartet…</string>
+    <string name="det_launch_failed">Start fehlgeschlagen: %1$s</string>
+    <string name="det_launch_could_not">%1$s konnte nicht gestartet werden</string>
+    <string name="det_launch_no_emulator">Emulator für %1$s konnte nicht ermittelt werden</string>
+    <string name="det_no_emulators">Keine Emulatoren für %1$s installiert</string>
+    <string name="det_emulator_set">Emulator auf %1$s gesetzt</string>
+    <string name="det_title_updated">Titel geändert in \"%1$s\"</string>
+    <string name="det_title_reset">Titel zurückgesetzt auf \"%1$s\"</string>
+    <string name="det_artwork_updated">Artwork aktualisiert</string>
+    <string name="det_artwork_already_fetching">Für dieses Spiel wird bereits Artwork geladen</string>
+    <string name="det_artwork_fetch_failed">Laden des Artworks fehlgeschlagen</string>
+    <string name="det_meta_reverted">%1$s auf den gescrapten Wert zurückgesetzt</string>
+    <string name="det_meta_kept_current">Aktuelle Metadaten beibehalten</string>
+    <string name="det_meta_msg_nothing">Nichts zu ändern</string>
+    <plurals name="det_meta_updated_from">
+        <item quantity="one">%1$d Feld aus %2$s aktualisiert</item>
+        <item quantity="other">%1$d Felder aus %2$s aktualisiert</item>
+    </plurals>
+    <plurals name="det_meta_updated_by_hand">
+        <item quantity="one">%1$d von Hand festgelegtes Feld aktualisiert</item>
+        <item quantity="other">%1$d von Hand festgelegte Felder aktualisiert</item>
+    </plurals>
+    <string name="det_meta_update_failed">Aktualisierung der Metadaten fehlgeschlagen</string>
+    <string name="det_rematch_cant_search">%1$s kann nicht durchsucht werden</string>
+    <string name="det_rematch_link_removed">Verknüpfung mit %1$s entfernt. Deine Metadaten sind unverändert.</string>
+    <string name="det_rematch_linked">Verknüpft mit %1$s: %2$s</string>
+
+    <!-- Artwork Studio -->
+    <string name="det_source_local">Lokale Datei</string>
+    <string name="det_tab_tile">ICON0</string>
+    <string name="det_tab_icon1">ICON1</string>
+    <string name="det_tab_box_art">COVER</string>
+    <string name="det_tab_box_3d">3D-BOX</string>
+    <string name="det_tab_phys">DATENTRÄGER</string>
+    <string name="det_tab_hero">HERO</string>
+    <string name="det_tab_background">HINTERGRUND</string>
+    <string name="det_tab_logo">LOGO</string>
+    <string name="det_tab_screenshot">SCREENSHOT</string>
+    <string name="det_tab_manual">HANDBUCH</string>
+    <string name="det_tab_video">VIDEO</string>
+    <string name="det_tab_tile_contract">XMB-Kachel · 144×80 · Zuschnitt</string>
+    <string name="det_tab_icon1_contract">XMB-Symbolanimation · 60-s-Clip ohne Ton</string>
+    <string name="det_tab_box_art_contract">XMB-Kachel (Modus Cover) · natürliches Seitenverhältnis</string>
+    <string name="det_tab_box_3d_contract">XMB-Kachel (Modus 3D-Box) · natürliches Seitenverhältnis</string>
+    <string name="det_tab_phys_contract">XMB-Kachel (Modus Datenträger) · natürliches Seitenverhältnis</string>
+    <string name="det_tab_hero_contract">Banner der Spieldetails · breit · Zuschnitt</string>
+    <string name="det_tab_background_contract">XMB-Hover-Hintergrund · Vollbild</string>
+    <string name="det_tab_logo_contract">PIC0-Overlay · transparentes PNG · eingepasst</string>
+    <string name="det_tab_screenshot_contract">Medienleiste der Spieldetails</string>
+    <string name="det_tab_manual_contract">PDF-Handbuch in der App</string>
+    <string name="det_tab_video_contract">Medienleiste der Spieldetails · vollständiges Video</string>
+    <string name="det_leave_apply">Anwenden und schließen</string>
+    <string name="det_leave_discard">Änderungen verwerfen</string>
+    <string name="det_leave_stay">Bleiben</string>
+    <plurals name="det_leave_changes_waiting">
+        <item quantity="one">%1$d Änderung nicht angewendet</item>
+        <item quantity="other">%1$d Änderungen nicht angewendet</item>
+    </plurals>
+    <!-- Crop editor menu -->
+    <string name="det_crop_options_title">Zuschnitt-Optionen</string>
+    <string name="det_crop_live_preview">Live-Vorschau</string>
+    <string name="det_crop_shape">Form</string>
+    <string name="det_crop_shape_platform_default">Plattform-Standard</string>
+    <string name="det_crop_shape_original">Originalbild</string>
+    <string name="det_no_options">Hier sind keine Optionen verfügbar</string>
+    <string name="det_replace_anyway">Trotzdem ersetzen</string>
+    <string name="det_replace_title">%1$s ist bereits dieses Bild</string>
+    <string name="det_replace_title_default">Dieses Artwork ist bereits dieses Bild</string>
+    <string name="det_apply_title_default">Änderungen anwenden?</string>
+    <string name="det_apply_title_add_remove">%1$s hinzufügen und %2$d entfernen?</string>
+    <string name="det_apply_title_remove">%1$s entfernen?</string>
+    <string name="det_apply_title_add">%1$s hinzufügen?</string>
+    <plurals name="det_asset_count_screenshot">
+        <item quantity="one">%1$d Screenshot</item>
+        <item quantity="other">%1$d Screenshots</item>
+    </plurals>
+    <plurals name="det_asset_count_video">
+        <item quantity="one">%1$d Video</item>
+        <item quantity="other">%1$d Videos</item>
+    </plurals>
+    <plurals name="det_asset_count_image">
+        <item quantity="one">%1$d Bild</item>
+        <item quantity="other">%1$d Bilder</item>
+    </plurals>
+    <string name="det_local_add_cap_only">Ein Spiel fasst höchstens %1$s</string>
+    <string name="det_local_add_cap">%1$s hinzugefügt – ein Spiel fasst höchstens %2$d</string>
+    <plurals name="det_local_add_failed">
+        <item quantity="one">Die Datei konnte nicht hinzugefügt werden</item>
+        <item quantity="other">%1$d Dateien konnten nicht hinzugefügt werden</item>
+    </plurals>
+    <plurals name="det_local_add_some_failed">
+        <item quantity="one">%1$s hinzugefügt · %2$d Datei konnte nicht hinzugefügt werden</item>
+        <item quantity="other">%1$s hinzugefügt · %2$d Dateien konnten nicht hinzugefügt werden</item>
+    </plurals>
+    <string name="det_local_added">%1$s hinzugefügt</string>
+    <string name="det_cap_uncheck">Ein Spiel fasst höchstens %1$s – wähle %2$d ab, um anzuwenden</string>
+    <!-- Actions in the Options menu -->
+    <string name="det_action_apply_changes">Änderungen anwenden</string>
+    <string name="det_action_retry_failed">Fehlgeschlagene Downloads wiederholen</string>
+    <string name="det_action_remove_failed">Fehlgeschlagene Downloads entfernen</string>
+    <string name="det_action_reorder">Gespeichertes Artwork neu ordnen</string>
+    <string name="det_action_crop">Zuschnitt / Position anpassen</string>
+    <string name="det_action_crop_before">Vor dem Anwenden zuschneiden</string>
+    <string name="det_action_restore_previous">Vorheriges wiederherstellen</string>
+    <string name="det_action_reset_default">Auf gescrapten Standard zurücksetzen</string>
+    <string name="det_action_clear">Artwork löschen</string>
+    <string name="det_action_file_info">Dateiinformationen anzeigen</string>
+    <string name="det_action_change_match">Zuordnung ändern</string>
+    <string name="det_action_forget_match">Zuordnung vergessen</string>
+    <string name="det_source_badge_na">k. A.</string>
+    <string name="det_source_badge_no_key">kein Schlüssel</string>
+    <string name="det_source_no_artwork">%1$s hat kein %2$s-Artwork</string>
+    <string name="det_source_igdb_needs">IGDB benötigt eine Client-ID und ein Secret – füge sie unter Einstellungen ▸ Artwork hinzu</string>
+    <string name="det_source_needs_key">%1$s benötigt einen API-Schlüssel – füge einen unter Einstellungen ▸ Artwork hinzu</string>
+    <string name="det_source_with_badge">%1$s · %2$s</string>
+    <string name="det_match_cant_search">%1$s kann nicht nach Titel durchsucht werden – es gibt keine Alternativen zur Auswahl.</string>
+    <string name="det_match_no_answer">%1$s hat nicht geantwortet. Drücke „Suchen“, um es erneut zu versuchen.</string>
+    <string name="det_matched_as">Zugeordnet als %1$s</string>
+    <string name="det_msg_reorder_failed">Artwork konnte nicht neu geordnet werden</string>
+    <string name="det_msg_remove_failed">Einiges Artwork konnte nicht entfernt werden</string>
+    <string name="det_msg_no_previous">Keine vorherige Version zum Wiederherstellen</string>
+    <string name="det_msg_restored">%1$s auf vorherige Version zurückgesetzt</string>
+    <string name="det_msg_redownload_failed">Der gescrapte Standard konnte nicht erneut heruntergeladen werden</string>
+    <string name="det_msg_reset">%1$s auf gescrapten Standard zurückgesetzt</string>
+    <string name="det_msg_crop_download_failed">Diese Auswahl konnte zum Zuschneiden nicht heruntergeladen werden</string>
+    <string name="det_msg_crop_not_image">Diese Auswahl ist kein Bild, das zugeschnitten werden kann</string>
+    <string name="det_msg_crop_open_failed">Das Original konnte zum Zuschneiden nicht geöffnet werden</string>
+    <string name="det_msg_crop_failed">Zuschneiden fehlgeschlagen</string>
+    <string name="det_msg_crop_save_failed">Das zugeschnittene Artwork konnte nicht gespeichert werden</string>
+    <string name="det_msg_cropped">%1$s zugeschnitten</string>
+    <string name="det_msg_apply_rejected">Anwenden fehlgeschlagen – Download oder Datei wurde abgelehnt</string>
+    <string name="det_msg_updated_from">%1$s aus %2$s aktualisiert</string>
+    <string name="det_msg_cleared">%1$s gelöscht</string>
+    <string name="det_tgdb_box_art">Cover</string>
+    <string name="det_tgdb_fanart">Fanart</string>
+    <string name="det_tgdb_clear_logo">Clear-Logo</string>
+    <string name="det_tgdb_box_art_crop">Cover · auf Kachel zuschneiden</string>
+    <string name="det_tgdb_hero_crop">Hero · auf Kachel zuschneiden</string>
+    <string name="det_igdb_cover">Cover</string>
+    <string name="det_igdb_artwork">Artwork</string>
+    <string name="det_igdb_cover_crop">Cover · auf Kachel zuschneiden</string>
+    <string name="det_igdb_artwork_crop">Artwork · auf Kachel zuschneiden</string>
+
+    <!-- Artwork Studio screen -->
+    <string name="det_studio_title">Artwork Studio</string>
+    <string name="det_studio_title_platform">Artwork Studio · %1$s</string>
+    <string name="det_studio_artwork_word">Artwork</string>
+    <string name="det_clear_title">Artwork löschen?</string>
+    <string name="det_clear_message">Das %1$s-Artwork für %2$s wird gelöscht, zusammen mit seiner Sicherung und der Originalkopie. Dies kann nicht rückgängig gemacht werden.</string>
+    <string name="det_clear">Löschen</string>
+    <string name="det_forget_title">Zuordnung vergessen?</string>
+    <string name="det_forget_message">%1$s wird zu %2$s neu befragt. Dein Artwork und deine Metadaten bleiben unberührt.</string>
+    <string name="det_forget_the_provider">Der Anbieter</string>
+    <string name="det_forget">Vergessen</string>
+    <string name="det_studio_reset">Zurücksetzen</string>
+    <string name="det_studio_game_title_chip">Spieltitel</string>
+    <string name="det_studio_game_title_placeholder">Spieltitel</string>
+    <string name="det_studio_pdf_stored">PDF gespeichert</string>
+    <string name="det_studio_icon_video_stored">Symbolvideo gespeichert</string>
+    <string name="det_studio_video_stored">Video gespeichert</string>
+    <string name="det_studio_no_artwork">Kein Artwork festgelegt</string>
+    <string name="det_mature_on">Nicht jugendfrei: ein</string>
+    <string name="det_mature_off">Nicht jugendfrei: aus</string>
+    <string name="det_studio_matched_as">Zugeordnet als %1$s</string>
+    <string name="det_studio_matching_on">Zuordnung auf %1$s…</string>
+    <string name="det_studio_no_answer">%1$s hat nicht geantwortet</string>
+    <string name="det_studio_no_match">Keine Zuordnung auf %1$s</string>
+    <string name="det_studio_confirmed">Bestätigt</string>
+    <string name="det_studio_forget_btn">VERGESSEN</string>
+    <string name="det_studio_change_match_btn">ZUORDNUNG ÄNDERN</string>
+    <string name="det_studio_add_files">"+  Dateien von diesem Gerät hinzufügen"</string>
+    <string name="det_studio_choose_file">"+  Datei von diesem Gerät wählen"</string>
+    <string name="det_studio_none_videos">Noch keine Videos gespeichert</string>
+    <string name="det_studio_none_screenshots">Noch keine Screenshots gespeichert</string>
+    <string name="det_studio_replaces_this">Die gewählte Datei ersetzt dieses %1$s</string>
+    <string name="det_studio_filters_hide_all">Nichts passt zu diesen Filtern · %1$d ausgeblendet</string>
+    <string name="det_studio_no_results">Keine Ergebnisse</string>
+    <string name="det_studio_ss_looking">Dieses Spiel wird auf ScreenScraper gesucht…</string>
+    <string name="det_studio_ss_no_answer">ScreenScraper hat nicht geantwortet. Nutze „Zuordnung ändern“, um erneut zu suchen.</string>
+    <string name="det_studio_ss_no_match">Keine ScreenScraper-Zuordnung für dieses Spiel. Nutze „Zuordnung ändern“, um eine zu wählen.</string>
+    <string name="det_studio_ss_nothing">ScreenScraper hat für dieses Spiel nichts von diesem Typ</string>
+    <string name="det_studio_tile_video">▶ VIDEO</string>
+    <string name="det_studio_prompt_browse">Blättern / Datei wählen</string>
+    <string name="det_studio_prompt_check">Auswählen</string>
+    <string name="det_studio_prompt_preview_apply">Vorschau / Anwenden</string>
+    <string name="det_studio_downloading_manual">Handbuch wird heruntergeladen…</string>
+    <string name="det_studio_video_snap_from">Videoclip von %1$s</string>
+    <string name="det_studio_candidate_apply">"Ⓐ  ANWENDEN"</string>
+    <string name="det_studio_candidate_cancel">"Ⓑ  ABBRECHEN"</string>
+    <string name="det_studio_close_btn">"Ⓑ  SCHLIESSEN"</string>
+    <string name="det_studio_manual_page_cd">Handbuchseite</string>
+    <!-- Change Match panel -->
+    <string name="det_cm_title">Zuordnung auf %1$s ändern</string>
+    <string name="det_cm_help">Teilt dem Anbieter mit, welches Spiel das ist. Dein Artwork und deine Metadaten bleiben unberührt.</string>
+    <string name="det_cm_other_platforms">Enthält andere Plattformen. Prüfe die Plattform, bevor du wählst.</string>
+    <string name="det_cm_searching_every">Alle Plattformen werden durchsucht. ScreenScraper kann etwa 10 Sekunden brauchen…</string>
+    <string name="det_cm_no_games">Keine Spiele gefunden. Versuche einen kürzeren Titel oder den Titel ohne Edition.</string>
+    <string name="det_cm_no_media">keine Medien</string>
+    <string name="det_cm_media">%1$d Medien</string>
+    <string name="det_cm_hint">"Hoch/Runter  Bewegen  •  A  Auswählen  •  X  Titel bearbeiten  •  B  Zurück"</string>
+    <!-- Search panel -->
+    <string name="det_sq_title">Artwork-Anbieter durchsuchen</string>
+    <string name="det_sq_help">Ändert, wonach die Anbieter gefragt werden. Das Spiel wird nie umbenannt.</string>
+    <string name="det_sq_use_title">Spieltitel verwenden</string>
+    <!-- File information panel -->
+    <string name="det_fi_title">DATEIINFORMATIONEN</string>
+    <string name="det_fi_no_record">Kein gespeicherter Eintrag für diesen Platz (verfügbar, sobald das Artwork in einer verknüpften Bibliothek liegt).</string>
+    <string name="det_fi_type">Typ</string>
+    <string name="det_fi_provider">Anbieter</string>
+    <string name="det_fi_source">Quelle</string>
+    <string name="det_fi_pinned">Fixiert</string>
+    <string name="det_fi_pinned_yes">Ja (gesperrt)</string>
+    <string name="det_fi_dimensions">Abmessungen</string>
+    <string name="det_fi_size">Größe</string>
+    <string name="det_fi_cropped">Zugeschnitten</string>
+    <string name="det_fi_previous">Vorherige Version</string>
+    <string name="det_fi_path">Pfad</string>
+    <string name="det_fi_origin">Herkunft</string>
+    <string name="det_yes">Ja</string>
+    <string name="det_no">Nein</string>
+    <!-- Crop editor -->
+    <string name="det_crop_title">ZUSCHNITT / POSITION ANPASSEN</string>
+    <string name="det_crop_title_shape">"ZUSCHNITT / POSITION ANPASSEN  ·  %1$s"</string>
+    <string name="det_crop_baking">Wird berechnet…</string>
+    <string name="det_crop_apply">"Ⓐ  ZUSCHNITT ANWENDEN"</string>
+    <string name="det_crop_options_btn">"Ⓨ  OPTIONEN"</string>
+    <string name="det_crop_hint">"ziehen zum Verschieben   ·   zusammenziehen zum Zoomen   ·   Steuerkreuz bewegen   ·   LB / RB zoomen"</string>
+    <string name="det_meta_prompt_rows">Zeilen</string>
+    <string name="det_meta_prompt_policy">Regel</string>
+    <string name="det_meta_prompt_source">Quelle</string>
+    <string name="det_meta_prompt_toggle_apply">Umschalten / Anwenden</string>
+    <string name="det_meta_prompt_edit_apply">Bearbeiten / Anwenden</string>
+</resources>

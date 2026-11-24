@@ -2,7 +2,11 @@ package com.playfieldportal.feature.xmb.viewmodel
 
 import com.playfieldportal.core.domain.model.BackgroundTaskInfo
 import com.playfieldportal.core.domain.model.NotificationDepth
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import com.playfieldportal.core.domain.model.PfpNotification
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.xmb.ui.NotificationRow
 import com.playfieldportal.feature.xmb.ui.buildNotificationRows
 import com.playfieldportal.feature.xmb.ui.clampCursor
@@ -47,20 +51,20 @@ data class NotificationPanelState(
 /** The Stop confirm's words, fixed when it opens. */
 data class StopConfirmState(
     val taskId: String,
-    val title: String,
-    val message: String,
+    val title: UiText,
+    val message: UiText,
 )
 
 /** Builds the Stop confirm for [task]: what is done so far and what the producer promises to keep. */
 fun stopConfirmFor(task: BackgroundTaskInfo): StopConfirmState {
-    val keep = task.stopNote ?: "Work done so far is kept."
+    val keep = task.stopNote?.let(UiText::raw) ?: UiText.res(R.string.xmbm_stop_confirm_kept_default)
     val current = task.current
     val total = task.total
-    val done = if (current != null && total != null && total > 0) "$current of $total are done. " else ""
+    val done = if (current != null && total != null && total > 0) UiText.res(R.string.xmbm_stop_confirm_progress, current, total) else null
     return StopConfirmState(
         taskId = task.id,
-        title = "Stop \"${task.label.trimEnd('…', '.', ' ')}\"?",
-        message = done + keep,
+        title = UiText.res(R.string.xmbm_stop_confirm_title, task.label.trimEnd('…', '.', ' ')),
+        message = if (done != null) UiText.Joined(listOf(done, keep), " ") else keep,
     )
 }
 
@@ -94,17 +98,18 @@ enum class PanelSelection { NONE, HISTORY, RUNNING }
  * The panel's prompt bar: the row action under the cursor, Options only while there is history
  * for its menu to act on (with none, the press did nothing — survey U30), and Close.
  */
+@Composable
 internal fun notificationPanelPrompts(
     selection: PanelSelection,
     hasHistory: Boolean,
 ): List<com.playfieldportal.core.ui.components.ControllerPromptItem> = buildList {
     when (selection) {
-        PanelSelection.HISTORY -> add(com.playfieldportal.core.ui.components.ControllerPromptItem(com.playfieldportal.core.domain.model.GamepadAction.SELECT, "Open"))
-        PanelSelection.RUNNING -> add(com.playfieldportal.core.ui.components.ControllerPromptItem(com.playfieldportal.core.domain.model.GamepadAction.SELECT, "Stop"))
+        PanelSelection.HISTORY -> add(com.playfieldportal.core.ui.components.ControllerPromptItem(com.playfieldportal.core.domain.model.GamepadAction.SELECT, stringResource(R.string.xmbm_panel_prompt_open)))
+        PanelSelection.RUNNING -> add(com.playfieldportal.core.ui.components.ControllerPromptItem(com.playfieldportal.core.domain.model.GamepadAction.SELECT, stringResource(R.string.xmbm_panel_prompt_stop)))
         PanelSelection.NONE -> Unit
     }
-    if (hasHistory) add(com.playfieldportal.core.ui.components.ControllerPromptItem(com.playfieldportal.core.domain.model.GamepadAction.OPEN_CONTEXT_MENU, "Options"))
-    add(com.playfieldportal.core.ui.components.ControllerPromptItem(com.playfieldportal.core.domain.model.GamepadAction.BACK, "Close"))
+    if (hasHistory) add(com.playfieldportal.core.ui.components.ControllerPromptItem(com.playfieldportal.core.domain.model.GamepadAction.OPEN_CONTEXT_MENU, stringResource(R.string.xmbm_panel_prompt_options)))
+    add(com.playfieldportal.core.ui.components.ControllerPromptItem(com.playfieldportal.core.domain.model.GamepadAction.BACK, stringResource(R.string.xmbm_panel_prompt_close)))
 }
 
 fun panelSelection(rows: List<NotificationRow>, cursor: Int): PanelSelection = when {

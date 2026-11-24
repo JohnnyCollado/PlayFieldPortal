@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Localization slice H1: library scanning (ROM, music, photo and video scans) -->
+    <!-- Scan error messages -->
+    <string name="scan_error_card_not_found">Меморијска картица није пронађена.</string>
+    <string name="scan_error_scan_failed">Скенирање није успело — погледајте дневник.</string>
+    <string name="scan_error_library_unreadable">Читање библиотеке није успело.</string>
+    <string name="scan_error_save_failed">Чување скениране игре није успело.</string>
+    <!-- %1$s is a folder path on the device -->
+    <string name="scan_error_rom_dir_not_found">ROM фасцикла није пронађена: %1$s</string>
+    <string name="scan_error_folder_link_invalid">Веза ове библиотеке са фасциклом је неважећа. Поново додајте фасциклу.</string>
+    <string name="scan_error_root_unreadable">Читање ROM фасцикле није успело. Ако је на SD картици, проверите да ли је картица уметнута.</string>
+    <string name="scan_error_permission_lost">Дозвола је изгубљена, поново изаберите фасциклу.</string>
+    <string name="scan_error_partial_read">Део фасцикле није могао да се прочита, па ништа није промењено. Покушајте поново за тренутак.</string>
+
+    <!-- One-line scan outcome. %1$s is the Memory Card name, %2$s is the outcome sentence below -->
+    <string name="scan_outcome_line">%1$s: %2$s</string>
+    <string name="scan_outcome_no_source">ROM фасцикла није подешена.</string>
+    <string name="scan_outcome_busy">скенирање је већ у току.</string>
+    <string name="scan_outcome_failed">скенирање није успело.</string>
+    <string name="scan_outcome_no_new">нема нових ROM-ова</string>
+    <string name="scan_outcome_no_new_none_missing">нема нових ROM-ова, ниједан не недостаје</string>
+    <!-- %1$d is how many ROMs are marked missing (files no longer found) -->
+    <string name="scan_outcome_no_new_marked_missing">нема нових ROM-ова, означено као недостајуће: %1$d</string>
+    <plurals name="scan_outcome_added">
+        <item quantity="one">додат је %1$d нови ROM</item>
+        <item quantity="few">додата су %1$d нова ROM-а</item>
+        <item quantity="other">додато је %1$d нових ROM-ова</item>
+    </plurals>
+    <plurals name="scan_outcome_added_none_missing">
+        <item quantity="one">додат је %1$d нови ROM, ниједан не недостаје</item>
+        <item quantity="few">додата су %1$d нова ROM-а, ниједан не недостаје</item>
+        <item quantity="other">додато је %1$d нових ROM-ова, ниједан не недостаје</item>
+    </plurals>
+    <!-- %1$d new ROMs added, %2$d ROMs marked missing -->
+    <plurals name="scan_outcome_added_marked_missing">
+        <item quantity="one">додат је %1$d нови ROM, означено као недостајуће: %2$d</item>
+        <item quantity="few">додата су %1$d нова ROM-а, означено као недостајуће: %2$d</item>
+        <item quantity="other">додато је %1$d нових ROM-ова, означено као недостајуће: %2$d</item>
+    </plurals>
+    <!-- %1$s is a summary sentence, %2$s is a warning detail shown in brackets -->
+    <string name="scan_with_error_note">%1$s (%2$s)</string>
+
+    <!-- Per-card line in the scan results list -->
+    <!-- Short badge on a card that scanned but found no new games -->
+    <string name="scan_badge_no_new">Нема нових</string>
+    <string name="scan_reason_no_new">Нема нових игара</string>
+    <!-- %1$d is how many games are marked missing (files no longer found) -->
+    <string name="scan_reason_no_new_marked_missing">Нема нових игара, означено као недостајуће: %1$d</string>
+    <plurals name="scan_reason_added">
+        <item quantity="one">Додата је %1$d нова игра</item>
+        <item quantity="few">Додате су %1$d нове игре</item>
+        <item quantity="other">Додато је %1$d нових игара</item>
+    </plurals>
+    <!-- %1$d new games added, %2$d games marked missing -->
+    <plurals name="scan_reason_added_marked_missing">
+        <item quantity="one">Додата је %1$d нова игра, означено као недостајуће: %2$d</item>
+        <item quantity="few">Додате су %1$d нове игре, означено као недостајуће: %2$d</item>
+        <item quantity="other">Додато је %1$d нових игара, означено као недостајуће: %2$d</item>
+    </plurals>
+</resources>

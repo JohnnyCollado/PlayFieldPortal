@@ -25,6 +25,10 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
 /**
  * App Detail's one Options menu and its Artwork sub-list follow the shared PSP-panel rules: clamp at
@@ -32,7 +36,11 @@ import org.junit.Test
  * sounds its cue.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class AppDetailOptionsTest {
+
+    private val res get() = RuntimeEnvironment.getApplication().resources
 
     private val scheduler = TestCoroutineScheduler()
     private lateinit var menuSound: MenuSoundPlayer
@@ -81,26 +89,53 @@ class AppDetailOptionsTest {
     fun `the options menu is Favorite, Add to Card, Artwork, Edit Title, App Info, Hide`() {
         assertEquals(
             listOf("Favorite", "Add to Card", "Artwork", "Edit Title", "App Info", "Hide Everywhere"),
-            AppDetailOption.OPTIONS_MENU.map { it.label },
+            AppDetailOption.OPTIONS_MENU.map { res.getString(it.labelRes) },
         )
         assertEquals(
             listOf("Change Icon", "Change Background", "Reset All Artwork"),
-            AppDetailOption.ARTWORK_MENU.map { it.label },
+            AppDetailOption.ARTWORK_MENU.map { res.getString(it.labelRes) },
         )
     }
 
     @Test
     fun `rows - Favorite is silent with its state as the value, lists carry a chevron, reset is red`() {
-        val on = appDetailMenuRows(AppDetailOption.OPTIONS_MENU, isFavorite = true)
-        val off = appDetailMenuRows(AppDetailOption.OPTIONS_MENU, isFavorite = false)
+        val on = appDetailMenuRows(AppDetailOption.OPTIONS_MENU, isFavorite = true, res = res)
+        val off = appDetailMenuRows(AppDetailOption.OPTIONS_MENU, isFavorite = false, res = res)
 
         assertEquals("On", on[0].value)
         assertEquals("Off", off[0].value)
         assertEquals(PspMenuCue.NONE, on[0].cue)
         assertTrue(on[1].opensMenu)
         assertTrue(on[2].opensMenu)
-        assertTrue(appDetailMenuRows(AppDetailOption.ARTWORK_MENU, false).last().isDestructive)
+        assertTrue(appDetailMenuRows(AppDetailOption.ARTWORK_MENU, false, res).last().isDestructive)
         assertTrue(on.none { it.isDestructive })
+    }
+
+    @Test
+    fun `back from Add to Card returns to options with the cursor on Add to Card`() {
+        viewModel.openOptions()
+        viewModel.activateOption(AppDetailOption.ADD_TO_COLLECTION)
+        scheduler.advanceUntilIdle()
+        assertTrue(state.collectionPicker.visible)
+
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+
+        assertFalse(state.collectionPicker.visible)
+        assertTrue("Options stays up", state.showOptions)
+        assertNull(state.menuGroup)
+        assertEquals(AppDetailOption.ADD_TO_COLLECTION, AppDetailOption.OPTIONS_MENU[state.optionsIndex])
+    }
+
+    @Test
+    fun `a tap outside Add to Card closes the whole menu`() {
+        viewModel.openOptions()
+        viewModel.activateOption(AppDetailOption.ADD_TO_COLLECTION)
+        scheduler.advanceUntilIdle()
+
+        viewModel.dismissCollectionPicker()
+
+        assertFalse(state.collectionPicker.visible)
+        assertFalse(state.showOptions)
     }
 
     @Test
@@ -244,7 +279,7 @@ class AppDetailOptionsTest {
     @Test
     fun `the footer names the focused button`() {
         fun label(focus: Int, action: GamepadAction) =
-            appDetailHelperItems(mainFocus = focus).first { action in it.actions }.label
+            appDetailHelperItems(mainFocus = focus, res = res).first { action in it.actions }.label
         assertEquals("Launch", label(0, GamepadAction.SELECT))
         assertEquals("Options", label(1, GamepadAction.SELECT))
         assertEquals("Artwork", label(2, GamepadAction.SELECT))

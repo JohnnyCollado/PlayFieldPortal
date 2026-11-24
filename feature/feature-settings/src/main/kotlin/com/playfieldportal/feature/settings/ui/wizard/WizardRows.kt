@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -64,6 +65,7 @@ import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.menuCursorFill
 import com.playfieldportal.core.ui.theme.themedSubText
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.feature.settings.ui.ControllerNavItem
 import com.playfieldportal.feature.settings.ui.LocalSettingsCursorVisible
 import com.playfieldportal.feature.settings.ui.LocalSettingsFocusTracker
@@ -264,13 +266,13 @@ fun WizardRootRow(
         modifier = modifier,
         actions = listOfNotNull(
             SettingsRowAction(
-                SettingsLabels.EDIT_FOLDER, onEdit,
+                stringResource(SettingsLabels.EDIT_FOLDER_RES), onEdit,
                 actionFocusBackgroundColor = lerp(SettingsAccent, Color.Black, 0.50f),
-                shortLabel = "Edit",
+                shortLabel = stringResource(R.string.setup_row_edit),
             ) {
                 Icon(
                     Icons.Default.Create,
-                    contentDescription = SettingsLabels.EDIT_FOLDER,
+                    contentDescription = stringResource(SettingsLabels.EDIT_FOLDER_RES),
                     tint = SettingsAccent,
                     modifier = Modifier
                         .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
@@ -279,13 +281,13 @@ fun WizardRootRow(
             },
             onRemove?.let { remove ->
                 SettingsRowAction(
-                    SettingsLabels.REMOVE_FOLDER, remove,
+                    stringResource(SettingsLabels.REMOVE_FOLDER_RES), remove,
                     actionFocusBackgroundColor = lerp(Color(0xFFE55353), Color.Black, 0.50f),
-                    shortLabel = "Remove",
+                    shortLabel = stringResource(R.string.setup_row_remove),
                 ) {
                     Icon(
                         Icons.Default.Delete,
-                        contentDescription = SettingsLabels.REMOVE_FOLDER,
+                        contentDescription = stringResource(SettingsLabels.REMOVE_FOLDER_RES),
                         tint = Color(0xFFE55353),
                         modifier = Modifier
                             .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
@@ -563,7 +565,7 @@ fun WizardMessageRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(text = message, color = WizardAmber, fontSize = 13.sp)
             Text(
-                text = "Tap to dismiss — or confirm on this row",
+                text = stringResource(R.string.setup_message_dismiss_hint),
                 color = if (isFocused) Color.White else SettingsSubtext,
                 fontSize = 11.sp,
             )

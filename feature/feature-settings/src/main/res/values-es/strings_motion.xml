@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">Movimiento</string>
+    <string name="motion_summary">Cuánto se mueve por sí solo.</string>
+    <string name="motion_detail_animated">Todo se mueve</string>
+    <string name="motion_detail_reduced">Solo lo seleccionado</string>
+    <string name="motion_detail_static">Nada por sí solo</string>
+    <string name="motion_sub_animated">Todo lo que puede moverse se mueve: ilustraciones, iconos, fondos, el fondo y el brillo. Es lo que más batería consume.</string>
+    <string name="motion_sub_reduced">Solo se mueve lo seleccionado: su ilustración, su fragmento de vídeo y su brillo. El fondo sigue moviéndose.</string>
+    <string name="motion_sub_static">Nada se mueve por sí solo. Los menús siguen deslizándose cuando te mueves por ellos.</string>
+    <string name="motion_holds_background">Detenido mientras «Movimiento» esté en «Estático».</string>
+    <string name="motion_holds_glow">Fijo mientras «Movimiento» esté en «Estático».</string>
+</resources>

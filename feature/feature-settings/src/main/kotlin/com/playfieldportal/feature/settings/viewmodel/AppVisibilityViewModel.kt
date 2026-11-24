@@ -7,6 +7,8 @@ import com.playfieldportal.core.data.database.dao.AppOverrideDao
 import com.playfieldportal.core.data.database.dao.HiddenPlacementDao
 import com.playfieldportal.core.domain.model.HideLocationType
 import com.playfieldportal.core.domain.model.HiddenPlacement
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.feature.appbar.AppCategoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,8 +24,11 @@ data class HiddenEntry(
     val itemKey: String,
     val locationType: HideLocationType,
     val locationId: String,
-    val locationLabel: String,   // "Everywhere" for a global hide
-)
+    val locationLabel: UiText,   // "Everywhere" for a global hide
+) {
+    /** Alphabetical order for the rows under one item; the global hide sorts as "everywhere". */
+    val sortKey: String get() = ((locationLabel as? UiText.Raw)?.value ?: "Everywhere").lowercase()
+}
 
 // An item (app or game/shortcut) with all the places it's hidden from.
 data class HiddenItemGroup(
@@ -74,7 +79,7 @@ class AppVisibilityViewModel @Inject constructor(
             val label = info[ov.packageName]?.first ?: ov.customLabel ?: ov.packageName
             labels[itemKey] = label
             byItem.getOrPut(itemKey) { mutableListOf() }.add(
-                HiddenEntry(itemKey, HideLocationType.GLOBAL, "", "Everywhere")
+                HiddenEntry(itemKey, HideLocationType.GLOBAL, "", UiText.res(R.string.lib_hidden_everywhere))
             )
         }
 
@@ -83,7 +88,7 @@ class AppVisibilityViewModel @Inject constructor(
             val type = runCatching { HideLocationType.valueOf(p.locationType) }.getOrDefault(HideLocationType.GLOBAL)
             labels.putIfAbsent(p.itemKey, p.itemLabel)
             byItem.getOrPut(p.itemKey) { mutableListOf() }.add(
-                HiddenEntry(p.itemKey, type, p.locationId, p.locationLabel)
+                HiddenEntry(p.itemKey, type, p.locationId, UiText.raw(p.locationLabel))
             )
         }
 
@@ -94,7 +99,7 @@ class AppVisibilityViewModel @Inject constructor(
                     itemKey = itemKey,
                     label = labels[itemKey] ?: itemKey,
                     icon = pkg?.let { info[it]?.second },
-                    entries = entries.sortedBy { it.locationLabel.lowercase() },
+                    entries = entries.sortedBy { it.sortKey },
                 )
             }
             .sortedBy { it.label.lowercase() }

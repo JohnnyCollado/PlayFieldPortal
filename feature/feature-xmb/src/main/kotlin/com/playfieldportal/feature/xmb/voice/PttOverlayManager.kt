@@ -11,6 +11,7 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
 import com.playfieldportal.core.data.discord.DiscordVoiceController
+import com.playfieldportal.feature.xmb.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -80,7 +81,7 @@ class PttOverlayManager @Inject constructor(
 
     // ── Styling ─────────────────────────────────────────────────────────────────────
     private fun styleExpanded(tv: TextView) {
-        tv.text = "🎙  HOLD"
+        tv.text = context.getString(R.string.xmbu_ptt_hold)
         tv.setTextColor(0xFFFFFFFF.toInt())
         tv.textSize = 15f
         tv.gravity = Gravity.CENTER

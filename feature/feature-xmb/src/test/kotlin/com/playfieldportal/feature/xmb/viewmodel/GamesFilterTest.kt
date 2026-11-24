@@ -9,6 +9,9 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * Pins the Games Filter menu and the query that feeds it — the two pure pieces the ViewModel
@@ -18,6 +21,8 @@ import org.junit.Test
  * here are the boring ones: a blank query must change nothing, and the match must be against the
  * *display* title, because both are the ways this silently eats someone's library.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class GamesFilterTest {
 
     private fun game(
@@ -126,11 +131,11 @@ class GamesFilterTest {
     fun `root names each list with its current choice`() {
         val rows = gamesFilterRows(gamesState(sort = XmbSortMode.RECENT_PLAYED), group = null)
         assertEquals(listOf(GAMES_FILTER_SEARCH_ID, GAMES_FILTER_SORT_ID), rows.map { it.id })
-        assertEquals("Search", rows[0].label)
-        assertEquals("None", rows[0].value)
-        assertEquals("Sort", rows[1].label)
+        assertEquals("Search", rows[0].label.en())
+        assertEquals("None", rows[0].value.enOrNull())
+        assertEquals("Sort", rows[1].label.en())
         // The list has no sort of its own, so the row says whose sort it is showing.
-        assertEquals("Global: Recently Played", rows[1].value)
+        assertEquals("Global: Recently Played", rows[1].value.enOrNull())
     }
 
     @Test
@@ -138,15 +143,15 @@ class GamesFilterTest {
         val state = gamesState(sort = XmbSortMode.RECENT_PLAYED)
             .copy(listSortOverrides = mapOf("card:ps2" to XmbSortMode.CUSTOM))
         val rows = gamesFilterRows(state, group = null)
-        assertEquals("Custom", rows[1].value)
+        assertEquals("Custom", rows[1].value.enOrNull())
     }
 
     @Test
     fun `root shows the active term and offers Clear Search only then`() {
         val rows = gamesFilterRows(gamesState(query = "zel"), group = null)
         assertEquals(listOf(GAMES_FILTER_SEARCH_ID, GAMES_FILTER_SORT_ID, GAMES_FILTER_CLEAR_ID), rows.map { it.id })
-        assertEquals("Search", rows[0].label)
-        assertEquals("\"zel\"", rows[0].value)
+        assertEquals("Search", rows[0].label.en())
+        assertEquals("\"zel\"", rows[0].value.enOrNull())
     }
 
     // Clear Search is an action, not a setting, so it has nothing to pin to the right — and the
@@ -171,7 +176,7 @@ class GamesFilterTest {
         val rows = gamesFilterRows(gamesState(sort = XmbSortMode.DATE_ADDED), GamesFilterGroup.SORT)
         assertEquals(
             listOf("Use Global Setting (Date Added)", "Title", "Recently Played", "Date Added", "Custom"),
-            rows.map { it.label },
+            rows.map { it.label.en() },
         )
         // No sort of its own yet: it is following the global one, so that row is the checked one.
         assertEquals(listOf(true, false, false, false, false), rows.map { it.checked })
@@ -220,7 +225,7 @@ class GamesFilterTest {
 
     @Test
     fun `games calls the Square action Filter`() {
-        assertEquals("Filter", gamesState().sortActionLabel)
+        assertEquals("Filter", gamesState().sortActionLabel.en())
     }
 
     @Test
@@ -230,7 +235,7 @@ class GamesFilterTest {
             selectedCategoryIndex = 0,
             selectedPlatformId = CATEGORY_CARD_PLATFORM_ID,
         )
-        assertEquals("Filter", s.sortActionLabel)
+        assertEquals("Filter", s.sortActionLabel.en())
     }
 
     // A column's root holds cards, not games: there is nothing to search, only an order to choose.
@@ -241,8 +246,8 @@ class GamesFilterTest {
             selectedCategoryIndex = 0,
         )
         val mainGame = XMBUiState(categories = listOf(gamesCategory(gaming = true)), selectedCategoryIndex = 0)
-        assertEquals("Sort", custom.sortActionLabel)
-        assertEquals("Sort", mainGame.sortActionLabel)
+        assertEquals("Sort", custom.sortActionLabel.en())
+        assertEquals("Sort", mainGame.sortActionLabel.en())
         assertTrue(custom.canSortCurrentList)
         assertTrue(mainGame.canSortCurrentList)
     }
@@ -256,7 +261,7 @@ class GamesFilterTest {
             selectedCategoryIndex = 0,
             musicNav = MusicNav.AllMusic,
         )
-        assertEquals("Sort", s.sortActionLabel)
+        assertEquals("Sort", s.sortActionLabel.en())
         assertEquals(MUSIC_SORTS_FOR_TEST, s.activeSortModes())
     }
 
@@ -269,7 +274,7 @@ class GamesFilterTest {
             selectedCategoryIndex = 0,
             videoNav = VideoNav.AllVideos,
         )
-        assertEquals("Sort", s.sortActionLabel)
+        assertEquals("Sort", s.sortActionLabel.en())
     }
 
     @Test

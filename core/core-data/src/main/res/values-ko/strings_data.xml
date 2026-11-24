@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Voice microphone sensitivity (Discord) -->
+    <string name="data_mic_sensitivity_auto">자동</string>
+    <string name="data_mic_sensitivity_high">높음</string>
+    <string name="data_mic_sensitivity_low">낮음 · 클릭 소리 걸러냄</string>
+    <string name="data_mic_sensitivity_minimal">최소 · 큰 목소리만</string>
+    <!-- Discord sign-in errors -->
+    <string name="data_discord_offline">오프라인 상태입니다. 인터넷에 다시 연결한 후 다시 시도하세요.</string>
+    <string name="data_discord_unreachable">Discord에 연결할 수 없습니다</string>
+    <string name="data_discord_signin_network_error">로그인 중 네트워크 오류가 발생했습니다</string>
+    <!-- Music and video players -->
+    <string name="data_music_no_player">이 트랙을 열 수 있는 음악 플레이어가 없습니다. 플레이어를 설치하거나 설정 → 음악에서 선택하세요.</string>
+    <string name="data_video_no_player_open">이 파일을 열 수 있는 동영상 플레이어가 없습니다. 플레이어를 설치하거나 설정 → 동영상에서 선택하세요.</string>
+    <!-- Title of the Android app chooser for opening a video. -->
+    <string name="data_video_chooser_title">동영상 재생 앱 선택…</string>
+    <string name="data_video_none_installed">설치된 동영상 플레이어가 없습니다.</string>
+    <string name="data_video_bad_location">이 동영상의 위치가 잘못되었습니다.</string>
+    <string name="data_video_unreachable">이 동영상 파일을 찾을 수 없거나 접근 권한이 사라졌습니다. 라이브러리를 다시 스캔해 보세요.</string>
+    <string name="data_video_player_cannot_open">%1$s에서 이 동영상을 열 수 없거나 앱이 설치되어 있지 않습니다.</string>
+    <string name="data_video_that_player">해당 플레이어</string>
+    <string name="data_video_none_installed_for_file">이 파일을 열 수 있는 동영상 플레이어가 설치되어 있지 않습니다.</string>
+    <!-- Lock screen image -->
+    <string name="data_lockscreen_unreadable">이미지를 읽을 수 없습니다</string>
+    <string name="data_lockscreen_rejected">이 기기에서 잠금 화면 이미지를 적용할 수 없습니다</string>
+    <!-- PSP theme import (.ptf) -->
+    <string name="data_ptf_unreadable">파일을 읽을 수 없습니다(또는 파일이 너무 큽니다)</string>
+    <string name="data_ptf_not_ptf">PSP 테마(.ptf) 파일이 아닙니다</string>
+    <string name="data_ptf_unparseable">테마 파일을 분석할 수 없습니다</string>
+    <string name="data_ptf_wallpaper_missing">테마에 배경화면 이미지가 없습니다</string>
+    <string name="data_ptf_wallpaper_unsupported">이 테마는 지원되지 않는 방식으로 배경화면을 압축했습니다</string>
+    <string name="data_ptf_wallpaper_damaged">테마의 배경화면이 손상되어 디코딩할 수 없습니다</string>
+    <string name="data_ptf_save_failed">테마를 저장할 수 없습니다</string>
+    <!-- Custom media names -->
+    <string name="data_custom_video">사용자 지정 동영상</string>
+    <string name="data_custom_sound">사용자 지정 사운드</string>
+    <!-- Controllers -->
+    <string name="data_controller_fallback_name">컨트롤러</string>
+</resources>

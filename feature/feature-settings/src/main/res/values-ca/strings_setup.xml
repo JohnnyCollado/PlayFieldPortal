@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Assistent de configuració inicial -->
+    <string name="setup_title">Configuració inicial</string>
+    <string name="setup_prompt_enter">Entra</string>
+    <string name="setup_prompt_change">Canvia</string>
+    <string name="setup_prompt_back">Enrere</string>
+    <string name="setup_prompt_skip">Omet</string>
+    <string name="setup_row_edit">Edita</string>
+    <string name="setup_row_remove">Treu</string>
+    <string name="setup_message_dismiss_hint">Selecciona per descartar — o confirma en aquesta fila</string>
+
+    <!-- Noms de les pàgines -->
+    <string name="setup_step_welcome">Benvinguda</string>
+    <string name="setup_step_controller">Comandament</string>
+    <string name="setup_step_rom_roots">Carpetes de ROM</string>
+    <string name="setup_step_music">Música</string>
+    <string name="setup_step_video">Vídeo</string>
+    <string name="setup_step_photo">Fotos</string>
+    <string name="setup_step_artwork">Imatges</string>
+    <string name="setup_step_services">Serveis en línia</string>
+    <string name="setup_step_achievements">Serveis d\'assoliments</string>
+    <string name="setup_step_local_achievements">Assoliments locals</string>
+    <string name="setup_step_retroarch">RetroArch</string>
+    <string name="setup_step_emulators">Emuladors</string>
+    <string name="setup_step_windows">Jocs de Windows</string>
+    <string name="setup_step_hints">Indicacions i tàctil</string>
+    <string name="setup_step_home_app">Aplicació d\'inici</string>
+    <string name="setup_step_finish">Final</string>
+
+    <!-- Encapçalaments -->
+    <string name="setup_heading_welcome">Et donem la benvinguda a Play Field Portal.</string>
+    <string name="setup_heading_controller">Tria el comandament.</string>
+    <string name="setup_heading_rom_roots">Tria les carpetes de ROM.</string>
+    <string name="setup_heading_music">Tria les carpetes de música.</string>
+    <string name="setup_heading_video">Tria les carpetes de vídeo.</string>
+    <string name="setup_heading_photo">Tria les carpetes de fotos.</string>
+    <string name="setup_heading_artwork">Tria la carpeta d\'imatges.</string>
+    <string name="setup_heading_services">Connecta les fonts d\'imatges.</string>
+    <string name="setup_heading_achievements">Connecta els serveis d\'assoliments.</string>
+    <string name="setup_heading_local_achievements">Enllaça les carpetes de dades dels emuladors.</string>
+    <string name="setup_heading_retroarch">Enllaça la carpeta de nuclis de RetroArch.</string>
+    <string name="setup_heading_emulators">Revisa els emuladors.</string>
+    <string name="setup_heading_windows">Configura els jocs de Windows.</string>
+    <string name="setup_heading_hints">Tria com t\'ajuda el launcher.</string>
+    <string name="setup_heading_home_app">Fes de Play Field Portal la teva pantalla d\'inici.</string>
+    <string name="setup_heading_finish">Ja està tot a punt!</string>
+
+    <!-- Indicacions de les pàgines -->
+    <string name="setup_hint_welcome">La majoria dels passos són opcionals. Hauràs de triar una carpeta d\'imatges.</string>
+    <string name="setup_hint_controller">Defineix les icones dels botons i quin botó confirma, perquè totes les indicacions a partir d\'ara coincideixin amb el teu comandament.</string>
+    <string name="setup_hint_rom_roots">Afegeix una o més carpetes de ROM — els jocs de cada consola són en una subcarpeta a dins.</string>
+    <string name="setup_hint_media_roots">Afegeix diverses arrels per cobrir l\'emmagatzematge intern i una targeta SD.</string>
+    <string name="setup_hint_artwork">Obligatori. Les teves imatges es desen aquí, fora de l\'aplicació, perquè sobrevisquin a una reinstal·lació.</string>
+    <string name="setup_hint_services">Tot és opcional i gratuït. SteamGridDB, TheGamesDB, IGDB i ScreenScraper obtenen imatges i metadades dels jocs.</string>
+    <string name="setup_hint_achievements">RetroAchievements i Steam fan el seguiment dels assoliments com a Shiba Coins.</string>
+    <string name="setup_hint_local_achievements">Trofeus i assoliments que els emuladors desen en aquest dispositiu. Amb un permís per emulador s\'enllacen tots els títols.</string>
+    <string name="setup_hint_retroarch">Permet que el launcher sàpiga exactament quins nuclis tens, perquè només s\'ofereixin aquests.</string>
+    <string name="setup_hint_emulators">El predeterminat de cada consola, triat entre el que hi ha instal·lat. Canvia els que no et semblin correctes.</string>
+    <string name="setup_hint_windows">Hi ha un emulador de Windows instal·lat — tria on són els teus jocs de PC.</string>
+    <string name="setup_hint_hints">Les indicacions dels botons apareixen quan t\'atures i desapareixen en prémer qualsevol cosa.</string>
+    <string name="setup_hint_home_app">Aleshores el botó d\'inici et torna aquí en lloc del launcher de sèrie.</string>
+    <string name="setup_hint_finish">Pots ajustar tot el que hi ha a sota en qualsevol moment a Configuració.</string>
+
+    <!-- Fila de continuar -->
+    <string name="setup_continue">Continua</string>
+    <string name="setup_continue_next">Següent: %1$s</string>
+    <string name="setup_continue_blocked">Primer tria una carpeta</string>
+
+    <!-- Pàgina de benvinguda -->
+    <string name="setup_welcome_intro">Aquesta configuració ràpida indica al launcher on són les teves carpetes de mitjans i connecta els serveis en línia que s\'utilitzen per a les imatges i els assoliments.</string>
+    <string name="setup_welcome_start">Comença</string>
+    <string name="setup_welcome_start_sub">Primer tria el comandament</string>
+    <string name="setup_welcome_skip">Omet la configuració</string>
+    <string name="setup_welcome_skip_sub">Ves directament al launcher — pots executar l\'assistent de configuració des de Configuració ▸ Sistema quan vulguis</string>
+
+    <!-- Files de carpetes -->
+    <string name="setup_root_access_lost">S\'ha perdut l\'accés — fes servir ✎ per tornar-lo a concedir</string>
+
+    <!-- Arrels de ROM -->
+    <string name="setup_rom_empty">Encara no hi ha cap carpeta de ROM. Afegeix la carpeta on són els jocs de les teves consoles — una subcarpeta per consola, escanejades automàticament.</string>
+    <string name="setup_rom_add">Afegeix una carpeta de ROM</string>
+    <string name="setup_rom_add_sub">Concedeix una carpeta de ROM amb una subcarpeta per consola</string>
+    <string name="setup_rom_rescan">Torna a escanejar les carpetes de ROM</string>
+    <string name="setup_rom_rescan_sub">Detecta les consoles automàticament i n\'escaneja els jocs</string>
+    <string name="setup_rom_root_linked">Enllaçada — les carpetes de consola es llegeixen des d\'aquí</string>
+    <string name="setup_rom_create_folders">Crea les carpetes estàndard</string>
+    <string name="setup_rom_create_folders_sub">Una subcarpeta per consola, amb el nom adequat per als teus jocs</string>
+
+    <!-- Arrels de música -->
+    <string name="setup_music_empty">Encara no hi ha cap arrel de música. Afegeix la carpeta on tens la música — diverses arrels poden cobrir l\'emmagatzematge intern i una targeta SD.</string>
+    <string name="setup_music_add">Afegeix una arrel de música</string>
+    <string name="setup_music_add_sub">Concedeix una carpeta arrel (p. ex. /Music) — afegeix-ne diverses per cobrir més ubicacions</string>
+    <string name="setup_music_root_linked">La biblioteca de música és aquí</string>
+    <string name="setup_music_rescan">Torna a escanejar la biblioteca de música</string>
+
+    <!-- Arrels de vídeo -->
+    <string name="setup_video_empty">Encara no hi ha cap arrel de vídeo. Afegeix la carpeta on tens els vídeos — diverses arrels poden cobrir l\'emmagatzematge intern i una targeta SD.</string>
+    <string name="setup_video_add">Afegeix una arrel de vídeo</string>
+    <string name="setup_video_add_sub">Concedeix una carpeta arrel (p. ex. /Videos) — afegeix-ne diverses per cobrir més ubicacions</string>
+    <string name="setup_video_root_linked">La biblioteca de vídeo és aquí</string>
+    <string name="setup_video_rescan">Torna a escanejar la biblioteca de vídeo</string>
+
+    <!-- Arrels de fotos -->
+    <string name="setup_photo_empty">Encara no hi ha cap arrel de fotos. Afegeix la carpeta on tens les fotos — diverses arrels poden cobrir l\'emmagatzematge intern i una targeta SD.</string>
+    <string name="setup_photo_add">Afegeix una arrel de fotos</string>
+    <string name="setup_photo_add_sub">Concedeix una carpeta arrel (p. ex. /Photos) — afegeix-ne diverses per cobrir més ubicacions</string>
+    <string name="setup_photo_root_linked">La biblioteca de fotos és aquí</string>
+    <string name="setup_photo_rescan">Torna a escanejar la biblioteca de fotos</string>
+    <string name="setup_media_rescan_sub">Actualitza les biblioteques des de totes les carpetes arrel</string>
+
+    <!-- Imatges -->
+    <string name="setup_artwork_empty">Tria una carpeta on es pugui escriure. El launcher hi crea automàticament una biblioteca d\'imatges — els jocs reben imatges a mesura que s\'afegeixen.</string>
+    <string name="setup_artwork_unavailable">No disponible. Torna a enllaçar-la per reprendre les imatges noves</string>
+    <string name="setup_artwork_folder_sub">Biblioteca d\'imatges — fes servir ✎ per triar una altra carpeta</string>
+    <string name="setup_artwork_choose">Tria la carpeta d\'imatges</string>
+    <string name="setup_artwork_choose_sub">Una carpeta allotja la biblioteca d\'imatges</string>
+    <string name="setup_artwork_import_title">Vols importar imatges ara?</string>
+    <string name="setup_artwork_import_sub_one">Copia %1$s des de la carpeta import/ a la biblioteca</string>
+    <plurals name="setup_artwork_import_sub_many">
+        <item quantity="one">Copia %1$d carpeta d\'origen des de la carpeta import/ a la biblioteca</item>
+        <item quantity="many">Copia %1$d carpetes d\'origen des de la carpeta import/ a la biblioteca</item>
+        <item quantity="other">Copia %1$d carpetes d\'origen des de la carpeta import/ a la biblioteca</item>
+    </plurals>
+    <string name="setup_artwork_import_row">Importació d\'imatges</string>
+    <string name="setup_artwork_import_none_sub">Encara no hi ha res per importar — afegeix la carpeta de mitjans d\'un launcher dins d\'import/</string>
+
+    <!-- Serveis en línia -->
+    <string name="setup_services_intro">Tots els comptes són opcionals i gratuïts. SteamGridDB, TheGamesDB, IGDB i ScreenScraper obtenen imatges i metadades per a la teva biblioteca.</string>
+    <string name="setup_field_api_key">Clau d\'API</string>
+    <string name="setup_field_api_key_saved">Clau d\'API (desada)</string>
+    <string name="setup_field_web_api_key">Clau de Web API</string>
+    <string name="setup_field_web_api_key_saved">Clau de Web API (desada)</string>
+    <string name="setup_field_client_id">ID de client</string>
+    <string name="setup_field_client_id_saved">ID de client (desat)</string>
+    <string name="setup_field_client_secret">Secret de client</string>
+    <string name="setup_field_client_secret_saved">Secret de client (desat)</string>
+    <string name="setup_field_username">Nom d\'usuari</string>
+    <string name="setup_field_username_saved">Nom d\'usuari (desat)</string>
+    <string name="setup_field_password">Contrasenya</string>
+    <string name="setup_field_password_saved">Contrasenya (desada)</string>
+    <string name="setup_field_steam_id">SteamID64 o nom personalitzat</string>
+    <string name="setup_field_steam_id_saved">SteamID64 o nom personalitzat (desat)</string>
+    <string name="setup_placeholder_tap_to_replace">Selecciona per substituir</string>
+    <string name="setup_placeholder_secret_saved">••••••••  (selecciona per substituir)</string>
+    <string name="setup_placeholder_sgdb_key">Enganxa la clau de SteamGridDB</string>
+    <string name="setup_placeholder_tgdb_key">Enganxa la clau de TheGamesDB</string>
+    <string name="setup_placeholder_twitch_client_id">ID de client de Twitch</string>
+    <string name="setup_placeholder_twitch_client_secret">Secret de client de Twitch</string>
+    <string name="setup_placeholder_ss_username">Nom d\'usuari de ScreenScraper</string>
+    <string name="setup_placeholder_ss_password">Contrasenya de ScreenScraper</string>
+    <string name="setup_placeholder_ra_username">El teu nom d\'usuari de RA</string>
+    <string name="setup_placeholder_ra_key">Enganxa la clau de Web API de RA</string>
+    <string name="setup_placeholder_steam_id">7656119… o el nom de l\'URL personalitzat</string>
+    <string name="setup_placeholder_steam_key">Enganxa la clau de Web API de Steam</string>
+    <string name="setup_connect_sgdb">Connecta SteamGridDB</string>
+    <string name="setup_connect_tgdb">Connecta TheGamesDB</string>
+    <string name="setup_connect_igdb">Connecta IGDB</string>
+    <string name="setup_connect_ss">Connecta ScreenScraper</string>
+    <string name="setup_connect_ra">Connecta RetroAchievements</string>
+    <string name="setup_connect_steam">Connecta Steam</string>
+    <string name="setup_test_credentials">Prova les credencials</string>
+    <string name="setup_test_account">Prova el compte</string>
+    <string name="setup_connected_as">Connectat com a</string>
+
+    <!-- Serveis d'assoliments -->
+    <string name="setup_achievements_intro">Opcional i gratuït. RetroAchievements i Steam fan el seguiment dels assoliments com a Shiba Coins.</string>
+
+    <!-- Comandament -->
+    <string name="setup_controller_type">Tipus de comandament</string>
+    <string name="setup_controller_type_sub">Canvia les icones dels botons a totes les indicacions</string>
+    <string name="setup_controller_ab_swap">Intercanvia confirmar i enrere</string>
+    <string name="setup_controller_xy_swap">Intercanvia opcions i ordenació</string>
+    <string name="setup_controller_xy_swap_sub">Només els menús del launcher — els controls dels emuladors no es toquen</string>
+    <string name="setup_on">Activat</string>
+    <string name="setup_off">Desactivat</string>
+    <string name="setup_controller_summary">%1$s · %2$s confirma</string>
+    <string name="setup_button_circle">Cercle</string>
+    <string name="setup_button_cross">Creu</string>
+    <string name="setup_confirm_swap_off">Desactivat — %1$s confirma, %2$s torna enrere</string>
+    <string name="setup_confirm_swap_on">Activat — %1$s confirma, %2$s torna enrere</string>
+
+    <!-- Assoliments locals -->
+    <string name="setup_local_vita_header">PS Vita · Vita3K</string>
+    <string name="setup_local_vita_set">Defineix la carpeta de dades de Vita3K</string>
+    <string name="setup_local_vita_set_sub">Concedeix la carpeta ux0 (o la carpeta que la conté)</string>
+    <string name="setup_local_vita_folder_sub">Carpeta de dades de Vita3K — fes servir ✎ per triar-ne una altra</string>
+    <string name="setup_local_ps3_header">PS3 · ARMSX3</string>
+    <string name="setup_local_ps3_set">Defineix la carpeta de dades d\'ARMSX3</string>
+    <string name="setup_local_ps3_set_sub">Concedeix PS3/config/dev_hdd0 — o qualsevol carpeta per sobre o per sota</string>
+    <string name="setup_local_ps3_folder_sub">Carpeta de dades d\'ARMSX3 — fes servir ✎ per triar-ne una altra</string>
+    <string name="setup_local_x360_header">Xbox 360 · X360 Mobile</string>
+    <string name="setup_local_x360_set">Defineix la carpeta de dades d\'X360 Mobile</string>
+    <string name="setup_local_x360_set_sub">Tria X360 Mobile al menú lateral del selector de carpetes i permet-hi l\'accés</string>
+    <string name="setup_local_x360_folder_sub">Carpeta de dades d\'X360 Mobile — fes servir ✎ per triar-ne una altra</string>
+    <string name="setup_local_xendroid_header">Xbox 360 · XenDroid</string>
+    <string name="setup_local_xendroid_set">Defineix la carpeta de dades de XenDroid</string>
+    <string name="setup_local_xendroid_set_sub">Concedeix Android/data/xendroid.compose — o qualsevol carpeta per sobre o per sota</string>
+    <string name="setup_local_xendroid_folder_sub">Carpeta de dades de XenDroid — fes servir ✎ per triar-ne una altra</string>
+
+    <!-- RetroArch -->
+    <string name="setup_retroarch_cores_folder">Carpeta de nuclis</string>
+    <plurals name="setup_retroarch_cores_detected">
+        <item quantity="one">%1$d nucli detectat</item>
+        <item quantity="many">%1$d nuclis detectats</item>
+        <item quantity="other">%1$d nuclis detectats</item>
+    </plurals>
+    <string name="setup_retroarch_linked">Enllaçat</string>
+    <string name="setup_retroarch_relink">Torna a enllaçar la carpeta</string>
+    <string name="setup_retroarch_relink_sub">Torna a triar la carpeta de RetroArch</string>
+    <string name="setup_retroarch_recheck">Torna a comprovar els nuclis</string>
+    <string name="setup_retroarch_recheck_sub">Després d\'instal·lar nuclis nous</string>
+    <string name="setup_retroarch_unlink">Desenllaça RetroArch</string>
+    <string name="setup_retroarch_unlink_sub">Torna a oferir tots els nuclis seleccionats</string>
+    <string name="setup_retroarch_intro">RetroArch està instal·lat. Enllaça\'n la carpeta perquè en iniciar jocs només s\'ofereixin els nuclis que tens de debò — si no, es mostren tots els nuclis seleccionats (sense verificar).</string>
+    <string name="setup_retroarch_link">Enllaça la carpeta de RetroArch</string>
+    <string name="setup_retroarch_link_sub">Tria l\'arbre de documents com.retroarch</string>
+
+    <!-- Emuladors -->
+    <string name="setup_emulators_empty">Encara no hi ha cap consola amb jocs. Quan s\'hagin escanejat les carpetes de ROM, cada consola apareixerà aquí amb l\'emulador que iniciarà — el pots canviar quan vulguis a Configuració ▸ Emuladors.</string>
+    <string name="setup_emulators_none">Cap</string>
+
+    <!-- Jocs de Windows -->
+    <string name="setup_windows_intro">Tria la carpeta que conté una subcarpeta per joc. PFP l\'escaneja per trobar els teus jocs de Windows; no s\'hi canvia res.</string>
+    <string name="setup_windows_detected">Detectat</string>
+    <string name="setup_windows_set">Defineix la carpeta de jocs de Windows</string>
+    <string name="setup_windows_change">Canvia la carpeta de jocs de Windows</string>
+    <string name="setup_windows_set_sub">Concedeix la carpeta on tens instal·lats els jocs</string>
+
+    <!-- Indicacions i tàctil -->
+    <string name="setup_hints_enabled">Indicacions dels botons</string>
+    <string name="setup_hints_enabled_sub">La indicació d\'inactivitat a l\'XMB, a Configuració i a les pantalles de mitjans</string>
+    <string name="setup_hints_delay">Retard de les indicacions</string>
+    <string name="setup_hints_delay_sub">Quant temps cal esperar perquè apareguin les indicacions (1–5 segons)</string>
+    <plurals name="setup_hints_delay_seconds">
+        <item quantity="one">%1$d segon</item>
+        <item quantity="many">%1$d segons</item>
+        <item quantity="other">%1$d segons</item>
+    </plurals>
+    <string name="setup_hints_delay_fraction">%1$s segons</string>
+    <string name="setup_hints_touch">Botó tàctil</string>
+    <string name="setup_hints_touch_sub">El botó del calaix d\'aplicacions en pantalla — Automàtic el mostra quan toques la pantalla</string>
+    <string name="setup_touch_auto">Automàtic</string>
+    <string name="setup_touch_always_show">Mostra sempre</string>
+    <string name="setup_touch_always_hide">Amaga sempre</string>
+    <string name="setup_hints_summary_on">Activat · %1$s</string>
+
+    <!-- Aplicació d'inici -->
+    <string name="setup_home_intro">Android et demana que triïs una aplicació d\'inici i que la confirmis. Pots tornar enrere quan vulguis a la configuració d\'Aplicacions predeterminades d\'Android.</string>
+    <string name="setup_home_current">Aplicació d\'inici actual</string>
+    <string name="setup_home_set">Defineix com a aplicació d\'inici</string>
+    <string name="setup_home_set_sub">Obre el selector d\'aplicació d\'inici d\'Android</string>
+    <string name="setup_home_is_pfp">Play Field Portal</string>
+    <string name="setup_home_not_pfp">No és Play Field Portal</string>
+
+    <!-- Pàgina final -->
+    <string name="setup_finish_nothing">Encara no s\'ha configurat res — pots afegir qualsevol carpeta o servei quan vulguis des de Configuració.</string>
+    <string name="setup_finish_summary">Resum</string>
+    <string name="setup_summary_controller">Comandament</string>
+    <string name="setup_summary_rom">Biblioteca de ROM</string>
+    <string name="setup_summary_music">Música</string>
+    <string name="setup_summary_video">Vídeo</string>
+    <string name="setup_summary_photo">Fotos</string>
+    <string name="setup_summary_artwork">Biblioteca d\'imatges</string>
+    <string name="setup_summary_vita">Carpeta de dades de Vita</string>
+    <string name="setup_summary_ps3">Carpeta de dades de PS3</string>
+    <string name="setup_summary_x360">Carpeta de dades d\'X360 Mobile</string>
+    <string name="setup_summary_xendroid">Carpeta de dades de XenDroid</string>
+    <string name="setup_summary_windows">Jocs de Windows</string>
+    <string name="setup_summary_hints">Indicacions dels botons</string>
+    <string name="setup_summary_home">Aplicació d\'inici</string>
+    <string name="setup_not_set">No definit</string>
+    <string name="setup_connected">Connectat</string>
+    <string name="setup_retroarch_not_linked">No enllaçat</string>
+    <plurals name="setup_retroarch_cores_count">
+        <item quantity="one">%1$d nucli</item>
+        <item quantity="many">%1$d nuclis</item>
+        <item quantity="other">%1$d nuclis</item>
+    </plurals>
+    <string name="setup_roots_more">%1$s i %2$d més</string>
+    <string name="setup_finish_xmb_header">Disposició de l\'XMB</string>
+    <string name="setup_finish_autofit">Ajusta automàticament la disposició de l\'XMB (proporcions de PSP) — es pot canviar quan vulguis a Configuració</string>
+    <string name="setup_finish_open_lm">Obre el Gestor de biblioteques</string>
+    <string name="setup_finish_open_lm_sub">Afegeix consoles i escaneja les carpetes de ROM que acabes de definir</string>
+    <string name="setup_finish_go_library">Ves a la biblioteca</string>
+    <string name="setup_finish_go_library_sub">Salta directament a Tots els jocs</string>
+    <string name="setup_finish_done">Finalitza</string>
+    <string name="setup_finish_done_sub">Ves al launcher</string>
+
+    <!-- Missatges de l'assistent -->
+    <string name="setup_status_testing">S\'està provant…</string>
+    <plurals name="setup_msg_rom_folders_created">
+        <item quantity="one">S\'ha creat %1$d carpeta de consola. Copia els jocs a les carpetes corresponents.</item>
+        <item quantity="many">S\'han creat %1$d carpetes de consola. Copia els jocs a les carpetes corresponents.</item>
+        <item quantity="other">S\'han creat %1$d carpetes de consola. Copia els jocs a les carpetes corresponents.</item>
+    </plurals>
+    <plurals name="setup_msg_rom_folders_created_existing">
+        <item quantity="one">S\'ha creat %1$d carpeta de consola (%2$d ja hi eren). Copia els jocs a les carpetes corresponents.</item>
+        <item quantity="many">S\'han creat %1$d carpetes de consola (%2$d ja hi eren). Copia els jocs a les carpetes corresponents.</item>
+        <item quantity="other">S\'han creat %1$d carpetes de consola (%2$d ja hi eren). Copia els jocs a les carpetes corresponents.</item>
+    </plurals>
+    <string name="setup_msg_artwork_failed">No s\'ha pogut crear una biblioteca d\'imatges en aquesta carpeta. Tria una carpeta on es pugui escriure.</string>
+    <string name="setup_msg_artwork_reconnected">S\'ha tornat a connectar la biblioteca d\'imatges existent.</string>
+    <string name="setup_msg_artwork_created">S\'ha creat la biblioteca d\'imatges.</string>
+    <plurals name="setup_msg_artwork_games_linked">
+        <item quantity="one">S\'ha enllaçat %1$d joc a partir dels fitxers que ja hi havia a la carpeta.</item>
+        <item quantity="many">S\'han enllaçat %1$d jocs a partir dels fitxers que ja hi havia a la carpeta.</item>
+        <item quantity="other">S\'han enllaçat %1$d jocs a partir dels fitxers que ja hi havia a la carpeta.</item>
+    </plurals>
+    <string name="setup_msg_artwork_import_hint">Posa els mitjans d\'altres launchers a la seva carpeta import/ per reunir-los aquí.</string>
+    <string name="setup_msg_import_none_yet">Encara no hi ha res per importar — posa fitxers al directori import/ de la carpeta d\'imatges.</string>
+    <string name="setup_msg_import_unreadable">No s\'ha pogut llegir aquesta font d\'importació.</string>
+    <string name="setup_msg_import_empty">No hi ha res per importar — ja hi és tot.</string>
+    <string name="setup_msg_import_started">S\'està important \"%1$s\" — el progrés es mostra a les notificacions; els detalls apareixen a Configuració ▸ Importació d\'imatges.</string>
+    <string name="setup_msg_retroarch_linked">RetroArch enllaçat — ara els nuclis instal·lats s\'ofereixen a Emuladors.</string>
+    <string name="setup_msg_retroarch_rechecked">S\'han tornat a comprovar els nuclis de RetroArch.</string>
+    <string name="setup_msg_retroarch_unlinked">S\'ha tret l\'enllaç a RetroArch — no s\'oferirà cap nucli de RetroArch fins que el tornis a enllaçar.</string>
+    <string name="setup_msg_vita_set">S\'ha definit la carpeta de dades de Vita3K. Els títols instal·lats es poden escanejar des de la Memory Card de PS Vita al Gestor de biblioteques.</string>
+    <string name="setup_msg_vita_released">S\'ha alliberat la carpeta de dades de Vita3K — no s\'ha tocat cap fitxer del disc.</string>
+    <string name="setup_msg_ps3_set">S\'ha definit la carpeta de dades de PS3. Executa l\'associació automàtica a Configuració ▸ Assoliments ▸ Actualitza els assoliments per enllaçar els trofeus de PS3.</string>
+    <string name="setup_msg_ps3_released">S\'ha alliberat la carpeta de dades de PS3 — no s\'ha tocat cap fitxer del disc.</string>
+    <string name="setup_msg_x360_set">S\'ha definit la carpeta de dades de %1$s. Executa l\'associació automàtica a Configuració ▸ Assoliments ▸ Actualitza els assoliments per enllaçar els assoliments d\'Xbox 360.</string>
+    <string name="setup_msg_x360_released">S\'ha alliberat la carpeta de dades de %1$s — no s\'ha tocat cap fitxer del disc.</string>
+    <string name="setup_msg_sgdb_connected">SteamGridDB connectat</string>
+    <string name="setup_msg_tgdb_connected">TheGamesDB connectat</string>
+    <string name="setup_msg_igdb_connected">IGDB connectat</string>
+    <string name="setup_msg_ss_connected">ScreenScraper connectat</string>
+    <string name="setup_msg_ra_connected">RetroAchievements connectat</string>
+
+    <!-- Informe d'escaneig de les arrels de ROM -->
+    <string name="setup_rom_scan_no_root">Primer afegeix una carpeta de ROM a Configuració ▸ Biblioteca ▸ Gestor de biblioteques.</string>
+    <string name="setup_rom_scan_none">S\'han escanejat %1$s en %2$s; no s\'ha trobat cap ROM nova. Copia els jocs a les carpetes de sistema corresponents i torna-ho a provar.</string>
+    <string name="setup_rom_scan_loaded">S\'han carregat %1$s, %2$s de %3$s.</string>
+    <string name="setup_rom_scan_systems_new">%1$s (%2$s)</string>
+    <plurals name="setup_rom_scan_folders">
+        <item quantity="one">%1$d carpeta</item>
+        <item quantity="many">%1$d carpetes</item>
+        <item quantity="other">%1$d carpetes</item>
+    </plurals>
+    <plurals name="setup_rom_scan_systems">
+        <item quantity="one">%1$d sistema</item>
+        <item quantity="many">%1$d sistemes</item>
+        <item quantity="other">%1$d sistemes</item>
+    </plurals>
+    <plurals name="setup_rom_scan_new_consoles">
+        <item quantity="one">%1$d consola nova</item>
+        <item quantity="many">%1$d consoles noves</item>
+        <item quantity="other">%1$d consoles noves</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roms">
+        <item quantity="one">%1$d ROM</item>
+        <item quantity="many">%1$d ROM</item>
+        <item quantity="other">%1$d ROM</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roots">
+        <item quantity="one">%1$d carpeta de ROM</item>
+        <item quantity="many">%1$d carpetes de ROM</item>
+        <item quantity="other">%1$d carpetes de ROM</item>
+    </plurals>
+    <plurals name="setup_rom_scan_skipped">
+        <item quantity="one">%1$d carpeta omesa (no es pot llegir la biblioteca).</item>
+        <item quantity="many">%1$d carpetes omeses (no es pot llegir la biblioteca).</item>
+        <item quantity="other">%1$d carpetes omeses (no es pot llegir la biblioteca).</item>
+    </plurals>
+
+    <!-- Escanejos de biblioteques de mitjans -->
+    <string name="setup_media_add_root_first">Primer afegeix una carpeta arrel.</string>
+    <string name="setup_media_not_ready">L\'emmagatzematge d\'aquesta carpeta encara no està a punt. Torna-ho a provar d\'aquí a un moment.</string>
+    <string name="setup_media_scan_failed_title">L\'escaneig de %1$s ha fallat</string>
+    <string name="setup_media_scan_finished_title">S\'ha acabat l\'escaneig de %1$s</string>
+    <string name="setup_media_scan_stopped_title">S\'ha aturat l\'escaneig de %1$s</string>
+    <string name="setup_media_scanning_title">S\'està escanejant %1$s</string>
+    <string name="setup_media_stop_note">La carpeta es tornarà a escanejar la propera vegada.</string>
+    <string name="setup_media_stopped">S\'ha aturat abans d\'acabar</string>
+    <plurals name="setup_media_tracks">
+        <item quantity="one">%1$d pista</item>
+        <item quantity="many">%1$d pistes</item>
+        <item quantity="other">%1$d pistes</item>
+    </plurals>
+    <plurals name="setup_media_photos">
+        <item quantity="one">%1$d foto</item>
+        <item quantity="many">%1$d fotos</item>
+        <item quantity="other">%1$d fotos</item>
+    </plurals>
+    <plurals name="setup_media_videos">
+        <item quantity="one">%1$d vídeo</item>
+        <item quantity="many">%1$d vídeos</item>
+        <item quantity="other">%1$d vídeos</item>
+    </plurals>
+    <plurals name="setup_media_roots">
+        <item quantity="one">%1$d arrel</item>
+        <item quantity="many">%1$d arrels</item>
+        <item quantity="other">%1$d arrels</item>
+    </plurals>
+    <string name="setup_media_found">S\'han trobat %1$s en %2$s.</string>
+</resources>

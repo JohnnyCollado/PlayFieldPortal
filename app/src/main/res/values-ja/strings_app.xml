@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_switch_launcher_chooser">ランチャーを切り替え</string>
+    <string name="app_shortcut_fallback_name">ショートカット</string>
+    <string name="app_shortcut_fallback_host">他のアプリ</string>
+</resources>

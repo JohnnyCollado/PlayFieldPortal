@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="thm_error_manifest_missing">Vereiste theme.json ontbreekt in archief</string>
+    <string name="thm_error_manifest_invalid">Ongeldige theme.json: %1$s</string>
+    <string name="thm_error_id_invalid">Ongeldige thema-id \'%1$s\' — gebruik letters, cijfers, \'.\', \'_\' of \'-\' (max. 64)</string>
+    <string name="thm_error_color_invalid">Ongeldige %1$s \'%2$s\' — verwacht #RRGGBB of #AARRGGBB</string>
+</resources>

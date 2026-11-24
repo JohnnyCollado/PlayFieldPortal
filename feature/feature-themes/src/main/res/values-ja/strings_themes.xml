@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="thm_error_manifest_missing">アーカイブに必須の theme.json がありません</string>
+    <string name="thm_error_manifest_invalid">theme.json が無効です: %1$s</string>
+    <string name="thm_error_id_invalid">テーマ ID「%1$s」は無効です。英字、数字、「.」「_」「-」を使用してください（最大 64 文字）</string>
+    <string name="thm_error_color_invalid">%1$s「%2$s」は無効です。#RRGGBB または #AARRGGBB で指定してください</string>
+</resources>

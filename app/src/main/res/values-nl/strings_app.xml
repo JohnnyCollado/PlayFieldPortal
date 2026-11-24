@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_switch_launcher_chooser">Andere launcher kiezen</string>
+    <string name="app_shortcut_fallback_name">Snelkoppeling</string>
+    <string name="app_shortcut_fallback_host">Een andere app</string>
+</resources>

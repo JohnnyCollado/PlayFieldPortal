@@ -1,0 +1,920 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Settings ▸ Hidden Items -->
+    <string name="lib_hidden_items_title">Скрытые элементы</string>
+    <string name="lib_hidden_items_group">Скрытые элементы</string>
+    <string name="lib_hidden_items_help">Скрытые вами приложения и игры, сгруппированные по элементам с местами, откуда они скрыты. Скрывайте элементы через их меню параметров, а возвращайте здесь.</string>
+    <string name="lib_hidden_items_empty">Ничего не скрыто.</string>
+    <string name="lib_hidden_unhide">Показать</string>
+    <string name="lib_hidden_all_locations">Все места</string>
+    <string name="lib_hidden_unhide_all">Показать везде</string>
+    <string name="lib_hidden_everywhere">Везде</string>
+
+    <!-- Default music / video player picker -->
+    <string name="lib_player_use_this">Использовать этот плеер</string>
+    <string name="lib_player_close">Закрыть</string>
+
+    <!-- Settings ▸ Categories -->
+    <string name="lib_cat_title">Категории</string>
+    <string name="lib_cat_scaffold_title">Категория</string>
+    <string name="lib_cat_group_manage">Управление</string>
+    <string name="lib_cat_create">Создать категорию</string>
+    <string name="lib_cat_create_sub">Добавить новую категорию на панель XMB</string>
+    <string name="lib_cat_group_xmb">Категории XMB</string>
+    <string name="lib_cat_row_hidden">"%1$s  (скрыта)"</string>
+    <string name="lib_cat_row_sub_builtin">"Значок: %1$s  ·  встроенная"</string>
+    <string name="lib_cat_row_sub_custom">"Значок: %1$s  ·  своя"</string>
+    <string name="lib_cat_home_game">Игры</string>
+    <string name="lib_cat_home_app_store">Магазин приложений</string>
+    <string name="lib_cat_created_image_failed">Категория создана, но её изображение не удалось сохранить</string>
+
+    <!-- Name entry dialog -->
+    <string name="lib_cat_rename_title">Переименовать категорию</string>
+    <string name="lib_cat_new_title">Новая категория</string>
+    <string name="lib_cat_name_placeholder">Название категории</string>
+    <string name="lib_cat_save">Сохранить</string>
+    <string name="lib_cat_next">Далее</string>
+
+    <!-- Delete dialog -->
+    <string name="lib_cat_delete_title">Удалить категорию</string>
+
+    <!-- Button in the delete dialog. -->
+    <string name="lib_cat_delete">Удалить</string>
+    <string name="lib_cat_delete_games_message">«%1$s» будет удалена. Её игры останутся в библиотеке.</string>
+    <string name="lib_cat_delete_apps_message">«%1$s» будет удалена. Её приложения не удаляются с устройства.</string>
+    <plurals name="lib_cat_delete_cards_games_message">
+        <item quantity="one">«%1$s» будет удалена. Её игры останутся в библиотеке. Что сделать с её %2$d своей картой памяти?</item>
+        <item quantity="few">«%1$s» будет удалена. Её игры останутся в библиотеке. Что сделать с её %2$d своими картами памяти?</item>
+        <item quantity="many">«%1$s» будет удалена. Её игры останутся в библиотеке. Что сделать с её %2$d своими картами памяти?</item>
+        <item quantity="other">«%1$s» будет удалена. Её игры останутся в библиотеке. Что сделать с её %2$d своей картой памяти?</item>
+    </plurals>
+    <plurals name="lib_cat_delete_cards_apps_message">
+        <item quantity="one">«%1$s» будет удалена. Её приложения не удаляются с устройства. Что сделать с её %2$d своей картой памяти?</item>
+        <item quantity="few">«%1$s» будет удалена. Её приложения не удаляются с устройства. Что сделать с её %2$d своими картами памяти?</item>
+        <item quantity="many">«%1$s» будет удалена. Её приложения не удаляются с устройства. Что сделать с её %2$d своими картами памяти?</item>
+        <item quantity="other">«%1$s» будет удалена. Её приложения не удаляются с устройства. Что сделать с её %2$d своей картой памяти?</item>
+    </plurals>
+    <string name="lib_cat_delete_move_cards">Перенести свои карты в «%1$s»</string>
+    <string name="lib_cat_delete_cards_too">Удалить и свои карты</string>
+
+    <!-- Pick icon -->
+    <string name="lib_cat_choose_icon">Выбрать значок</string>
+    <string name="lib_cat_change_icon_title">Сменить значок</string>
+    <string name="lib_cat_group_device">С устройства</string>
+    <string name="lib_cat_choose_image">Выбрать изображение…</string>
+    <string name="lib_cat_choose_image_sub">PNG, JPG, WEBP, BMP, HEIC или GIF · анимированные GIF воспроизводятся</string>
+    <string name="lib_cat_your_image_row">Ваше изображение</string>
+    <string name="lib_cat_image_animated_in_use">Анимация · используется</string>
+    <string name="lib_cat_image_in_use">Используется</string>
+    <string name="lib_cat_your_image">Ваше изображение</string>
+    <string name="lib_cat_replace_image">Заменить изображение…</string>
+    <string name="lib_cat_replace_image_sub">Выбрать другой файл</string>
+    <string name="lib_cat_remove_image">Убрать изображение</string>
+    <string name="lib_cat_remove_image_sub">Вернуть встроенный значок (%1$s)</string>
+    <string name="lib_cat_group_builtin">Встроенные · %1$s</string>
+    <string name="lib_cat_icon_fallback">Значок</string>
+
+    <!-- Pick type -->
+    <string name="lib_cat_content_type">Тип содержимого</string>
+    <string name="lib_cat_type_group">Тип категории</string>
+    <string name="lib_cat_type_gaming">Игровая</string>
+    <string name="lib_cat_type_gaming_sub">Для игр и своих карт памяти</string>
+    <string name="lib_cat_type_non_gaming">Неигровая</string>
+    <string name="lib_cat_type_non_gaming_sub">Для приложений вроде видео, музыки, фото</string>
+
+    <!-- Category detail -->
+    <string name="lib_cat_group_edit">Правка</string>
+    <string name="lib_cat_rename">Переименовать категорию</string>
+    <string name="lib_cat_change_icon">Сменить значок</string>
+    <string name="lib_cat_show_on_bar_sub">Скрыть или показать эту категорию в XMB</string>
+    <string name="lib_cat_type">Тип</string>
+    <string name="lib_cat_type_apps">Приложения</string>
+    <string name="lib_cat_type_gaming_note">Содержит игры и свои карты памяти. Задаётся при создании категории.</string>
+    <string name="lib_cat_type_apps_note">Содержит приложения и свои карты памяти. Задаётся при создании категории.</string>
+    <string name="lib_cat_group_order">Порядок</string>
+    <string name="lib_cat_move">Переместить</string>
+    <string name="lib_cat_move_sub">Сдвиньте по XMB влево или вправо и подтвердите место</string>
+    <string name="lib_cat_move_disabled_sub">Включите «Показывать на панели», чтобы переместить категорию</string>
+    <string name="lib_cat_group_danger">Опасная зона</string>
+    <string name="lib_cat_delete_row">Удалить категорию</string>
+    <string name="lib_cat_delete_row_sub">Удаляет эту свою категорию. Игры и приложения остаются в библиотеке.</string>
+
+    <!-- Settings ▸ Custom Memory Cards -->
+    <string name="lib_coll_title">Свои карты памяти</string>
+    <string name="lib_coll_group_manage">Управление</string>
+    <string name="lib_coll_new">Новая своя карта памяти</string>
+    <string name="lib_coll_new_sub">Для игр или приложений, например RPG, «Сейчас играю», «Рабочие»</string>
+    <string name="lib_coll_group_yours">Ваши карты памяти</string>
+    <string name="lib_coll_none">Своих карт памяти пока нет</string>
+    <string name="lib_coll_none_sub">Создайте карту выше или выберите «Добавить на карту» в меню параметров игры или приложения.</string>
+    <plurals name="lib_coll_games_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+    <plurals name="lib_coll_apps_count">
+        <item quantity="one">%d приложение</item>
+        <item quantity="few">%d приложения</item>
+        <item quantity="many">%d приложений</item>
+        <item quantity="other">%d приложения</item>
+    </plurals>
+
+    <!-- Name entry dialog -->
+    <string name="lib_coll_new_title">Новая своя карта памяти</string>
+    <string name="lib_coll_rename_title">Переименовать карту памяти</string>
+    <string name="lib_coll_name_placeholder">Название карты</string>
+    <string name="lib_coll_save">Сохранить</string>
+    <string name="lib_coll_next">Далее</string>
+    <string name="lib_coll_delete_title">Удалить свою карту</string>
+    <string name="lib_coll_delete_apps_message">«%1$s» будет удалена. Приложения на ней останутся установленными.</string>
+    <string name="lib_coll_delete_games_message">«%1$s» будет удалена. Игры на ней останутся в библиотеке.</string>
+    <string name="lib_coll_delete">Удалить</string>
+
+    <!-- Menu on a game inside a custom card -->
+    <string name="lib_coll_menu_view_details">Сведения об игре</string>
+    <string name="lib_coll_menu_remove">Убрать с карты</string>
+
+    <!-- Card detail -->
+    <string name="lib_coll_group_card">Своя карта памяти</string>
+    <string name="lib_coll_rename">Переименовать</string>
+    <string name="lib_coll_change_icon">Сменить значок</string>
+    <string name="lib_coll_default_icon">Стандартный (карта памяти)</string>
+    <string name="lib_coll_move_up">Переместить вверх</string>
+    <string name="lib_coll_move_down">Переместить вниз</string>
+    <string name="lib_coll_delete_row">Удалить свою карту</string>
+    <string name="lib_coll_delete_row_apps_sub">Удаляет карту; приложения остаются установленными</string>
+    <string name="lib_coll_delete_row_games_sub">Удаляет карту; игры остаются в библиотеке</string>
+    <string name="lib_coll_group_apps">Приложения (%1$d)</string>
+    <string name="lib_coll_group_games">Игры (%1$d)</string>
+    <string name="lib_coll_no_apps">На этой карте нет приложений</string>
+    <string name="lib_coll_no_apps_sub">Добавляйте приложения через «Добавить на карту» в их меню параметров.</string>
+    <string name="lib_coll_no_games">На этой карте нет игр</string>
+    <string name="lib_coll_no_games_sub">Добавляйте игры через «Добавить на карту» в их меню параметров.</string>
+
+    <!-- Category picker for a new card -->
+    <string name="lib_coll_card_kind_game">Карта игр</string>
+    <string name="lib_coll_card_kind_app">Карта приложений</string>
+    <string name="lib_coll_pick_category_title">Добавить в категорию</string>
+    <string name="lib_coll_pick_category_message">В каком столбце показывать «%1$s»?</string>
+    <string name="lib_coll_create">Создать</string>
+
+    <!-- Card icon step -->
+    <string name="lib_coll_icon_title">Значок карты · %1$s</string>
+    <string name="lib_coll_group_device">С устройства</string>
+    <string name="lib_coll_group_theme">Из применённой темы</string>
+    <string name="lib_coll_animated">Анимация</string>
+    <string name="lib_coll_group_builtin">Встроенные</string>
+    <string name="lib_coll_image_unusable">Это изображение нельзя использовать.</string>
+
+    <!-- Settings ▸ Emulators -->
+    <string name="lib_emu_title">Эмуляторы</string>
+    <string name="lib_emu_subtitle_installed">Эмулятор · Установленные</string>
+    <string name="lib_emu_subtitle_custom">Эмулятор · Свои</string>
+    <string name="lib_emu_subtitle_retroarch">Эмулятор · RetroArch</string>
+    <string name="lib_emu_add_title">Добавить эмулятор</string>
+    <string name="lib_emu_detecting">Определение…</string>
+    <string name="lib_emu_inspecting">Проверка установленных приложений…</string>
+    <string name="lib_emu_reset_title">Сбросить конфигурацию эмуляторов?</string>
+    <string name="lib_emu_reset_message">Все автоматически найденные и свои настройки запуска эмуляторов будут удалены, затем восстановятся встроенные значения.\n\nБиблиотека игр, пути к ROM, обложки, метаданные и сохранения не затрагиваются.</string>
+
+    <!-- Button in the reset confirmation. -->
+    <string name="lib_emu_reset">Сбросить</string>
+    <string name="lib_emu_group_installed">Установленные</string>
+    <string name="lib_emu_none_installed">Поддерживаемые эмуляторы на устройстве не найдены</string>
+    <string name="lib_emu_group_available">Доступные (не установлены)</string>
+    <string name="lib_emu_all_installed">Установлены все известные эмуляторы</string>
+    <string name="lib_emu_group_custom">Свои профили</string>
+    <string name="lib_emu_none_custom">Своих профилей пока нет</string>
+    <string name="lib_emu_add_custom">Добавить свой эмулятор</string>
+    <string name="lib_emu_add_custom_sub">Выберите приложение — настройки запуска определятся автоматически</string>
+    <string name="lib_emu_group_ra_detection">Определение ядер RetroArch</string>
+    <string name="lib_emu_ra_scanning">Поиск установленных ядер RetroArch…</string>
+    <plurals name="lib_emu_ra_linked">
+        <item quantity="one">Привязано — найдено %d ядро. Предлагаются только установленные ядра, поэтому отсутствующее ядро не вызовет чёрный экран.</item>
+        <item quantity="few">Привязано — найдено %d ядра. Предлагаются только установленные ядра, поэтому отсутствующее ядро не вызовет чёрный экран.</item>
+        <item quantity="many">Привязано — найдено %d ядер. Предлагаются только установленные ядра, поэтому отсутствующее ядро не вызовет чёрный экран.</item>
+        <item quantity="other">Привязано — найдено %d ядра. Предлагаются только установленные ядра, поэтому отсутствующее ядро не вызовет чёрный экран.</item>
+    </plurals>
+    <string name="lib_emu_ra_access_lost">Привязано, но доступ потерян (например, после переустановки). Привяжите RetroArch заново, чтобы снова определить ядра.</string>
+    <string name="lib_emu_ra_not_linked">Не привязано. PFP не видит, какие ядра RetroArch установлены, и предлагает все — запуск неустановленного ядра даёт чёрный экран. Привяжите RetroArch, чтобы определить установленные ядра.</string>
+    <string name="lib_emu_ra_relink">Привязать папку RetroArch заново</string>
+    <string name="lib_emu_ra_link">Привязать RetroArch для поиска ядер</string>
+    <string name="lib_emu_ra_link_sub">В окне выбора укажите папку RetroArch (дайте доступ), чтобы PFP мог прочитать установленные ядра</string>
+    <string name="lib_emu_group_cores">Доступные ядра</string>
+    <string name="lib_emu_ra_no_cores">Ядра RetroArch пока не найдены.</string>
+    <string name="lib_emu_ra_core_available">Доступно в RetroArch</string>
+    <string name="lib_emu_ra_rescan">Пересканировать ядра</string>
+    <string name="lib_emu_ra_rescan_sub">Запустите после загрузки новых ядер в Core Downloader RetroArch</string>
+    <string name="lib_emu_ra_unlink">Отвязать RetroArch</string>
+    <string name="lib_emu_ra_unlink_sub">Снова предлагать все ядра без проверки</string>
+    <string name="lib_emu_group_maintenance">Обслуживание</string>
+    <string name="lib_emu_reset_row">Сбросить конфигурацию эмуляторов</string>
+    <string name="lib_emu_reset_row_sub">Удалить настройки запуска и восстановить стандартные. Игры, обложки и сохранения не затрагиваются.</string>
+
+    <!-- Add emulator wizard -->
+    <string name="lib_emu_pick_app">Выберите приложение</string>
+    <string name="lib_emu_group_apps">Установленные приложения</string>
+    <string name="lib_emu_no_apps">Запускаемые приложения не найдены.</string>
+
+    <!-- Test launch -->
+    <string name="lib_emu_test_title">Пробный запуск</string>
+    <string name="lib_emu_test_pick_rom">Выберите ROM</string>
+    <string name="lib_emu_test_group_roms">Ваши ROM</string>
+    <string name="lib_emu_test_no_roms">Нет просканированных ROM для проверки. Сначала просканируйте консоль или просто сохраните и попробуйте в библиотеке.</string>
+    <string name="lib_emu_preview_group">Просмотр intent</string>
+    <string name="lib_emu_preview_package">Пакет</string>
+    <string name="lib_emu_preview_activity">Activity</string>
+    <string name="lib_emu_preview_activity_default">(определяется по пакету)</string>
+    <string name="lib_emu_preview_action">Action</string>
+    <string name="lib_emu_preview_mime">MIME</string>
+    <string name="lib_emu_preview_uri_mode">Режим URI</string>
+    <string name="lib_emu_preview_rom">ROM</string>
+    <string name="lib_emu_preview_extras">Extras</string>
+    <string name="lib_emu_preview_flags">Флаги</string>
+    <string name="lib_emu_none">(нет)</string>
+    <string name="lib_emu_uri_mode_raw_path">прямой путь (эмулятор сам открывает файл)</string>
+    <string name="lib_emu_uri_mode_saf">content:// (FileProvider, чтение разрешено)</string>
+    <string name="lib_emu_uri_mode_file">file:// (content:// на API 24+)</string>
+    <string name="lib_emu_action_unsupported">(не поддерживается)</string>
+    <string name="lib_emu_action_shortcut">(ярлык)</string>
+    <string name="lib_emu_result_group">Результат</string>
+    <string name="lib_emu_actions_group">Действия</string>
+    <string name="lib_emu_launch_now">Запустить сейчас</string>
+    <string name="lib_emu_launch_now_sub">Отправить intent приложению</string>
+    <string name="lib_emu_pick_other_rom">Выбрать другой ROM</string>
+    <string name="lib_emu_test_rom_unloadable">Не удалось загрузить этот ROM.</string>
+    <string name="lib_emu_test_resolves_ok">Разрешается — нажмите «Запустить сейчас», чтобы проверить.</string>
+    <string name="lib_emu_test_launched">Запущено — проверьте эмулятор.</string>
+    <string name="lib_emu_error_activity_not_found">Этот экран приложения не найден, или приложение не разрешает открывать его извне. Проверьте имя экрана или попробуйте способ запуска «Открыть ROM в приложении».</string>
+    <string name="lib_emu_error_permission_denied">Нет разрешения — приложение отклонило URI ROM. Попробуйте переключить SAF (content://) и file URI.</string>
+    <string name="lib_emu_error_rom_not_accepted">%1$s Приложение не приняло этот тип MIME / режим URI — попробуйте другой режим URI.</string>
+    <string name="lib_emu_error_unknown">Запуск не удался по неизвестной причине.</string>
+    <string name="lib_emu_error_name_required">Нужно указать название</string>
+    <string name="lib_emu_error_package_required">Нужно указать имя пакета</string>
+    <string name="lib_emu_row_sub">"%1$s  ·  %2$s"</string>
+    <string name="lib_emu_row_sub_retroarch_core">"%1$s  ·  %2$s  ·  ядро RetroArch"</string>
+    <string name="lib_emu_row_sub_auto">"%1$s  ·  %2$s  ·  найден автоматически"</string>
+
+    <!-- Small badges beside a profile row. -->
+    <string name="lib_emu_badge_unavailable">Недоступен</string>
+    <string name="lib_emu_badge_auto">Авто</string>
+    <string name="lib_emu_badge_edited">Изменён</string>
+    <string name="lib_emu_edit">Изменить</string>
+
+    <!-- Emulator profile editor -->
+    <string name="lib_prof_new">Новый профиль</string>
+    <string name="lib_prof_edit">Изменить профиль</string>
+    <string name="lib_prof_group_templates">Рекомендуемые шаблоны</string>
+    <string name="lib_emu_template_view_content">Открыть ROM в приложении (ссылка content://)</string>
+    <string name="lib_emu_template_view_content_desc">Большинство современных эмуляторов (Eden, Azahar, PPSSPP) · ACTION_VIEW</string>
+    <string name="lib_emu_template_view_file">Открыть ROM в приложении (путь к файлу)</string>
+    <string name="lib_emu_template_view_file_desc">Старые эмуляторы, читающие прямой путь к файлу · ACTION_VIEW</string>
+    <string name="lib_emu_template_component">Открыть экран приложения с путём загрузки</string>
+    <string name="lib_emu_template_component_desc">В стиле DuckStation / AetherSX2 · COMPONENT</string>
+    <string name="lib_emu_template_retroarch">Ядро RetroArch (ROM + LIBRETRO)</string>
+    <string name="lib_emu_template_retroarch_desc">Укажите путь к ядру в LIBRETRO</string>
+    <string name="lib_prof_group_required">Обязательно</string>
+    <string name="lib_prof_display_name">Отображаемое название</string>
+    <string name="lib_prof_display_name_hint">например, Мой эмулятор</string>
+    <string name="lib_prof_package">Имя пакета</string>
+    <string name="lib_prof_package_hint">например, com.example.emulator</string>
+    <string name="lib_prof_group_launch">Способ запуска</string>
+    <string name="lib_prof_type_view">Открыть ROM в приложении — большинство эмуляторов (PPSSPP, Dolphin, DuckStation…). Термин Android: ACTION_VIEW</string>
+    <string name="lib_prof_type_component">Открыть экран приложения — RetroArch и приложения, которым нужен конкретный экран. Термин Android: COMPONENT</string>
+    <string name="lib_prof_type_shortcut">Ярлык главного экрана — Winlator, GameHub и другие лаунчеры</string>
+    <string name="lib_prof_type_custom">Не поддерживается — свои команды отклоняются при запуске</string>
+    <string name="lib_prof_group_optional">Необязательно</string>
+    <string name="lib_prof_activity">Экран приложения (Activity class)</string>
+    <string name="lib_prof_activity_hint">например, com.example.emulator.MainActivity (пусто — по умолчанию)</string>
+    <string name="lib_prof_platforms">Поддерживаемые платформы</string>
+    <string name="lib_prof_platforms_hint">psx,psp,ps2  (ID платформ через запятую)</string>
+    <string name="lib_prof_mime">Тип MIME</string>
+    <string name="lib_prof_mime_hint">например, application/octet-stream</string>
+    <string name="lib_prof_notes">Заметки</string>
+    <string name="lib_prof_notes_hint">Необязательные заметки к профилю</string>
+    <string name="lib_prof_group_uri">Флаги URI</string>
+    <string name="lib_prof_use_file_uri">Использовать file URI</string>
+    <string name="lib_prof_use_file_uri_sub">Передавать путь к ROM как file:// URI (большинство эмуляторов)</string>
+    <string name="lib_prof_use_saf_uri">Использовать SAF URI</string>
+    <string name="lib_prof_use_saf_uri_sub">Передавать SAF content:// URI вместо пути к файлу</string>
+    <string name="lib_prof_group_advanced">Дополнительно</string>
+    <string name="lib_prof_intent_help">Как работают свои intent</string>
+    <string name="lib_prof_intent_help_hide">Нажмите, чтобы скрыть справку по полям</string>
+    <string name="lib_prof_intent_help_show">Наведите или нажмите, чтобы показать справку по полям</string>
+    <string name="lib_prof_intent_action">Intent action</string>
+    <string name="lib_prof_intent_action_hint">например, me.magnum.melonds.LAUNCH_ROM (пусто — по умолчанию)</string>
+    <string name="lib_prof_intent_extras">Intent extras</string>
+    <string name="lib_prof_intent_extras_hint">key=value по одному в строке. Токены {rom_path}, {rom_uri}, {core_path}. true/false = boolean.</string>
+    <string name="lib_prof_intent_flags">Флаги intent</string>
+    <string name="lib_prof_intent_flags_hint">CLEAR_TASK, CLEAR_TOP, NEW_TASK (через запятую)</string>
+    <string name="lib_prof_intent_category">Категория intent</string>
+    <string name="lib_prof_intent_category_hint">например, android.intent.category.LEANBACK_LAUNCHER</string>
+    <string name="lib_prof_core_path">Путь к ядру RetroArch</string>
+    <string name="lib_prof_extensions">Поддерживаемые расширения</string>
+    <string name="lib_prof_extensions_hint">iso,cso,chd  (для справки)</string>
+    <string name="lib_prof_group_test">Проверка</string>
+    <string name="lib_prof_test">Пробный запуск с ROM</string>
+    <string name="lib_prof_test_sub">Выберите просканированный ROM, посмотрите intent и попробуйте запустить</string>
+    <string name="lib_prof_group_actions">Действия</string>
+    <string name="lib_prof_saving">Сохранение…</string>
+    <string name="lib_prof_save">Сохранить профиль</string>
+    <string name="lib_prof_save_new_sub">Добавить в свои профили</string>
+    <string name="lib_prof_save_edit_sub">Обновить этот профиль</string>
+    <string name="lib_prof_delete">Удалить профиль</string>
+    <string name="lib_prof_delete_sub">Безвозвратно удалить этот свой профиль</string>
+
+    <!-- Label on the delete row (a button). -->
+    <string name="lib_prof_delete_button">Удалить</string>
+    <string name="lib_help_launch_method">Способ запуска</string>
+    <string name="lib_help_launch_view">Открыть ROM в приложении — ROM передаётся как ссылка на файл (ACTION_VIEW). Большинство эмуляторов.</string>
+    <string name="lib_help_launch_component">Открыть экран приложения — запускает конкретный экран приложения с дополнительными параметрами (COMPONENT). RetroArch, DuckStation.</string>
+    <string name="lib_help_action">Intent Action</string>
+    <string name="lib_help_action_line">Action, которого ждёт activity эмулятора. Пусто — по умолчанию (VIEW / MAIN).</string>
+    <string name="lib_help_action_examples">"например, me.magnum.melonds.LAUNCH_ROM   или   android.nfc.action.TECH_DISCOVERED"</string>
+    <string name="lib_help_extras">"Intent Extras  (по одному key=value в строке)"</string>
+    <string name="lib_help_extras_tokens">Токены заменяются при запуске:</string>
+    <string name="lib_help_extras_rom_uri">"   {rom_uri} — content:// URI  (рекомендуется; работает с ограниченным хранилищем)"</string>
+    <string name="lib_help_extras_rom_path">"   {rom_path} — прямой путь к файлу      {core_path}   {package}   {platform}"</string>
+    <string name="lib_help_extras_boolean">Значение true или false передаётся как boolean extra.</string>
+    <string name="lib_help_extras_examples">"например,   bootPath={rom_uri}      resumeState=false"</string>
+    <string name="lib_help_flags">Intent Flags</string>
+    <string name="lib_help_flags_line">"Через запятую:  CLEAR_TASK, CLEAR_TOP, NEW_TASK"</string>
+    <string name="lib_help_category">Intent Category</string>
+    <string name="lib_help_category_line">например, android.intent.category.LEANBACK_LAUNCHER</string>
+    <string name="lib_help_tip">Совет</string>
+    <string name="lib_help_tip_line1">Лучше {rom_uri} с включённым «Использовать SAF URI» — эмулятор получает доступ на чтение</string>
+    <string name="lib_help_tip_line2">только к этому ROM без разрешения на доступ ко всему хранилищу.</string>
+    <string name="lib_assign_title">Эмуляторы систем по умолчанию</string>
+    <string name="lib_assign_task_label">Назначение эмуляторов</string>
+    <string name="lib_assign_default_set">%1$s: эмулятор по умолчанию — %2$s</string>
+    <string name="lib_assign_using_recommended">%1$s: используется рекомендуемый эмулятор</string>
+    <plurals name="lib_assign_overrides_cleared">
+        <item quantity="one">%1$s: сброшено %2$d переопределение для игр — эти игры теперь следуют настройке платформы</item>
+        <item quantity="few">%1$s: сброшено %2$d переопределения для игр — эти игры теперь следуют настройке платформы</item>
+        <item quantity="many">%1$s: сброшено %2$d переопределений для игр — эти игры теперь следуют настройке платформы</item>
+        <item quantity="other">%1$s: сброшено %2$d переопределения для игр — эти игры теперь следуют настройке платформы</item>
+    </plurals>
+    <string name="lib_assign_group_consoles">Консоли с играми</string>
+    <string name="lib_assign_none">Консолей с играми пока нет — сначала просканируйте консоль, затем задайте здесь её эмулятор и ядро по умолчанию.</string>
+    <string name="lib_assign_overridden">Переопределено: %1$d</string>
+
+    <!-- Warning badges (capitals on purpose). -->
+    <string name="lib_assign_badge_core_missing">НЕТ ЯДРА</string>
+    <string name="lib_assign_badge_no_emulator">НЕТ ЭМУЛЯТОРА</string>
+    <string name="lib_assign_badge_active">АКТИВЕН</string>
+    <string name="lib_assign_badge_default">ПО УМОЛЧАНИЮ</string>
+    <string name="lib_assign_badge_recommended">РЕКОМЕНДУЕТСЯ</string>
+    <string name="lib_assign_default_is">По умолчанию: %1$s</string>
+    <string name="lib_assign_no_emulator">Нет эмулятора</string>
+    <string name="lib_assign_core_is">Ядро: %1$s</string>
+    <plurals name="lib_assign_game_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+
+    <!-- Clear-overrides dialog. -->
+    <plurals name="lib_assign_clear_title">
+        <item quantity="one">Сбросить %d переопределение?</item>
+        <item quantity="few">Сбросить %d переопределения?</item>
+        <item quantity="many">Сбросить %d переопределений?</item>
+        <item quantity="other">Сбросить %d переопределения?</item>
+    </plurals>
+    <string name="lib_assign_clear_message">У этих игр %1$s закреплён свой эмулятор, и они игнорируют настройку платформы. Сбросьте их, чтобы все игры %1$s использовали эмулятор по умолчанию.</string>
+
+    <!-- Button in the dialog. -->
+    <string name="lib_assign_clear">Сбросить</string>
+    <string name="lib_assign_group_current">Текущий по умолчанию</string>
+    <string name="lib_assign_emulator">Эмулятор</string>
+    <string name="lib_assign_none_value">Нет</string>
+    <string name="lib_assign_ra_core">Ядро RetroArch</string>
+    <string name="lib_assign_group_choose">Выбор по умолчанию</string>
+    <string name="lib_assign_automatic">Автоматически (рекомендуется)</string>
+    <string name="lib_assign_automatic_sub">Первый установленный эмулятор — отдельные приложения раньше ядер RetroArch</string>
+    <string name="lib_assign_no_candidates">Ни один установленный эмулятор не поддерживает эту платформу. Установите эмулятор — или привяжите RetroArch, чтобы определение ядер создало профили, — и запуск настроится автоматически.</string>
+    <string name="lib_assign_group_overrides">Переопределения для игр</string>
+    <string name="lib_assign_overrides_label">Игры со своим эмулятором</string>
+    <string name="lib_assign_overrides_value">%1$d из %2$d</string>
+    <string name="lib_assign_overrides_none">Нет — все игры следуют настройке выше</string>
+    <string name="lib_assign_overrides_some">Эти игры запускаются своим закреплённым эмулятором и игнорируют настройку по умолчанию</string>
+    <plurals name="lib_assign_clear_all">
+        <item quantity="one">Сбросить %d переопределение</item>
+        <item quantity="few">Сбросить все %d переопределения</item>
+        <item quantity="many">Сбросить все %d переопределений</item>
+        <item quantity="other">Сбросить все %d переопределения</item>
+    </plurals>
+    <string name="lib_assign_clear_all_sub">Вернуть эти игры к настройке платформы</string>
+    <string name="lib_assign_source_card">По умолчанию для консоли — здесь или в менеджере библиотеки</string>
+    <string name="lib_assign_source_platform">По умолчанию для платформы</string>
+    <string name="lib_assign_source_game">Для этой игры</string>
+    <string name="lib_assign_source_auto">Автоматически — первый установленный эмулятор</string>
+    <string name="lib_assign_source_stored_missing">Сохранённый эмулятор (%1$s) не установлен или не поддерживает эту платформу</string>
+    <string name="lib_assign_source_platform_missing">Эмулятор платформы не установлен или не поддерживает эту платформу</string>
+    <string name="lib_assign_source_none">Для этой платформы не установлен эмулятор</string>
+    <string name="lib_kb_title">База эмуляторов</string>
+    <string name="lib_kb_status_builtin">Только встроенная</string>
+    <string name="lib_kb_status_not_configured">Встроенная · обновления не настроены</string>
+    <string name="lib_kb_status_official">Официальная</string>
+    <string name="lib_kb_status_official_version">Официальная v%1$s</string>
+    <string name="lib_kb_status_verified">проверена</string>
+    <plurals name="lib_kb_emulators_count">
+        <item quantity="one">%d эмулятор</item>
+        <item quantity="few">%d эмулятора</item>
+        <item quantity="many">%d эмуляторов</item>
+        <item quantity="other">%d эмулятора</item>
+    </plurals>
+    <plurals name="lib_kb_consoles_count">
+        <item quantity="one">%d консоль</item>
+        <item quantity="few">%d консоли</item>
+        <item quantity="many">%d консолей</item>
+        <item quantity="other">%d консоли</item>
+    </plurals>
+    <plurals name="lib_kb_console_updates_count">
+        <item quantity="one">%d обновление консолей</item>
+        <item quantity="few">%d обновления консолей</item>
+        <item quantity="many">%d обновлений консолей</item>
+        <item quantity="other">%d обновления консолей</item>
+    </plurals>
+    <string name="lib_kb_checked_today">проверено сегодня в %1$s</string>
+    <string name="lib_kb_checked_yesterday">проверено вчера в %1$s</string>
+    <string name="lib_kb_checked_on">проверено %1$s в %2$s</string>
+    <string name="lib_kb_import_label">Импортировать: %1$s</string>
+    <string name="lib_kb_update_label">Обновить: %1$s</string>
+    <string name="lib_kb_import_and_update_label">Импортировать: %1$s и %2$s</string>
+    <string name="lib_kb_export_label">Экспортировать: %1$s</string>
+    <string name="lib_kb_group_status">Состояние</string>
+    <string name="lib_kb_new_file_types">Новые типы файлов</string>
+    <string name="lib_kb_new_file_types_sub">%1$s Пересканируйте библиотеку, чтобы их учесть.</string>
+    <string name="lib_kb_group_updates">Обновления</string>
+    <string name="lib_kb_check">Проверить обновления</string>
+    <string name="lib_kb_check_sub">Только подписанные файлы от PlayFieldPortal</string>
+    <string name="lib_kb_checking">Проверка…</string>
+    <string name="lib_kb_not_available">Недоступно в этой сборке</string>
+    <string name="lib_kb_auto_update">Автообновление</string>
+    <string name="lib_kb_auto_update_sub">Не чаще раза в день</string>
+    <string name="lib_kb_check_failed">Не удалось выполнить проверку.</string>
+    <string name="lib_kb_group_files">Файлы</string>
+    <string name="lib_kb_import">Импортировать файл базы</string>
+    <string name="lib_kb_import_sub">Файл .json на устройстве, с предварительной проверкой</string>
+    <string name="lib_kb_group_your_files">Ваши файлы</string>
+    <string name="lib_kb_file_unreadable_sub">Не читается · без подписи</string>
+    <plurals name="lib_kb_file_sub">
+        <item quantity="one">%d эмулятор · без подписи</item>
+        <item quantity="few">%d эмулятора · без подписи</item>
+        <item quantity="many">%d эмуляторов · без подписи</item>
+        <item quantity="other">%d эмулятора · без подписи</item>
+    </plurals>
+    <string name="lib_kb_remove_file">Удалить %1$s</string>
+    <string name="lib_kb_badge_custom">Свой</string>
+    <string name="lib_kb_badge_unreadable">Не читается</string>
+    <string name="lib_kb_export">Экспорт ваших эмуляторов</string>
+    <string name="lib_kb_export_sub">Поделиться своими и изменёнными эмуляторами одним файлом .json</string>
+    <string name="lib_kb_group_reset">Сброс</string>
+    <string name="lib_kb_reset_row">Сбросить до встроенной</string>
+    <string name="lib_kb_reset_row_sub">Удаляет обновления и ваши файлы</string>
+    <string name="lib_kb_remove_title">Удалить файл?</string>
+    <string name="lib_kb_remove_message">«%1$s» будет удалён с устройства. Встроенная и официальная база эмуляторов не затрагивается.</string>
+
+    <!-- Button -->
+    <string name="lib_kb_remove">Удалить</string>
+    <string name="lib_kb_remove_failed_title">Не удалось удалить файл</string>
+    <string name="lib_kb_remove_failed_message">Файл не удалось удалить.</string>
+
+    <!-- Reset dialog -->
+    <string name="lib_kb_reset_title">Сбросить до встроенной?</string>
+    <string name="lib_kb_reset_message">Загруженные обновления и импортированные файлы будут удалены. База эмуляторов, входящая в PlayField Portal, сохранится.</string>
+
+    <!-- Button -->
+    <string name="lib_kb_reset">Сбросить</string>
+    <string name="lib_kb_reset_failed_title">Не удалось сбросить</string>
+    <string name="lib_kb_reset_failed_message">Базу эмуляторов не удалось сбросить.</string>
+
+    <!-- Import problems -->
+    <string name="lib_kb_import_failed_title">Не удалось импортировать файл</string>
+    <string name="lib_kb_import_too_large">Файл слишком большой для файла базы эмуляторов.</string>
+    <string name="lib_kb_import_unreadable">Не удалось прочитать файл.</string>
+    <string name="lib_kb_import_nothing">В файле нет ничего для импорта на это устройство.</string>
+    <string name="lib_kb_import_save_failed">Не удалось сохранить файл на устройстве.</string>
+    <string name="lib_kb_import_refresh_failed">Файл сохранён, но обновить определение эмуляторов не удалось.</string>
+
+    <!-- Import review -->
+    <string name="lib_kb_review_title">Проверка %1$s</string>
+    <string name="lib_kb_review_unsigned">Без подписи · из файла на устройстве</string>
+    <string name="lib_kb_review_unsigned_sub">Импортируйте только файлы, которым доверяете: они указывают PFP, какое приложение открывает ваши игры.</string>
+    <string name="lib_kb_badge_unsigned">Без подписи</string>
+    <string name="lib_kb_group_new">Новые эмуляторы</string>
+    <string name="lib_kb_review_add">Добавить %1$s</string>
+    <string name="lib_kb_group_existing">Уже на устройстве</string>
+    <string name="lib_kb_review_override">Заменить %1$s</string>
+    <string name="lib_kb_badge_overrides_official">Заменяет официальный</string>
+    <string name="lib_kb_badge_your_edit">Ваша правка</string>
+    <string name="lib_kb_group_consoles">Консоли</string>
+    <string name="lib_kb_review_update">Обновить %1$s</string>
+    <string name="lib_kb_review_extensions">+ расширения: %1$s</string>
+    <string name="lib_kb_group_blocked">Заблокировано</string>
+    <string name="lib_kb_review_entry">Запись %1$d</string>
+    <string name="lib_kb_review_unchanged">Уже актуальны: %1$d</string>
+    <string name="lib_kb_group_finish">Завершение</string>
+    <string name="lib_kb_cancel">Отмена</string>
+    <string name="lib_kb_prompt_toggle">Отметить</string>
+    <string name="lib_kb_prompt_cancel">Отмена</string>
+    <string name="lib_kb_opens_game_file">Открывает файл игры</string>
+    <string name="lib_kb_opens_own_activity">Открывает через свою activity</string>
+    <string name="lib_kb_opens_shortcut">Открывает через ярлык</string>
+    <string name="lib_kb_opens_custom_command">Открывает своей командой</string>
+    <string name="lib_kb_intent_view">Открывает файл ROM</string>
+    <string name="lib_kb_intent_component">Открывает определённый экран</string>
+    <string name="lib_kb_intent_shortcut">Открывает через ярлык</string>
+
+    <!-- Export picker -->
+    <string name="lib_kb_export_title_sub">Сохраняется одним файлом .json для обмена</string>
+    <string name="lib_kb_export_select_all">Выбрать все</string>
+    <string name="lib_kb_export_selected">Выбрано %1$d из %2$d</string>
+    <string name="lib_kb_group_custom">Свои эмуляторы</string>
+    <string name="lib_kb_group_edited">Изменённые официальные эмуляторы</string>
+    <string name="lib_kb_export_changes_only">Только ваши изменения · %1$s</string>
+    <string name="lib_kb_export_privacy">Сохраняются только настройки запуска. Без списка игр, путей к ROM и данных аккаунтов.</string>
+    <string name="lib_kb_group_cant_share">Нельзя поделиться</string>
+    <string name="lib_kb_export_nothing_title">Нечего экспортировать</string>
+    <string name="lib_kb_export_none_message">У вас пока нет своих или изменённых эмуляторов.</string>
+    <string name="lib_kb_export_none_shareable">Ни одним из ваших эмуляторов нельзя поделиться</string>
+    <string name="lib_kb_exported_title">Экспортировано</string>
+    <plurals name="lib_kb_exported_message">
+        <item quantity="one">Экспортирован %d эмулятор</item>
+        <item quantity="few">Экспортировано %d эмулятора</item>
+        <item quantity="many">Экспортировано %d эмуляторов</item>
+        <item quantity="other">Экспортировано %d эмулятора</item>
+    </plurals>
+    <string name="lib_kb_export_failed_title">Не удалось экспортировать</string>
+    <string name="lib_kb_export_failed_message">Файл не удалось сохранить.</string>
+
+    <!-- Windows ▸ Game List -->
+    <string name="lib_win_title">Игры Windows</string>
+    <plurals name="lib_win_game_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+    <string name="lib_win_empty">Игр Windows пока нет — сначала импортируйте их в «Импорт игр для ПК».</string>
+    <string name="lib_win_working">Выполняется…</string>
+    <string name="lib_win_current">Текущая</string>
+    <string name="lib_win_link_folder">Привязать папку</string>
+    <string name="lib_win_change_folder">Сменить привязанную папку</string>
+    <string name="lib_win_label_non_steam">Не из Steam (своя)</string>
+    <string name="lib_win_label_local">Локальная</string>
+    <string name="lib_win_auto_value">Авто: %1$s</string>
+    <string name="lib_win_auto_option">Авто (%1$s)</string>
+    <string name="lib_win_auto">Авто</string>
+    <string name="lib_win_not_set">Не задано</string>
+    <string name="lib_win_label_save_failed">Не удалось сохранить метку.</string>
+    <string name="lib_win_label_steam_not_found">Помечено как Steam, но подходящая игра Steam не найдена, поэтому ничего не привязано.</string>
+    <string name="lib_win_folder_unreadable">Не удалось прочитать папку. Выберите её снова или переподключите накопитель.</string>
+    <string name="lib_win_several_matches">Под «%1$s» подходит несколько игр Steam. Завершите привязку папки на странице Shiba Coins игры, где можно выбрать нужную.</string>
+    <string name="lib_win_kit_title">Нет списка достижений в «%1$s»</string>
+    <string name="lib_win_kit_message_installer">В этой папке ещё нет данных достижений эмулятора. Привяжите её как есть или сначала установите в неё набор эмулятора.</string>
+    <string name="lib_win_kit_message_no_installer">В этой папке ещё нет данных достижений эмулятора. Привяжите её как есть или включите «Установка Goldberg и конвертация игр» в «Настройки ▸ Достижения ▸ Локальные Windows», чтобы установить набор.</string>
+    <string name="lib_win_kit_link_only">Только привязать</string>
+    <string name="lib_win_kit_install_and_link">Установить и привязать</string>
+
+    <!-- Button: links the folder. -->
+    <string name="lib_win_kit_link">Привязать</string>
+    <string name="lib_pc_scan_no_root">Сначала добавьте папку ROM — PFP создаст &lt;папка ROM&gt;/windows/import для экспортированных игр.</string>
+    <string name="lib_pc_scan_folder_unreadable">Не удалось прочитать папку. Выберите папку, в которую лаунчер экспортирует игры.</string>
+    <string name="lib_pc_scan_none_found">В выбранной папке нет экспортированных игр для ПК.</string>
+    <plurals name="lib_pc_scan_imported">
+        <item quantity="one">Импортирована %1$d игра для ПК.</item>
+        <item quantity="few">Импортировано %1$d игры для ПК.</item>
+        <item quantity="many">Импортировано %1$d игр для ПК.</item>
+        <item quantity="other">Импортировано %1$d игры для ПК.</item>
+    </plurals>
+    <plurals name="lib_pc_scan_imported_skipped">
+        <item quantity="one">Импортирована %1$d игра для ПК, пропущено: %2$d (нет подходящего лаунчера).</item>
+        <item quantity="few">Импортировано %1$d игры для ПК, пропущено: %2$d (нет подходящего лаунчера).</item>
+        <item quantity="many">Импортировано %1$d игр для ПК, пропущено: %2$d (нет подходящего лаунчера).</item>
+        <item quantity="other">Импортировано %1$d игры для ПК, пропущено: %2$d (нет подходящего лаунчера).</item>
+    </plurals>
+    <plurals name="lib_pc_scan_restored">
+        <item quantity="one">Из файлов .pfpgame восстановлено: %1$d, сопоставлено: %2$d.</item>
+        <item quantity="few">Из файлов .pfpgame восстановлено: %1$d, сопоставлено: %2$d.</item>
+        <item quantity="many">Из файлов .pfpgame восстановлено: %1$d, сопоставлено: %2$d.</item>
+        <item quantity="other">Из файлов .pfpgame восстановлено: %1$d, сопоставлено: %2$d.</item>
+    </plurals>
+    <plurals name="lib_pc_scan_restore_skipped">
+        <item quantity="one">Пропущен %d файл .pfpgame: лаунчер не установлен, совпадение неоднозначно или закреплённой игры нет в библиотеке.</item>
+        <item quantity="few">Пропущено %d файла .pfpgame: лаунчер не установлен, совпадение неоднозначно или закреплённой игры нет в библиотеке.</item>
+        <item quantity="many">Пропущено %d файлов .pfpgame: лаунчер не установлен, совпадение неоднозначно или закреплённой игры нет в библиотеке.</item>
+        <item quantity="other">Пропущено %d файла .pfpgame: лаунчер не установлен, совпадение неоднозначно или закреплённой игры нет в библиотеке.</item>
+    </plurals>
+    <plurals name="lib_pc_scan_restore_untrusted">
+        <item quantity="one">%d файл .pfpgame проигнорирован как нечитаемый или недоверенный.</item>
+        <item quantity="few">%d файла .pfpgame проигнорированы как нечитаемые или недоверенные.</item>
+        <item quantity="many">%d файлов .pfpgame проигнорированы как нечитаемые или недоверенные.</item>
+        <item quantity="other">%d файла .pfpgame проигнорированы как нечитаемые или недоверенные.</item>
+    </plurals>
+    <plurals name="lib_pc_scan_relinked">
+        <item quantity="one">Экспортированные обложки связаны по названию (обновлена %d игра).</item>
+        <item quantity="few">Экспортированные обложки связаны по названию (обновлено %d игры).</item>
+        <item quantity="many">Экспортированные обложки связаны по названию (обновлено %d игр).</item>
+        <item quantity="other">Экспортированные обложки связаны по названию (обновлено %d игры).</item>
+    </plurals>
+    <string name="lib_pc_scan_relink_no_folder">Привяжите папку обложек и просканируйте снова, чтобы связать экспортированные обложки.</string>
+    <string name="lib_pc_scan_relink_failed">Не удалось связать экспортированные обложки — см. журнал.</string>
+    <plurals name="lib_pc_scan_pins_reconciled">
+        <item quantity="one">Согласован %d закреплённый ярлык.</item>
+        <item quantity="few">Согласовано %d закреплённых ярлыка.</item>
+        <item quantity="many">Согласовано %d закреплённых ярлыков.</item>
+        <item quantity="other">Согласовано %d закреплённого ярлыка.</item>
+    </plurals>
+    <string name="lib_pc_export_game_gone">Этой игры больше нет в библиотеке.</string>
+    <string name="lib_pc_export_pc_only">Экспортировать можно только игры для ПК.</string>
+    <string name="lib_pc_export_no_launcher">У %1$s нет лаунчера, через который её можно вернуть, поэтому экспорт невозможен.</string>
+    <string name="lib_pc_export_one_done">%1$s экспортирована в windows/import как %2$s.</string>
+    <string name="lib_pc_export_one_failed">Не удалось записать %1$s в windows/import.</string>
+    <string name="lib_pc_export_no_root">Сначала добавьте папку ROM — PFP экспортирует игры для ПК в &lt;папка ROM&gt;/windows/import.</string>
+    <string name="lib_pc_export_no_folder">Не удалось открыть &lt;windows&gt;/import. Привяжите папку ROM заново и повторите.</string>
+    <string name="lib_pc_export_nothing_needed">Ни одной игре для ПК не нужен файл экспорта: экспорт лаунчеров и ярлыки без обложек вернутся сами.</string>
+    <plurals name="lib_pc_export_bulk_done">
+        <item quantity="one">Экспортирована %d игра для ПК в windows/import</item>
+        <item quantity="few">Экспортировано %d игры для ПК в windows/import</item>
+        <item quantity="many">Экспортировано %d игр для ПК в windows/import</item>
+        <item quantity="other">Экспортировано %d игры для ПК в windows/import</item>
+    </plurals>
+    <string name="lib_pc_export_bulk_skipped">без файла: %1$d</string>
+    <string name="lib_pc_export_bulk_failed">не записано: %1$d</string>
+
+    <!-- Settings ▸ Library Manager -->
+    <string name="lib_lm_title">Менеджер библиотеки</string>
+    <string name="lib_lm_library_title">Библиотека</string>
+    <string name="lib_lm_root_group">Доступ к папкам ROM</string>
+    <string name="lib_lm_root_add">Добавить папку ROM</string>
+    <string name="lib_lm_root_add_sub">Дайте доступ к папке ROM (например, /Roms) — или ко второму месту, например SD-карте</string>
+    <string name="lib_lm_root_scan">Сканировать папки ROM</string>
+    <string name="lib_lm_root_scan_sub">Найти папки консолей в папках ROM и добавить их игры</string>
+    <string name="lib_lm_group_consoles">Консоли</string>
+    <string name="lib_lm_no_consoles">Консоли не настроены. Добавьте консоль, чтобы создать карту памяти в разделе «Игры».</string>
+    <string name="lib_lm_card_hidden">"%1$s  (скрыта)"</string>
+    <string name="lib_lm_pinned">ЗАКРЕПЛЕНА</string>
+    <string name="lib_lm_group_manage">Управление</string>
+    <string name="lib_lm_add_console">Добавить консоль</string>
+    <string name="lib_lm_add_console_sub">Выберите платформу — её игры лежат в соответствующей папке внутри основной папки ROM</string>
+    <string name="lib_lm_setup_folders">Создать папки ROM (ES-DE)</string>
+    <string name="lib_lm_setup_folders_sub">Выберите пустую папку — PFP создаст стандартные папки систем ES-DE (gba, snes, psx…), чтобы вы скопировали туда игры. Не нужно угадывать названия папок</string>
+    <string name="lib_lm_scan_all">Сканировать все консоли</string>
+    <string name="lib_lm_scanning_count">Сканирование: %1$d…</string>
+    <string name="lib_lm_configure_first">Сначала настройте папку ROM</string>
+    <string name="lib_lm_scan_all_sub">Просканировать папки всех включённых консолей</string>
+    <string name="lib_lm_rescan_all">Пересканировать все (отметить пропавшие)</string>
+    <string name="lib_lm_rescan_all_sub">Также отмечает пропавшими игры без файла ROM. Они остаются в библиотеке</string>
+    <string name="lib_lm_rescan_confirm">Подтвердите: пересканировать и отметить пропавшие игры?</string>
+    <string name="lib_lm_rescan_confirm_sub">Отмечает пропавшими игры без файла ROM; избранное, время игры и обложки сохраняются. С большой библиотекой это может занять время</string>
+    <string name="lib_lm_cancel">Отмена</string>
+
+    <!-- Add console flow -->
+    <string name="lib_lm_add_console_title">Добавить консоль</string>
+    <string name="lib_lm_choose_platform">Выберите платформу</string>
+    <string name="lib_lm_group_platforms">Поддерживаемые платформы</string>
+    <string name="lib_lm_assign_emulator">Назначить эмулятор</string>
+    <string name="lib_lm_emulator">Эмулятор</string>
+    <string name="lib_lm_no_emulators">Для этой платформы не найдено установленных эмуляторов. Назначить эмулятор можно позже на экране консоли.</string>
+    <string name="lib_lm_decide_later">Решить позже</string>
+    <string name="lib_lm_scan_now_title">Сканировать сейчас?</string>
+    <string name="lib_lm_new_console">Новая консоль</string>
+    <string name="lib_lm_rom_directory">Папка ROM</string>
+    <string name="lib_lm_not_set">Не задана</string>
+
+    <!-- Button -->
+    <string name="lib_lm_scan_now">Сканировать сейчас</string>
+    <string name="lib_lm_scan_now_sub">Создать карту памяти и сразу просканировать её папку</string>
+    <string name="lib_lm_add_no_scan">Добавить без сканирования</string>
+    <string name="lib_lm_add_no_scan_sub">Создать карту памяти сейчас, сканировать позже</string>
+
+    <!-- Console (Memory Card) detail -->
+    <string name="lib_lm_rename_title">Переименовать карту памяти</string>
+    <string name="lib_lm_rename_placeholder">Название карты памяти</string>
+    <string name="lib_lm_remove_card_title">Удалить %1$s?</string>
+    <string name="lib_lm_remove_card_message">Консоль и её просканированные игры будут удалены из библиотеки. Файлы ROM останутся на устройстве.</string>
+    <string name="lib_lm_remove_app_message">Приложение будет удалено из этой библиотеки. Само приложение останется установленным.</string>
+
+    <!-- Button -->
+    <string name="lib_lm_remove">Удалить</string>
+    <string name="lib_lm_group_library">Библиотека</string>
+    <string name="lib_lm_games_directory">Папка игр</string>
+    <string name="lib_lm_windows_no_root">Добавьте папку ROM — PFP сам создаст и будет использовать &lt;папка ROM&gt;/windows</string>
+    <string name="lib_lm_games">Игры</string>
+    <string name="lib_lm_group_actions">Действия</string>
+    <string name="lib_lm_game_list">Игры Windows</string>
+    <string name="lib_lm_game_list_sub">Пометьте каждую игру Windows как Steam, не из Steam или локальную и привяжите локальные папки</string>
+    <string name="lib_lm_import_pc">Импорт игр для ПК</string>
+    <string name="lib_lm_import_pc_sub">Экспортированные игры, добавление по ID и состояние лаунчеров</string>
+    <string name="lib_lm_vita_folder">Папка данных Vita3K</string>
+    <string name="lib_lm_vita_folder_set">Установленные игры читаются из этой папки ux0</string>
+    <string name="lib_lm_vita_folder_unset">Выберите папку ux0 Vita3K (например, Roms/vita/ux0), чтобы PFP нашёл игры</string>
+    <string name="lib_lm_scan_vita">Найти игры Vita</string>
+    <string name="lib_lm_scan_vita_sub">Читает установленные игры из ux0/app в папке данных Vita3K</string>
+    <string name="lib_lm_group_apps">Приложения</string>
+    <string name="lib_lm_add_apps">Добавить приложения</string>
+    <string name="lib_lm_add_apps_sub">Выберите установленные приложения для этой библиотеки</string>
+    <string name="lib_lm_no_apps">Приложений пока нет — выберите их через «Добавить приложения».</string>
+    <string name="lib_lm_rom_directory_default">Сканирует папку этой консоли внутри основной папки ROM</string>
+    <string name="lib_lm_none">Нет</string>
+    <string name="lib_lm_set_emulator">Выбрать эмулятор</string>
+    <string name="lib_lm_current">Текущий</string>
+    <string name="lib_lm_group_files">Поддерживаемые файлы</string>
+    <string name="lib_lm_no_extensions">Расширения не заданы — добавьте хотя бы одно, чтобы сканирование находило ROM этой консоли.</string>
+    <string name="lib_lm_remove_extension">Удалить расширение</string>
+    <string name="lib_lm_remove_from_library">Удалить из библиотеки</string>
+    <string name="lib_lm_add_extension">Добавить расширение</string>
+    <string name="lib_lm_extension_hint">например, iso, chd, zip</string>
+    <string name="lib_lm_extension_helper">Регистр при сканировании не учитывается.</string>
+    <string name="lib_lm_prompt_type">Ввод</string>
+    <string name="lib_lm_add_extension_named">Добавить «.%1$s»</string>
+    <string name="lib_lm_scan_console">Сканировать эту консоль</string>
+    <string name="lib_lm_scanning_ellipsis">Сканирование…</string>
+    <string name="lib_lm_rom_dir_unconfigured">Папка ROM не настроена</string>
+    <string name="lib_lm_scan_console_sub">Просканировать только папку этой консоли</string>
+    <string name="lib_lm_group_achievements">Достижения</string>
+    <string name="lib_lm_ps3_folder">Папка данных PS3</string>
+    <string name="lib_lm_ps3_folder_set_sub">Трофеи читаются из этой папки PS3 ARMSX3</string>
+    <string name="lib_lm_ps3_folder_unset">Выберите папку PS3 ARMSX3, чтобы PFP мог читать трофеи</string>
+    <string name="lib_lm_ps3_hint">Дайте доступ к папке PS3 ARMSX3 (в которой лежит config/dev_hdd0), затем запустите автосопоставление в «Настройки ▸ Достижения ▸ Обновить достижения». ID трофеев берутся с диска каждой игры, поэтому игру можно привязать ещё до первого запуска.</string>
+    <string name="lib_lm_x360_folder">Папка данных X360 Mobile</string>
+    <string name="lib_lm_x360_folder_set_sub">Достижения читаются из профилей X360 Mobile</string>
+    <string name="lib_lm_x360_folder_unset">Выберите X360 Mobile в боковом меню окна выбора папки</string>
+    <string name="lib_lm_xendroid_folder">Папка данных XenDroid</string>
+    <string name="lib_lm_xendroid_folder_set_sub">Достижения читаются из профилей XenDroid</string>
+    <string name="lib_lm_xendroid_folder_unset">Выберите Android/data/xendroid.compose</string>
+    <string name="lib_lm_x360_hint">Дайте доступ к папке данных эмулятора, в котором вы играете, затем запустите автосопоставление в «Настройки ▸ Достижения ▸ Обновить достижения». ID игр берутся из файла каждой игры, поэтому игру можно привязать ещё до первого запуска.</string>
+    <string name="lib_lm_rename_card">Переименовать карту памяти</string>
+    <string name="lib_lm_show_in_games_sub">Включить или скрыть эту карту памяти</string>
+    <string name="lib_lm_move_up">Переместить вверх</string>
+    <string name="lib_lm_move_down">Переместить вниз</string>
+    <string name="lib_lm_group_danger">Опасная зона</string>
+    <string name="lib_lm_remove_card">Удалить карту памяти</string>
+    <string name="lib_lm_remove_card_sub">Удаляет эту консоль и её игры. Файлы ROM останутся на устройстве.</string>
+    <string name="lib_lm_card_sub">"%1$s  ·  %2$s"</string>
+    <string name="lib_lm_no_rom_directory">Нет папки ROM</string>
+    <plurals name="lib_lm_game_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+    <string name="lib_lm_tap_dismiss">Выберите, чтобы закрыть</string>
+
+    <!-- Import PC games -->
+    <string name="lib_lm_import_pc_title">Импорт игр для ПК</string>
+    <string name="lib_lm_group_home">Перехват «Добавить на главный экран»</string>
+    <string name="lib_lm_home_label">Play Field Portal как главный экран</string>
+    <string name="lib_lm_home_active">Активно</string>
+    <string name="lib_lm_home_set">Задать…</string>
+    <string name="lib_lm_home_active_sub">«Добавить на главный экран» в поддерживаемом лаунчере автоматически импортирует игру сюда</string>
+    <string name="lib_lm_home_set_sub">Сделайте PFP главным экраном, чтобы «Добавить на главный экран» в лаунчере импортировало игру в PFP</string>
+    <string name="lib_lm_group_exported">Экспортированные игры</string>
+    <string name="lib_lm_scan_import">Сканировать папку импорта</string>
+    <string name="lib_lm_scan_import_sub">Каждое сканирование и так читает &lt;папка ROM&gt;/windows/import. Эта строка — разовый выбор папки в другом месте: PFP ищет в ней экспорт GameNative / Winlator (.steam · .epic · .gog · .amazon · .pcgame · .desktop) и собственные файлы .pfpgame и импортирует их</string>
+    <string name="lib_lm_export_manual">Экспорт добавленных вручную игр</string>
+    <string name="lib_lm_export_manual_sub">Записывает файл .pfpgame в &lt;windows&gt;/import для каждой игры, добавленной по ID или перехваченной, и каждого ярлыка с обложкой, чтобы после переустановки вернуть их вместе с обложками</string>
+    <string name="lib_lm_group_local">Локальные Windows</string>
+    <string name="lib_lm_batch_match">Пакетное сопоставление локальных игр</string>
+    <string name="lib_lm_batch_match_sub">Выберите папку, В КОТОРОЙ лежат папки игр. Каждая, что уже есть в библиотеке Windows, будет опознана, запомнена и привязана; остальные не тронуты</string>
+    <string name="lib_lm_matched_local">Сопоставленные локальные игры (%1$d)</string>
+    <string name="lib_lm_none_yet">Пока нет</string>
+    <string name="lib_lm_matched_local_empty">Пока ничего не указано — используйте пакетное сопоставление выше или автосопоставление на странице Shiba Coins игры</string>
+    <string name="lib_lm_matched_local_forget_note">«Забыть» удаляет только запись PFP о расположении папки; полученные монеты сохраняются</string>
+    <string name="lib_lm_goldberg">Установщик Goldberg</string>
+    <string name="lib_lm_on">Вкл.</string>
+    <string name="lib_lm_off">Выкл.</string>
+    <string name="lib_lm_goldberg_sub">Позволяет PFP записать список достижений в папку игры и подставить встроенный эмулятор Steam. Тот же переключатель, что в «Настройки ▸ Достижения ▸ Локальные Windows»</string>
+    <string name="lib_lm_goldberg_backup">Перед конвертацией сделайте копию сохранений игр, в которые вы уже играли: эмулятор начнёт читать их из нового места, а вернуть старое PFP не сможет.</string>
+    <string name="lib_lm_group_launchers">Лаунчеры для ПК</string>
+    <string name="lib_lm_not_installed">Не установлен</string>
+    <string name="lib_lm_add_by_id">Добавить по ID…</string>
+    <string name="lib_lm_add_by_id_sub">Добавить игру по ID — или через функцию приложения «Добавить на главный экран»</string>
+    <string name="lib_lm_installed">Установлен</string>
+    <string name="lib_lm_no_add_by_id">Добавление по ID не поддерживается — экспортируйте игру в &lt;windows&gt;/import</string>
+    <string name="lib_lm_group_unknown">Неизвестные эмуляторы Windows</string>
+    <string name="lib_lm_unknown_choose">Выбрать…</string>
+    <string name="lib_lm_show_hidden">Показать скрытые приложения</string>
+    <plurals name="lib_lm_show_hidden_sub">
+        <item quantity="one">%d приложение отмечено как «Не лаунчер» — верните, чтобы выбрать снова</item>
+        <item quantity="few">%d приложения отмечены как «Не лаунчер» — верните, чтобы выбрать снова</item>
+        <item quantity="many">%d приложений отмечены как «Не лаунчер» — верните, чтобы выбрать снова</item>
+        <item quantity="other">%d приложения отмечены как «Не лаунчер» — верните, чтобы выбрать снова</item>
+    </plurals>
+    <string name="lib_lm_group_found">Найденные игры (%1$d)</string>
+    <string name="lib_lm_no_found">Игр для ПК пока не перехвачено.</string>
+    <string name="lib_lm_import">Импорт</string>
+    <string name="lib_lm_import_all">Импортировать все</string>
+    <string name="lib_lm_import_all_sub">Перенести все найденные игры на карту памяти «Игры Windows»</string>
+    <string name="lib_lm_forget">Забыть</string>
+
+    <!-- Add a game by its ID -->
+    <string name="lib_lm_add_game_title">Добавить игру %1$s</string>
+    <string name="lib_lm_group_game">Игра</string>
+    <string name="lib_lm_game_id">ID игры</string>
+    <string name="lib_lm_game_name">Название игры</string>
+    <string name="lib_lm_source">Источник</string>
+    <string name="lib_lm_source_sub">Нажмите, чтобы сменить магазин</string>
+    <string name="lib_lm_group_add">Добавление</string>
+    <string name="lib_lm_test_launch">Пробный запуск</string>
+    <string name="lib_lm_test_launch_sub">Открыть игру в %1$s, чтобы проверить ID</string>
+    <string name="lib_lm_add_game">Добавить игру</string>
+    <string name="lib_lm_add_game_sub">Добавить в библиотеку Windows</string>
+    <string name="lib_lm_add_game_blocked">Сначала укажите ID и название игры</string>
+    <string name="lib_lm_all_platforms_added">У каждой поддерживаемой платформы уже есть карта памяти.</string>
+    <string name="lib_lm_android_added_title">Библиотека Android добавлена</string>
+    <string name="lib_lm_android_added_message">Откройте её в «Игры → Найти игры», чтобы добавить приложения.</string>
+    <string name="lib_lm_need_rom_root">Сначала настройте папку ROM — дайте к ней доступ в «Доступ к папкам ROM», затем добавьте консоли.</string>
+    <string name="lib_lm_ps3_folder_set">Папка данных PS3 задана. Запустите автосопоставление в «Настройки ▸ Достижения ▸ Обновить достижения», чтобы привязать трофеи PS3.</string>
+    <string name="lib_lm_x360_folder_set">Папка данных %1$s задана. Запустите автосопоставление в «Настройки ▸ Достижения ▸ Обновить достижения», чтобы привязать достижения Xbox 360.</string>
+    <string name="lib_lm_invalid_game_id">Введите правильный ID игры — число или ID вида local_…, скопированный со страницы игры в лаунчере.</string>
+    <string name="lib_lm_test_launch_failed">Пробный запуск не удался: %1$s. Лаунчер может блокировать внешний запуск.</string>
+    <string name="lib_lm_enter_game_name">Введите название игры — оно показано рядом с ID в %1$s.</string>
+
+    <!-- Task heading in the notification list. -->
+    <string name="lib_lm_windows_games">Игры Windows</string>
+    <string name="lib_lm_pc_game_added">«%1$s» добавлена в игры Windows.</string>
+    <string name="lib_lm_pc_add_failed">Не удалось добавить игру: %1$s</string>
+    <string name="lib_lm_pc_import_failed">Не удалось импортировать «%1$s»: %2$s</string>
+    <string name="lib_lm_game_not_found">Игра не найдена</string>
+    <string name="lib_lm_scanning">Сканирование: %1$s</string>
+    <string name="lib_lm_scanning_vita">Сканирование PS Vita</string>
+    <string name="lib_lm_scanning_windows">Сканирование игр Windows</string>
+    <string name="lib_lm_scanning_rom_root">Сканирование папки ROM</string>
+    <string name="lib_lm_stop_note_games">Уже найденные игры сохранятся.</string>
+    <string name="lib_lm_rom_root_stop_note">Уже просканированные системы сохранят новые игры.</string>
+    <string name="lib_lm_matching_stop_note">Уже сопоставленные игры останутся привязанными.</string>
+    <string name="lib_lm_stopped">Остановлено до завершения</string>
+    <string name="lib_lm_scan_stopped">%1$s: сканирование остановлено</string>
+    <string name="lib_lm_scan_finished">%1$s: сканирование завершено</string>
+    <string name="lib_lm_scan_failed">%1$s: ошибка сканирования</string>
+    <string name="lib_lm_scan_skipped">%1$s: сканирование пропущено</string>
+    <string name="lib_lm_vita_finished">Сканирование PS Vita завершено</string>
+    <string name="lib_lm_vita_failed">Ошибка сканирования PS Vita</string>
+    <string name="lib_lm_vita_failed_message">Ошибка сканирования Vita</string>
+    <string name="lib_lm_vita_stopped">Сканирование PS Vita остановлено</string>
+    <string name="lib_lm_windows_scan_stopped">Сканирование игр Windows остановлено</string>
+    <string name="lib_lm_windows_scan_failed">Ошибка сканирования игр Windows</string>
+    <string name="lib_lm_windows_scan_finished">Сканирование игр Windows завершено</string>
+    <string name="lib_lm_pc_scan_failed_message">Ошибка сканирования ПК</string>
+    <string name="lib_lm_rom_root_stopped">Сканирование папки ROM остановлено</string>
+    <string name="lib_lm_rom_root_finished">Сканирование папки ROM завершено</string>
+    <string name="lib_lm_matching">Сопоставление локальных игр Windows</string>
+    <string name="lib_lm_match_stopped">Сопоставление достижений Windows остановлено</string>
+    <string name="lib_lm_match_failed">Ошибка сопоставления достижений Windows</string>
+    <string name="lib_lm_match_failed_message">Ошибка пакетного сопоставления</string>
+    <string name="lib_lm_match_finished">Сопоставление достижений Windows завершено</string>
+    <string name="lib_lm_convert_label">Конвертация Goldberg</string>
+    <string name="lib_lm_convert_linked">Привязано к играм библиотеки: %1$d.</string>
+    <plurals name="lib_lm_converted">
+        <item quantity="one">Конвертирована %d игра</item>
+        <item quantity="few">Конвертировано %d игры</item>
+        <item quantity="many">Конвертировано %d игр</item>
+        <item quantity="other">Конвертировано %d игры</item>
+    </plurals>
+    <string name="lib_lm_convert_no_achievements">без достижений: %1$d</string>
+    <string name="lib_lm_convert_no_key">нужен ключ Steam Web API: %1$d</string>
+    <string name="lib_lm_convert_failed">ошибок: %1$d</string>
+    <string name="lib_lm_convert_play_note">Играйте в каждую игру через эмулятор, чтобы начать получать монеты.</string>
+    <string name="lib_lm_export_label">Экспорт добавленных вручную игр</string>
+    <string name="lib_lm_export_failed">Ошибка экспорта — см. журнал.</string>
+    <string name="lib_lm_rom_root_ready">Папка ROM готова</string>
+    <plurals name="lib_lm_folders_created">
+        <item quantity="one">Создана %d папка</item>
+        <item quantity="few">Создано %d папки</item>
+        <item quantity="many">Создано %d папок</item>
+        <item quantity="other">Создано %d папки</item>
+    </plurals>
+    <string name="lib_lm_folders_existing">уже было: %1$d</string>
+    <string name="lib_lm_rom_root_next">Скопируйте игры в соответствующие папки и выберите «Сканировать папки ROM».</string>
+    <plurals name="lib_lm_import_all_done">
+        <item quantity="one">В «Игры Windows» импортирована %d игра для ПК.</item>
+        <item quantity="few">В «Игры Windows» импортировано %d игры для ПК.</item>
+        <item quantity="many">В «Игры Windows» импортировано %d игр для ПК.</item>
+        <item quantity="other">В «Игры Windows» импортировано %d игры для ПК.</item>
+    </plurals>
+    <plurals name="lib_lm_import_all_none">
+        <item quantity="one">Не удалось импортировать %d игру для ПК.</item>
+        <item quantity="few">Не удалось импортировать ни одну из %d игр для ПК.</item>
+        <item quantity="many">Не удалось импортировать ни одну из %d игр для ПК.</item>
+        <item quantity="other">Не удалось импортировать ни одну из %d игры для ПК.</item>
+    </plurals>
+    <plurals name="lib_lm_import_all_some">
+        <item quantity="one">В «Игры Windows» импортирована %1$d игра для ПК. Не удалось импортировать: %2$d.</item>
+        <item quantity="few">В «Игры Windows» импортировано %1$d игры для ПК. Не удалось импортировать: %2$d.</item>
+        <item quantity="many">В «Игры Windows» импортировано %1$d игр для ПК. Не удалось импортировать: %2$d.</item>
+        <item quantity="other">В «Игры Windows» импортировано %1$d игры для ПК. Не удалось импортировать: %2$d.</item>
+    </plurals>
+    <string name="lib_lm_local_appid">appid %1$s</string>
+    <string name="lib_lm_local_from_marker">из steam_appid.txt</string>
+    <string name="lib_lm_local_from_stored">из сохранённого совпадения Steam</string>
+    <string name="lib_lm_local_by_title">по названию</string>
+    <string name="lib_lm_local_tracking">отслеживается</string>
+    <string name="lib_lm_local_no_list">списка достижений пока нет</string>
+    <string name="lib_kb_import_invalid">Это не файл знаний об эмуляторах PlayFieldPortal, или он повреждён.</string>
+    <string name="lib_kb_import_too_many">В файле больше эмуляторов или консолей, чем PlayFieldPortal может импортировать.</string>
+</resources>

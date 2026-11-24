@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import com.playfieldportal.core.domain.text.UiText
 import android.content.Context
 import android.net.Uri
 import androidx.datastore.preferences.core.edit
@@ -157,8 +158,8 @@ class AudioSettingsViewModelTest {
         runTest(dispatcher) {
             assertEquals(
                 listOf(
-                    "sound_scroll", "sound_back", "sound_confirm", "sound_error",
-                    "sound_notification", "ambience_audio",
+                    "sound_scroll", "sound_category", "sound_options", "sound_back",
+                    "sound_confirm", "sound_error", "sound_notification", "ambience_audio",
                 ),
                 AudioSettingsViewModel.SOUND_SLOTS.map { it.key },
             )
@@ -203,7 +204,7 @@ class AudioSettingsViewModelTest {
 
             eventually("the row surfaces its name and Use Default") {
                 val state = vm.uiState.value
-                state.soundLabels[UiMediaSlot.SOUND_CONFIRM] == "confirm.wav" &&
+                state.soundLabels[UiMediaSlot.SOUND_CONFIRM] == UiText.raw("confirm.wav") &&
                     UiMediaSlot.SOUND_CONFIRM in state.assignedSlots
             }
         }
@@ -232,6 +233,14 @@ class AudioSettingsViewModelTest {
             advanceUntilIdle()
             verify(exactly = menuSlots.size) { menuSound.play(any(), any()) }
         }
+
+    @Test fun `category and options preview their own cue`() = runTest(dispatcher) {
+        vm.preview(UiMediaSlot.SOUND_CATEGORY)
+        vm.preview(UiMediaSlot.SOUND_OPTIONS)
+        advanceUntilIdle()
+        verify(exactly = 1) { menuSound.play(MenuSound.SYSTEM_BROWSE, true) }
+        verify(exactly = 1) { menuSound.play(MenuSound.OPTIONS, true) }
+    }
 
     @Test fun `ambience has no preview - it is already playing behind this screen`() =
         runTest(dispatcher) {

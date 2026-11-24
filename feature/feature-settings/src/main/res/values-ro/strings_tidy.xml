@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tidy_controller_swap_confirm_back">Inversare confirmare și înapoi</string>
+    <string name="tidy_controller_swap_options_sort">Inversare opțiuni și sortare</string>
+    <string name="tidy_group_text_icons">Text și pictograme</string>
+    <string name="tidy_wizard_step_of">Pasul %1$d din %2$d</string>
+</resources>

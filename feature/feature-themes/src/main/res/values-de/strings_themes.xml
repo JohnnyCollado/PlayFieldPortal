@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Localization slice H1: theme package (.xmbtheme) import errors -->
+<resources>
+    <string name="thm_error_manifest_missing">Erforderliche theme.json fehlt im Archiv</string>
+    <string name="thm_error_manifest_invalid">Ungültige theme.json: %1$s</string>
+    <string name="thm_error_id_invalid">Ungültige Design-ID \'%1$s\' – verwende Buchstaben, Zahlen, \'.\', \'_\' oder \'-\' (max. 64)</string>
+    <string name="thm_error_color_invalid">Ungültiger Wert für %1$s: \'%2$s\' – erwartet wird #RRGGBB oder #AARRGGBB</string>
+</resources>

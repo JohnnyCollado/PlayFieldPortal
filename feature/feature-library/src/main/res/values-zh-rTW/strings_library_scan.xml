@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="scan_error_card_not_found">找不到記憶卡。</string>
+    <string name="scan_error_scan_failed">掃描失敗，請查看記錄。</string>
+    <string name="scan_error_library_unreadable">無法讀取收藏庫。</string>
+    <string name="scan_error_save_failed">無法儲存掃描到的遊戲。</string>
+    <string name="scan_error_rom_dir_not_found">找不到 ROM 目錄：%1$s</string>
+    <string name="scan_error_folder_link_invalid">這個收藏庫的資料夾連結無效。請重新新增資料夾。</string>
+    <string name="scan_error_root_unreadable">無法讀取某個 ROM 資料夾。如果它位於 SD 卡上，請檢查 SD 卡是否已插入。</string>
+    <string name="scan_error_permission_lost">權限已失效，請重新選擇資料夾。</string>
+    <string name="scan_error_partial_read">無法讀取資料夾的部分內容，因此未做任何變更。請稍後再試一次。</string>
+
+    <!-- One-line scan outcome. %1$s is the Memory Card name, %2$s is the outcome sentence below -->
+    <string name="scan_outcome_line">%1$s：%2$s</string>
+    <string name="scan_outcome_no_source">尚未設定 ROM 資料夾。</string>
+    <string name="scan_outcome_busy">掃描已在進行中。</string>
+    <string name="scan_outcome_failed">掃描失敗。</string>
+    <string name="scan_outcome_no_new">沒有新的 ROM</string>
+    <string name="scan_outcome_no_new_none_missing">沒有新的 ROM，也沒有遺失的 ROM</string>
+    <string name="scan_outcome_no_new_marked_missing">沒有新的 ROM，%1$d 個標示為遺失</string>
+    <plurals name="scan_outcome_added">
+        <item quantity="other">已新增 %1$d 個 ROM</item>
+    </plurals>
+    <plurals name="scan_outcome_added_none_missing">
+        <item quantity="other">已新增 %1$d 個 ROM，沒有遺失的 ROM</item>
+    </plurals>
+    <plurals name="scan_outcome_added_marked_missing">
+        <item quantity="other">已新增 %1$d 個 ROM，%2$d 個標示為遺失</item>
+    </plurals>
+    <string name="scan_with_error_note">%1$s（%2$s）</string>
+
+    <!-- Per-card line in the scan results list -->
+    <string name="scan_badge_no_new">無新增</string>
+    <string name="scan_reason_no_new">沒有新遊戲</string>
+    <string name="scan_reason_no_new_marked_missing">沒有新遊戲，%1$d 款標示為遺失</string>
+    <plurals name="scan_reason_added">
+        <item quantity="other">已新增 %1$d 款遊戲</item>
+    </plurals>
+    <plurals name="scan_reason_added_marked_missing">
+        <item quantity="other">已新增 %1$d 款遊戲，%2$d 款標示為遺失</item>
+    </plurals>
+</resources>

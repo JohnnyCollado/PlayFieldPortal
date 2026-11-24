@@ -15,7 +15,7 @@ enum class BudgetKind(val label: String) {
     SOUNDS("Sounds"),
     AMBIENCE("Ambience"),
     BOOT("Boot"),
-    GAMEBOOT("GameBoot"),
+    GAMEBOOT("Game Boot"),
     OTHER("Other files"),
 }
 

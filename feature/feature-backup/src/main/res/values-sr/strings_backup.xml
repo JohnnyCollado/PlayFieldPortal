@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Slice H2: feature-backup (backup and restore results) -->
+    <!-- Backup failures -->
+    <string name="bak_no_folder">Фасцикла за резервне копије није подешена. Изаберите је у Подешавања → Прављење резервне копије и враћање → Фасцикла за резервне копије.</string>
+    <string name="bak_too_large">Ова резервна копија била би превелика за враћање (може да садржи највише 20.000 датотека и 2 GB). Уклоните некоришћену графику или медије и покушајте поново.</string>
+    <string name="bak_write_failed">Уписивање у фасциклу за резервне копије није успело. Поново изаберите фасциклу у Подешавања ▸ Систем ▸ Прављење резервне копије и враћање.</string>
+    <string name="bak_unknown_error">Непозната грешка</string>
+
+    <!-- Restore failures -->
+    <string name="bak_open_failed">Отварање датотеке резервне копије није успело</string>
+    <string name="bak_missing_manifest">Резервној копији недостаје манифест</string>
+    <!-- %1$d is the backup file's format version, %2$d the newest version this app can read -->
+    <string name="bak_format_too_new">Формат резервне копије v%1$d је новији од онога што ова апликација подржава (v%2$d)</string>
+    <string name="bak_no_uri">URI није наведен</string>
+
+    <!-- Notification titles -->
+    <string name="bak_task_created">Резервна копија је направљена</string>
+    <string name="bak_task_failed">Прављење резервне копије није успело</string>
+    <string name="bak_task_restored">Резервна копија је враћена</string>
+    <string name="bak_task_restore_failed">Враћање није успело</string>
+    <!-- Heading of the list of items that were restored, in the notification detail -->
+    <string name="bak_results_restored">Враћено</string>
+    <!-- Notification message: how many items in the backup were turned away -->
+    <plurals name="bak_items_skipped">
+        <item quantity="one">Прескочена је %d ставка</item>
+        <item quantity="few">Прескочене су %d ставке</item>
+        <item quantity="other">Прескочено је %d ставки</item>
+    </plurals>
+
+    <!-- Items turned away during restore. The text before the first colon is shown as the item's name. -->
+    <!-- %1$s is a file path inside the backup -->
+    <string name="bak_refused_out_of_root">Одбијено „%1$s“: није у фасцикли која може да се врати</string>
+    <string name="bak_refused_profiles_unparseable">Одбијени профили емулатора: датотеку није могуће обрадити</string>
+    <!-- %1$s is an emulator profile name, %2$s the reason it was refused -->
+    <string name="bak_refused_profile">Одбијен профил емулатора „%1$s“: %2$s</string>
+</resources>

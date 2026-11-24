@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slice H2: feature-appbar (App Drawer) -->
+<resources>
+    <!-- App context menu: group headings -->
+    <string name="apps_menu_group_library">Thư viện</string>
+    <string name="apps_menu_group_arrange">Sắp xếp</string>
+    <string name="apps_menu_group_manage">Quản lý</string>
+
+    <!-- App context menu: rows -->
+    <string name="apps_menu_launch">Khởi động</string>
+    <string name="apps_menu_edit_details">Sửa chi tiết ứng dụng</string>
+    <string name="apps_menu_mark_game">Đánh dấu là trò chơi</string>
+    <string name="apps_menu_unmark_game">Bỏ đánh dấu trò chơi</string>
+    <string name="apps_menu_favorite">Yêu thích</string>
+    <string name="apps_menu_add_to_card">Thêm vào thẻ</string>
+    <string name="apps_menu_pin_to_top">Ghim lên đầu</string>
+    <string name="apps_menu_move">Di chuyển</string>
+    <string name="apps_menu_move_to_category">Chuyển sang danh mục</string>
+    <string name="apps_menu_add_to_category">Thêm vào danh mục</string>
+    <string name="apps_menu_remove_from_category">Xóa khỏi danh mục</string>
+    <string name="apps_menu_rename_shortcut">Đổi tên lối tắt</string>
+    <string name="apps_menu_hide_from">Ẩn khỏi %1$s</string>
+    <string name="apps_menu_hide_everywhere">Ẩn ở mọi nơi</string>
+    <string name="apps_menu_app_info">Thông tin ứng dụng</string>
+    <string name="apps_menu_uninstall">Gỡ cài đặt</string>
+    <string name="apps_value_on">Bật</string>
+    <string name="apps_value_off">Tắt</string>
+
+    <!-- Uninstall confirmation -->
+    <string name="apps_uninstall_title">Gỡ cài đặt %1$s?</string>
+    <string name="apps_uninstall_message">Thao tác này sẽ xóa %1$s khỏi thiết bị. Android sẽ yêu cầu bạn xác nhận.</string>
+
+    <!-- Category tabs and header title -->
+    <string name="apps_filter_all">Tất cả ứng dụng</string>
+    <string name="apps_filter_games">Trò chơi</string>
+    <string name="apps_filter_emulators">Trình giả lập</string>
+    <string name="apps_filter_recent">Dùng gần đây</string>
+
+    <!-- Header search -->
+    <string name="apps_search_placeholder">Tìm kiếm…</string>
+    <string name="apps_search_button">Tìm kiếm</string>
+
+    <!-- Empty states -->
+    <string name="apps_empty_no_match">Không có ứng dụng nào khớp với tìm kiếm</string>
+    <string name="apps_empty_no_games">Không tìm thấy trò chơi nào</string>
+    <string name="apps_empty_no_emulators">Chưa cài trình giả lập nào</string>
+    <string name="apps_empty_usage_access">Cần quyền truy cập dữ liệu sử dụng</string>
+    <string name="apps_empty_no_recent">Chưa có ứng dụng nào dùng gần đây</string>
+    <string name="apps_empty_no_apps">Chưa cài ứng dụng nào</string>
+    <string name="apps_hint_try_search">Hãy thử từ khóa khác</string>
+    <string name="apps_hint_games">Ứng dụng được Play Store đánh dấu là trò chơi sẽ hiện ở đây</string>
+    <string name="apps_hint_emulators">Hãy cài RetroArch, PPSSPP hoặc trình giả lập khác</string>
+    <string name="apps_hint_usage_access">Cấp quyền để PFP sắp xếp ứng dụng theo lần dùng gần nhất</string>
+    <string name="apps_open_usage_access">Mở quyền truy cập dữ liệu sử dụng</string>
+
+    <!-- Controller hint bar -->
+    <string name="apps_hint_prev">Trước</string>
+    <string name="apps_hint_next">Tiếp</string>
+    <string name="apps_hint_back">Quay lại</string>
+    <string name="apps_hint_launch">Khởi động</string>
+    <string name="apps_hint_options">Tùy chọn</string>
+    <string name="apps_hint_search">Tìm kiếm</string>
+    <string name="apps_drawer_title">Ngăn ứng dụng</string>
+    <string name="apps_drawer_subtitle">Ứng dụng trên thiết bị này</string>
+</resources>

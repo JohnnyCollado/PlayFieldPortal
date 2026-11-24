@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared -->
+    <string name="art_error_unexpected">Lỗi không mong muốn</string>
+    <string name="art_no_folder_linked">Chưa liên kết thư mục ảnh minh họa</string>
+    <string name="art_paused_message">Đã tạm dừng ảnh minh họa. Hãy liên kết lại thư mục ảnh minh họa để lưu ảnh mới.</string>
+    <string name="art_error_game_not_found">Không tìm thấy trò chơi</string>
+    <string name="art_error_not_found_any_source">Không tìm thấy trên nguồn nào</string>
+    <string name="art_found_via">Tìm thấy qua %1$s</string>
+    <string name="art_results_label_updated">Đã cập nhật</string>
+    <string name="art_results_label_imported">Đã nhập</string>
+
+    <string name="art_progress_hashing">Đang băm ROM…</string>
+    <string name="art_progress_searching">Đang tìm kiếm…</string>
+    <string name="art_asset_hero">Ảnh hero</string>
+    <string name="art_asset_background">Nền</string>
+    <string name="art_asset_logo">Logo</string>
+    <string name="art_asset_box_art">Ảnh hộp</string>
+    <string name="art_asset_physical_media">Đĩa/băng vật lý</string>
+    <string name="art_asset_3d_box">Hộp 3D</string>
+    <string name="art_asset_screenshot">Ảnh chụp</string>
+    <string name="art_asset_manual">Sách hướng dẫn</string>
+    <string name="art_asset_video">Video</string>
+    <string name="art_asset_icon_video">Video biểu tượng</string>
+    <string name="art_asset_icon_video_converting">Video biểu tượng (đang chuyển đổi)</string>
+    <string name="art_source_storefronts">Cửa hàng</string>
+
+    <!-- Metadata fields (labels in the metadata preview and editor) -->
+    <string name="art_field_title">Tiêu đề</string>
+    <string name="art_field_description">Mô tả</string>
+    <string name="art_field_developer">Nhà phát triển</string>
+    <string name="art_field_publisher">Nhà phát hành</string>
+    <string name="art_field_year">Năm</string>
+    <string name="art_field_release_date">Ngày phát hành</string>
+    <string name="art_field_genre">Thể loại</string>
+    <string name="art_field_age_rating">Phân loại độ tuổi</string>
+    <string name="art_field_franchise">Thương hiệu</string>
+    <string name="art_field_rating">Đánh giá</string>
+
+    <string name="art_policy_replace_all">Thay thế tất cả</string>
+    <string name="art_policy_fill_missing">Chỉ điền phần thiếu</string>
+    <string name="art_policy_choose_fields">Chọn trường</string>
+    <string name="art_policy_keep_current">Giữ hiện tại</string>
+
+    <!-- Scrape (background task) -->
+    <string name="art_scrape_label_all">Đang tải lại dữ liệu cho mọi trò chơi</string>
+    <string name="art_scrape_label_missing">Đang tải ảnh minh họa còn thiếu</string>
+    <string name="art_scrape_stop_note">Ảnh minh họa đã tải sẽ được giữ lại.</string>
+    <string name="art_scrape_paused_all_title">Đã tạm dừng tải lại ảnh minh họa</string>
+    <string name="art_scrape_paused_title">Đã tạm dừng tải ảnh minh họa</string>
+    <string name="art_scrape_finished_all_title">Đã tải lại xong ảnh minh họa</string>
+    <string name="art_scrape_finished_title">Đã tải xong ảnh minh họa</string>
+    <string name="art_scrape_stopped_title">Đã dừng tải ảnh minh họa</string>
+    <string name="art_scrape_failed_title">Tải ảnh minh họa thất bại</string>
+    <string name="art_scrape_result">%1$d thành công, %2$d thất bại trên %3$d</string>
+    <plurals name="art_scrape_stopped_after">
+        <item quantity="other">Đã dừng sau %1$d trò chơi — ảnh minh họa đã tải được giữ lại</item>
+    </plurals>
+
+    <!-- Relink (background task) -->
+    <string name="art_relink_label">Đang liên kết lại ảnh minh họa</string>
+    <plurals name="art_relink_label_consoles">
+        <item quantity="other">Đang liên kết lại ảnh minh họa cho %1$d hệ máy</item>
+    </plurals>
+    <string name="art_relink_stop_note">Ảnh minh họa đã liên kết vẫn được giữ liên kết.</string>
+    <string name="art_relink_finished_title">Đã liên kết lại xong ảnh minh họa</string>
+    <string name="art_relink_stopped_title">Đã dừng liên kết lại ảnh minh họa</string>
+    <string name="art_relink_stopped_note">Ảnh minh họa đã liên kết được giữ lại</string>
+    <string name="art_relink_failed_title">Liên kết lại ảnh minh họa thất bại</string>
+    <plurals name="art_relink_games_linked">
+        <item quantity="other">Đã liên kết %1$d trò chơi</item>
+    </plurals>
+    <plurals name="art_relink_files">
+        <item quantity="other">%1$d tệp</item>
+    </plurals>
+    <string name="art_relink_result">%1$s / %2$s</string>
+    <string name="art_relink_result_unmatched">%1$s · %2$d chưa khớp</string>
+
+    <!-- Export to ES-DE (background task) -->
+    <string name="art_export_label">Đang xuất ảnh minh họa cho ES-DE</string>
+    <string name="art_export_stop_note">Các tệp đã xuất vẫn được giữ nguyên.</string>
+    <string name="art_export_error_no_destination">Không có thư mục đích</string>
+    <string name="art_export_error_access_lost">Đã mất quyền truy cập thư mục ảnh minh họa</string>
+    <string name="art_export_dest_not_created">Không thể tạo thư mục đích.</string>
+    <plurals name="art_export_files_badge">
+        <item quantity="other">%1$d tệp</item>
+    </plurals>
+    <string name="art_export_failed_title">Xuất ảnh minh họa thất bại</string>
+    <string name="art_export_stopped_title">Đã dừng xuất ảnh minh họa</string>
+    <string name="art_export_finished_title">Đã xuất xong ảnh minh họa</string>
+    <plurals name="art_export_stopped_note">
+        <item quantity="other">Đã xuất %1$d tệp trước khi dừng</item>
+    </plurals>
+    <string name="art_export_result">%1$d đã sao chép, %2$d đã có sẵn, %3$d thất bại</string>
+
+    <!-- Import (background task and its notification) -->
+    <string name="art_import_plan_not_found">Không tìm thấy kế hoạch nhập</string>
+    <string name="art_import_plan_unreadable">Không đọc được kế hoạch nhập</string>
+    <string name="art_import_label">Đang nhập ảnh minh họa — %1$s</string>
+    <string name="art_import_stop_note">Ảnh minh họa đã nhập sẽ được giữ lại.</string>
+    <string name="art_import_failed_title">Nhập ảnh minh họa thất bại</string>
+    <string name="art_import_cancelled">Đã hủy nhập ảnh minh họa</string>
+    <string name="art_import_done">Đã nhập ảnh minh họa</string>
+    <plurals name="art_import_needs_review">
+        <item quantity="other">Đã nhập ảnh minh họa, %1$d mục cần xem lại</item>
+    </plurals>
+    <string name="art_import_headline">%1$s: %2$s</string>
+    <string name="art_import_counts">%1$d đã nhập, %2$d bỏ qua, %3$d thất bại, %4$d không rõ ràng, %5$d chưa khớp.</string>
+    <string name="art_import_results_summary">%1$d đã nhập, %2$d bỏ qua</string>
+
+    <!-- Move artwork into the linked folder (background task) -->
+    <string name="art_move_label">Đang chuyển ảnh minh họa vào thư mục của bạn</string>
+    <string name="art_move_failed_title">Chuyển ảnh minh họa thất bại</string>
+    <string name="art_move_stopped_title">Đã dừng chuyển ảnh minh họa</string>
+    <string name="art_move_finished_title">Đã chuyển xong ảnh minh họa</string>
+    <plurals name="art_move_stopped_note">
+        <item quantity="other">Đã chuyển %1$d tệp trước khi dừng</item>
+    </plurals>
+    <string name="art_move_result">%1$d đã chuyển, %2$d đã có sẵn, %3$d thất bại</string>
+</resources>

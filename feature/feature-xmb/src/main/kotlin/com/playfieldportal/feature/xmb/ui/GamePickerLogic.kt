@@ -11,6 +11,10 @@ import com.playfieldportal.core.ui.components.PspMenuRow
 import com.playfieldportal.core.ui.components.TouchPromptItem
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.feature.artwork.store.ArtworkDimensions
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.core.domain.text.labelRes
+import com.playfieldportal.feature.xmb.R
+import android.content.res.Resources
 
 // ── Game picker ("Add Games to Category"): pure logic ─────────────────────────
 //
@@ -80,13 +84,13 @@ enum class PickerZone { RAIL, GRID }
 /** One shelf in the list. [key] is stable across library updates so per-shelf focus survives. */
 sealed interface PickerShelf {
     val key: String
-    val title: String
+    val title: UiText
     val size: Int
 }
 
 data class GameShelf(
     override val key: String,
-    override val title: String,
+    override val title: UiText,
     val games: List<Game>,
 ) : PickerShelf {
     override val size: Int get() = games.size
@@ -94,7 +98,7 @@ data class GameShelf(
 
 data class CardShelf(
     override val key: String,
-    override val title: String,
+    override val title: UiText,
     val cards: List<GameCollection>,
 ) : PickerShelf {
     override val size: Int get() = cards.size
@@ -155,7 +159,7 @@ internal fun buildShelves(
 
     val inCategory = realGames.filter { it.id in preselectedGameIds }
     if (inCategory.isNotEmpty()) {
-        val title = if (categoryTitle.isBlank()) "In This Category" else "In $categoryTitle"
+        val title = if (categoryTitle.isBlank()) UiText.res(R.string.xmbu_picker_in_this_category) else UiText.res(R.string.xmbu_picker_in_category, categoryTitle)
         shelves += GameShelf(IN_CATEGORY_SHELF_KEY, title, inCategory)
     }
 
@@ -163,13 +167,13 @@ internal fun buildShelves(
     for (card in cards) {
         val platformGames = byPlatform[card.platformId].orEmpty()
         if (platformGames.isNotEmpty()) {
-            shelves += GameShelf(platformShelfKey(card.platformId), shelfTitle(card), platformGames)
+            shelves += GameShelf(platformShelfKey(card.platformId), UiText.raw(shelfTitle(card)), platformGames)
         }
     }
 
     val movable = movableCollectionIds?.let { ids -> collections.filter { it.id in ids } } ?: collections
     if (movable.isNotEmpty()) {
-        shelves += CardShelf(CARDS_SHELF_KEY, "Custom Memory Cards", movable)
+        shelves += CardShelf(CARDS_SHELF_KEY, UiText.res(R.string.xmbu_picker_custom_cards), movable)
     }
     return shelves
 }
@@ -216,11 +220,13 @@ internal fun GamePickerState.pendingAddCount(): Int =
 internal fun GamePickerState.pendingRemovals(): Set<Long> = preselectedGameIds - selectedGameIds
 
 /** The header's pending-change line: only the parts that are not zero, or "No changes". */
-internal fun pendingChangeLabel(adds: Int, removals: Int): String =
-    listOfNotNull(
-        adds.takeIf { it > 0 }?.let { "$it to add" },
-        removals.takeIf { it > 0 }?.let { "$it to remove" },
-    ).joinToString(" · ").ifEmpty { "No changes" }
+internal fun pendingChangeLabel(adds: Int, removals: Int): UiText {
+    val parts = listOfNotNull(
+        adds.takeIf { it > 0 }?.let { UiText.plural(R.plurals.xmbu_picker_to_add, it) },
+        removals.takeIf { it > 0 }?.let { UiText.plural(R.plurals.xmbu_picker_to_remove, it) },
+    )
+    return if (parts.isEmpty()) UiText.res(R.string.xmbu_picker_no_changes) else UiText.Joined(parts, " · ")
+}
 
 /** Re-clamps the shelf and every remembered focus after the shelves changed under the cursor. */
 internal fun GamePickerState.clampFocus(): GamePickerState {
@@ -305,14 +311,25 @@ internal fun GamePickerState.openMenu(): GamePickerState = copy(menu = PickerMen
 
 internal fun GamePickerState.closeMenu(): GamePickerState = copy(menu = null)
 
-/** The rows of the open menu's level; empty while it is closed. */
-internal fun GamePickerState.menuRows(): List<PspMenuRow> = when (menu?.level) {
+/**
+ * The rows of the open menu's level; empty while it is closed. [string] resolves a string resource
+ * (the screen passes its resources; navigation, which only needs the row count and cues, may pass
+ * a stub that returns "").
+ */
+internal fun GamePickerState.menuRows(string: (Int) -> String): List<PspMenuRow> = when (menu?.level) {
     null -> emptyList()
     PickerMenuLevel.ROOT -> listOf(
-        PspMenuRow("View", value = viewMode.label, opensMenu = true),
-        PspMenuRow("Select All", value = if (wholeShelfChecked()) "On" else "Off"),
+        PspMenuRow(
+            string(R.string.xmbu_picker_menu_view),
+            value = string(viewMode.labelRes),
+            opensMenu = true,
+        ),
+        PspMenuRow(
+            string(R.string.xmbu_picker_menu_select_all),
+            value = string(if (wholeShelfChecked()) R.string.xmbu_common_on else R.string.xmbu_common_off),
+        ),
     )
-    PickerMenuLevel.VIEW -> IconDisplayMode.entries.map { PspMenuRow(it.label, checked = it == viewMode) }
+    PickerMenuLevel.VIEW -> IconDisplayMode.entries.map { PspMenuRow(string(it.labelRes), checked = it == viewMode) }
 }
 
 /** A on the focused menu row: View descends to the modes; a mode applies and closes; Select All toggles and closes. */
@@ -358,8 +375,8 @@ internal fun GamePickerState.closeSearch(): GamePickerState = copy(searchActive 
 // Y or HOME, so in touch mode Search, Done and Options become header pills (the ◀ breadcrumb
 // backs out, as B does) and the footer names the tap: a shelf tap opens it, a tile tap toggles it.
 
-internal fun gamePickerTouchPrompts(): List<TouchPromptItem> =
-    listOf(TouchPromptItem(TouchGesture.TAP, "Open / Toggle"))
+internal fun gamePickerTouchPrompts(res: Resources): List<TouchPromptItem> =
+    listOf(TouchPromptItem(TouchGesture.TAP, res.getString(R.string.xmbu_picker_open_toggle)))
 
 /** A touch-mode header pill, in header order. */
 internal enum class GamePickerPill { SEARCH, DONE, OPTIONS }

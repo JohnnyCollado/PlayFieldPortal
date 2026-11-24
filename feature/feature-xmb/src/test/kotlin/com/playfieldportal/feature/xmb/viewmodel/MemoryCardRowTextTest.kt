@@ -3,11 +3,16 @@ package com.playfieldportal.feature.xmb.viewmodel
 import com.playfieldportal.core.domain.model.MemoryCard
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * A console Memory Card row in the Game column: the console is the title, and "Memory Card" moves
  * to the subtitle with the game count, the way a custom card reads "Custom · 12 Games".
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class MemoryCardRowTextTest {
 
     private fun card(platform: String, name: String, pinned: Boolean = false) =
@@ -28,8 +33,8 @@ class MemoryCardRowTextTest {
 
     @Test
     fun `the subtitle names the card and counts its games`() {
-        assertEquals("Memory Card · 24 Games", memoryCardRowSubtitle(count = 24, pinned = false))
-        assertEquals("Memory Card · 1 Game", memoryCardRowSubtitle(count = 1, pinned = false))
-        assertEquals("Memory Card · Pinned · 31 Games", memoryCardRowSubtitle(count = 31, pinned = true))
+        assertEquals("Memory Card · 24 Games", memoryCardRowSubtitle(count = 24, pinned = false).en())
+        assertEquals("Memory Card · 1 Game", memoryCardRowSubtitle(count = 1, pinned = false).en())
+        assertEquals("Memory Card · Pinned · 31 Games", memoryCardRowSubtitle(count = 31, pinned = true).en())
     }
 }

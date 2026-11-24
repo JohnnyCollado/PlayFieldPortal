@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blur_title">Размытие фона</string>
+    <string name="blur_sublabel">Насколько сильно размывается экран за сообщениями и меню параметров. Установите ноль, чтобы отключить.</string>
+    <string name="blur_unavailable">Требуется Android 12 или новее.</string>
+</resources>

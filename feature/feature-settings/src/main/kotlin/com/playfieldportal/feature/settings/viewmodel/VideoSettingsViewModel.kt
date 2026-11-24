@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import com.playfieldportal.feature.settings.R
+import com.playfieldportal.core.domain.text.UiText
 import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
@@ -31,7 +33,7 @@ data class VideoSettingsUiState(
     // ROM Root Access — a video library can span internal storage plus an SD card).
     val roots: List<RootFolderRow> = emptyList(),
     val scanning: Boolean = false,
-    val scanMessage: String? = null,
+    val scanMessage: UiText? = null,
     // Default player: null/"builtin" = built-in, "ask" = system chooser, else a package name.
     val defaultPlayer: String? = null,
     val availablePlayers: List<VideoPlayerApp> = emptyList(),
@@ -39,11 +41,11 @@ data class VideoSettingsUiState(
 ) {
     val hasRoots: Boolean get() = roots.isNotEmpty()
 
-    val defaultPlayerLabel: String
+    val defaultPlayerLabel: UiText
         get() = when (defaultPlayer) {
-            null, PLAYER_BUILTIN -> "Play Field Portal"
-            PLAYER_ASK           -> "System Default"
-            else -> availablePlayers.firstOrNull { it.packageName == defaultPlayer }?.label ?: defaultPlayer
+            null, PLAYER_BUILTIN -> UiText.res(R.string.sets_player_builtin)
+            PLAYER_ASK           -> UiText.res(R.string.sets_player_system_default)
+            else -> UiText.raw(availablePlayers.firstOrNull { it.packageName == defaultPlayer }?.label ?: defaultPlayer)
         }
 }
 
@@ -118,11 +120,11 @@ class VideoSettingsViewModel @Inject constructor(
      */
     fun rescan() {
         viewModelScope.launch {
-            _ui.value = _ui.value.copy(scanning = true, scanMessage = "Scanning…")
+            _ui.value = _ui.value.copy(scanning = true, scanMessage = UiText.res(R.string.sets_scanning))
             val message = scanRunner.scanAllRoots(MediaRootKind.VIDEO, force = true) { progress ->
-                _ui.value = _ui.value.copy(scanMessage = progress)
+                _ui.value = _ui.value.copy(scanMessage = UiText.raw(progress))
             }
-            _ui.value = _ui.value.copy(scanning = false, scanMessage = message)
+            _ui.value = _ui.value.copy(scanning = false, scanMessage = UiText.raw(message))
         }
     }
 
@@ -148,5 +150,5 @@ class VideoSettingsViewModel @Inject constructor(
         runCatching { DocumentFile.fromTreeUri(context, Uri.parse(treeUri))?.name }.getOrNull()
             ?.takeIf { it.isNotBlank() }
             ?: Uri.parse(treeUri).lastPathSegment?.substringAfterLast('/')?.substringAfterLast(':')
-            ?: "Videos"
+            ?: context.getString(R.string.sets_root_fallback_video)
 }

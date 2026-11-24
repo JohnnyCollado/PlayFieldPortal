@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.achievements.provider.localsteam
 
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.achievements.R
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
@@ -109,7 +111,7 @@ class LocalSteamBatchMatcherTest {
         val report = matcher.run(treeUri)
 
         assertEquals(0, report.discovered)
-        assertTrue(report.message.contains("CONTAINS your game folders"))
+        assertEquals(UiText.res(R.string.ach_batch_no_folders), report.messageText)
     }
 
     @Test
@@ -163,7 +165,7 @@ class LocalSteamBatchMatcherTest {
         assertEquals(1, report.needsIdentifying)
         assertEquals(0, report.registered)
         coVerify(exactly = 0) { discovery.register(any(), any()) }
-        assertTrue(report.message.contains("could not be identified"))
+        assertTrue(report.messageText.has(R.plurals.ach_batch_needs_identifying))
     }
 
     @Test
@@ -202,7 +204,7 @@ class LocalSteamBatchMatcherTest {
             coVerify(exactly = 0) { identity.identify(any(), any()) }
             coVerify(exactly = 0) { discovery.register(any(), any()) }
             coVerify(exactly = 0) { achievements.syncGameById(any()) }
-            assertTrue(report.message.contains("not in your library"))
+            assertTrue(report.messageText.has(R.plurals.ach_batch_not_in_library))
         }
 
     @Test
@@ -293,3 +295,7 @@ class LocalSteamBatchMatcherTest {
         coVerify(exactly = 0) { steamNames.officialNameOf(any()) }
     }
 }
+
+// True when the summary carries the plural sentence [pluralId], whatever its count.
+private fun UiText.has(pluralId: Int): Boolean =
+    this is UiText.Joined && parts.any { it is UiText.Plural && it.id == pluralId }

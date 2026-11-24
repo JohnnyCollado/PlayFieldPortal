@@ -5,6 +5,8 @@ import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.MemoryCard
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.library.R
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -48,7 +50,7 @@ data class PlatformScanOutcome(
     val added: Int = 0,
     val markedMissing: Int = 0,
     val surveyTrusted: Boolean = false,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
 )
 
 /**
@@ -87,7 +89,7 @@ class LibraryScanner @Inject constructor(
                 platformId  = platformId,
                 displayName = platformId,
                 status      = ScanStatus.SKIPPED_NO_SOURCE,
-                errorMessage = "Memory Card not found.",
+                errorMessage = UiText.res(R.string.scan_error_card_not_found),
             )
 
         if (!busyPlatforms.add(platformId)) {
@@ -101,7 +103,7 @@ class LibraryScanner @Inject constructor(
             Timber.e(e, "Library scan failed for $platformId")
             PlatformScanOutcome(
                 platformId, card.displayName, ScanStatus.FAILED,
-                errorMessage = e.message ?: "Scan failed — see the log.",
+                errorMessage = e.message?.let(UiText::raw) ?: UiText.res(R.string.scan_error_scan_failed),
             )
         } finally {
             busyPlatforms.remove(platformId)
@@ -136,7 +138,7 @@ class LibraryScanner @Inject constructor(
             Timber.e(e, "Library scan — existing-path baseline failed for $platformId")
             return PlatformScanOutcome(
                 platformId, card.displayName, ScanStatus.FAILED,
-                errorMessage = e.message ?: "Could not read the library.",
+                errorMessage = e.message?.let(UiText::raw) ?: UiText.res(R.string.scan_error_library_unreadable),
             )
         }
         val dbGames = baseline.games
@@ -151,13 +153,13 @@ class LibraryScanner @Inject constructor(
 
         var added = 0
         var scanErrored = false
-        var firstSourceError: String? = null
+        var firstSourceError: UiText? = null
         // The newly discovered rows, as enriched by the scanner's single-pass assign — the fresh
         // half of the disc-set reconcile below.
         val scannedGames = mutableListOf<Game>()
         // Union of on-disk ROM paths across all sources; null once any source can't survey.
         var present: MutableSet<String>? = mutableSetOf()
-        var firstWriteFailure: String? = null
+        var firstWriteFailure: UiText? = null
 
         sourceLoop@ for (source in sources) {
             source(existing).collect { result ->
@@ -174,7 +176,7 @@ class LibraryScanner @Inject constructor(
                             } catch (e: Exception) {
                                 Timber.e(e, "Library scan — upsert failed for $platformId")
                                 if (firstWriteFailure == null) {
-                                    firstWriteFailure = e.message ?: "Could not save a scanned game."
+                                    firstWriteFailure = e.message?.let(UiText::raw) ?: UiText.res(R.string.scan_error_save_failed)
                                 }
                             }
                         }
@@ -241,18 +243,24 @@ class LibraryScanner @Inject constructor(
 }
 
 /** Formats a per-platform scan result consistently for every scan entry point. */
-fun scanOutcomeMessage(outcome: PlatformScanOutcome, removeMissing: Boolean): String =
+fun scanOutcomeMessage(outcome: PlatformScanOutcome, removeMissing: Boolean): UiText =
+    UiText.res(R.string.scan_outcome_line, UiText.raw(outcome.displayName), scanOutcomeBody(outcome, removeMissing))
+
+/** [scanOutcomeMessage] without the leading card name, for callers that show the name as a title. */
+fun scanOutcomeBody(outcome: PlatformScanOutcome, removeMissing: Boolean): UiText =
     when (outcome.status) {
-        ScanStatus.SKIPPED_NO_SOURCE ->
-            "${outcome.displayName}: ${outcome.errorMessage ?: "ROM folder not configured."}"
-        ScanStatus.SKIPPED_BUSY -> "${outcome.displayName}: scan already in progress."
-        ScanStatus.FAILED -> "${outcome.displayName}: ${outcome.errorMessage ?: "scan failed."}"
-        ScanStatus.COMPLETED ->
-            "${outcome.displayName}: " + buildString {
-                append(if (outcome.added == 0) "no new ROMs" else "${outcome.added} new ROM(s) added")
-                if (removeMissing) {
-                    append(if (outcome.markedMissing == 0) ", none missing" else ", ${outcome.markedMissing} marked missing")
-                }
-                outcome.errorMessage?.let { append(" ($it)") }
+        ScanStatus.SKIPPED_NO_SOURCE -> outcome.errorMessage ?: UiText.res(R.string.scan_outcome_no_source)
+        ScanStatus.SKIPPED_BUSY -> UiText.res(R.string.scan_outcome_busy)
+        ScanStatus.FAILED -> outcome.errorMessage ?: UiText.res(R.string.scan_outcome_failed)
+        ScanStatus.COMPLETED -> {
+            val summary = when {
+                !removeMissing && outcome.added == 0 -> UiText.res(R.string.scan_outcome_no_new)
+                !removeMissing -> UiText.plural(R.plurals.scan_outcome_added, outcome.added)
+                outcome.added == 0 && outcome.markedMissing == 0 -> UiText.res(R.string.scan_outcome_no_new_none_missing)
+                outcome.added == 0 -> UiText.res(R.string.scan_outcome_no_new_marked_missing, outcome.markedMissing)
+                outcome.markedMissing == 0 -> UiText.plural(R.plurals.scan_outcome_added_none_missing, outcome.added)
+                else -> UiText.plural(R.plurals.scan_outcome_added_marked_missing, outcome.added, outcome.added, outcome.markedMissing)
             }
+            outcome.errorMessage?.let { UiText.res(R.string.scan_with_error_note, summary, it) } ?: summary
+        }
     }

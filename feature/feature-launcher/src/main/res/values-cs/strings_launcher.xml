@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launch refusals shown before an emulator starts -->
+    <string name="launch_err_custom_command">Profily s vlastním příkazem již nejsou podporovány. Přepněte tento emulátor na způsob spuštění „Otevřít ROM v aplikaci“ nebo „Otevřít obrazovku aplikace“.</string>
+    <string name="launch_err_shortcut_unsupported">Spuštění zástupce z této obrazovky není podporováno</string>
+    <string name="launch_err_no_package">Pro %1$s není zaznamenán žádný balíček Android</string>
+    <string name="launch_err_app_not_launchable">Aplikace pro Android není nainstalována nebo ji nelze spustit: %1$s</string>
+    <string name="launch_err_emulator_not_installed">Emulátor není nainstalován: %1$s (%2$s)</string>
+    <string name="launch_err_wrong_build">%1$s (%2$s) není očekávaná verze: jeho podpisový certifikát nesouhlasí. Nainstalujte emulátor znovu z oficiálního zdroje.</string>
+    <string name="launch_err_no_activity_for_path">%1$s nemá zaznamenanou spouštěcí aktivitu, takže mu nelze předat cestu k souboru. Importujte znovu jeho znalostní záznam nebo emulátor znovu rozpoznejte.</string>
+    <string name="launch_err_activity_required">Pro tento způsob spuštění je vyžadován název obrazovky aplikace – profil: %1$s</string>
+    <string name="launch_err_activity_gone">%1$s již neposkytuje svou spouštěcí aktivitu (%2$s). Aktualizujte emulátor nebo pro tuto platformu vyberte jiný.</string>
+    <string name="launch_err_no_launch_id">Pro %1$s není zaznamenáno spouštěcí ID. Znovu prohledejte jeho knihovnu.</string>
+    <string name="launch_err_rom_link_invalid">Odkaz na ROM této hry je neplatný. Znovu prohledejte její knihovnu.</string>
+    <string name="launch_err_lost_access">Play Field Portal ztratil přístup k souboru této hry. Znovu připojte úložiště a prohledejte její knihovnu.</string>
+    <string name="launch_err_rom_path_required">Ke spuštění %1$s je nutná cesta k ROM</string>
+    <string name="launch_err_rom_not_found">Soubor ROM nebyl nalezen: %1$s</string>
+    <string name="launch_err_no_core">Pro platformu \'%1$s\' v profilu \'%2$s\' není nastaveno žádné jádro RetroArch. Otevřete RetroArch → Core Downloader a nainstalujte jádro pro tento systém.</string>
+    <string name="launch_err_cannot_open_rom_type">%1$s nedokáže otevřít tento typ ROM. Zkuste emulátor přeinstalovat nebo ověřte jeho oprávnění v Nastavení Androidu.</string>
+    <string name="launch_err_no_file_path">%1$s nemá na tomto zařízení cestu k souboru, takže %2$s nemůže zjistit, kterou hru spustit.</string>
+    <string name="launch_err_not_in_rom_folder">%1$s není v nastavené složce ROM, takže ji nelze předat emulátoru %2$s. Zkontrolujte složku nastavenou pro tuto Paměťovou kartu v Nastavení.</string>
+
+    <!-- Emulator choice problems -->
+    <string name="launch_err_configured_missing">Emulátor nastavený jako %1$s není nainstalován ani dostupný: %2$s</string>
+    <string name="launch_err_core_not_installed">%1$s je nastaven jako %2$s, ale toto jádro není v RetroArchu nainstalováno. Nainstalujte jej nebo vyberte jiný emulátor.</string>
+    <string name="launch_err_no_longer_available">%1$s je nastaven jako %2$s, ale již není dostupný. Vyberte jiný emulátor.</string>
+    <string name="launch_err_not_configured_for_platform">%1$s není nastaven pro %2$s</string>
+    <string name="launch_err_no_emulator_for_platform">Pro %1$s není nastaven žádný emulátor. Vyberte emulátor pro tuto hru nebo nastavte výchozí pro platformu.</string>
+
+    <!-- Where an emulator choice came from -->
+    <string name="launch_source_per_game">Přepsání pro hru</string>
+    <string name="launch_source_per_game_lower">přepsání pro hru</string>
+    <string name="launch_source_memory_card">Výchozí pro Paměťovou kartu</string>
+    <string name="launch_source_memory_card_lower">výchozí pro Paměťovou kartu</string>
+    <string name="launch_source_platform">Výchozí pro platformu</string>
+    <string name="launch_source_platform_lower">výchozí pro platformu</string>
+    <string name="launch_source_recommended">Doporučený</string>
+    <string name="launch_source_recommended_lower">doporučený</string>
+    <string name="launch_phrase_per_game">přepsání pro hru</string>
+    <string name="launch_phrase_memory_card">emulátor Paměťové karty</string>
+    <string name="launch_phrase_platform">výchozí pro platformu</string>
+
+    <!-- Launch hand-off failures -->
+    <string name="launch_err_emulator_not_found">Emulátor nebyl nalezen. Je nainstalován?</string>
+    <string name="launch_err_permission_denied">Spuštění emulátoru bylo odepřeno oprávněním</string>
+    <string name="launch_err_open_emulator">Emulátor nelze otevřít: %1$s</string>
+    <string name="launch_never_foreground">Emulátor se po spuštění nikdy nedostal do popředí.</string>
+    <string name="launch_never_appeared">Emulátor se vůbec nezobrazil. Zkontrolujte, zda je nainstalován a aktuální, a zkuste jej spustit znovu.</string>
+    <plurals name="launch_history_failed">
+        <item quantity="one">Z posledních %2$d spuštění této hry selhalo %1$d.</item>
+        <item quantity="few">Z posledních %2$d spuštění této hry selhala %1$d.</item>
+        <item quantity="many">Z posledních %2$d spuštění této hry selhalo %1$d.</item>
+        <item quantity="other">Z posledních %2$d spuštění této hry selhalo %1$d.</item>
+    </plurals>
+
+    <!-- Launch failure notification -->
+    <string name="launch_rec_title">%1$s nelze spustit</string>
+    <string name="launch_rec_could_not_start">Emulátor nelze spustit</string>
+    <string name="launch_rec_never_foreground">Emulátor se nikdy nedostal do popředí</string>
+    <string name="launch_fact_emulator">Emulátor</string>
+    <string name="launch_fact_core">Jádro</string>
+    <string name="launch_fact_platform">Platforma</string>
+    <string name="launch_fact_recent">Nedávná spuštění</string>
+    <string name="launch_fact_recent_value">Selhalo %1$d z posledních %2$d</string>
+
+    <!-- Shortcut requests -->
+    <string name="launch_shortcut_request_title">Žádost o zástupce: %1$s (otevírá %2$s)</string>
+    <string name="launch_shortcut_request_message">Přidejte jej, jen pokud jste tohoto zástupce právě sami vytvořili.</string>
+    <string name="launch_shortcut_added_title">Zástupce přidán: %1$s</string>
+    <string name="launch_shortcut_ignored_title">Zástupce ignorován: %1$s</string>
+    <string name="launch_shortcut_from">Z aplikace %1$s</string>
+    <string name="launch_windows_added_title">„%1$s“ přidáno do her pro Windows</string>
+    <string name="launch_windows_added_message">Dokončete nastavení knihovny Windows, aby se její složka prohledala</string>
+
+    <!-- First-run setup prompts -->
+    <string name="launch_setup_add_rom_folder">Přidejte složku ROM a založte knihovnu</string>
+    <string name="launch_setup_add_console_card">Přidejte Paměťovou kartu konzole, do které se bude prohledávat</string>
+    <string name="launch_setup_install_emulator">Nainstalujte emulátor, abyste mohli hrát své hry</string>
+
+    <!-- Emulator detection notes -->
+    <string name="launch_inspect_known">Automaticky vyplněno z vestavěného profilu pro %1$s. Potvrďte platformy a uložte.</string>
+    <string name="launch_inspect_best_guess">Odhad podle toho, jak tato aplikace otevírá soubory ROM. Nastavte platformy a před uložením vyzkoušejte ROM.</string>
+    <string name="launch_inspect_minimal">Nelze zjistit, jak tato aplikace přijímá ROM. Vyplňte nastavení aktivity / intentu ručně a vyzkoušejte ROM.</string>
+
+    <!-- Emulator knowledge file updates -->
+    <string name="launch_kb_too_many_files">Lze importovat nejvýše %1$d znalostních souborů; nejprve jeden odeberte</string>
+    <string name="launch_kb_installed">Aktualizováno</string>
+    <string name="launch_kb_not_configured">Aktualizace nejsou v tomto sestavení nastaveny</string>
+    <string name="launch_kb_offline">Nelze se spojit se serverem aktualizací</string>
+    <string name="launch_kb_too_large">Soubor aktualizace je příliš velký</string>
+    <string name="launch_kb_signature_invalid">Podpis aktualizace není platný</string>
+    <string name="launch_kb_needs_app_update">Tato aktualizace vyžaduje novější verzi aplikace</string>
+    <string name="launch_kb_older">Aktualizace je starší než již nainstalovaná</string>
+    <string name="launch_kb_invalid_content">Soubor aktualizace má neplatný obsah</string>
+    <string name="launch_kb_storage_failed">Aktualizaci nelze uložit</string>
+    <string name="launch_kb_skipped">Kontrola nebyla potřeba</string>
+
+    <!-- Windows game launchers -->
+    <string name="launch_unknown_gamehub_or_bannerhub">může být GameHub nebo BannerHub</string>
+    <string name="launch_unknown_gamehublite_or_bannerhub">může být GameHub Lite nebo BannerHub</string>
+    <string name="launch_unknown_not_in_list">není v seznamu PFP</string>
+    <string name="launch_choice_not_a_launcher">Není launcher</string>
+    <string name="launch_id_prompt_gamehub">ID hry — na stránce hry: klepněte na Kopírovat vedle Local Game ID nebo ⋮ → Banner Tools → Show Game ID</string>
+    <string name="launch_id_prompt_gamenative">Steam App ID (nebo ID aplikace v obchodě) nainstalované hry</string>
+</resources>

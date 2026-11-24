@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slice H2: feature-backup (backup and restore results) -->
+<resources>
+    <!-- Backup failures -->
+    <string name="bak_no_folder">Chưa đặt thư mục sao lưu. Hãy chọn trong Cài đặt → Sao lưu &amp; khôi phục → Thư mục sao lưu.</string>
+    <string name="bak_too_large">Bản sao lưu này quá lớn để khôi phục (tối đa 20.000 tệp và 2 GB). Hãy xóa ảnh minh họa hoặc nội dung không dùng rồi thử lại.</string>
+    <string name="bak_write_failed">Không thể ghi vào thư mục sao lưu. Hãy chọn lại thư mục sao lưu trong Cài đặt ▸ Hệ thống ▸ Sao lưu &amp; khôi phục.</string>
+    <string name="bak_unknown_error">Lỗi không xác định</string>
+
+    <!-- Restore failures -->
+    <string name="bak_open_failed">Không thể mở tệp sao lưu</string>
+    <string name="bak_missing_manifest">Bản sao lưu thiếu tệp manifest</string>
+    <string name="bak_format_too_new">Định dạng sao lưu v%1$d mới hơn mức ứng dụng này hỗ trợ (v%2$d)</string>
+    <string name="bak_no_uri">Không có URI</string>
+
+    <!-- Notification titles -->
+    <string name="bak_task_created">Đã tạo bản sao lưu</string>
+    <string name="bak_task_failed">Sao lưu thất bại</string>
+    <string name="bak_task_restored">Đã khôi phục bản sao lưu</string>
+    <string name="bak_task_restore_failed">Khôi phục thất bại</string>
+    <string name="bak_results_restored">Đã khôi phục</string>
+    <plurals name="bak_items_skipped">
+        <item quantity="other">Đã bỏ qua %d mục</item>
+    </plurals>
+
+    <string name="bak_refused_out_of_root">Đã từ chối \'%1$s\': không nằm trong thư mục có thể khôi phục</string>
+    <string name="bak_refused_profiles_unparseable">Đã từ chối hồ sơ trình giả lập: không thể phân tích tệp</string>
+    <string name="bak_refused_profile">Đã từ chối hồ sơ trình giả lập \'%1$s\': %2$s</string>
+</resources>

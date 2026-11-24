@@ -3,6 +3,8 @@ package com.playfieldportal.feature.artwork.api
 import android.net.Uri
 import com.playfieldportal.core.data.repository.ArtworkFolderRepository
 import com.playfieldportal.core.data.repository.RomRootRepository
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.artwork.R
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
 import com.playfieldportal.feature.artwork.store.InternalArtworkStore
 import kotlinx.coroutines.CancellationException
@@ -37,7 +39,7 @@ sealed interface ArtworkFolderState {
 }
 
 /** The one line every scrape surface shows when a run was paused by [ArtworkFolderState]. */
-const val ARTWORK_PAUSED_MESSAGE = "Artwork paused. Relink your artwork folder to save new art."
+val ARTWORK_PAUSED_TEXT: UiText = UiText.res(R.string.art_paused_message)
 
 /** What needed the folder: a scrape-family write or a user pick. */
 enum class FolderNeedTrigger { SCRAPE, PICK }

@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
+import com.playfieldportal.studio.i18n.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -53,7 +53,7 @@ private fun PreviewAdjustControls(store: PreviewAdjustStore, onAdjustOnPreview: 
         PreviewAdjustStore.LEFT_MAX, PreviewAdjustStore.POSITION_STEP, enabled, store::setLeft)
     AdjustSlider("Vertical", percent(adjust.barTopFraction), adjust.barTopFraction, PreviewAdjustStore.TOP_MIN,
         PreviewAdjustStore.TOP_MAX, PreviewAdjustStore.POSITION_STEP, enabled, store::setTop)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    ButtonRow {
         OutlinedButton(onClick = { store.applyBiblicallyAccurate(); store.setEnabled(true) }) {
             Text("Biblically Accurate preview", fontSize = 12.sp)
         }

@@ -56,6 +56,8 @@ import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import androidx.compose.ui.res.stringResource
+import com.playfieldportal.feature.xmb.R
 
 // ── Games search field ────────────────────────────────────────────────────────
 //
@@ -208,7 +210,7 @@ fun GameSearchField(
                         Box {
                             if (text.isEmpty()) {
                                 Text(
-                                    "Search games…",
+                                    stringResource(R.string.xmbu_game_search_placeholder),
                                     color = Color.White.copy(alpha = 0.45f),
                                     fontSize = 16.sp,
                                 )

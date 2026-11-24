@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Instellingen</string>
+    <string name="sound_title">Geluid</string>
+    <string name="sound_group_master">Algemeen</string>
+    <string name="sound_group_levels">Niveaus</string>
+    <string name="sound_group_sounds">Geluiden</string>
+    <string name="sound_master_volume">Hoofdvolume</string>
+    <string name="sound_master_volume_help">Regelt alle geluiden van de launcher. Bij 0 is de launcher stil.</string>
+    <string name="sound_ambience_help">Wordt herhaald terwijl je bladert. OGG loopt naadloos door; MP3 kan een klik geven.</string>
+    <string name="sound_rejected_title">Dat geluid kon niet worden gebruikt</string>
+    <string name="sound_reset_confirm_title">Geluid terugzetten naar standaard?</string>
+    <string name="sound_reset_confirm_message">Elk menugeluid gaat terug naar het meegeleverde PFP-sample en elk niveau, ook het hoofdvolume, gaat terug naar vol. Je sfeertrack en de media van Boot Video en Game Boot blijven ongewijzigd.</string>
+    <string name="sound_reset_confirm_action">Terugzetten</string>
+    <string name="sound_reset_row">Geluid terugzetten naar standaard</string>
+    <string name="sound_reset_row_help">Zet elk menugeluid terug naar het meegeleverde PFP-sample en elk niveau naar vol. Je sfeertrack blijft behouden.</string>
+    <string name="sound_channel_navigation">Navigatie</string>
+    <string name="sound_channel_back">Terug / Annuleren</string>
+    <string name="sound_channel_confirm">Bevestigen / Toepassen</string>
+    <string name="sound_channel_error">Fout / Ongeldig</string>
+    <string name="sound_channel_notification">Melding</string>
+    <string name="sound_channel_boot">Opstartreeks</string>
+    <string name="sound_channel_ambience">Sfeer</string>
+    <string name="sound_slot_navigation">Navigatie</string>
+    <string name="sound_slot_back">Terug / Annuleren</string>
+    <string name="sound_slot_confirm">Bevestigen / Toepassen</string>
+    <string name="sound_slot_error">Fout / Ongeldig</string>
+    <string name="sound_slot_notification">Melding</string>
+    <string name="sound_slot_ambience">Sfeertrack</string>
+</resources>

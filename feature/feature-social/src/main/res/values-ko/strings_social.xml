@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- QR login screen -->
+    <string name="soc_qr_preparing">로그인 준비 중…</string>
+    <string name="soc_qr_connected">연결됨</string>
+    <string name="soc_qr_expired">코드가 만료되었습니다.</string>
+    <string name="soc_qr_declined">로그인이 거부되었습니다.</string>
+    <string name="soc_qr_error">로그인할 수 없습니다. %1$s</string>
+    <string name="soc_qr_content_description">Discord 로그인 QR 코드</string>
+    <string name="soc_qr_title">Discord로 로그인</string>
+    <string name="soc_qr_copied">복사됨!</string>
+    <string name="soc_qr_tap_to_copy">코드를 선택하여 복사</string>
+    <string name="soc_qr_instructions">휴대전화 카메라로 스캔하거나 discord.com/activate에 접속해 코드를 붙여넣으세요.</string>
+    <string name="soc_qr_expires_in">%1$d초 후 만료</string>
+    <!-- Short status shown when the countdown reaches zero -->
+    <string name="soc_qr_expired_short">만료됨</string>
+    <!-- Button -->
+    <string name="soc_qr_cancel">취소</string>
+    <!-- Button -->
+    <string name="soc_qr_try_again">다시 시도</string>
+</resources>

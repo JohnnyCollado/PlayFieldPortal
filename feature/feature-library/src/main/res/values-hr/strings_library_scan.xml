@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Scan error messages -->
+    <string name="scan_error_card_not_found">Memorijska kartica nije pronađena.</string>
+    <string name="scan_error_scan_failed">Skeniranje nije uspjelo — pogledajte zapisnik.</string>
+    <string name="scan_error_library_unreadable">Nije moguće pročitati biblioteku.</string>
+    <string name="scan_error_save_failed">Nije moguće spremiti skeniranu igru.</string>
+    <string name="scan_error_rom_dir_not_found">Mapa s ROM-ovima nije pronađena: %1$s</string>
+    <string name="scan_error_folder_link_invalid">Poveznica na mapu ove biblioteke nije važeća. Ponovno dodajte mapu.</string>
+    <string name="scan_error_root_unreadable">Mapu s ROM-ovima nije moguće pročitati. Ako je na SD kartici, provjerite je li kartica umetnuta.</string>
+    <string name="scan_error_permission_lost">Dopuštenje je izgubljeno, ponovno odaberite mapu.</string>
+    <string name="scan_error_partial_read">Dio mape nije bilo moguće pročitati pa ništa nije promijenjeno. Pokušajte ponovno za trenutak.</string>
+
+    <!-- One-line scan outcome -->
+    <string name="scan_outcome_line">%1$s: %2$s</string>
+    <string name="scan_outcome_no_source">Mapa s ROM-ovima nije postavljena.</string>
+    <string name="scan_outcome_busy">skeniranje je već u tijeku.</string>
+    <string name="scan_outcome_failed">skeniranje nije uspjelo.</string>
+    <string name="scan_outcome_no_new">nema novih ROM-ova</string>
+    <string name="scan_outcome_no_new_none_missing">nema novih ROM-ova, ništa ne nedostaje</string>
+    <string name="scan_outcome_no_new_marked_missing">nema novih ROM-ova, označeno kao nedostaje: %1$d</string>
+    <plurals name="scan_outcome_added">
+        <item quantity="one">dodan %1$d novi ROM</item>
+        <item quantity="few">dodana %1$d nova ROM-a</item>
+        <item quantity="other">dodano %1$d novih ROM-ova</item>
+    </plurals>
+    <plurals name="scan_outcome_added_none_missing">
+        <item quantity="one">dodan %1$d novi ROM, ništa ne nedostaje</item>
+        <item quantity="few">dodana %1$d nova ROM-a, ništa ne nedostaje</item>
+        <item quantity="other">dodano %1$d novih ROM-ova, ništa ne nedostaje</item>
+    </plurals>
+    <plurals name="scan_outcome_added_marked_missing">
+        <item quantity="one">dodan %1$d novi ROM, označeno kao nedostaje: %2$d</item>
+        <item quantity="few">dodana %1$d nova ROM-a, označeno kao nedostaje: %2$d</item>
+        <item quantity="other">dodano %1$d novih ROM-ova, označeno kao nedostaje: %2$d</item>
+    </plurals>
+    <string name="scan_with_error_note">%1$s (%2$s)</string>
+
+    <!-- Per-card line in the scan results list -->
+    <string name="scan_badge_no_new">Ništa novo</string>
+    <string name="scan_reason_no_new">Nema novih igara</string>
+    <string name="scan_reason_no_new_marked_missing">Nema novih igara, označeno kao nedostaje: %1$d</string>
+    <plurals name="scan_reason_added">
+        <item quantity="one">Dodana %1$d nova igra</item>
+        <item quantity="few">Dodane %1$d nove igre</item>
+        <item quantity="other">Dodano %1$d novih igara</item>
+    </plurals>
+    <plurals name="scan_reason_added_marked_missing">
+        <item quantity="one">Dodana %1$d nova igra, označeno kao nedostaje: %2$d</item>
+        <item quantity="few">Dodane %1$d nove igre, označeno kao nedostaje: %2$d</item>
+        <item quantity="other">Dodano %1$d novih igara, označeno kao nedostaje: %2$d</item>
+    </plurals>
+</resources>

@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared by several Settings screens -->
+    <string name="sets_on">Sí</string>
+    <string name="sets_off">No</string>
+    <string name="sets_prompt_back">Atrás</string>
+    <string name="sets_prompt_enter">Entrar</string>
+    <string name="sets_prompt_switch">Cambiar</string>
+    <string name="sets_prompt_options">Opciones</string>
+
+    <!-- Settings ▸ Backup & Restore -->
+    <string name="sets_backup_title">Copia de seguridad y restauración</string>
+    <string name="sets_backup_group_backup">Copia de seguridad</string>
+    <string name="sets_backup_last_backup">Última copia</string>
+    <string name="sets_backup_never">Nunca</string>
+    <string name="sets_backup_folder">Carpeta de copia</string>
+    <string name="sets_backup_folder_saving_to">Guardando en: %1$s  (selecciona para cambiar)</string>
+    <string name="sets_backup_folder_not_set">Sin configurar: selecciona para elegir dónde se guardan las copias</string>
+    <string name="sets_backup_now">Hacer copia ahora</string>
+    <string name="sets_backup_now_help">Guarda la biblioteca, los ajustes y el historial de juego</string>
+    <string name="sets_backup_choose_folder_first">Elige antes una carpeta de copia</string>
+    <string name="sets_backup_choose_folder_first_error">Elige antes una carpeta de copia.</string>
+    <string name="sets_backup_group_saved">Copias guardadas</string>
+    <string name="sets_backup_group_included">Qué se incluye</string>
+    <string name="sets_backup_included_library">Biblioteca de juegos</string>
+    <string name="sets_backup_included_history">Historial de juego</string>
+    <string name="sets_backup_included_categories">Categorías personalizadas</string>
+    <string name="sets_backup_included_settings">Ajustes y claves de API</string>
+    <string name="sets_backup_included_profiles">Perfiles de emulador</string>
+    <string name="sets_backup_rom_files">Archivos de ROM</string>
+    <string name="sets_backup_not_included">✗  (no incluido)</string>
+    <string name="sets_backup_group_restore">Restaurar</string>
+    <string name="sets_backup_restore_from_file">Restaurar desde archivo</string>
+    <string name="sets_backup_restore_from_file_help">Busca un archivo .pfpbackup</string>
+    <string name="sets_backup_after_restoring">Después de restaurar</string>
+    <string name="sets_backup_after_restoring_help">Tus carpetas vuelven, pero el acceso de Android a ellas no. Vuelve a vincular cada raíz en el Acceso a raíces de su sección (Biblioteca, Música, Video, Fotos): un paso cada una; al volver a vincular una raíz se restaura todo lo que contiene a la vez.</string>
+    <string name="sets_backup_working">Procesando…</string>
+    <string name="sets_backup_error">Error</string>
+    <string name="sets_backup_creating">Creando copia de seguridad…</string>
+    <string name="sets_backup_restoring">Restaurando copia de seguridad…</string>
+    <string name="sets_backup_unknown_error">Error desconocido</string>
+    <string name="sets_backup_delete_failed">No se pudo eliminar %1$s.</string>
+    <string name="sets_backup_menu_restore">Restaurar</string>
+    <string name="sets_backup_menu_share">Compartir</string>
+    <string name="sets_backup_menu_delete">Eliminar copia</string>
+    <string name="sets_backup_delete_title">¿Eliminar la copia?</string>
+    <string name="sets_backup_delete_message">Se eliminará \"%1$s\". Esto no se puede deshacer.</string>
+    <string name="sets_backup_delete_confirm">Eliminar</string>
+    <string name="sets_backup_restore_title">¿Restaurar la copia?</string>
+    <string name="sets_backup_restore_message_named">\"%1$s\" reemplazará tu biblioteca, tus ajustes y tu historial de juego actuales. Esto no se puede deshacer.</string>
+    <string name="sets_backup_restore_message_picked">Esta copia reemplazará tu biblioteca, tus ajustes y tu historial de juego actuales. Esto no se puede deshacer.</string>
+    <string name="sets_backup_restore_confirm">Restaurar</string>
+    <string name="sets_backup_share_chooser">Compartir copia de seguridad</string>
+
+    <!-- Settings ▸ Credits -->
+    <string name="sets_credits_group_xmb">Diseño del XMB: Sony</string>
+    <string name="sets_credits_xmb_inspired">El aspecto de este launcher se inspira en el XMB (XrossMediaBar), la interfaz que Sony creó para PlayStation Portable y PlayStation 3: el diseño de barras cruzadas, la onda fluida y el modelo de navegación son homenajes a ella.</string>
+    <string name="sets_credits_xmb_trademarks">\"XrossMediaBar\", \"XMB\", \"PSP\" y \"PlayStation\" son marcas comerciales de Sony Interactive Entertainment Inc. Play Field Portal es un proyecto de fans independiente y sin ánimo de lucro: no está afiliado a Sony, ni respaldado ni patrocinado por ella. Las ilustraciones de interfaz incluidas proceden del tema comunitario \"XMB Menu for ES-DE\" (acreditado más abajo) y siguen siendo propiedad de sus respectivos autores. No se incluye ningún audio de Sony: cada sonido del menú se acredita por separado más abajo.</string>
+    <string name="sets_credits_group_icon">Icono y logo de la app</string>
+    <string name="sets_credits_icon_designed">El icono y el logo de Play Field Portal los diseñó johakovi. Muchísimas gracias por las ilustraciones que dan identidad al launcher.</string>
+    <string name="sets_credits_label_design">Diseño</string>
+    <string name="sets_credits_group_artwork">Ilustraciones de sistemas y consolas</string>
+    <string name="sets_credits_artwork_from">Los iconos de sistemas, consolas y categorías que se usan en todo el launcher proceden del tema \"XMB Menu for ES-DE\", una recreación comunitaria del XMB de PSP.</string>
+    <string name="sets_credits_artwork_rights">Todos los derechos de estas ilustraciones pertenecen a sus creadores: Anthony Caccese, a partir del trabajo original de InitialDin. Los iconos se usan aquí con gratitud y siguen siendo propiedad de sus respectivos autores.</string>
+    <string name="sets_credits_label_project">Proyecto</string>
+    <string name="sets_credits_label_authors">Autores</string>
+    <string name="sets_credits_label_source">Código fuente</string>
+    <string name="sets_credits_group_buttons">Iconos de botones del mando</string>
+    <string name="sets_credits_buttons_from">Todas las indicaciones de botones en pantalla (los botones frontales de PlayStation, Xbox y Nintendo, crucetas, botones superiores, gatillos, sticks y botones del sistema) proceden de los packs de iconos de botones de Zacksly, usados bajo la licencia Creative Commons Attribution 3.0.</string>
+    <string name="sets_credits_buttons_unmodified">Las ilustraciones no se han modificado: solo se cambiaron los nombres de archivo a nombres de recursos de Android, y solo se incluyen los iconos que muestra el launcher.</string>
+    <string name="sets_credits_label_author">Autor</string>
+    <string name="sets_credits_label_website">Sitio web</string>
+    <string name="sets_credits_label_support">Apoyo</string>
+    <string name="sets_credits_label_packs">Packs</string>
+    <string name="sets_credits_label_license">Licencia</string>
+    <string name="sets_credits_group_sounds">Sonidos del menú</string>
+    <string name="sets_credits_sounds_built">Los sonidos del menú incluidos (navegación, atrás, confirmar, error, inicio, notificación y el sonido de arranque) se crearon a partir de audio libre de derechos publicado en Pixabay, editado para el launcher: recortado, con tono y nivel ajustados y convertido. Gracias a los creadores en cuyo trabajo se basa el conjunto.</string>
+    <string name="sets_credits_sounds_license">La licencia de contenido de Pixabay no exige atribución; aun así, se da aquí como agradecimiento. Si eres uno de estos creadores y quieres que se cambie el crédito o se retire un recurso, ponte en contacto.</string>
+    <string name="sets_credits_group_metadata">Ilustraciones y metadatos de juegos</string>
+    <string name="sets_credits_metadata_fetched">Las carátulas, cajas 3D, imágenes de cartuchos/discos, banners hero, logos, iconos, manuales, videos cortos y metadatos de juegos se obtienen cuando lo pides de proveedores externos y siguen siendo propiedad de sus respectivos dueños.</string>
+    <string name="sets_credits_label_primary_scraper">Scraper principal</string>
+    <string name="sets_credits_value_screenscraper">ScreenScraper: screenscraper.fr, base de datos de medios de juegos mantenida por la comunidad</string>
+    <string name="sets_credits_label_artwork">Ilustraciones</string>
+    <string name="sets_credits_label_metadata">Metadatos</string>
+    <string name="sets_credits_group_achievements">Logros: Shiba Coins</string>
+    <string name="sets_credits_achievements_from">Los datos de logros del sistema Shiba Coins proceden de los siguientes servicios y proyectos, y siguen siendo propiedad de sus respectivos dueños.</string>
+    <string name="sets_credits_value_retroachievements">retroachievements.org: conjuntos de logros creados por la comunidad y datos de desbloqueo de juegos retro, mediante la Web API oficial de RetroAchievements y el cliente api-kotlin</string>
+    <string name="sets_credits_value_steam">Powered by Steam: esquemas de logros y datos de desbloqueo mediante la Steam Web API, con tu propia clave. Steam y el logo de Steam son marcas comerciales de Valve Corporation. steampowered.com</string>
+    <string name="sets_credits_goldberg_bundles">El seguimiento local de logros para juegos de PC con Steam emulado incluye Goldberg Steam Emulator, concretamente gbe_fork, la bifurcación comunitaria mantenida por Detanup01 y colaboradores, basada en el Goldberg Emulator original de Mr. Goldberg.</string>
+    <string name="sets_credits_goldberg_license">El emulador es software libre con licencia GNU Lesser General Public License v3.0 (LGPL-3.0). Play Field Portal incluye una compilación sin modificar de su steam_api64.dll; el código fuente correspondiente completo y el texto íntegro de la licencia están disponibles en los enlaces de abajo.</string>
+    <string name="sets_credits_value_gbe">gbe_fork: Detanup01 y colaboradores</string>
+    <string name="sets_credits_label_original_project">Proyecto original</string>
+    <string name="sets_credits_value_goldberg_original">Goldberg Emulator de Mr. Goldberg: gitlab.com/Mr_Goldberg/goldberg_emulator</string>
+    <string name="sets_credits_group_support">Apoya el proyecto</string>
+    <string name="sets_credits_support_thanks">Gracias a todos por su apoyo. Creé esto como una carta de amor a la PSP y a la increíble comunidad que también la adora, así que este proyecto será gratuito para siempre. Dicho esto, si valoras lo que hago y quieres demostrarlo de otra forma, puedes invitarme a un taco. Por supuesto, las donaciones son siempre opcionales y nunca obligatorias. Los quiero a todos, y feliz 15 de junio.</string>
+    <string name="sets_credits_label_buy_taco">Invítame a un taco</string>
+    <string name="sets_credits_group_notes">Notas</string>
+    <string name="sets_credits_notes_text">Si eres titular de derechos y quieres que se cambie la atribución o se retire algún recurso, ponte en contacto y se atenderá con prontitud.</string>
+    <string name="sets_credits_title">Créditos</string>
+    <string name="sets_credits_no_browser">Ninguna app puede abrir enlaces web. Visita %1$s en un navegador.</string>
+
+    <!-- Settings ▸ Logs -->
+    <string name="sets_logs_title">Registros</string>
+    <string name="sets_logs_prompt_share">Compartir</string>
+    <string name="sets_logs_prompt_open">Abrir</string>
+    <string name="sets_logs_prompt_clear">Borrar</string>
+    <string name="sets_logs_clear_title">¿Borrar todos los registros?</string>
+    <plurals name="sets_logs_clear_message">
+        <item quantity="one">Se eliminará el archivo de registro (%2$s). Si vas a informar de un problema, comparte antes el registro. Un registro borrado no se puede recuperar.</item>
+        <item quantity="many">Se eliminarán los %1$d archivos de registro (%2$s). Si vas a informar de un problema, comparte antes el registro. Un registro borrado no se puede recuperar.</item>
+        <item quantity="other">Se eliminarán los %1$d archivos de registro (%2$s). Si vas a informar de un problema, comparte antes el registro. Un registro borrado no se puede recuperar.</item>
+    </plurals>
+    <string name="sets_logs_clear_confirm">Borrar</string>
+    <string name="sets_logs_group_files">Archivos de registro</string>
+    <string name="sets_logs_empty">Aún no hay archivos de registro</string>
+    <string name="sets_logs_empty_help">Cada vez que se abre la app empieza un registro nuevo. Selecciona para volver a comprobar.</string>
+    <string name="sets_logs_group_manage">Gestionar</string>
+    <string name="sets_logs_clear_row">Borrar todos los registros</string>
+    <string name="sets_logs_clear_row_help">Elimina todos los registros guardados. Esta sesión sigue registrando en un archivo nuevo.</string>
+    <string name="sets_logs_clear_row_none">Nada que borrar</string>
+    <string name="sets_logs_group_about">Acerca de los registros</string>
+    <string name="sets_logs_saved">Qué se guarda</string>
+    <string name="sets_logs_saved_help">Solo se conservan las sesiones más recientes (unos 2 MB como máximo). Las contraseñas, tokens, nombres de cuenta y correos se eliminan antes de escribir nada.</string>
+    <string name="sets_logs_share_file">Compartir %1$s</string>
+    <string name="sets_logs_current">ACTUAL</string>
+    <string name="sets_logs_open_with">Abrir registro con</string>
+    <string name="sets_logs_share_subject">Registro de Play Field Portal: %1$s</string>
+    <string name="sets_logs_share_chooser">Compartir archivo de registro</string>
+    <string name="sets_logs_no_files">No hay archivos</string>
+    <plurals name="sets_logs_summary">
+        <item quantity="one">%1$d archivo · %2$s</item>
+        <item quantity="many">%1$d archivos · %2$s</item>
+        <item quantity="other">%1$d archivos · %2$s</item>
+    </plurals>
+    <plurals name="sets_logs_deleted">
+        <item quantity="one">Se eliminó %1$d archivo (%2$s)</item>
+        <item quantity="many">Se eliminaron %1$d archivos (%2$s)</item>
+        <item quantity="other">Se eliminaron %1$d archivos (%2$s)</item>
+    </plurals>
+    <string name="sets_logs_started_today">Iniciado hoy, %1$s</string>
+    <string name="sets_logs_started_yesterday">Iniciado ayer, %1$s</string>
+    <string name="sets_logs_started_on">Iniciado el %1$s, %2$s</string>
+
+    <!-- Root folders -->
+    <string name="sets_roots_group">Carpetas raíz</string>
+    <string name="sets_scanning">Escaneando…</string>
+    <string name="sets_rescan_help">Actualiza las bibliotecas desde todas las carpetas raíz</string>
+    <string name="sets_playback_group">Reproducción</string>
+    <string name="sets_root_kind_music">música</string>
+    <string name="sets_root_kind_video">video</string>
+    <string name="sets_root_kind_photo">fotos</string>
+    <string name="sets_root_kind_rom">ROM</string>
+    <string name="sets_root_fallback_music">Música</string>
+    <string name="sets_root_fallback_video">Videos</string>
+    <string name="sets_root_fallback_photo">Fotos</string>
+    <string name="sets_root_none">No hay raíces de %1$s configuradas</string>
+    <string name="sets_root_none_help">Añade una carpeta abajo para empezar a gestionar tu biblioteca</string>
+    <string name="sets_root_access_lost">Acceso perdido: usa Editar para volver a concederlo</string>
+    <string name="sets_root_consoles">Consolas: %1$s</string>
+    <string name="sets_root_kind_root">Raíz de %1$s</string>
+    <string name="sets_label_edit_folder">Editar carpeta</string>
+    <string name="sets_label_remove_folder">Quitar carpeta</string>
+    <string name="sets_label_options_hint">Ayuda de opciones</string>
+    <string name="sets_label_show_on_bar">Mostrar en la barra</string>
+    <string name="sets_label_show_in_games">Mostrar en Juegos</string>
+    <string name="sets_label_pin_to_top">Fijar arriba</string>
+    <string name="sets_root_edit_short">Editar</string>
+    <string name="sets_root_remove_short">Quitar</string>
+    <string name="sets_root_remove_title">¿Quitar esta carpeta?</string>
+    <string name="sets_root_remove_message">PFP dejará de usar \"%1$s\" y lo que encontró allí saldrá de la biblioteca. No se elimina ningún archivo de tu almacenamiento.</string>
+    <string name="sets_root_remove_confirm">Quitar</string>
+    <string name="sets_player_builtin">Play Field Portal</string>
+    <string name="sets_player_system_default">Predeterminado del sistema</string>
+
+    <!-- Settings ▸ Music -->
+    <string name="sets_music_title">Música</string>
+    <string name="sets_music_player_title">Reproductor de música predeterminado</string>
+    <string name="sets_music_player_none">No se encontraron otros reproductores de música en este dispositivo.</string>
+    <string name="sets_music_add_root">Añadir raíz de música</string>
+    <string name="sets_music_add_root_help">Concede una carpeta raíz (p. ej. /Music); añade varias para abarcar ubicaciones</string>
+    <string name="sets_music_rescan">Volver a escanear la biblioteca de música</string>
+    <string name="sets_music_player">Reproductor de música predeterminado</string>
+    <string name="sets_music_player_help">App que abre las pistas de música</string>
+
+    <!-- Settings ▸ Video -->
+    <string name="sets_video_title">Video</string>
+    <string name="sets_video_player_title">Reproductor de video predeterminado</string>
+    <string name="sets_video_player_none">No se encontraron reproductores de video externos en este dispositivo.</string>
+    <string name="sets_video_add_root">Añadir raíz de video</string>
+    <string name="sets_video_add_root_help">Concede una carpeta raíz (p. ej. /Movies); añade varias para abarcar ubicaciones</string>
+    <string name="sets_video_rescan">Volver a escanear la biblioteca de video</string>
+    <string name="sets_video_player">Reproductor de video predeterminado</string>
+    <string name="sets_video_player_help">Play Field Portal reproduce dentro de la app; o elige una app o que se pregunte cada vez.</string>
+
+    <!-- Settings ▸ Photo -->
+    <string name="sets_photo_title">Fotos</string>
+    <string name="sets_photo_add_root">Añadir raíz de fotos</string>
+    <string name="sets_photo_add_root_help">Concede una carpeta raíz (p. ej. /Pictures); añade varias para abarcar ubicaciones</string>
+    <string name="sets_photo_rescan">Volver a escanear la biblioteca de fotos</string>
+    <string name="sets_photo_group_maintenance">Mantenimiento</string>
+    <string name="sets_photo_clear_cache">Borrar caché de miniaturas</string>
+    <string name="sets_photo_clear_cache_help">Elimina las miniaturas generadas. Un nuevo escaneo las vuelve a generar.</string>
+    <plurals name="sets_photo_cache_cleared">
+        <item quantity="one">Se borró %1$d miniatura en caché. Vuelve a escanear para regenerarla.</item>
+        <item quantity="many">Se borraron %1$d miniaturas en caché. Vuelve a escanear para regenerarlas.</item>
+        <item quantity="other">Se borraron %1$d miniaturas en caché. Vuelve a escanear para regenerarlas.</item>
+    </plurals>
+
+    <!-- Settings ▸ Interface ▸ Notifications -->
+    <string name="sets_notif_title">Notificaciones</string>
+    <string name="sets_notif_record">Registrar notificaciones</string>
+    <string name="sets_notif_record_help">Guarda un historial de escaneos, ilustraciones, obtención de datos y logros. Desactivado, no se añaden entradas nuevas; las tareas en curso siguen mostrando su progreso.</string>
+    <string name="sets_notif_group_history">Historial</string>
+    <string name="sets_notif_keep_for">Conservar entradas durante</string>
+    <string name="sets_notif_keep_for_help">Las entradas más antiguas se descartan la próxima vez que se registre algo. En cualquier caso se aplica un límite de 200 entradas, y las leídas se eliminan primero.</string>
+    <string name="sets_notif_never">Nunca</string>
+    <plurals name="sets_notif_days">
+        <item quantity="one">%1$d día</item>
+        <item quantity="many">%1$d días</item>
+        <item quantity="other">%1$d días</item>
+    </plurals>
+    <string name="sets_notif_mark_read">Marcar todo como leído</string>
+    <string name="sets_notif_mark_read_help">Borra el contador de no leídas de la barra de estado</string>
+    <plurals name="sets_notif_unread">
+        <item quantity="one">%1$d sin leer</item>
+        <item quantity="many">%1$d sin leer</item>
+        <item quantity="other">%1$d sin leer</item>
+    </plurals>
+    <string name="sets_notif_none_unread">Ninguna sin leer</string>
+    <string name="sets_notif_clear_all">Borrar todo</string>
+    <string name="sets_notif_clear_all_help">Vacía el historial. Las tareas que siguen en curso no se ven afectadas.</string>
+    <plurals name="sets_notif_stored">
+        <item quantity="one">%1$d guardada</item>
+        <item quantity="many">%1$d guardadas</item>
+        <item quantity="other">%1$d guardadas</item>
+    </plurals>
+
+    <!-- Settings ▸ System ▸ System Update -->
+    <string name="sets_update_title">Actualización del sistema</string>
+    <string name="sets_update_group_update">Actualización</string>
+    <string name="sets_update_installed">Versión instalada</string>
+    <string name="sets_update_latest">Última versión</string>
+    <string name="sets_update_check">Buscar actualizaciones</string>
+    <string name="sets_update_checking">Comprobando…</string>
+    <string name="sets_update_notifications">Avisos de actualización</string>
+    <string name="sets_update_notifications_help">Avisarme en Notificaciones cuando salga una versión nueva, como máximo una vez al día</string>
+    <string name="sets_update_group_changelog">Registro de cambios</string>
+    <string name="sets_update_no_releases">Aún no se ha cargado ninguna versión</string>
+    <string name="sets_update_no_releases_help">Busca actualizaciones para cargar el registro de cambios</string>
+    <string name="sets_update_install">Descargar e instalar %1$s</string>
+    <string name="sets_update_cannot_install">Esta versión no puede instalar actualizaciones desde aquí</string>
+    <string name="sets_update_handed_over">Confirma en el instalador de Android para terminar</string>
+    <string name="sets_update_downloading">Descargando…</string>
+    <string name="sets_update_install_help">Android te pide confirmación antes de instalar nada</string>
+    <string name="sets_update_no_summary">No hay resumen para esta versión</string>
+    <string name="sets_update_full_notes">Notas de la versión completas</string>
+    <string name="sets_update_full_notes_help">Abre GitHub en tu navegador</string>
+    <string name="sets_edition_full">Completa</string>
+    <string name="sets_edition_lite">Lite</string>
+    <string name="sets_update_installed_label">%1$s · %2$s</string>
+    <string name="sets_update_unknown_version">Desconocida</string>
+    <string name="sets_update_available">%1$s disponible</string>
+    <string name="sets_update_not_checked">Aún sin comprobar</string>
+    <string name="sets_update_up_to_date">Actualizado</string>
+    <string name="sets_update_never_checked">Nunca comprobado</string>
+    <string name="sets_update_checked">Comprobado: %1$s</string>
+    <string name="sets_update_tag_new">Nueva</string>
+    <string name="sets_update_tag_installed">Instalada</string>
+    <string name="sets_update_msg_available">Hay una versión nueva disponible.</string>
+    <string name="sets_update_msg_latest">Tienes la última versión.</string>
+    <string name="sets_update_msg_offline">No se pudo conectar con GitHub. Vuelve a intentarlo más tarde.</string>
+    <string name="sets_update_msg_invalid">GitHub envió una respuesta inesperada. Vuelve a intentarlo más tarde.</string>
+    <string name="sets_update_no_apk">La versión %1$s aún no tiene descarga %2$s. Vuelve a intentarlo más tarde.</string>
+    <string name="sets_update_download_failed">No se pudo descargar la actualización. Comprueba tu conexión y vuelve a intentarlo.</string>
+    <string name="sets_update_not_newer">La descarga no es una versión más reciente de esta app, así que no se instaló.</string>
+    <string name="sets_update_no_installer">No se pudo abrir el instalador de Android en este dispositivo.</string>
+    <string name="sets_update_reminder_installed">La versión %1$s está instalada.</string>
+    <string name="sets_update_reminder_available">La versión %1$s está disponible.</string>
+
+    <!-- Settings ▸ About -->
+    <string name="sets_about_label_version">Versión</string>
+    <string name="sets_about_label_build">Compilación</string>
+    <string name="sets_about_label_edition">Edición</string>
+    <string name="sets_about_label_min_android">Android mínimo</string>
+    <string name="sets_about_label_target">Objetivo</string>
+    <string name="sets_about_group_open_source">Código abierto</string>
+    <string name="sets_about_value_compose">Framework de interfaz</string>
+    <string name="sets_about_value_room">Base de datos local</string>
+    <string name="sets_about_value_hilt">Inyección de dependencias</string>
+    <string name="sets_about_value_ktor">Cliente de red</string>
+    <string name="sets_about_value_coil">Carga de imágenes</string>
+    <string name="sets_about_value_media3">Videos cortos y reproducción</string>
+    <string name="sets_about_value_workmanager">Tareas en segundo plano</string>
+    <string name="sets_about_value_timber">Registros</string>
+    <string name="sets_about_group_credits">Créditos</string>
+    <string name="sets_about_label_art_media">Ilustraciones y medios</string>
+    <string name="sets_about_label_metadata">Metadatos</string>
+    <string name="sets_about_label_inspired">Inspirado en</string>
+    <string name="sets_about_label_see_also">Ver también</string>
+    <string name="sets_about_value_see_also">Ajustes ▸ Créditos</string>
+    <string name="sets_about_group_legal">Legal</string>
+    <string name="sets_about_legal_independent">Play Field Portal es un proyecto de fans independiente, no afiliado a Sony Interactive Entertainment.</string>
+    <string name="sets_about_legal_trademarks">PlayStation, PSP y XMB son marcas comerciales de Sony Interactive Entertainment Inc.</string>
+    <string name="sets_about_title">Acerca de</string>
+    <string name="sets_about_unknown">desconocido</string>
+
+    <!-- Artwork orphans -->
+    <string name="sets_orphan_linked">Ilustración vinculada: seguirá vinculada en futuros escaneos.</string>
+    <string name="sets_orphan_link_failed">No se pudo vincular ese archivo: ejecuta Escanear y revincular y vuelve a intentarlo.</string>
+
+    <!-- Settings ▸ Sound: parts resolved outside the screen -->
+    <string name="sets_audio_custom_sound">Sonido personalizado</string>
+    <string name="sets_audio_import_failed">No se pudo importar ese sonido. Prueba con otro archivo.</string>
+
+    <!-- Importing a PSP theme (.ptf) -->
+    <string name="sets_ptf_wallpaper_only">\"%1$s\" importado: solo el fondo de pantalla</string>
+    <plurals name="sets_ptf_icons">
+        <item quantity="one">\"%1$s\" importado: fondo de pantalla y %2$d icono</item>
+        <item quantity="many">\"%1$s\" importado: fondo de pantalla y %2$d iconos</item>
+        <item quantity="other">\"%1$s\" importado: fondo de pantalla y %2$d iconos</item>
+    </plurals>
+    <plurals name="sets_ptf_icons_tint">
+        <item quantity="one">\"%1$s\" importado: fondo de pantalla y %2$d icono, tono coincidente al %3$d%%</item>
+        <item quantity="many">\"%1$s\" importado: fondo de pantalla y %2$d iconos, tono coincidente al %3$d%%</item>
+        <item quantity="other">\"%1$s\" importado: fondo de pantalla y %2$d iconos, tono coincidente al %3$d%%</item>
+    </plurals>
+    <string name="sets_ptf_cxmb_unsupported">Los temas CXMB (.ctf) no son compatibles: solo los temas .ptf oficiales</string>
+
+    <!-- Connecting services -->
+    <string name="sets_svc_steam_connected">Steam conectado</string>
+    <string name="sets_svc_steam_resolved">Steam conectado: se resolvió \"%1$s\"</string>
+    <string name="sets_svc_steam_unresolved">Clave guardada, pero no se pudo resolver \"%1$s\". Introduce tu SteamID64.</string>
+    <string name="sets_svc_valid">Válido</string>
+    <string name="sets_svc_igdb_invalid">No válido: revisa el ID y el secreto de cliente</string>
+    <string name="sets_svc_screenscraper_invalid">No válido: revisa el usuario y la contraseña</string>
+    <plurals name="sets_svc_screenscraper_valid_threads">
+        <item quantity="one">Válido: %1$s hilo</item>
+        <item quantity="many">Válido: %1$s hilos</item>
+        <item quantity="other">Válido: %1$s hilos</item>
+    </plurals>
+    <plurals name="sets_svc_screenscraper_valid_both">
+        <item quantity="one">Válido: %1$s hilo, %2$s solicitudes/día</item>
+        <item quantity="many">Válido: %1$s hilos, %2$s solicitudes/día</item>
+        <item quantity="other">Válido: %1$s hilos, %2$s solicitudes/día</item>
+    </plurals>
+    <string name="sets_svc_screenscraper_valid_requests">Válido, %1$s solicitudes/día</string>
+
+    <!-- Settings ▸ Controller -->
+    <string name="sets_controller_title">Mando</string>
+    <string name="sets_controller_group_ab">Confirmar y atrás</string>
+    <string name="sets_controller_ab_help">Controla qué botón confirma y cuál vuelve atrás. Se aplica a todos los menús del launcher.</string>
+    <string name="sets_controller_group_xy">Opciones y ordenar</string>
+    <string name="sets_controller_xy_help">Intercambia las acciones de X e Y solo en la interfaz del launcher. No afecta a los controles del emulador.</string>
+    <string name="sets_controller_group_type">Tipo de mando</string>
+    <string name="sets_controller_type_help">Cambia qué iconos y etiquetas de botones se muestran en las indicaciones de ayuda.</string>
+    <string name="sets_controller_type">Tipo</string>
+    <string name="sets_controller_type_sub">Afecta a la barra de ayuda de la parte inferior del launcher</string>
+    <string name="sets_controller_group_scroll">Velocidad de desplazamiento</string>
+    <string name="sets_controller_scroll_help">Lo rápido que se desplazan las listas mientras mantienes una dirección. Cuanto más tiempo, más acelera; con el stick a fondo se desplaza a velocidad máxima.</string>
+    <string name="sets_controller_scroll_sub">Se aplica al mantener la cruceta y el stick</string>
+    <string name="sets_controller_group_navigation">Navegación</string>
+    <string name="sets_controller_left_backs_out">Izquierda vuelve atrás</string>
+    <string name="sets_controller_left_backs_out_help">Pulsa IZQUIERDA para salir de una carpeta o panel lateral, solo donde IZQUIERDA no haga otra cosa</string>
+    <string name="sets_controller_group_keyboard">Teclado</string>
+    <string name="sets_controller_virtual_keyboard">Teclado virtual</string>
+    <string name="sets_controller_virtual_keyboard_help">Escribe con el mando en el teclado propio de PFP. Si está desactivado o usas la pantalla táctil, se abre el teclado del sistema</string>
+    <string name="sets_controller_group_reset">Restablecer</string>
+    <string name="sets_controller_reset">Restablecer todos los ajustes del mando</string>
+    <string name="sets_controller_reset_help">Restaura los valores predeterminados de intercambio y tipo</string>
+</resources>

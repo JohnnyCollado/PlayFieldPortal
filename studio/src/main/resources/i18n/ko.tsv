@@ -1,0 +1,330 @@
+# Theme Studio in ko. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	새로 만들기
+Open…	열기…
+Upgrade folder…	폴더 업그레이드…
+Convert .ptf…	.ptf 변환…
+Batch convert…	일괄 변환…
+Unpack assets…	에셋 풀기…
+Undo	실행 취소
+Redo	다시 실행
+Export .pfptheme…	.pfptheme 내보내기…
+Import PSP theme ▾	PSP 테마 가져오기 ▾
+Working…	작업 중…
+Open ▾	열기 ▾
+Open: {0} ▾	열기: {0} ▾
+XMB (back to the crossbar)	XMB(크로스바로 돌아가기)
+Stop {0}	{0} 중지
+Play {0}	{0} 재생
+Video only — sound plays on the device	영상만 — 소리는 기기에서 재생됩니다
+This theme uses an older format. Saving upgrades it to the current one.	이 테마는 이전 형식입니다. 저장하면 현재 형식으로 업그레이드됩니다.
+See changes	변경 사항 보기
+Something went wrong	문제가 발생했습니다
+OK	확인
+Cancel	취소
+Open theme	테마 열기
+PSP theme to convert	변환할 PSP 테마
+Export theme	테마 내보내기
+Info	정보
+Color	색상
+Background	배경
+Legibility	가독성
+Layout	레이아웃
+Icons	아이콘
+Sounds	사운드
+Boot & Game Boot	Boot 및 Game Boot
+Export check	내보내기 점검
+Untitled	제목 없음
+Video	비디오
+Image	이미지
+Wave	웨이브
+Not set	설정 안 됨
+Set	설정됨
+Preview only	미리보기 전용
+None custom	사용자 지정 없음
+{0} custom	사용자 지정 {0}개
+None set	설정 없음
+{0} set	{0}개 설정
+{0} of 2	{0} / 2
+Ready	준비됨
+Untitled Theme	제목 없는 테마
+App Drawer	앱 서랍
+Settings	설정
+App Picker	앱 선택기
+Game Picker	게임 선택기
+Artwork Studio	아트워크 스튜디오
+Game Detail Screen	게임 상세 화면
+Achievement Screen	업적 화면
+Per-Game Achievement Screen	게임별 업적 화면
+Lock Screen	잠금 화면
+Boot	Boot
+Game Boot	Game Boot
+In this file	이 파일의 내용
+Nothing embedded yet	아직 포함된 항목이 없습니다
+Theme name	테마 이름
+Author	제작자
+Short description	짧은 설명
+New theme — not saved yet	새 테마 — 아직 저장되지 않음
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	저장됨: 이름, 제작자, 설명은 .pfptheme 안에 저장됩니다. 업데이트 날짜는 내보낼 때 설정됩니다.
+Accent color	강조 색상
+Auto (from the wallpaper)	자동(배경화면에서)
+Custom	사용자 지정
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	새 배경화면이나 비디오마다 강조 색상이 정해집니다. 내 색상을 유지하려면 색상을 고르세요.
+Your accent stays when the wallpaper or video changes.	배경화면이나 비디오가 바뀌어도 강조 색상이 유지됩니다.
+Custom accent	사용자 지정 강조
+Icon color	아이콘 색상
+Auto (follows the theme)	자동(테마를 따름)
+White	흰색
+Main text color	기본 텍스트 색상
+Titles and labels: the crossbar, list rows and status strip, and every screen.	제목과 라벨: 크로스바, 목록 행, 상태 표시줄 및 모든 화면.
+Auto (built-in colors)	자동(기본 제공 색상)
+Use my exact color	내 색상 그대로 사용
+Subtext color	보조 텍스트 색상
+Subtitles, sublabels and values.	부제, 보조 라벨 및 값.
+Same as main text	기본 텍스트와 동일
+Source	소스
+Wave motion	물결 움직임
+Video playback	동영상 재생
+Moving	움직임
+Moving, dim	움직임, 어둡게
+Still	정지
+Still, dim	정지, 어둡게
+None — live wave background	없음 — 라이브 물결 배경
+Replace…	교체…
+Re-crop…	다시 자르기…
+Clear	지우기
+Clear video	동영상 지우기
+Pick frame…	프레임 선택…
+The preview always shows a frozen wave; the style plays on the device.	미리보기에는 항상 멈춘 물결이 표시됩니다. 스타일은 기기에서 재생됩니다.
+Lock screen	잠금 화면
+None — the theme leaves the device lock screen alone	없음 — 테마가 기기의 잠금 화면을 건드리지 않습니다
+Choose Image…	이미지 선택…
+Use Poster	포스터 사용
+Use Wallpaper	배경화면 사용
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	정지 이미지만 가능합니다. 기기가 자체 화면에 맞게 자르며, 적용할 때 사용자가 동의한 경우에만 설정합니다.
+Crop	자르기
+Zoom	확대/축소
+Center	가운데
+Apply	적용
+Reset	초기화
+Text	텍스트
+Automatic	자동
+None	없음
+Drop shadow	그림자
+Outline	윤곽선
+Contrast plate	대비 판
+Offset shadow (dark)	오프셋 그림자(어둡게)
+Offset shadow (light)	오프셋 그림자(밝게)
+Contour dark	어두운 외곽선
+Contour light	밝은 외곽선
+Contour auto	자동 외곽선
+Solid unfocused icons	포커스 없는 아이콘 채우기
+Older launchers ignore these and show plain text and icons.	이전 런처는 이 설정을 무시하고 일반 텍스트와 아이콘을 표시합니다.
+Preview with my layout	내 레이아웃으로 미리보기
+Preview only — never saved in the theme. Remembered on this computer.	미리보기 전용 — 테마에 저장되지 않습니다. 이 컴퓨터에 기억됩니다.
+Use my layout in the preview	미리보기에서 내 레이아웃 사용
+Scale — {0}	크기 — {0}
+Horizontal — {0}	가로 — {0}
+Vertical — {0}	세로 — {0}
+Biblically Accurate preview	원본에 충실한 미리보기
+Adjust on preview	미리보기에서 조정
+All {0}	전체 {0}
+Crossbar {0}	크로스바 {0}
+Items {0}	항목 {0}
+Consoles {0}	콘솔 {0}
+Physical Media {0}	실물 미디어 {0}
+On screen	화면에 표시
+Customized {0}	사용자 지정 {0}
+Showing {0} of {1}	{1}개 중 {0}개 표시
+Select a slot to see it at real size, replace it, or export its template.	슬롯을 선택하면 실제 크기로 보거나 교체하거나 템플릿을 내보낼 수 있습니다.
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	이미지 파일(png, gif, jpg, bmp, webp)을 슬롯에 끌어다 놓으면 아이콘이 교체됩니다.
+Import icon pack… ▾	아이콘 팩 가져오기… ▾
+Export templates…	템플릿 내보내기…
+Reset all	모두 초기화
+Local file…	로컬 파일…
+From theme…	테마에서…
+Export template	템플릿 내보내기
+Menu sounds	메뉴 사운드
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	비워 둔 항목은 내장 사운드를 유지합니다. 클립은 각 행의 한도에 맞아야 합니다.
+Navigation	탐색
+Category change	카테고리 변경
+Options panel	옵션 패널
+Back / cancel	뒤로 / 취소
+Confirm / apply	확인 / 적용
+Error / invalid	오류 / 잘못됨
+Notification	알림
+Ambience (loops)	배경음(반복)
+Built-in	내장
+Up to {0}	최대 {0}
+Choose…	선택…
+▶ Play	▶ 재생
+■ Stop	■ 정지
+Boot sequences	부팅 시퀀스
+Choose the built-in sequence or your own MP4 for each.	각각 내장 시퀀스 또는 직접 만든 MP4를 선택하세요.
+The launcher's own {0} sequence.	런처 자체의 {0} 시퀀스입니다.
+Your own MP4 (H.264).	직접 만든 MP4(H.264).
+Choose MP4…	MP4 선택…
+Play in preview	미리보기에서 재생
+Use built-in	내장 사용
+All media is within limits	모든 미디어가 한도 내에 있습니다
+Opens on older launchers	이전 런처에서도 열립니다
+Fix the items marked ✕ before exporting.	내보내기 전에 ✕ 표시된 항목을 수정하세요.
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	완성된 테마의 미리보기 이미지는 내보낼 때 만들어지며 런처의 테마 갤러리에서 썸네일로 표시됩니다.
+Opened {0}	{0} 열림
+Exported {0}	{0} 내보냄
+Folder of .pfptheme files to upgrade	업그레이드할 .pfptheme 파일 폴더
+Folder with .ptf files	.ptf 파일이 있는 폴더
+Output folder for .pfptheme files	.pfptheme 파일 출력 폴더
+PSP theme to unpack	압축을 풀 PSP 테마
+Folder for unpacked assets	압축 해제한 자료를 둘 폴더
+Converting {0}  ({1}/{2})	{0} 변환 중  ({1}/{2})
+This theme was made by a newer version (format v{0}). Parts this version doesn't know are kept when you save.	이 테마는 더 새로운 버전(형식 v{0})으로 만들어졌습니다. 이 버전이 모르는 부분은 저장할 때 그대로 유지됩니다.
+CXMB theme	CXMB 테마
+This file is a CXMB custom firmware theme (.ctf). Those replace PSP system files rather than describing wallpaper and colors, so they can't be converted. Official PSP themes (.ptf) open fine.	이 파일은 커스텀 펌웨어용 CXMB 테마(.ctf)입니다. 배경화면과 색상을 설명하는 대신 PSP 시스템 파일을 교체하므로 변환할 수 없습니다. 공식 PSP 테마(.ptf)는 문제없이 열립니다.
+Batch conversion finished	일괄 변환 완료
+Converted: {0}	변환됨: {0}
+Converted with caveats: {0}	주의 사항과 함께 변환됨: {0}
+Skipped (CXMB): {0} — {1}	건너뜀(CXMB): {0} — {1}
+Failed: {0}	실패: {0}
+Theme upgrade finished	테마 업그레이드 완료
+Upgraded: {0} (originals kept as .bak)	업그레이드됨: {0}(원본은 .bak으로 보관)
+Already current: {0}	이미 최신: {0}
+Made by a newer version, left alone: {0}	더 새로운 버전으로 만들어져 그대로 둠: {0}
+Report: {0}	보고서: {0}
+Background motion	배경 움직임
+Still: frame at {0}	정지 화면: {0} 지점의 프레임
+Still: baked into the theme	정지 화면: 테마에 포함됨
+Import wallpaper	배경화면 가져오기
+Import video	동영상 가져오기
+Lock screen image	잠금 화면 이미지
+(embedded image)	(포함된 이미지)
+Fit	맞춤
+Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.	복잡한 배경화면 — 레이블이 잘 안 읽힐 수 있습니다. 부드럽고 대비가 낮은 이미지가 가장 좋습니다.
+The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, a Still style, or Motion set to Static on the device).	정지 화면은 동영상의 포스터입니다 — 재생이 멈춰 있을 때(배터리 절약, 게임 중, 정지 스타일, 또는 기기에서 움직임을 정적으로 설정) 표시됩니다.
+The theme offers this image for the device lock screen	이 테마는 기기 잠금 화면용으로 이 이미지를 제공합니다
+Output {0}×{1}	출력 {0}×{1}
+{0}–{1} recommended, {2} max, {3} MB max	권장 {0}–{1}, 최대 {2}, 최대 {3} MB
+Whether the boot video and Game Boot play at all is a device setting: {0}	부팅 동영상과 Game Boot 재생 여부는 기기 설정입니다: {0}
+This clip is longer than the cap — the launcher will refuse it.	이 클립은 제한보다 깁니다 — 런처가 거부합니다.
+Choose a {0} video	{0} 동영상 선택
+Dark icon color — icons may be hard to see over the wallpaper scrim.	어두운 아이콘 색 — 배경화면 가림막 위에서 아이콘이 잘 보이지 않을 수 있습니다.
+Saved in the theme for a later update. The launcher currently shows the color exactly as picked.	이후 업데이트를 위해 테마에 저장됩니다. 지금은 런처가 고른 색 그대로 표시합니다.
+Original	원래 색
+Classic Blue	클래식 블루
+Sunset Orange	선셋 오렌지
+Fresh Green	프레시 그린
+Royal Purple	로열 퍼플
+Crimson Red	크림슨 레드
+Silver	실버
+Sakura Pink	사쿠라 핑크
+Golden Amber	골든 앰버
+Aqua Teal	아쿠아 틸
+Midnight Navy	미드나이트 네이비
+Charcoal	차콜
+Format: schema {0} → {1}	형식: 스키마 {0} → {1}
+Format: new theme → {0}	형식: 새 테마 → {0}
+Kept	유지됨
+Added	추가됨
+Repaired	복구됨
+Can't recover	복구 불가
+What saving does	저장 시 하는 일
+Motion has a still poster	움직임에 정지 포스터가 있습니다
+Motion needs a still wallpaper as its poster - add one or remove the video	움직임에는 포스터로 쓸 정지 배경화면이 필요합니다 - 추가하거나 동영상을 제거하세요
+Media outside limits: {0}	제한을 벗어난 미디어: {0}
+This wallpaper is busy behind the labels - pick a text legibility style so they stay readable	이 배경화면은 레이블 뒤가 복잡합니다 - 레이블이 잘 읽히도록 텍스트 가독성 스타일을 고르세요
+Text should read clearly on this wallpaper	이 배경화면에서는 텍스트가 잘 읽힐 것입니다
+{0} - launchers from before this format refuse files over 64 MB	{0} - 이 형식 이전의 런처는 64 MB를 넘는 파일을 거부합니다
+Opens on older launchers, which ignore sounds, boot clips, legibility and crop	이전 런처에서도 열리지만 사운드, 부팅 클립, 가독성, 자르기는 무시됩니다
+{0} is over the {1} MB limit for a theme file	{0}은(는) 테마 파일 제한 {1} MB를 넘습니다
+Saving upgrades this theme from {0}; {1} part(s) can't be recovered	저장하면 이 테마를 {0}에서 업그레이드합니다. 복구할 수 없는 부분: {1}
+Saving upgrades this theme from {0}	저장하면 이 테마를 {0}에서 업그레이드합니다
+an older format	이전 형식
+Imported from {0}	{0}에서 가져옴
+Imported from {0} — firmware {1}	{0}에서 가져옴 — 펌웨어 {1}
+a PSP theme	PSP 테마
+Created {0}	생성 {0}
+On the device these live in {0}.	기기에서는 {0}에 있습니다.
+Scale	크기
+Horizontal	가로
+Vertical	세로
+This wallpaper is busy behind the labels — a text style helps them stay readable.	이 배경화면은 레이블 뒤가 복잡합니다 — 텍스트 스타일을 쓰면 잘 읽힙니다.
+Settings › Interface › Display › Adjust XMB Layout	설정 › 인터페이스 › 디스플레이 › XMB 레이아웃 조정
+Settings › Interface › Sound	설정 › 인터페이스 › 사운드
+Settings › Interface › Display › Show Boot Sequence / Game Boot	설정 › 인터페이스 › 디스플레이 › 부팅 시퀀스 / Game Boot 표시
+Battery Saver and Thermal Throttle (Settings › Interface › Display) freeze the animated wave on the device.	배터리 절약과 발열 제한(설정 › 인터페이스 › 디스플레이)은 기기에서 움직이는 물결을 멈춥니다.
+Pick…	선택…
+Plays on the device	기기에서 재생됨
+Length unknown	길이 알 수 없음
+Volumes stay on the device: {0}	음량은 기기에서 조절합니다: {0}
+Couldn't play {0} here — it will play on the device.	여기서는 {0}을(를) 재생할 수 없습니다 — 기기에서는 재생됩니다.
+Choose a sound for {0}	{0}의 사운드 선택
+Icon image for {0}	{0}의 아이콘 이미지
+Template for {0}	{0}의 템플릿
+Template written to {0}	템플릿을 {0}(으)로 저장했습니다
+Template export failed: {0}	템플릿 내보내기 실패: {0}
+Search {0} slots: battery, PS3, voice…	슬롯 {0}개 검색: 배터리, PS3, 음성…
+No slot matches. Clear the search or a filter.	일치하는 슬롯이 없습니다. 검색어나 필터를 지우세요.
+Pack folder…	팩 폴더…
+Icon pack folder	아이콘 팩 폴더
+Pack .zip…	팩 .zip…
+Icon pack zip	아이콘 팩 .zip
+Folder for icon templates	아이콘 템플릿 폴더
+Packs are folders or zips of <slot key>.png / .gif, the names the templates use. Multi-frame GIFs animate on the launcher when focused; they must stay within 512px, 120 frames and 10 seconds.	팩은 <슬롯 키>.png / .gif(템플릿과 같은 이름)를 담은 폴더나 zip입니다. 여러 프레임 GIF는 포커스될 때 런처에서 움직이며, 512px, 120프레임, 10초 이내여야 합니다.
+Icon pack imported	아이콘 팩을 가져왔습니다
+Icon pack refused	아이콘 팩이 거부되었습니다
+{0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	{0}: 추가 {1}, 교체 {2}, 일치 없음 {3}, 거부 {4}
+Icon pack {0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	아이콘 팩 {0}: 추가 {1}, 교체 {2}, 일치 없음 {3}, 거부 {4}
+{0} - did you mean {1}?	{0} - {1}을(를) 말씀하신 건가요?
+{0} - no matching slot	{0} - 일치하는 슬롯 없음
+{0} error	오류 {0}개
+{0} errors	오류 {0}개
+{0} warning	경고 {0}개
+{0} warnings	경고 {0}개
+{0} of {1} MB	{0} / {1} MB
+{0} of {1} MB - older launchers refuse over 64 MB	{0} / {1} MB - 이전 런처는 64 MB를 넘으면 거부합니다
+Wallpaper	배경화면
+Preview	미리보기
+Motion	움직임
+Ambience	배경음
+Other files	기타 파일
+{0} is too large to be a theme file	{0}은(는) 테마 파일로 쓰기에는 너무 큽니다
+Imported {0}	{0} 가져옴
+Imported with a caveat	주의 사항과 함께 가져옴
+{0} is not a valid .pfptheme bundle	{0}은(는) 올바른 .pfptheme 번들이 아닙니다
+{0} — {1} icon(s) for parts themes don't customize were left out	{0} — 테마가 바꾸지 않는 부분의 아이콘 {1}개를 제외했습니다
+Motion wallpaper: {0}	움직이는 배경화면: {0}
+Could not keep: {0}	유지하지 못함: {0}
+Parts of the theme not kept	테마 일부를 유지하지 못했습니다
+Motion wallpaper not kept	움직이는 배경화면을 유지하지 못했습니다
+{0} is not a readable image	{0}은(는) 읽을 수 있는 이미지가 아닙니다
+{0} converted to H.264 for Android ({1})	{0}을(를) Android용 H.264로 변환했습니다({1})
+Couldn't read that frame of the video	동영상의 해당 프레임을 읽지 못했습니다
+The crop does not match this image	자르기가 이 이미지와 맞지 않습니다
+Wallpaper: {0} ({1}×{2})	배경화면: {0} ({1}×{2})
+Added {0} — converted to H.264 for Android ({1})	{0} 추가됨 — Android용 H.264로 변환({1})
+Added {0}	{0} 추가됨
+Export failed: {0}	내보내기 실패: {0}
+{0} is not a PSP theme file	{0}은(는) PSP 테마 파일이 아닙니다
+Unpack failed: {0}	압축 해제 실패: {0}
+Theme unpacked	테마 압축 해제됨
+{0} images written to {1} (see report.txt).	이미지 {0}개를 {1}에 저장했습니다(report.txt 참고).
+{0} images and {1} data files written to {2} (see report.txt).	이미지 {0}개와 데이터 파일 {1}개를 {2}에 저장했습니다(report.txt 참고).
+Unpacked {0}: {1} images	{0} 압축 해제: 이미지 {1}개
+Templates exported to {0} ({1} icons)	템플릿을 {0}(으)로 내보냈습니다(아이콘 {1}개)
+WebM clips can't be checked in the Studio (it reads MP4/H.264 only) — convert the clip to MP4	WebM 클립은 Studio에서 확인할 수 없습니다(MP4/H.264만 읽음) — 클립을 MP4로 변환하세요
+That isn't a media slot this import can fill	이 가져오기로 채울 수 있는 미디어 슬롯이 아닙니다
+That file is too large for a theme — {0} MB or less	테마에 넣기에는 너무 큰 파일입니다 — {0} MB 이하
+Unsupported video — use an MP4 (H.264)	지원하지 않는 동영상 — MP4(H.264)를 사용하세요
+{0} video isn't guaranteed to play on Android	{0} 동영상은 Android에서 재생이 보장되지 않습니다
+H.264 {0} doesn't play on Android	H.264 {0}은(는) Android에서 재생되지 않습니다
+{0} video doesn't play on Android	{0} 동영상은 Android에서 재생되지 않습니다
+Couldn't convert this video for Android ({0}). Re-encode it as MP4 H.264 and try again.	이 동영상을 Android용으로 변환하지 못했습니다({0}). MP4 H.264로 다시 인코딩한 뒤 다시 시도하세요.
+{0} is not a folder or .zip	{0}은(는) 폴더나 .zip이 아닙니다
+Pack refused: {0}	팩 거부됨: {0}
+Pack could not be read	팩을 읽을 수 없습니다
+Pack could not be read: {0}	팩을 읽을 수 없습니다: {0}
+Pack has more than {0} files	팩에 파일이 {0}개를 넘습니다
+Not a PSP theme file	PSP 테마 파일이 아닙니다
+Corrupt or truncated PTF	손상되었거나 잘린 PTF
+This theme contains no wallpaper image.	이 테마에는 배경화면 이미지가 없습니다.
+The wallpaper could not be extracted: this theme uses a compression method this importer doesn't recognize. The theme was imported without its wallpaper.	배경화면을 추출하지 못했습니다: 이 테마는 이 가져오기 도구가 인식하지 못하는 압축 방식을 사용합니다. 테마를 배경화면 없이 가져왔습니다.
+The wallpaper data in this theme is damaged and could not be decoded. The theme was imported without its wallpaper.	이 테마의 배경화면 데이터가 손상되어 디코딩하지 못했습니다. 테마를 배경화면 없이 가져왔습니다.

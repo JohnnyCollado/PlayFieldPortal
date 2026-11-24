@@ -9,7 +9,9 @@ import com.playfieldportal.core.domain.model.ListKeys
 import com.playfieldportal.core.domain.model.ListSortMode
 import com.playfieldportal.core.domain.model.ListState
 import com.playfieldportal.core.domain.model.MemoryCard
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.appbar.CategorizedApp
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.xmb.ui.shelfTitle
 
 // ── How the XMB arranges a list ───────────────────────────────────────────────
@@ -279,20 +281,21 @@ internal fun XMBUiState.isCustomSorted(listKey: String?, kind: XmbListKind?): Bo
     else activeSortFor(listKey, kind) == XmbSortMode.CUSTOM
 
 /** What a "Sort" row shows for [listKey]: its own sort, or the global one it follows. */
-internal fun XMBUiState.sortValueLabel(listKey: String, kind: XmbListKind): String {
+internal fun XMBUiState.sortValueLabel(listKey: String, kind: XmbListKind): UiText {
     val override = listSortOverrides[listKey]
     return when {
-        kind == XmbListKind.ROOT -> if (override == XmbSortMode.CUSTOM) "Custom" else "Default"
+        kind == XmbListKind.ROOT ->
+            if (override == XmbSortMode.CUSTOM) XmbSortMode.CUSTOM.label else UiText.res(R.string.xmbm_sort_default)
         override != null -> sortLabel(override, kind)
-        else -> "Global: ${sortLabel(activeSortFor(listKey, kind), kind)}"
+        else -> UiText.res(R.string.xmbm_sort_global_value, sortLabel(activeSortFor(listKey, kind), kind))
     }
 }
 
 /** A sort's name on a list of [kind] — app lists say A–Z and Recently Used. */
-internal fun sortLabel(mode: XmbSortMode, kind: XmbListKind): String = when {
+internal fun sortLabel(mode: XmbSortMode, kind: XmbListKind): UiText = when {
     kind != XmbListKind.APPS -> mode.label
-    mode == XmbSortMode.TITLE -> "A–Z"
-    mode == XmbSortMode.RECENT_PLAYED -> "Recently Used"
+    mode == XmbSortMode.TITLE -> UiText.res(R.string.xmbm_sort_az)
+    mode == XmbSortMode.RECENT_PLAYED -> UiText.res(R.string.xmbm_sort_recently_used)
     else -> mode.label
 }
 
@@ -313,14 +316,14 @@ internal fun listSortMenuItems(
 ): List<XMBContextMenuItem> =
     if (kind == XmbListKind.ROOT) {
         listOf(
-            XMBContextMenuItem(LIST_SORT_DEFAULT_ID, "Default Order", checked = override != XmbSortMode.CUSTOM),
-            XMBContextMenuItem(LIST_SORT_PREFIX + XmbSortMode.CUSTOM.name, "Custom", checked = override == XmbSortMode.CUSTOM),
+            XMBContextMenuItem(LIST_SORT_DEFAULT_ID, UiText.res(R.string.xmbm_sort_default_order), checked = override != XmbSortMode.CUSTOM),
+            XMBContextMenuItem(LIST_SORT_PREFIX + XmbSortMode.CUSTOM.name, XmbSortMode.CUSTOM.label, checked = override == XmbSortMode.CUSTOM),
         )
     } else buildList {
         add(
             XMBContextMenuItem(
                 id = LIST_SORT_DEFAULT_ID,
-                label = "Use Global Setting (${sortLabel(global, kind)})",
+                label = UiText.res(R.string.xmbm_sort_use_global, sortLabel(global, kind)),
                 checked = override == null,
             )
         )
@@ -440,14 +443,17 @@ internal fun List<XMBItem>.orderKeys(): List<String> = mapNotNull { it.rowKey() 
  */
 internal fun arrangeMenuItems(pinned: Boolean?, canMove: Boolean): List<XMBContextMenuItem> = buildList {
     if (pinned != null) {
-        add(XMBContextMenuItem(if (pinned) "unpin_top" else "pin_top", "Pin to Top", value = if (pinned) "On" else "Off"))
+        add(XMBContextMenuItem(if (pinned) "unpin_top" else "pin_top", UiText.res(R.string.xmbm_pin_to_top), value = onOff(pinned)))
     }
-    if (canMove) add(XMBContextMenuItem(MOVE_ROW_ID, "Move"))
+    if (canMove) add(XMBContextMenuItem(MOVE_ROW_ID, UiText.res(R.string.xmbm_move)))
 }
+
+/** The On / Off value text of a toggle row. */
+internal fun onOff(on: Boolean): UiText = UiText.res(if (on) R.string.xmbm_common_on else R.string.xmbm_common_off)
 
 /** Adds [rows] with [header] on the first of them. An empty group adds nothing, header included. */
 internal fun MutableList<XMBContextMenuItem>.group(
-    header: String,
+    header: UiText,
     rows: MutableList<XMBContextMenuItem>.() -> Unit,
 ) {
     val items = mutableListOf<XMBContextMenuItem>().apply(rows)
@@ -473,11 +479,11 @@ enum class UmdMenuState {
 /** The UMD row of a game's menu, or none. */
 internal fun umdMenuItems(state: UmdMenuState): List<XMBContextMenuItem> = when (state) {
     UmdMenuState.NONE -> emptyList()
-    UmdMenuState.CAN_INSERT -> listOf(XMBContextMenuItem("insert_umd", "Insert as UMD"))
-    UmdMenuState.INSERTED -> listOf(XMBContextMenuItem("eject_umd", "Eject UMD"))
+    UmdMenuState.CAN_INSERT -> listOf(XMBContextMenuItem("insert_umd", UiText.res(R.string.xmbm_umd_insert)))
+    UmdMenuState.INSERTED -> listOf(XMBContextMenuItem("eject_umd", UiText.res(R.string.xmbm_umd_eject)))
     UmdMenuState.RECENT -> listOf(
-        XMBContextMenuItem("insert_umd", "Insert as UMD"),
-        XMBContextMenuItem("eject_umd", "Eject UMD"),
+        XMBContextMenuItem("insert_umd", UiText.res(R.string.xmbm_umd_insert)),
+        XMBContextMenuItem("eject_umd", UiText.res(R.string.xmbm_umd_eject)),
     )
 }
 
@@ -487,9 +493,9 @@ internal fun umdMenuItems(state: UmdMenuState): List<XMBContextMenuItem> = when 
  * Custom sorted. "Open" only for [byTouch]: on a pad it repeats the press, so Missing — which has
  * nothing else — has no controller menu at all.
  */
-internal fun rootRowMenuItems(sortValue: String?, canMove: Boolean, byTouch: Boolean): List<XMBContextMenuItem> = buildList {
-    if (byTouch) add(XMBContextMenuItem("open_row", "Open"))
-    if (sortValue != null) add(XMBContextMenuItem(LIST_SORT_ROW_ID, "Sort", value = sortValue, opensMenu = true))
+internal fun rootRowMenuItems(sortValue: UiText?, canMove: Boolean, byTouch: Boolean): List<XMBContextMenuItem> = buildList {
+    if (byTouch) add(XMBContextMenuItem("open_row", UiText.res(R.string.xmbm_open)))
+    if (sortValue != null) add(XMBContextMenuItem(LIST_SORT_ROW_ID, UiText.res(R.string.xmbm_sort), value = sortValue, opensMenu = true))
     addAll(arrangeMenuItems(pinned = null, canMove = canMove))
 }
 
@@ -502,23 +508,23 @@ internal fun rootRowMenuItems(sortValue: String?, canMove: Boolean, byTouch: Boo
 internal fun customCardMenuItems(
     pinned: Boolean,
     canMoveToCategory: Boolean,
-    sortValue: String,
+    sortValue: UiText,
     canMove: Boolean,
     byTouch: Boolean,
     holds: CardContents = CardContents.GAMES,
 ): List<XMBContextMenuItem> = buildList {
-    if (byTouch) add(XMBContextMenuItem("open_collection", "Open"))
+    if (byTouch) add(XMBContextMenuItem("open_collection", UiText.res(R.string.xmbm_open)))
     when (holds) {
-        CardContents.GAMES -> add(XMBContextMenuItem(ADD_GAMES_TO_CARD_ID, "Add Games"))
-        CardContents.APPS -> add(XMBContextMenuItem(ADD_APPS_TO_CARD_ID, "Add Apps"))
+        CardContents.GAMES -> add(XMBContextMenuItem(ADD_GAMES_TO_CARD_ID, UiText.res(R.string.xmbm_add_games)))
+        CardContents.APPS -> add(XMBContextMenuItem(ADD_APPS_TO_CARD_ID, UiText.res(R.string.xmbm_add_apps)))
     }
-    add(XMBContextMenuItem(LIST_SORT_ROW_ID, "Sort", value = sortValue, opensMenu = true))
-    add(XMBContextMenuItem(if (pinned) "unpin_collection" else "pin_collection", "Pin to Top", value = if (pinned) "On" else "Off"))
-    if (canMove) add(XMBContextMenuItem(MOVE_ROW_ID, "Move"))
-    add(XMBContextMenuItem("rename_collection", "Rename Card"))
-    if (canMoveToCategory) add(XMBContextMenuItem("move_collection_category", "Move to Category", opensMenu = true))
-    add(XMBContextMenuItem("manage_collections", "Manage Custom Cards"))
-    add(XMBContextMenuItem("delete_collection", "Delete Custom Card", isDestructive = true))
+    add(XMBContextMenuItem(LIST_SORT_ROW_ID, UiText.res(R.string.xmbm_sort), value = sortValue, opensMenu = true))
+    add(XMBContextMenuItem(if (pinned) "unpin_collection" else "pin_collection", UiText.res(R.string.xmbm_pin_to_top), value = onOff(pinned)))
+    if (canMove) add(XMBContextMenuItem(MOVE_ROW_ID, UiText.res(R.string.xmbm_move)))
+    add(XMBContextMenuItem("rename_collection", UiText.res(R.string.xmbm_card_rename)))
+    if (canMoveToCategory) add(XMBContextMenuItem("move_collection_category", UiText.res(R.string.xmbm_card_move_to_category), opensMenu = true))
+    add(XMBContextMenuItem("manage_collections", UiText.res(R.string.xmbm_manage_custom_cards)))
+    add(XMBContextMenuItem("delete_collection", UiText.res(R.string.xmbm_card_delete), isDestructive = true))
 }
 
 internal const val ADD_GAMES_TO_CARD_ID = "add_games_collection"
@@ -556,9 +562,9 @@ internal fun addToCardMenuItems(
         add(
             XMBContextMenuItem(
                 id = "col_$id",
-                label = name,
+                label = UiText.raw(name),
                 checked = id in memberOf,
-                header = if (index == 0) categoryNames[currentCategoryId]?.let { "In $it" } else null,
+                header = if (index == 0) categoryNames[currentCategoryId]?.let { UiText.res(R.string.xmbm_card_in_category, it) } else null,
             )
         )
     }
@@ -566,14 +572,14 @@ internal fun addToCardMenuItems(
         add(
             XMBContextMenuItem(
                 id = "col_$id",
-                label = name,
+                label = UiText.raw(name),
                 checked = id in memberOf,
-                value = categoryNames[categoryId],
-                header = if (index == 0 && here.isNotEmpty()) "Other Categories" else null,
+                value = categoryNames[categoryId]?.let(UiText::raw),
+                header = if (index == 0 && here.isNotEmpty()) UiText.res(R.string.xmbm_card_other_categories) else null,
             )
         )
     }
-    add(XMBContextMenuItem("col_new", "New Custom Card Here…"))
+    add(XMBContextMenuItem("col_new", UiText.res(R.string.xmbm_card_new_here)))
 }
 
 /**
@@ -581,7 +587,8 @@ internal fun addToCardMenuItems(
  * a custom memory card come through the games-table row builder, whose platform/emulator line
  * belongs to games, so the card strips it back to this.
  */
-internal fun XMBItem.asAppRow(): XMBItem = copy(subtitle = if (pinned) "Pinned" else null)
+internal fun XMBItem.asAppRow(): XMBItem =
+    copy(subtitle = null, subtitleText = if (pinned) UiText.res(R.string.xmbm_pinned) else null)
 
 // ── Landing on a section ──────────────────────────────────────────────────────
 
@@ -631,7 +638,5 @@ internal fun XMBUiState.landedFrom(before: XMBUiState): XMBUiState {
 internal fun memoryCardRowTitle(card: MemoryCard): String = shelfTitle(card)
 
 /** "Memory Card · 24 Games", the console-card twin of a custom card's "Custom · 12 Games". */
-internal fun memoryCardRowSubtitle(count: Int, pinned: Boolean): String {
-    val games = "$count ${if (count == 1) "Game" else "Games"}"
-    return if (pinned) "Memory Card · Pinned · $games" else "Memory Card · $games"
-}
+internal fun memoryCardRowSubtitle(count: Int, pinned: Boolean): UiText =
+    UiText.plural(if (pinned) R.plurals.xmbm_memcard_sub_games_pinned else R.plurals.xmbm_memcard_sub_games, count)

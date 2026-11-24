@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="xmb_icons_reset_removed_themed">أُزيل الاختيار — تظهر الآن أيقونة السمة المطبّقة.</string>
+    <string name="xmb_icons_reset_themed_slot">لا شيء لإعادة ضبطه — هذه الأيقونة من السمة المطبّقة.</string>
+    <string name="xmb_icons_reset_builtin_slot">لا شيء لإعادة ضبطه — هذه الخانة تستخدم الأيقونة المدمجة بالفعل.</string>
+    <string name="xmb_icons_reset_all_none">لا شيء لإعادة ضبطه — لم تختر أي أيقونات.</string>
+    <string name="xmb_icons_reset_all_themed">تم مسح الاختيارات — تظهر الآن أيقونات السمة المطبّقة.</string>
+</resources>

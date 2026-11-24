@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,7 +12,7 @@ import com.playfieldportal.core.domain.achievement.UntrackedGame
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.repository.GameRepository
-import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.components.PspMenuCue
 import com.playfieldportal.core.ui.components.PspMenuNav
 import com.playfieldportal.core.ui.components.PspMenuOutcome
@@ -19,6 +20,7 @@ import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import com.playfieldportal.core.ui.sound.MenuSoundSink
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.match.RaConsole
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.xmb.viewmodel.ShibaLibraryMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -49,26 +51,28 @@ enum class LibraryProviderFilter(val provider: AchievementProvider?) {
     X360(AchievementProvider.X360_ACHIEVEMENT),
     ;
 
-    val label: String get() = provider?.let(::providerLabel) ?: "All"
+    val label: UiText get() = provider?.let { UiText.raw(providerLabel(it)) } ?: UiText.res(R.string.shiba_filter_all)
 }
 
 /** Sort field for the library list, chosen from the Options menu's Sort list. */
 enum class LibrarySortField(
-    val label: String,
-    private val ascendingLabel: String,
-    private val descendingLabel: String,
+    @StringRes private val ascendingRes: Int,
+    @StringRes private val descendingRes: Int,
 ) {
-    TITLE("Title", "A–Z", "Z–A"),
-    PROGRESS("Progress", "Lowest First", "Highest First"),
-    PLATFORM("Platform", "A–Z", "Z–A"),
+    TITLE(R.string.shiba_library_sort_title_asc, R.string.shiba_library_sort_title_desc),
+    PROGRESS(R.string.shiba_library_sort_progress_asc, R.string.shiba_library_sort_progress_desc),
+    PLATFORM(R.string.shiba_library_sort_platform_asc, R.string.shiba_library_sort_platform_desc),
     ;
 
     /** The field and direction as one choice, e.g. "Title A–Z". */
-    fun choiceLabel(ascending: Boolean): String = "$label ${if (ascending) ascendingLabel else descendingLabel}"
+    fun choiceLabel(ascending: Boolean): UiText = UiText.res(if (ascending) ascendingRes else descendingRes)
 }
 
 /** A second-level list in the Options menu, opened from its root row (the Icon Display pattern). */
-enum class LibraryOptionGroup(val title: String) { SORT("Sort"), PROVIDER("Provider") }
+enum class LibraryOptionGroup(val title: UiText) {
+    SORT(UiText.res(R.string.shiba_options_sort)),
+    PROVIDER(UiText.res(R.string.shiba_options_provider)),
+}
 
 /** What an Options row does. */
 sealed interface LibraryOption {
@@ -83,11 +87,11 @@ sealed interface LibraryOption {
 
 /** A row of the Options menu: its label, action, and whether it is the active choice. */
 data class LibraryOptionRow(
-    val label: String,
+    val label: UiText,
     val option: LibraryOption,
     val checked: Boolean = false,
     /** The row's current setting, drawn at the right edge (Sort: "Title A–Z"). */
-    val value: String? = null,
+    val value: UiText? = null,
     /** Activating this row opens a list, so a › is drawn. */
     val opensMenu: Boolean = false,
 )
@@ -100,7 +104,7 @@ data class LibraryOptionsMenu(
     val selectedIndex: Int = 0,
     val group: LibraryOptionGroup? = null,
 ) {
-    val title: String get() = group?.title ?: "Options"
+    val title: UiText get() = group?.title ?: UiText.res(R.string.shiba_options_title)
 }
 
 /** Earned coins by tier, in the design's display order (Platinum, Gold, Silver, Bronze). */
@@ -137,8 +141,9 @@ data class LibrarySummary(
 data class ShibaLibraryRow(
     val id: String,
     val coinsTarget: ShibaCoinsTarget?,
+    /** The game's title; empty on the pinned action row, whose screen supplies its own wording. */
     val title: String,
-    val platformLabel: String,
+    val platformLabel: UiText,
     /** The achievement provider (tracked rows only). Drives the provider filter. */
     val provider: AchievementProvider?,
     /** Platform grouping key for the Platform sort. Steam and Local Steam both group as "Windows". */
@@ -147,7 +152,7 @@ data class ShibaLibraryRow(
     val icon0Uri: String?,
     val progress: Float,
     val coins: LibraryCoinCounts,
-    val reason: String?,
+    val reason: UiText?,
     /** A matched, installed game with no achievement data yet (e.g. after a clear). */
     val awaitingSync: Boolean = false,
     /** Set on the pinned action row instead of a game; such a row has no progress and no coins. */
@@ -178,8 +183,8 @@ internal const val SEARCH_ONLINE_ROW_ID = "action:search-online"
 private fun searchOnlineRow() = ShibaLibraryRow(
     id = SEARCH_ONLINE_ROW_ID,
     coinsTarget = null,
-    title = "Search online",
-    platformLabel = "Look up a game that isn't on this device",
+    title = "",
+    platformLabel = UiText.res(R.string.shiba_library_search_online_subtitle),
     provider = null,
     platformSortKey = "",
     icon0Uri = null,
@@ -240,11 +245,11 @@ data class ShibaLibraryUiState(
 
     val optionRows: List<LibraryOptionRow> get() = libraryOptionRows(this)
 
-    val emptyMessage: String
+    val emptyMessage: UiText
         get() = when {
-            query.isNotBlank() -> "No games match \"${query.trim()}\"."
-            mode == ShibaLibraryMode.TRACKED -> "No tracked games yet."
-            else -> "Every eligible game is tracked."
+            query.isNotBlank() -> UiText.res(R.string.shiba_library_empty_no_match, query.trim())
+            mode == ShibaLibraryMode.TRACKED -> UiText.res(R.string.shiba_library_empty_tracked)
+            else -> UiText.res(R.string.shiba_library_empty_untracked)
         }
 }
 
@@ -258,7 +263,7 @@ fun libraryOptionRows(state: ShibaLibraryUiState): List<LibraryOptionRow> = when
     null -> buildList {
         add(
             LibraryOptionRow(
-                label = "Sort",
+                label = UiText.res(R.string.shiba_options_sort),
                 option = LibraryOption.OpenGroup(LibraryOptionGroup.SORT),
                 value = state.effectiveSortField.choiceLabel(state.sortAscending),
                 opensMenu = true,
@@ -267,14 +272,19 @@ fun libraryOptionRows(state: ShibaLibraryUiState): List<LibraryOptionRow> = when
         if (state.showProviderFilter) {
             add(
                 LibraryOptionRow(
-                    label = "Provider",
+                    label = UiText.res(R.string.shiba_options_provider),
                     option = LibraryOption.OpenGroup(LibraryOptionGroup.PROVIDER),
                     value = state.providerFilter.label,
                     opensMenu = true,
                 ),
             )
         }
-        add(LibraryOptionRow(if (state.isSyncing) "Updating…" else "Update Installed Achievements", LibraryOption.SyncAll))
+        add(
+            LibraryOptionRow(
+                UiText.res(if (state.isSyncing) R.string.shiba_options_updating else R.string.shiba_options_update_installed),
+                LibraryOption.SyncAll,
+            ),
+        )
     }
     LibraryOptionGroup.SORT -> state.availableSortFields.flatMap { field ->
         // Progress reads best-first, so its descending choice leads.
@@ -296,26 +306,26 @@ fun libraryOptionRows(state: ShibaLibraryUiState): List<LibraryOptionRow> = when
  * The helper footer for [state]. Confirm is named for what it would do on the focused element and
  * is left out when it would do nothing; text entry and the Options menu replace the page hints.
  */
-fun shibaLibraryHelperItems(state: ShibaLibraryUiState): List<ControllerPromptItem> = when {
+internal fun shibaLibraryHelperItems(state: ShibaLibraryUiState): List<DetailPrompt> = when {
     state.options != null -> listOf(
-        ControllerPromptItem(GamepadAction.SELECT, "Select"),
-        ControllerPromptItem(GamepadAction.BACK, "Close"),
+        DetailPrompt(GamepadAction.SELECT, UiText.res(R.string.shiba_prompt_select)),
+        DetailPrompt(GamepadAction.BACK, UiText.res(R.string.shiba_prompt_close)),
     )
-    state.searchEditing -> listOf(ControllerPromptItem(GamepadAction.BACK, "Done"))
+    state.searchEditing -> listOf(DetailPrompt(GamepadAction.BACK, UiText.res(R.string.shiba_prompt_done)))
     else -> buildList {
         val focused = state.focused
         val confirm = when {
-            focused == null -> "Type"
-            focused.action == LibraryRowAction.SEARCH_ONLINE -> "Search online"
-            focused.isTracked || focused.awaitingSync -> "View Achievements"
-            focused.canAttemptMatch -> "Attempt Match"
+            focused == null -> UiText.res(R.string.shiba_prompt_type)
+            focused.action == LibraryRowAction.SEARCH_ONLINE -> UiText.res(R.string.shiba_prompt_search_online)
+            focused.isTracked || focused.awaitingSync -> UiText.res(R.string.shiba_prompt_view_achievements)
+            focused.canAttemptMatch -> UiText.res(R.string.shiba_prompt_attempt_match)
             else -> null
         }
-        confirm?.let { add(ControllerPromptItem(GamepadAction.SELECT, it)) }
-        add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"))
-        add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
-        add(ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Change View"))
-        add(ControllerPromptItem(GamepadAction.BACK, "Back"))
+        confirm?.let { add(DetailPrompt(GamepadAction.SELECT, it)) }
+        add(DetailPrompt(GamepadAction.CHANGE_SORT, UiText.res(R.string.shiba_prompt_search)))
+        add(DetailPrompt(GamepadAction.OPEN_CONTEXT_MENU, UiText.res(R.string.shiba_prompt_options)))
+        add(DetailPrompt(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), UiText.res(R.string.shiba_prompt_change_view)))
+        add(DetailPrompt(GamepadAction.BACK, UiText.res(R.string.shiba_prompt_back)))
     }
 }
 
@@ -619,8 +629,9 @@ class ShibaLibraryViewModel @Inject constructor(
         sourceTag = providerLabel(coins.provider).takeIf { namesItsSource },
         title = game?.displayTitle ?: title,
         // A removed game keeps its cached coins as history; the label says why it never refreshes.
-        platformLabel = (game?.platformId?.let(::platformDisplay) ?: providerLabel(coins.provider)) +
-            if (isInstalled) "" else " · Not installed",
+        platformLabel = (game?.platformId?.let(::platformDisplay) ?: providerLabel(coins.provider)).let { name ->
+            if (isInstalled) UiText.raw(name) else UiText.res(R.string.shiba_platform_not_installed, name)
+        },
         provider = coins.provider,
         platformSortKey = platformGroupOf(coins.provider, game?.platformId),
         icon0Uri = game?.iconUri,
@@ -639,13 +650,13 @@ class ShibaLibraryViewModel @Inject constructor(
         id = "${provider.name}:$providerGameId",
         coinsTarget = ShibaCoinsTarget.LibraryGame(gameId),
         title = game?.displayTitle ?: title,
-        platformLabel = game?.platformId?.let(::platformDisplay) ?: providerLabel(provider),
+        platformLabel = UiText.raw(game?.platformId?.let(::platformDisplay) ?: providerLabel(provider)),
         provider = provider,
         platformSortKey = platformGroupOf(provider, game?.platformId),
         icon0Uri = game?.iconUri,
         progress = 0f,
         coins = LibraryCoinCounts(),
-        reason = "Awaiting sync",
+        reason = UiText.res(R.string.shiba_library_awaiting_sync),
         awaitingSync = true,
     )
 
@@ -655,13 +666,13 @@ class ShibaLibraryViewModel @Inject constructor(
         // games, RetroAchievements hash matching for supported consoles (see ShibaCoinsViewModel).
         coinsTarget = ShibaCoinsTarget.LibraryGame(gameId).takeIf { isMatchable(platformId) },
         title = game?.displayTitle ?: title,
-        platformLabel = platformDisplay(platformId),
+        platformLabel = UiText.raw(platformDisplay(platformId)),
         provider = null,
         platformSortKey = platformGroupOf(null, platformId),
         icon0Uri = game?.iconUri,
         progress = 0f,
         coins = LibraryCoinCounts(),
-        reason = reason,
+        reason = UiText.raw(reason),
     )
 
     private fun isMatchable(platformId: String): Boolean =

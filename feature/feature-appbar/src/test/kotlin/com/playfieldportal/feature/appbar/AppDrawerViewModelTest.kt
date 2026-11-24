@@ -6,6 +6,7 @@ import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameContentType
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.components.PfpModalNav
 import com.playfieldportal.core.ui.components.PfpModalSpec
 import com.playfieldportal.core.ui.sound.MenuSound
@@ -344,13 +345,14 @@ class AppDrawerViewModelTest {
 
         val spec = uninstallModalSpec(
             viewModel.uiState.value,
+            resolve = { it.toString() },
             onConfirm = viewModel::confirmUninstall,
             onCancel = viewModel::cancelUninstall,
         ) as PfpModalSpec.Confirm
 
         assertTrue(spec.destructive)
         assertTrue(spec.openOnCancel)
-        assertEquals("Uninstall", spec.confirmLabel)
+        assertEquals(UiText.res(R.string.apps_menu_uninstall).toString(), spec.confirmLabel)
         assertTrue(spec.title.contains("PPSSPP"))
     }
 
@@ -358,7 +360,7 @@ class AppDrawerViewModelTest {
     fun `no confirm pending means no modal`() {
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(null, uninstallModalSpec(viewModel.uiState.value, onConfirm = {}, onCancel = {}))
+        assertEquals(null, uninstallModalSpec(viewModel.uiState.value, resolve = { it.toString() }, onConfirm = {}, onCancel = {}))
     }
 
     @Test
@@ -377,6 +379,7 @@ class AppDrawerViewModelTest {
         openUninstallConfirm()
         val spec = uninstallModalSpec(
             viewModel.uiState.value,
+            resolve = { it.toString() },
             onConfirm = viewModel::confirmUninstall,
             onCancel = viewModel::cancelUninstall,
         ) as PfpModalSpec.Confirm
@@ -404,6 +407,7 @@ class AppDrawerViewModelTest {
         openUninstallConfirm()
         val spec = uninstallModalSpec(
             viewModel.uiState.value,
+            resolve = { it.toString() },
             onConfirm = viewModel::confirmUninstall,
             onCancel = viewModel::cancelUninstall,
         ) as PfpModalSpec.Confirm
@@ -540,8 +544,8 @@ class AppDrawerViewModelTest {
 
         val rows = viewModel.uiState.value.menuRows
         assertEquals("PPSSPP", viewModel.uiState.value.menuApp?.label)
-        assertEquals("On", rows.first { it.id == "favorite_toggle" }.value)
-        assertEquals("On", rows.first { it.label == "Mark as Game" }.value)
+        assertEquals(UiText.res(R.string.apps_value_on), rows.first { it.id == "favorite_toggle" }.value)
+        assertEquals(UiText.res(R.string.apps_value_on), rows.first { it.label == UiText.res(R.string.apps_menu_mark_game) }.value)
     }
 
     @Test
@@ -549,8 +553,8 @@ class AppDrawerViewModelTest {
         openMenu()
 
         val rows = viewModel.uiState.value.menuRows
-        assertEquals("Off", rows.first { it.id == "favorite_toggle" }.value)
-        assertEquals("Off", rows.first { it.id == "mark_game" }.value)
+        assertEquals(UiText.res(R.string.apps_value_off), rows.first { it.id == "favorite_toggle" }.value)
+        assertEquals(UiText.res(R.string.apps_value_off), rows.first { it.id == "mark_game" }.value)
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.CategoryType
@@ -17,8 +18,8 @@ import org.junit.Test
 class ContextMenuBackTest {
 
     private val card = XMBContextMenu(
-        title = "PSP Memory Card",
-        items = platformCardMenuItems("psp", pinned = false, iconDisplayLabel = "Global: Box Art"),
+        title = UiText.raw("PSP Memory Card"),
+        items = platformCardMenuItems("psp", pinned = false, iconDisplayLabel = UiText.raw("Global: Box Art")),
         selectedIndex = 3,
         platformId = "psp",
     )
@@ -26,15 +27,16 @@ class ContextMenuBackTest {
     @Test
     fun `the panel rows carry every field of the menu items, opensMenu and silent included`() {
         val menu = XMBContextMenu(
-            title = "Game",
+            title = UiText.raw("Game"),
             items = listOf(
-                XMBContextMenuItem("a", "Add to Card", opensMenu = true, value = "2", header = "Library"),
-                XMBContextMenuItem("b", "Favorite", silent = true, checked = true),
-                XMBContextMenuItem("c", "Remove", isDestructive = true),
+                XMBContextMenuItem("a", UiText.raw("Add to Card"), opensMenu = true, value = UiText.raw("2"), header = UiText.raw("Library")),
+                XMBContextMenuItem("b", UiText.raw("Favorite"), silent = true, checked = true),
+                XMBContextMenuItem("c", UiText.raw("Remove"), isDestructive = true),
             ),
         )
 
-        val rows = menu.toPspRows()
+        // Every text here is raw, so the resources are never read.
+        val rows = menu.toPspRows(io.mockk.mockk<android.content.res.Resources>())
 
         assertEquals(PspMenuRow("Add to Card", opensMenu = true, value = "2", header = "Library"), rows[0])
         assertEquals(PspMenuRow("Favorite", checked = true, silent = true), rows[1])
@@ -45,10 +47,10 @@ class ContextMenuBackTest {
     private val sounds = MenuSoundSink { heard += it }
 
     private fun picker(selectedIndex: Int = 0) = XMBContextMenu(
-        title = "Icon Display",
+        title = UiText.raw("Icon Display"),
         items = listOf(
-            XMBContextMenuItem("picondisp_default", "Use Global Setting"),
-            XMBContextMenuItem("picondisp_BOX", "Box Art"),
+            XMBContextMenuItem("picondisp_default", UiText.raw("Use Global Setting")),
+            XMBContextMenuItem("picondisp_BOX", UiText.raw("Box Art")),
         ),
         selectedIndex = selectedIndex,
         platformId = "psp",
@@ -59,8 +61,8 @@ class ContextMenuBackTest {
     fun `depth counts the menus above this one, and a Games Filter group counts as one level`() {
         assertEquals(0, card.depth)
         assertEquals(1, picker().depth)
-        assertEquals(1, XMBContextMenu("Sort", emptyList(), gamesFilterMenu = true, gamesFilterGroup = GamesFilterGroup.SORT).depth)
-        assertEquals(0, XMBContextMenu("Filter", emptyList(), gamesFilterMenu = true).depth)
+        assertEquals(1, XMBContextMenu(UiText.raw("Sort"), emptyList(), gamesFilterMenu = true, gamesFilterGroup = GamesFilterGroup.SORT).depth)
+        assertEquals(0, XMBContextMenu(UiText.raw("Filter"), emptyList(), gamesFilterMenu = true).depth)
     }
 
     @Test
@@ -90,11 +92,11 @@ class ContextMenuBackTest {
     @Test
     fun `activating a row plays SELECT to open a list, CONFIRM to commit, nothing for a silent row`() {
         val menu = XMBContextMenu(
-            title = "Game",
+            title = UiText.raw("Game"),
             items = listOf(
-                XMBContextMenuItem("a", "Add to Card", opensMenu = true),
-                XMBContextMenuItem("b", "Fetch Artwork"),
-                XMBContextMenuItem("c", "Favorite", silent = true),
+                XMBContextMenuItem("a", UiText.raw("Add to Card"), opensMenu = true),
+                XMBContextMenuItem("b", UiText.raw("Fetch Artwork")),
+                XMBContextMenuItem("c", UiText.raw("Favorite"), silent = true),
             ),
         )
 
@@ -115,21 +117,21 @@ class ContextMenuBackTest {
 
     @Test
     fun `rows that open a picker say so`() {
-        val game = platformCardMenuItems("psp", pinned = false, iconDisplayLabel = "Global", sortLabel = "A-Z")
+        val game = platformCardMenuItems("psp", pinned = false, iconDisplayLabel = UiText.raw("Global"), sortLabel = UiText.raw("A-Z"))
         assertEquals(true, game.first { it.id == "icon_display_platform" }.opensMenu)
         assertEquals(true, game.first { it.id == LIST_SORT_ROW_ID }.opensMenu)
 
-        val all = allGamesMenuItems(iconDisplayLabel = "Global", sortLabel = "A-Z", globalSortLabel = "A-Z")
+        val all = allGamesMenuItems(iconDisplayLabel = UiText.raw("Global"), sortLabel = UiText.raw("A-Z"), globalSortLabel = UiText.raw("A-Z"))
         assertEquals(true, all.first { it.id == "icon_display_global" }.opensMenu)
         assertEquals(true, all.first { it.id == LIST_SORT_ROW_ID }.opensMenu)
         assertEquals(true, all.first { it.id == GLOBAL_SORT_ROW_ID }.opensMenu)
 
-        val custom = customCardMenuItems(pinned = false, canMoveToCategory = true, sortValue = "A-Z", canMove = false, byTouch = true)
+        val custom = customCardMenuItems(pinned = false, canMoveToCategory = true, sortValue = UiText.raw("A-Z"), canMove = false, byTouch = true)
         assertEquals(true, custom.first { it.id == LIST_SORT_ROW_ID }.opensMenu)
         assertEquals(true, custom.first { it.id == "move_collection_category" }.opensMenu)
         assertEquals(false, custom.first { it.id == "delete_collection" }.opensMenu)
 
-        assertEquals(true, rootRowMenuItems(sortValue = "A-Z", canMove = false, byTouch = true).first { it.id == LIST_SORT_ROW_ID }.opensMenu)
+        assertEquals(true, rootRowMenuItems(sortValue = UiText.raw("A-Z"), canMove = false, byTouch = true).first { it.id == LIST_SORT_ROW_ID }.opensMenu)
     }
 
     @Test
@@ -167,8 +169,8 @@ class ContextMenuBackTest {
     @Test
     fun `Back in a picker returns to the menu that opened it, cursor where it was left`() {
         val picker = XMBContextMenu(
-            title = "Icon Display",
-            items = listOf(XMBContextMenuItem("picondisp_default", "Use Global Setting")),
+            title = UiText.raw("Icon Display"),
+            items = listOf(XMBContextMenuItem("picondisp_default", UiText.raw("Use Global Setting"))),
             platformId = "psp",
             parent = card,
         )

@@ -22,7 +22,6 @@ import com.playfieldportal.feature.artwork.store.ArtworkKind
 import com.playfieldportal.feature.artwork.store.ArtworkStore
 import com.playfieldportal.feature.xmb.ui.detail.ArtPickerItem
 import com.playfieldportal.feature.xmb.ui.detail.ArtworkType
-import com.playfieldportal.feature.xmb.ui.detail.displayLabel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +31,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
+import androidx.annotation.StringRes
+import android.content.res.Resources
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.xmb.R
 
 // The detail page for standard (non-game) apps — the same hero-card layout as the Game Detail
 // page (breadcrumb → hero card → icon + Launch/Options/Artwork), minus game metadata and
@@ -39,20 +42,20 @@ import javax.inject.Inject
 // the package icon. One Options menu, like Game Detail's, with Artwork as a sub-list; the Artwork
 // square button opens that menu already on the sub-list.
 enum class AppDetailOption(
-    val label: String,
+    @StringRes val labelRes: Int,
     val isDestructive: Boolean = false,
     val opensMenu: Boolean = false,
     val silent: Boolean = false,
 ) {
-    FAVORITE("Favorite", silent = true),
-    ADD_TO_COLLECTION("Add to Card", opensMenu = true),
-    ARTWORK("Artwork", opensMenu = true),
-    CHANGE_NAME("Edit Title"),
-    APP_INFO("App Info"),
-    HIDE("Hide Everywhere"),
-    CHANGE_ICON("Change Icon"),
-    CHANGE_BACKGROUND("Change Background"),
-    RESET_ARTWORK("Reset All Artwork", isDestructive = true),
+    FAVORITE(R.string.xmbu_app_opt_favorite, silent = true),
+    ADD_TO_COLLECTION(R.string.xmbu_common_add_to_card, opensMenu = true),
+    ARTWORK(R.string.xmbu_common_artwork, opensMenu = true),
+    CHANGE_NAME(R.string.xmbu_common_edit_title),
+    APP_INFO(R.string.xmbu_app_opt_app_info),
+    HIDE(R.string.xmbu_app_opt_hide),
+    CHANGE_ICON(R.string.xmbu_app_opt_change_icon),
+    CHANGE_BACKGROUND(R.string.xmbu_app_opt_change_background),
+    RESET_ARTWORK(R.string.xmbu_app_opt_reset_artwork, isDestructive = true),
     ;
 
     companion object {
@@ -63,16 +66,25 @@ enum class AppDetailOption(
     }
 }
 
+/** The artwork kind's name as a sentence part ("Game Icon updated"), localised. */
+internal fun ArtworkType.noun(): UiText = UiText.res(
+    when (this) {
+        ArtworkType.ICON       -> R.string.xmbu_app_art_type_icon
+        ArtworkType.HERO       -> R.string.xmbu_app_art_type_hero
+        ArtworkType.BACKGROUND -> R.string.xmbu_app_art_type_background
+    },
+)
+
 /** A list the Options menu can be showing below its root. */
 enum class AppDetailMenuGroup { ARTWORK }
 
 /** The panel rows for [options]; Favorite's value is the app's state. */
-internal fun appDetailMenuRows(options: List<AppDetailOption>, isFavorite: Boolean): List<PspMenuRow> =
+internal fun appDetailMenuRows(options: List<AppDetailOption>, isFavorite: Boolean, res: Resources): List<PspMenuRow> =
     options.map {
         PspMenuRow(
-            label = it.label,
+            label = res.getString(it.labelRes),
             isDestructive = it.isDestructive,
-            value = if (it == AppDetailOption.FAVORITE) (if (isFavorite) "On" else "Off") else null,
+            value = if (it == AppDetailOption.FAVORITE) res.getString(if (isFavorite) R.string.xmbu_common_on else R.string.xmbu_common_off) else null,
             opensMenu = it.opensMenu,
             silent = it.silent,
         )
@@ -95,9 +107,9 @@ data class AppDetailUiState(
     val artworkPickerLoading: Boolean = false,
     val artworkPickerItems: List<ArtPickerItem> = emptyList(),
     val artworkPickerFocus: Int = 0,
-    val artworkPickerError: String? = null,
+    val artworkPickerError: UiText? = null,
     val artworkIsProcessing: Boolean = false,
-    val artworkMessage: String? = null,
+    val artworkMessage: UiText? = null,
     val artworkPendingLocal: ArtworkType? = null,
     val isEditingName: Boolean = false,
     // Reset All Artwork's confirm (the shared destructive modal); nothing is cleared until it is
@@ -173,7 +185,7 @@ class AppDetailViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         artworkPickerLoading = false,
-                        artworkPickerError   = "SteamGridDB API key not configured — add one in Artwork Settings",
+                        artworkPickerError   = UiText.res(R.string.xmbu_app_art_no_api_key),
                     )
                 }
                 return@launch
@@ -181,7 +193,7 @@ class AppDetailViewModel @Inject constructor(
             val match = steamGridDb.searchGame(searchName).getOrElse { e ->
                 Timber.w(e, "SGDB search failed for '$searchName'")
                 _uiState.update {
-                    it.copy(artworkPickerLoading = false, artworkPickerError = "Search failed: ${e.message}")
+                    it.copy(artworkPickerLoading = false, artworkPickerError = UiText.res(R.string.xmbu_app_art_search_failed, e.message.toString()))
                 }
                 return@launch
             }.firstOrNull()
@@ -190,16 +202,16 @@ class AppDetailViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         artworkPickerLoading = false,
-                        artworkPickerError   = "No results for \"$searchName\" on SteamGridDB",
+                        artworkPickerError   = UiText.res(R.string.xmbu_app_art_no_results, searchName),
                     )
                 }
                 return@launch
             }
 
             val arts = steamGridDb.getArt(match.id, type.toSgdbArtType()).getOrElse { e ->
-                Timber.w(e, "SGDB getArt failed for ${type.displayLabel}")
+                Timber.w(e, "SGDB getArt failed for ${type.name}")
                 _uiState.update {
-                    it.copy(artworkPickerLoading = false, artworkPickerError = "Failed to load artwork: ${e.message}")
+                    it.copy(artworkPickerLoading = false, artworkPickerError = UiText.res(R.string.xmbu_app_art_load_failed, e.message.toString()))
                 }
                 return@launch
             }
@@ -209,7 +221,7 @@ class AppDetailViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         artworkPickerLoading = false,
-                        artworkPickerError   = "No ${type.displayLabel} art found on SteamGridDB",
+                        artworkPickerError   = UiText.res(R.string.xmbu_app_art_none_found, type.noun()),
                     )
                 }
                 return@launch
@@ -232,7 +244,7 @@ class AppDetailViewModel @Inject constructor(
             val localPath = artworkStore.saveVersionedFromUrl(game.id, type.toKind(), url)
             if (localPath == null) {
                 _uiState.update {
-                    it.copy(artworkIsProcessing = false, artworkMessage = "Could not download ${type.displayLabel}")
+                    it.copy(artworkIsProcessing = false, artworkMessage = UiText.res(R.string.xmbu_app_art_download_failed, type.noun()))
                 }
                 return@launch
             }
@@ -242,7 +254,7 @@ class AppDetailViewModel @Inject constructor(
                 it.copy(
                     game               = updated ?: it.game,
                     artworkIsProcessing = false,
-                    artworkMessage      = "${type.displayLabel} updated",
+                    artworkMessage      = UiText.res(R.string.xmbu_app_art_updated, type.noun()),
                     showArtworkPicker   = false,
                 )
             }
@@ -264,7 +276,7 @@ class AppDetailViewModel @Inject constructor(
             val localPath = artworkStore.saveVersionedFromUri(game.id, type.toKind(), uri)
             if (localPath == null) {
                 _uiState.update {
-                    it.copy(artworkIsProcessing = false, artworkMessage = "Could not import ${type.displayLabel}")
+                    it.copy(artworkIsProcessing = false, artworkMessage = UiText.res(R.string.xmbu_app_art_import_failed, type.noun()))
                 }
                 return@launch
             }
@@ -274,7 +286,7 @@ class AppDetailViewModel @Inject constructor(
                 it.copy(
                     game               = updated ?: it.game,
                     artworkIsProcessing = false,
-                    artworkMessage      = "${type.displayLabel} updated",
+                    artworkMessage      = UiText.res(R.string.xmbu_app_art_updated, type.noun()),
                     showArtworkPicker   = false,
                 )
             }
@@ -289,7 +301,7 @@ class AppDetailViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     game              = updated ?: it.game,
-                    artworkMessage    = "${type.displayLabel} reset",
+                    artworkMessage    = UiText.res(R.string.xmbu_app_art_reset, type.noun()),
                     showArtworkPicker = false,
                 )
             }
@@ -314,7 +326,7 @@ class AppDetailViewModel @Inject constructor(
             gameRepository.updateBoxArt(gameId, null)
             val updated = gameRepository.getById(gameId)
             _uiState.update {
-                it.copy(game = updated ?: it.game, artworkMessage = "All artwork reset")
+                it.copy(game = updated ?: it.game, artworkMessage = UiText.res(R.string.xmbu_app_art_all_reset))
             }
         }
     }
@@ -400,7 +412,10 @@ class AppDetailViewModel @Inject constructor(
         val s = _uiState.value
         val options = menuRows(s.menuGroup)
         val index = s.optionsIndex
-        val cue = appDetailMenuRows(options, isFavorite = false).getOrNull(index)?.cue ?: PspMenuCue.NONE
+        // The row's cue depends on its flags alone, so no text is needed to read it.
+        val cue = options.getOrNull(index)
+            ?.let { PspMenuRow(label = "", opensMenu = it.opensMenu, silent = it.silent).cue }
+            ?: PspMenuCue.NONE
         val depth = if (s.menuGroup != null) 1 else 0
         when (val outcome = PspMenuNav.handle(action, index, options.size, depth, cue, MenuSoundSink { menuSound.play(it) })) {
             is PspMenuOutcome.Moved -> _uiState.update { it.copy(optionsIndex = outcome.index) }
@@ -424,7 +439,7 @@ class AppDetailViewModel @Inject constructor(
         val game = _uiState.value.game ?: return
         val pkg = game.packageName
         if (pkg.isNullOrBlank()) {
-            _uiState.update { it.copy(artworkMessage = "This app has no launchable package") }
+            _uiState.update { it.copy(artworkMessage = UiText.res(R.string.xmbu_app_no_launchable_package)) }
             return
         }
         appCategoryRepository.launch(pkg)
@@ -453,6 +468,8 @@ class AppDetailViewModel @Inject constructor(
                 _uiState.update { it.copy(menuGroup = AppDetailMenuGroup.ARTWORK, optionsIndex = 0) }
                 return
             }
+            // Reads its cards first, then takes the menu's place itself: the shared panel never empties.
+            AppDetailOption.ADD_TO_COLLECTION -> Unit
             else -> closeMenus()
         }
         when (option) {
@@ -508,12 +525,13 @@ class AppDetailViewModel @Inject constructor(
     private fun openCollectionPicker() {
         val gameId = _uiState.value.game?.id ?: return
         viewModelScope.launch {
+            val options = buildCollectionOptions(gameId)
             _uiState.update {
-                it.copy(collectionPicker = CollectionPickerUi(
-                    visible = true,
-                    options = buildCollectionOptions(gameId),
-                    selectedIndex = 0,
-                ))
+                it.copy(
+                    showOptions = false,
+                    menuGroup = null,
+                    collectionPicker = CollectionPickerUi(visible = true, options = options, selectedIndex = 0, fromOptions = true),
+                )
             }
         }
     }
@@ -574,8 +592,18 @@ class AppDetailViewModel @Inject constructor(
         _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(showCreateDialog = false)) }
     }
 
+    /** Back: up one level to Options, on the Add to Card row, when that is where it came from. */
     fun closeCollectionPicker() {
-        _uiState.update { it.copy(collectionPicker = CollectionPickerUi()) }
+        _uiState.update { s ->
+            if (!s.collectionPicker.fromOptions) return@update s.copy(collectionPicker = CollectionPickerUi())
+            val row = AppDetailOption.OPTIONS_MENU.indexOf(AppDetailOption.ADD_TO_COLLECTION).coerceAtLeast(0)
+            s.copy(collectionPicker = CollectionPickerUi(), showOptions = true, menuGroup = null, optionsIndex = row)
+        }
+    }
+
+    /** A tap outside the panel: the whole menu closes, as a tap outside Options does. */
+    fun dismissCollectionPicker() {
+        _uiState.update { it.copy(collectionPicker = CollectionPickerUi(), showOptions = false, menuGroup = null) }
     }
 
     private fun handleCollectionPickerInput(action: GamepadAction) {

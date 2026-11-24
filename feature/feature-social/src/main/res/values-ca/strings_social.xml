@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Pantalla d'inici de sessió amb QR -->
+    <string name="soc_qr_preparing">S\'està preparant l\'inici de sessió…</string>
+    <string name="soc_qr_connected">Connectat</string>
+    <string name="soc_qr_expired">El codi ha caducat.</string>
+    <string name="soc_qr_declined">S\'ha rebutjat l\'inici de sessió.</string>
+    <string name="soc_qr_error">No s\'ha pogut iniciar la sessió. %1$s</string>
+    <string name="soc_qr_content_description">Codi QR d\'inici de sessió de Discord</string>
+    <string name="soc_qr_title">Inicia la sessió amb Discord</string>
+    <string name="soc_qr_copied">S\'ha copiat!</string>
+    <string name="soc_qr_tap_to_copy">Selecciona el codi per copiar-lo</string>
+    <string name="soc_qr_instructions">Escaneja\'l amb la càmera del telèfon o ves a discord.com/activate i enganxa-hi el codi.</string>
+    <string name="soc_qr_expires_in">Caduca en %1$ds</string>
+    <string name="soc_qr_expired_short">Caducat</string>
+    <string name="soc_qr_cancel">Cancel·la</string>
+    <string name="soc_qr_try_again">Torna-ho a provar</string>
+</resources>

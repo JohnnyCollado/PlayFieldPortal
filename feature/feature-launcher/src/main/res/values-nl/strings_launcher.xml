@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launch refusals shown before an emulator starts -->
+    <string name="launch_err_custom_command">Profielen met een eigen opdracht worden niet meer ondersteund. Zet deze emulator om naar de startmethode “ROM openen met de app” of “App-scherm openen”.</string>
+    <string name="launch_err_shortcut_unsupported">Starten via snelkoppeling wordt op dit scherm niet ondersteund</string>
+    <string name="launch_err_no_package">Geen Android-pakket vastgelegd voor %1$s</string>
+    <string name="launch_err_app_not_launchable">Android-app niet geïnstalleerd of niet te starten: %1$s</string>
+    <string name="launch_err_emulator_not_installed">Emulator niet geïnstalleerd: %1$s (%2$s)</string>
+    <string name="launch_err_wrong_build">%1$s (%2$s) is niet de verwachte build: het ondertekeningscertificaat komt niet overeen. Installeer de emulator opnieuw vanaf de officiële bron.</string>
+    <string name="launch_err_no_activity_for_path">Voor %1$s is geen startactiviteit vastgelegd, dus er kan geen bestandspad aan worden doorgegeven. Importeer de kennisvermelding opnieuw of detecteer de emulator opnieuw.</string>
+    <string name="launch_err_activity_required">Voor deze startmethode is de naam van een app-scherm vereist - profiel: %1$s</string>
+    <string name="launch_err_activity_gone">%1$s biedt zijn startactiviteit (%2$s) niet meer aan. Werk de emulator bij of kies een andere emulator voor dit platform.</string>
+    <string name="launch_err_no_launch_id">Geen start-ID vastgelegd voor %1$s. Scan de bibliotheek opnieuw.</string>
+    <string name="launch_err_rom_link_invalid">De ROM-link van dit spel is ongeldig. Scan de bibliotheek opnieuw.</string>
+    <string name="launch_err_lost_access">Play Field Portal heeft geen toegang meer tot het bestand van dit spel. Koppel de opslag opnieuw en scan de bibliotheek opnieuw.</string>
+    <string name="launch_err_rom_path_required">Een ROM-pad is nodig om %1$s te starten</string>
+    <string name="launch_err_rom_not_found">ROM-bestand niet gevonden: %1$s</string>
+    <string name="launch_err_no_core">Geen RetroArch-core ingesteld voor platform \'%1$s\' in profiel \'%2$s\'. Open RetroArch → Core Downloader om een core voor dit systeem te installeren.</string>
+    <string name="launch_err_cannot_open_rom_type">%1$s kan dit ROM-type niet openen. Installeer de emulator opnieuw of controleer de app-rechten in de Android-instellingen.</string>
+    <string name="launch_err_no_file_path">%1$s heeft geen bestandspad op dit apparaat, dus %2$s weet niet welk spel moet starten.</string>
+    <string name="launch_err_not_in_rom_folder">%1$s staat niet in een ingestelde ROM-map, dus het kan niet aan %2$s worden doorgegeven. Controleer de map die voor deze geheugenkaart is ingesteld in Instellingen.</string>
+
+    <!-- Emulator choice problems -->
+    <string name="launch_err_configured_missing">De emulator (%1$s) is niet geïnstalleerd of niet beschikbaar: %2$s</string>
+    <string name="launch_err_core_not_installed">%1$s is ingesteld als %2$s, maar die core is niet in RetroArch geïnstalleerd. Installeer hem of kies een andere emulator.</string>
+    <string name="launch_err_no_longer_available">%1$s is ingesteld als %2$s, maar is niet meer beschikbaar. Kies een andere emulator.</string>
+    <string name="launch_err_not_configured_for_platform">%1$s is niet ingesteld voor %2$s</string>
+    <string name="launch_err_no_emulator_for_platform">Geen emulator ingesteld voor %1$s. Kies een emulator voor dit spel of stel een platformstandaard in.</string>
+
+    <!-- Where an emulator choice came from -->
+    <string name="launch_source_per_game">Instelling per spel</string>
+    <string name="launch_source_per_game_lower">instelling per spel</string>
+    <string name="launch_source_memory_card">Standaard van geheugenkaart</string>
+    <string name="launch_source_memory_card_lower">standaard van geheugenkaart</string>
+    <string name="launch_source_platform">Platformstandaard</string>
+    <string name="launch_source_platform_lower">platformstandaard</string>
+    <string name="launch_source_recommended">Aanbevolen</string>
+    <string name="launch_source_recommended_lower">aanbevolen</string>
+    <string name="launch_phrase_per_game">instelling per spel</string>
+    <string name="launch_phrase_memory_card">geheugenkaart</string>
+    <string name="launch_phrase_platform">platformstandaard</string>
+
+    <!-- Launch hand-off failures -->
+    <string name="launch_err_emulator_not_found">Emulator niet gevonden. Is hij geïnstalleerd?</string>
+    <string name="launch_err_permission_denied">Geen toestemming om de emulator te starten</string>
+    <string name="launch_err_open_emulator">Kan emulator niet openen: %1$s</string>
+    <string name="launch_never_foreground">De emulator is na het starten nooit op de voorgrond gekomen.</string>
+    <string name="launch_never_appeared">De emulator is nooit verschenen. Controleer of hij is geïnstalleerd en up-to-date is, en probeer opnieuw te starten.</string>
+    <plurals name="launch_history_failed">
+        <item quantity="one">%1$d van de laatste %2$d start van dit spel is mislukt.</item>
+        <item quantity="other">%1$d van de laatste %2$d starts van dit spel zijn mislukt.</item>
+    </plurals>
+
+    <!-- Launch failure notification -->
+    <string name="launch_rec_title">Kan %1$s niet starten</string>
+    <string name="launch_rec_could_not_start">De emulator kon niet worden gestart</string>
+    <string name="launch_rec_never_foreground">De emulator is nooit op de voorgrond gekomen</string>
+    <string name="launch_fact_emulator">Emulator</string>
+    <string name="launch_fact_core">Core</string>
+    <string name="launch_fact_platform">Platform</string>
+    <string name="launch_fact_recent">Recente starts</string>
+    <string name="launch_fact_recent_value">%1$d van de laatste %2$d mislukt</string>
+
+    <!-- Shortcut requests -->
+    <string name="launch_shortcut_request_title">Verzoek om snelkoppeling: %1$s (opent %2$s)</string>
+    <string name="launch_shortcut_request_message">Voeg hem alleen toe als je deze snelkoppeling net zelf hebt gemaakt.</string>
+    <string name="launch_shortcut_added_title">Snelkoppeling toegevoegd: %1$s</string>
+    <string name="launch_shortcut_ignored_title">Snelkoppeling genegeerd: %1$s</string>
+    <string name="launch_shortcut_from">Van %1$s</string>
+    <string name="launch_windows_added_title">\"%1$s\" toegevoegd aan Windows-spellen</string>
+    <string name="launch_windows_added_message">Rond het instellen van je Windows-bibliotheek af om de map te scannen</string>
+
+    <!-- First-run setup prompts -->
+    <string name="launch_setup_add_rom_folder">Voeg een ROM-map toe om je bibliotheek te starten</string>
+    <string name="launch_setup_add_console_card">Voeg een consolegeheugenkaart toe om in te scannen</string>
+    <string name="launch_setup_install_emulator">Installeer een emulator om je spellen te spelen</string>
+
+    <!-- Emulator detection notes -->
+    <string name="launch_inspect_known">Automatisch ingevuld vanuit het ingebouwde profiel voor %1$s. Bevestig de platform(s) en sla op.</string>
+    <string name="launch_inspect_best_guess">Beste gok op basis van hoe deze app ROM-bestanden opent. Stel de platform(s) in en test een ROM voordat je opslaat.</string>
+    <string name="launch_inspect_minimal">Kan niet detecteren hoe deze app ROM\'s accepteert. Vul de activity-/intent-instellingen handmatig in en test daarna een ROM.</string>
+
+    <!-- Emulator knowledge file updates -->
+    <string name="launch_kb_too_many_files">Er kunnen maximaal %1$d kennisbestanden worden geïmporteerd; verwijder er eerst een</string>
+    <string name="launch_kb_installed">Bijgewerkt</string>
+    <string name="launch_kb_not_configured">Updates zijn in deze build niet ingesteld</string>
+    <string name="launch_kb_offline">Kan de updateserver niet bereiken</string>
+    <string name="launch_kb_too_large">Het updatebestand is te groot</string>
+    <string name="launch_kb_signature_invalid">De handtekening van de update is ongeldig</string>
+    <string name="launch_kb_needs_app_update">Deze update vereist een nieuwere versie van de app</string>
+    <string name="launch_kb_older">De update is ouder dan de al geïnstalleerde versie</string>
+    <string name="launch_kb_invalid_content">Het updatebestand heeft ongeldige inhoud</string>
+    <string name="launch_kb_storage_failed">De update kon niet worden opgeslagen</string>
+    <string name="launch_kb_skipped">Er was geen controle nodig</string>
+
+    <!-- Windows game launchers -->
+    <string name="launch_unknown_gamehub_or_bannerhub">kan GameHub of BannerHub zijn</string>
+    <string name="launch_unknown_gamehublite_or_bannerhub">kan GameHub Lite of BannerHub zijn</string>
+    <string name="launch_unknown_not_in_list">niet in de lijst van PFP</string>
+    <string name="launch_choice_not_a_launcher">Geen launcher</string>
+    <string name="launch_id_prompt_gamehub">Game-ID — op de pagina van het spel: tik op Copy naast Local Game ID, of ⋮ → Banner Tools → Show Game ID</string>
+    <string name="launch_id_prompt_gamenative">Steam App ID (of app-id van de winkel) voor het geïnstalleerde spel</string>
+</resources>

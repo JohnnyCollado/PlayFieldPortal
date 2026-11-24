@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Wizard chrome -->
+    <string name="setup_title">초기 설정</string>
+    <string name="setup_prompt_enter">들어가기</string>
+    <string name="setup_prompt_change">변경</string>
+    <string name="setup_prompt_back">뒤로</string>
+    <string name="setup_prompt_skip">건너뛰기</string>
+    <string name="setup_row_edit">편집</string>
+    <string name="setup_row_remove">제거</string>
+    <string name="setup_message_dismiss_hint">선택하여 닫기 — 또는 이 행에서 확인</string>
+    <string name="setup_step_welcome">환영</string>
+    <string name="setup_step_controller">컨트롤러</string>
+    <string name="setup_step_rom_roots">ROM 폴더</string>
+    <string name="setup_step_music">음악</string>
+    <string name="setup_step_video">동영상</string>
+    <string name="setup_step_photo">사진</string>
+    <string name="setup_step_artwork">아트워크</string>
+    <string name="setup_step_services">온라인 서비스</string>
+    <string name="setup_step_achievements">도전 과제 서비스</string>
+    <string name="setup_step_local_achievements">로컬 도전 과제</string>
+    <string name="setup_step_retroarch">RetroArch</string>
+    <string name="setup_step_emulators">에뮬레이터</string>
+    <string name="setup_step_windows">Windows 게임</string>
+    <string name="setup_step_hints">힌트 및 터치</string>
+    <string name="setup_step_home_app">홈 앱</string>
+    <string name="setup_step_finish">완료</string>
+    <!-- Page headings -->
+    <string name="setup_heading_welcome">Play Field Portal에 오신 것을 환영합니다.</string>
+    <string name="setup_heading_controller">컨트롤러를 선택하세요.</string>
+    <string name="setup_heading_rom_roots">ROM 폴더를 선택하세요.</string>
+    <string name="setup_heading_music">음악 폴더를 선택하세요.</string>
+    <string name="setup_heading_video">동영상 폴더를 선택하세요.</string>
+    <string name="setup_heading_photo">사진 폴더를 선택하세요.</string>
+    <string name="setup_heading_artwork">아트워크 폴더를 선택하세요.</string>
+    <string name="setup_heading_services">아트워크 소스를 연결하세요.</string>
+    <string name="setup_heading_achievements">도전 과제 서비스를 연결하세요.</string>
+    <string name="setup_heading_local_achievements">에뮬레이터 데이터 폴더를 연결하세요.</string>
+    <string name="setup_heading_retroarch">RetroArch의 코어 폴더를 연결하세요.</string>
+    <string name="setup_heading_emulators">에뮬레이터를 확인하세요.</string>
+    <string name="setup_heading_windows">Windows 게임을 설정하세요.</string>
+    <string name="setup_heading_hints">런처의 도움 방식을 선택하세요.</string>
+    <string name="setup_heading_home_app">Play Field Portal을 홈 화면으로 설정하세요.</string>
+    <string name="setup_heading_finish">모든 준비가 끝났습니다!</string>
+    <!-- Page hints (the line under a heading) -->
+    <string name="setup_hint_welcome">대부분의 단계는 선택 사항입니다. 아트워크 폴더는 선택해야 합니다.</string>
+    <string name="setup_hint_controller">버튼 아이콘과 확인 버튼을 설정하여 이후의 모든 안내가 내 패드와 일치하도록 합니다.</string>
+    <string name="setup_hint_rom_roots">ROM 폴더를 하나 이상 추가하세요 — 각 콘솔의 게임은 그 안의 하위 폴더에 있습니다.</string>
+    <string name="setup_hint_media_roots">루트를 여러 개 추가하면 내부 저장소와 SD 카드를 모두 사용할 수 있습니다.</string>
+    <string name="setup_hint_artwork">필수 항목입니다. 아트가 앱 밖에 저장되므로 다시 설치해도 유지됩니다.</string>
+    <string name="setup_hint_services">모두 선택 사항이며 무료입니다. SteamGridDB, TheGamesDB, IGDB, ScreenScraper에서 게임 아트워크와 메타데이터를 가져옵니다.</string>
+    <string name="setup_hint_achievements">RetroAchievements와 Steam의 도전 과제를 Shiba Coins로 추적합니다.</string>
+    <string name="setup_hint_local_achievements">에뮬레이터가 이 기기에 저장하는 트로피와 도전 과제입니다. 에뮬레이터마다 한 번만 허용하면 모든 타이틀이 연결됩니다.</string>
+    <string name="setup_hint_retroarch">런처가 보유한 코어를 정확히 파악하여 해당 코어만 제안합니다.</string>
+    <string name="setup_hint_emulators">설치된 에뮬레이터 중에서 선택한 콘솔별 기본값입니다. 잘못된 것이 있으면 변경하세요.</string>
+    <string name="setup_hint_windows">Windows 에뮬레이터가 설치되어 있습니다 — PC 게임이 있는 위치를 선택하세요.</string>
+    <string name="setup_hint_hints">잠시 멈추면 버튼 힌트가 나타나고, 아무 버튼이나 누르면 바로 사라집니다.</string>
+    <string name="setup_hint_home_app">홈 버튼을 누르면 기본 런처 대신 여기로 돌아옵니다.</string>
+    <string name="setup_hint_finish">아래의 모든 항목은 언제든지 설정에서 조정할 수 있습니다.</string>
+    <!-- Continue row (bottom of every page) -->
+    <string name="setup_continue">계속</string>
+    <string name="setup_continue_next">다음: %1$s</string>
+    <string name="setup_continue_blocked">먼저 폴더를 선택하세요</string>
+    <!-- Welcome page -->
+    <string name="setup_welcome_intro">이 빠른 설정에서는 런처가 사용할 미디어 폴더를 지정하고 아트워크와 도전 과제에 사용하는 온라인 서비스를 연결합니다.</string>
+    <string name="setup_welcome_start">시작하기</string>
+    <string name="setup_welcome_start_sub">먼저 컨트롤러를 선택하세요</string>
+    <string name="setup_welcome_skip">설정 건너뛰기</string>
+    <string name="setup_welcome_skip_sub">바로 런처로 이동 — 설정 마법사는 언제든지 설정 ▸ 시스템에서 실행할 수 있습니다</string>
+    <!-- Folder rows shared by the ROM, Music, Video and Photo pages -->
+    <string name="setup_root_access_lost">접근 권한 없음 — ✎를 사용해 다시 허용하세요</string>
+    <!-- ROM roots page -->
+    <string name="setup_rom_empty">아직 ROM 폴더가 없습니다. 콘솔 게임이 있는 폴더를 추가하세요 — 콘솔마다 하위 폴더 하나씩이며 자동으로 스캔됩니다.</string>
+    <string name="setup_rom_add">ROM 폴더 추가</string>
+    <string name="setup_rom_add_sub">콘솔별 하위 폴더가 있는 ROM 폴더에 대한 접근 허용</string>
+    <string name="setup_rom_rescan">ROM 폴더 다시 스캔</string>
+    <string name="setup_rom_rescan_sub">콘솔을 자동 감지하고 게임 스캔</string>
+    <string name="setup_rom_root_linked">연결됨 — 콘솔 폴더를 여기에서 읽습니다</string>
+    <string name="setup_rom_create_folders">표준 폴더 만들기</string>
+    <string name="setup_rom_create_folders_sub">게임에 맞춰 이름 붙인 콘솔별 하위 폴더</string>
+    <!-- Music roots page -->
+    <string name="setup_music_empty">아직 음악 루트가 없습니다. 음악이 있는 폴더를 추가하세요 — 루트를 여러 개 추가하면 내부 저장소와 SD 카드를 모두 사용할 수 있습니다.</string>
+    <string name="setup_music_add">음악 루트 추가</string>
+    <string name="setup_music_add_sub">루트 폴더(예: /Music)에 대한 접근을 허용하세요 — 여러 위치를 사용하려면 여러 개를 추가하세요</string>
+    <string name="setup_music_root_linked">음악 라이브러리 위치</string>
+    <string name="setup_music_rescan">음악 라이브러리 다시 스캔</string>
+    <!-- Video roots page -->
+    <string name="setup_video_empty">아직 동영상 루트가 없습니다. 동영상이 있는 폴더를 추가하세요 — 루트를 여러 개 추가하면 내부 저장소와 SD 카드를 모두 사용할 수 있습니다.</string>
+    <string name="setup_video_add">동영상 루트 추가</string>
+    <string name="setup_video_add_sub">루트 폴더(예: /Videos)에 대한 접근을 허용하세요 — 여러 위치를 사용하려면 여러 개를 추가하세요</string>
+    <string name="setup_video_root_linked">동영상 라이브러리 위치</string>
+    <string name="setup_video_rescan">동영상 라이브러리 다시 스캔</string>
+    <!-- Photo roots page -->
+    <string name="setup_photo_empty">아직 사진 루트가 없습니다. 사진이 있는 폴더를 추가하세요 — 루트를 여러 개 추가하면 내부 저장소와 SD 카드를 모두 사용할 수 있습니다.</string>
+    <string name="setup_photo_add">사진 루트 추가</string>
+    <string name="setup_photo_add_sub">루트 폴더(예: /Photos)에 대한 접근을 허용하세요 — 여러 위치를 사용하려면 여러 개를 추가하세요</string>
+    <string name="setup_photo_root_linked">사진 라이브러리 위치</string>
+    <string name="setup_photo_rescan">사진 라이브러리 다시 스캔</string>
+    <string name="setup_media_rescan_sub">모든 루트 폴더에서 라이브러리 업데이트</string>
+    <!-- Artwork page -->
+    <string name="setup_artwork_empty">쓰기 가능한 폴더를 선택하세요. 런처가 그 안에 아트워크 라이브러리를 자동으로 설정하며, 게임이 추가될 때마다 아트를 가져옵니다.</string>
+    <string name="setup_artwork_unavailable">사용할 수 없음. 새 아트워크를 다시 받으려면 다시 연결하세요</string>
+    <string name="setup_artwork_folder_sub">아트워크 라이브러리 — 다른 폴더를 선택하려면 ✎를 사용하세요</string>
+    <string name="setup_artwork_choose">아트워크 폴더 선택</string>
+    <string name="setup_artwork_choose_sub">폴더 하나에 아트워크 라이브러리가 저장됩니다</string>
+    <string name="setup_artwork_import_title">지금 아트워크를 가져올까요?</string>
+    <string name="setup_artwork_import_sub_one">폴더의 import/에서 %1$s을(를) 라이브러리로 복사</string>
+    <plurals name="setup_artwork_import_sub_many">
+        <item quantity="other">폴더의 import/에서 소스 폴더 %1$d개를 라이브러리로 복사</item>
+    </plurals>
+    <string name="setup_artwork_import_row">아트워크 가져오기</string>
+    <string name="setup_artwork_import_none_sub">아직 가져올 항목이 없습니다 — import/ 아래에 런처의 미디어 폴더를 추가하세요</string>
+    <!-- Online services page -->
+    <string name="setup_services_intro">모든 계정은 선택 사항이며 무료입니다. SteamGridDB, TheGamesDB, IGDB, ScreenScraper에서 라이브러리의 게임 아트워크와 메타데이터를 가져옵니다.</string>
+    <string name="setup_field_api_key">API 키</string>
+    <string name="setup_field_api_key_saved">API 키(저장됨)</string>
+    <string name="setup_field_web_api_key">Web API 키</string>
+    <string name="setup_field_web_api_key_saved">Web API 키(저장됨)</string>
+    <string name="setup_field_client_id">클라이언트 ID</string>
+    <string name="setup_field_client_id_saved">클라이언트 ID(저장됨)</string>
+    <string name="setup_field_client_secret">클라이언트 시크릿</string>
+    <string name="setup_field_client_secret_saved">클라이언트 시크릿(저장됨)</string>
+    <string name="setup_field_username">사용자 이름</string>
+    <string name="setup_field_username_saved">사용자 이름(저장됨)</string>
+    <string name="setup_field_password">비밀번호</string>
+    <string name="setup_field_password_saved">비밀번호(저장됨)</string>
+    <string name="setup_field_steam_id">SteamID64 또는 사용자 지정 URL 이름</string>
+    <string name="setup_field_steam_id_saved">SteamID64 또는 사용자 지정 URL 이름(저장됨)</string>
+    <string name="setup_placeholder_tap_to_replace">선택하여 교체</string>
+    <!-- The bullets stand in for a saved secret that is hidden. -->
+    <string name="setup_placeholder_secret_saved">•••••••• (선택하여 교체)</string>
+    <string name="setup_placeholder_sgdb_key">SteamGridDB 키 붙여넣기</string>
+    <string name="setup_placeholder_tgdb_key">TheGamesDB 키 붙여넣기</string>
+    <string name="setup_placeholder_twitch_client_id">Twitch 클라이언트 ID</string>
+    <string name="setup_placeholder_twitch_client_secret">Twitch 클라이언트 시크릿</string>
+    <string name="setup_placeholder_ss_username">ScreenScraper 사용자 이름</string>
+    <string name="setup_placeholder_ss_password">ScreenScraper 비밀번호</string>
+    <string name="setup_placeholder_ra_username">RA 사용자 이름</string>
+    <string name="setup_placeholder_ra_key">RA Web API 키 붙여넣기</string>
+    <string name="setup_placeholder_steam_id">7656119… 또는 사용자 지정 URL 이름</string>
+    <string name="setup_placeholder_steam_key">Steam Web API 키 붙여넣기</string>
+    <!-- Buttons that save the credentials typed above. -->
+    <string name="setup_connect_sgdb">SteamGridDB 연결</string>
+    <string name="setup_connect_tgdb">TheGamesDB 연결</string>
+    <string name="setup_connect_igdb">IGDB 연결</string>
+    <string name="setup_connect_ss">ScreenScraper 연결</string>
+    <string name="setup_connect_ra">RetroAchievements 연결</string>
+    <string name="setup_connect_steam">Steam 연결</string>
+    <string name="setup_test_credentials">인증 정보 테스트</string>
+    <string name="setup_test_account">계정 테스트</string>
+    <string name="setup_connected_as">연결된 계정</string>
+    <!-- Achievement services page -->
+    <string name="setup_achievements_intro">선택 사항이며 무료입니다. RetroAchievements와 Steam의 도전 과제를 Shiba Coins로 추적합니다.</string>
+    <!-- Controller page -->
+    <string name="setup_controller_type">컨트롤러 유형</string>
+    <string name="setup_controller_type_sub">모든 안내의 버튼 아이콘을 변경합니다</string>
+    <string name="setup_controller_ab_swap">확인과 뒤로 바꾸기</string>
+    <string name="setup_controller_xy_swap">옵션과 정렬 바꾸기</string>
+    <string name="setup_controller_xy_swap_sub">런처 메뉴에만 적용 — 에뮬레이터 조작은 변경되지 않습니다</string>
+    <string name="setup_on">켜짐</string>
+    <string name="setup_off">꺼짐</string>
+    <string name="setup_controller_summary">%1$s · %2$s 확인</string>
+    <!-- Name of a PlayStation face button. -->
+    <string name="setup_button_circle">동그라미</string>
+    <!-- Name of a PlayStation face button. -->
+    <string name="setup_button_cross">엑스</string>
+    <string name="setup_confirm_swap_off">꺼짐 — %1$s 확인, %2$s 뒤로</string>
+    <string name="setup_confirm_swap_on">켜짐 — %1$s 확인, %2$s 뒤로</string>
+    <!-- Local achievements page -->
+    <string name="setup_local_vita_header">PS Vita · Vita3K</string>
+    <string name="setup_local_vita_set">Vita3K 데이터 폴더 설정</string>
+    <string name="setup_local_vita_set_sub">ux0 폴더(또는 이를 포함하는 폴더)에 대한 접근 허용</string>
+    <string name="setup_local_vita_folder_sub">Vita3K 데이터 폴더 — 다른 폴더를 선택하려면 ✎를 사용하세요</string>
+    <string name="setup_local_ps3_header">PS3 · ARMSX3</string>
+    <string name="setup_local_ps3_set">ARMSX3 데이터 폴더 설정</string>
+    <string name="setup_local_ps3_set_sub">PS3/config/dev_hdd0 또는 그 상위·하위 폴더에 대한 접근 허용</string>
+    <string name="setup_local_ps3_folder_sub">ARMSX3 데이터 폴더 — 다른 폴더를 선택하려면 ✎를 사용하세요</string>
+    <string name="setup_local_x360_header">Xbox 360 · X360 Mobile</string>
+    <string name="setup_local_x360_set">X360 Mobile 데이터 폴더 설정</string>
+    <string name="setup_local_x360_set_sub">폴더 선택기의 측면 메뉴에서 X360 Mobile을 선택한 후 접근을 허용하세요</string>
+    <string name="setup_local_x360_folder_sub">X360 Mobile 데이터 폴더 — 다른 폴더를 선택하려면 ✎를 사용하세요</string>
+    <string name="setup_local_xendroid_header">Xbox 360 · XenDroid</string>
+    <string name="setup_local_xendroid_set">XenDroid 데이터 폴더 설정</string>
+    <string name="setup_local_xendroid_set_sub">Android/data/xendroid.compose 또는 그 상위·하위 폴더에 대한 접근 허용</string>
+    <string name="setup_local_xendroid_folder_sub">XenDroid 데이터 폴더 — 다른 폴더를 선택하려면 ✎를 사용하세요</string>
+    <!-- RetroArch page -->
+    <string name="setup_retroarch_cores_folder">코어 폴더</string>
+    <plurals name="setup_retroarch_cores_detected">
+        <item quantity="other">코어 %1$d개 감지됨</item>
+    </plurals>
+    <string name="setup_retroarch_linked">연결됨</string>
+    <string name="setup_retroarch_relink">폴더 다시 연결</string>
+    <string name="setup_retroarch_relink_sub">RetroArch 폴더를 다시 선택</string>
+    <string name="setup_retroarch_recheck">코어 다시 확인</string>
+    <string name="setup_retroarch_recheck_sub">새 코어를 설치한 후</string>
+    <string name="setup_retroarch_unlink">RetroArch 연결 해제</string>
+    <string name="setup_retroarch_unlink_sub">선별된 모든 코어를 제안하는 방식으로 되돌리기</string>
+    <string name="setup_retroarch_intro">RetroArch가 설치되어 있습니다. 폴더를 연결하면 게임을 실행할 때 실제로 보유한 코어만 제안됩니다 — 연결하지 않으면 선별된 모든 코어가 표시됩니다(확인되지 않음).</string>
+    <string name="setup_retroarch_link">RetroArch 폴더 연결</string>
+    <string name="setup_retroarch_link_sub">com.retroarch 문서 트리를 선택하세요</string>
+    <!-- Emulators page -->
+    <string name="setup_emulators_empty">아직 게임이 있는 콘솔이 없습니다. ROM 폴더를 스캔하면 각 콘솔이 실행할 에뮬레이터와 함께 여기에 표시됩니다 — 언제든지 설정 ▸ 에뮬레이터에서 변경할 수 있습니다.</string>
+    <!-- Shown as the emulator for a console that has none installed. -->
+    <string name="setup_emulators_none">없음</string>
+    <!-- Windows games page -->
+    <string name="setup_windows_intro">게임마다 하위 폴더가 하나씩 있는 폴더를 선택하세요. PFP가 Windows 게임을 찾기 위해 스캔하며, 폴더 안의 내용은 변경하지 않습니다.</string>
+    <string name="setup_windows_detected">감지됨</string>
+    <string name="setup_windows_set">Windows 게임 폴더 설정</string>
+    <string name="setup_windows_change">Windows 게임 폴더 변경</string>
+    <string name="setup_windows_set_sub">게임이 설치된 폴더에 대한 접근 허용</string>
+    <!-- Hints and touch page -->
+    <string name="setup_hints_enabled">버튼 힌트</string>
+    <string name="setup_hints_enabled_sub">XMB, 설정 및 미디어 화면의 대기 중 힌트 칩</string>
+    <string name="setup_hints_delay">힌트 지연 시간</string>
+    <string name="setup_hints_delay_sub">힌트가 나타나기 전 대기 시간(1–5초)</string>
+    <plurals name="setup_hints_delay_seconds">
+        <item quantity="other">%1$d초</item>
+    </plurals>
+    <string name="setup_hints_delay_fraction">%1$s초</string>
+    <string name="setup_hints_touch">터치 버튼</string>
+    <string name="setup_hints_touch_sub">화면의 앱 서랍 버튼 — 자동으로 설정하면 화면을 터치한 후 표시됩니다</string>
+    <string name="setup_touch_auto">자동</string>
+    <string name="setup_touch_always_show">항상 표시</string>
+    <string name="setup_touch_always_hide">항상 숨김</string>
+    <string name="setup_hints_summary_on">켜짐 · %1$s</string>
+    <!-- Home app page -->
+    <string name="setup_home_intro">Android에서 홈 앱을 선택하고 확인하도록 요청합니다. 언제든지 Android의 기본 앱 설정에서 다시 바꿀 수 있습니다.</string>
+    <string name="setup_home_current">현재 홈 앱</string>
+    <string name="setup_home_set">홈 앱으로 설정</string>
+    <string name="setup_home_set_sub">Android의 홈 앱 선택기 열기</string>
+    <string name="setup_home_is_pfp">Play Field Portal</string>
+    <string name="setup_home_not_pfp">Play Field Portal 아님</string>
+    <!-- Finish page -->
+    <string name="setup_finish_nothing">아직 설정된 항목이 없습니다 — 모든 폴더와 서비스는 언제든지 설정에서 추가할 수 있습니다.</string>
+    <string name="setup_finish_summary">요약</string>
+    <string name="setup_summary_controller">컨트롤러</string>
+    <string name="setup_summary_rom">ROM 라이브러리</string>
+    <string name="setup_summary_music">음악</string>
+    <string name="setup_summary_video">동영상</string>
+    <string name="setup_summary_photo">사진</string>
+    <string name="setup_summary_artwork">아트워크 라이브러리</string>
+    <string name="setup_summary_vita">Vita 데이터 폴더</string>
+    <string name="setup_summary_ps3">PS3 데이터 폴더</string>
+    <string name="setup_summary_x360">X360 Mobile 데이터 폴더</string>
+    <string name="setup_summary_xendroid">XenDroid 데이터 폴더</string>
+    <string name="setup_summary_windows">Windows 게임</string>
+    <string name="setup_summary_hints">버튼 힌트</string>
+    <string name="setup_summary_home">홈 앱</string>
+    <string name="setup_not_set">설정 안 됨</string>
+    <string name="setup_connected">연결됨</string>
+    <string name="setup_retroarch_not_linked">연결되지 않음</string>
+    <plurals name="setup_retroarch_cores_count">
+        <item quantity="other">코어 %1$d개</item>
+    </plurals>
+    <string name="setup_roots_more">%1$s 외 %2$d개</string>
+    <string name="setup_finish_xmb_header">XMB 레이아웃</string>
+    <string name="setup_finish_autofit">XMB 레이아웃 자동 맞춤(PSP 비율) — 언제든지 설정에서 변경 가능</string>
+    <string name="setup_finish_open_lm">라이브러리 관리자 열기</string>
+    <string name="setup_finish_open_lm_sub">콘솔을 추가하고 방금 설정한 ROM 폴더 스캔</string>
+    <string name="setup_finish_go_library">라이브러리로 이동</string>
+    <string name="setup_finish_go_library_sub">모든 게임으로 바로 이동</string>
+    <!-- Button that closes the wizard. -->
+    <string name="setup_finish_done">완료</string>
+    <string name="setup_finish_done_sub">런처로 이동</string>
+    <!-- Messages the wizard shows or sends to the notification tray -->
+    <string name="setup_status_testing">테스트 중…</string>
+    <plurals name="setup_msg_rom_folders_created">
+        <item quantity="other">콘솔 폴더 %1$d개를 만들었습니다. 해당하는 폴더에 게임을 복사하세요.</item>
+    </plurals>
+    <plurals name="setup_msg_rom_folders_created_existing">
+        <item quantity="other">콘솔 폴더 %1$d개를 만들었습니다(%2$d개는 이미 있음). 해당하는 폴더에 게임을 복사하세요.</item>
+    </plurals>
+    <string name="setup_msg_artwork_failed">해당 폴더에 아트워크 라이브러리를 설정할 수 없습니다. 쓰기 가능한 폴더를 선택하세요.</string>
+    <string name="setup_msg_artwork_reconnected">기존 아트워크 라이브러리를 다시 연결했습니다.</string>
+    <string name="setup_msg_artwork_created">아트워크 라이브러리를 만들었습니다.</string>
+    <plurals name="setup_msg_artwork_games_linked">
+        <item quantity="other">폴더에 이미 있는 파일에서 게임 %1$d개를 연결했습니다.</item>
+    </plurals>
+    <string name="setup_msg_artwork_import_hint">다른 런처의 미디어를 여기로 모으려면 import/ 폴더 아래에 두세요.</string>
+    <string name="setup_msg_import_none_yet">아직 가져올 항목이 없습니다 — 아트워크 폴더의 import/ 디렉터리 아래에 파일을 두세요.</string>
+    <string name="setup_msg_import_unreadable">해당 가져오기 소스를 읽을 수 없습니다.</string>
+    <string name="setup_msg_import_empty">가져올 항목이 없습니다 — 모두 이미 있습니다.</string>
+    <string name="setup_msg_import_started">\"%1$s\" 가져오는 중 — 진행 상황은 알림에 표시되고 세부 정보는 설정 ▸ 아트워크 가져오기에 표시됩니다.</string>
+    <string name="setup_msg_retroarch_linked">RetroArch 연결됨 — 이제 에뮬레이터에서 설치된 코어가 제안됩니다.</string>
+    <string name="setup_msg_retroarch_rechecked">RetroArch 코어를 다시 확인했습니다.</string>
+    <string name="setup_msg_retroarch_unlinked">RetroArch 연결이 제거되었습니다 — 다시 연결할 때까지 RetroArch 코어가 제안되지 않습니다.</string>
+    <string name="setup_msg_vita_set">Vita3K 데이터 폴더가 설정되었습니다. 라이브러리 관리자의 PS Vita 메모리 카드에서 설치된 타이틀을 스캔할 수 있습니다.</string>
+    <string name="setup_msg_vita_released">Vita3K 데이터 폴더 연결이 해제되었습니다 — 디스크의 파일은 변경되지 않았습니다.</string>
+    <string name="setup_msg_ps3_set">PS3 데이터 폴더가 설정되었습니다. PS3 트로피를 연결하려면 설정 ▸ 도전 과제 ▸ 도전 과제 업데이트에서 자동 매칭을 실행하세요.</string>
+    <string name="setup_msg_ps3_released">PS3 데이터 폴더 연결이 해제되었습니다 — 디스크의 파일은 변경되지 않았습니다.</string>
+    <string name="setup_msg_x360_set">%1$s 데이터 폴더가 설정되었습니다. Xbox 360 도전 과제를 연결하려면 설정 ▸ 도전 과제 ▸ 도전 과제 업데이트에서 자동 매칭을 실행하세요.</string>
+    <string name="setup_msg_x360_released">%1$s 데이터 폴더 연결이 해제되었습니다 — 디스크의 파일은 변경되지 않았습니다.</string>
+    <string name="setup_msg_sgdb_connected">SteamGridDB 연결됨</string>
+    <string name="setup_msg_tgdb_connected">TheGamesDB 연결됨</string>
+    <string name="setup_msg_igdb_connected">IGDB 연결됨</string>
+    <string name="setup_msg_ss_connected">ScreenScraper 연결됨</string>
+    <string name="setup_msg_ra_connected">RetroAchievements 연결됨</string>
+    <!-- ROM root scan report (also shown by Library Manager) -->
+    <string name="setup_rom_scan_no_root">먼저 설정 ▸ 라이브러리 ▸ 라이브러리 관리자에서 ROM 폴더를 추가하세요.</string>
+    <string name="setup_rom_scan_none">%2$s에서 %1$s을(를) 스캔했지만 새 ROM이 없습니다. 해당하는 시스템 폴더에 게임을 복사한 후 다시 시도하세요.</string>
+    <string name="setup_rom_scan_loaded">%3$s에서 %1$s, %2$s을(를) 불러왔습니다.</string>
+    <string name="setup_rom_scan_systems_new">%1$s(%2$s)</string>
+    <plurals name="setup_rom_scan_folders">
+        <item quantity="other">폴더 %1$d개</item>
+    </plurals>
+    <plurals name="setup_rom_scan_systems">
+        <item quantity="other">시스템 %1$d개</item>
+    </plurals>
+    <plurals name="setup_rom_scan_new_consoles">
+        <item quantity="other">새 콘솔 %1$d개</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roms">
+        <item quantity="other">ROM %1$d개</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roots">
+        <item quantity="other">ROM 폴더 %1$d개</item>
+    </plurals>
+    <plurals name="setup_rom_scan_skipped">
+        <item quantity="other">폴더 %1$d개 건너뜀(라이브러리를 읽을 수 없음).</item>
+    </plurals>
+    <!-- Media library scans started by the wizard and Settings -->
+    <string name="setup_media_add_root_first">먼저 루트 폴더를 추가하세요.</string>
+    <string name="setup_media_not_ready">이 폴더의 저장소가 아직 준비되지 않았습니다. 잠시 후 다시 시도하세요.</string>
+    <string name="setup_media_scan_failed_title">%1$s 스캔 실패</string>
+    <string name="setup_media_scan_finished_title">%1$s 스캔 완료</string>
+    <string name="setup_media_scan_stopped_title">%1$s 스캔 중지됨</string>
+    <string name="setup_media_scanning_title">%1$s 스캔 중</string>
+    <string name="setup_media_stop_note">다음에 이 폴더를 다시 스캔합니다.</string>
+    <string name="setup_media_stopped">완료되기 전에 중지됨</string>
+    <plurals name="setup_media_tracks">
+        <item quantity="other">트랙 %1$d개</item>
+    </plurals>
+    <plurals name="setup_media_photos">
+        <item quantity="other">사진 %1$d장</item>
+    </plurals>
+    <plurals name="setup_media_videos">
+        <item quantity="other">동영상 %1$d개</item>
+    </plurals>
+    <plurals name="setup_media_roots">
+        <item quantity="other">루트 %1$d개</item>
+    </plurals>
+    <string name="setup_media_found">%2$s에서 %1$s을(를) 찾았습니다.</string>
+</resources>

@@ -24,6 +24,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -33,7 +35,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.playfieldportal.core.data.kb.PlatformGain
 import com.playfieldportal.core.ui.components.PfpCheckMark
 import com.playfieldportal.core.ui.components.PfpModalSpec
+import com.playfieldportal.core.ui.text.asString
 import com.playfieldportal.feature.launcher.kb.KbUserFile
+import com.playfieldportal.feature.settings.R
 import com.playfieldportal.feature.settings.viewmodel.EmulatorKnowledgeUiState
 import com.playfieldportal.feature.settings.viewmodel.EmulatorKnowledgeViewModel
 
@@ -42,8 +46,6 @@ private val RemoveRed = Color(0xFFE55353)
 
 /** Knowledge files are JSON, but file managers label them with any of these. */
 private val KNOWLEDGE_FILE_MIME = arrayOf("application/json", "text/plain", "application/octet-stream")
-
-private const val NOT_AVAILABLE = "Not available in this build"
 
 /** The suggested name in the save dialog. */
 private const val EXPORT_FILE_NAME = "pfp-emulators.json"
@@ -119,10 +121,9 @@ internal fun EmulatorKnowledgeContent(
         pendingRemove?.let { file ->
             PfpModalSpec.Confirm(
                 key = "kb_remove_${file.id}",
-                title = "Remove file?",
-                message = "\"${file.displayName}\" will be removed from this device. Built-in and official " +
-                    "emulator knowledge is not affected.",
-                confirmLabel = "Remove",
+                title = stringResource(R.string.lib_kb_remove_title),
+                message = stringResource(R.string.lib_kb_remove_message, file.displayName),
+                confirmLabel = stringResource(R.string.lib_kb_remove),
                 destructive = true,
                 onConfirm = { pendingRemove = null; onRemoveFile(file.id) },
                 onCancel = { pendingRemove = null },
@@ -133,10 +134,9 @@ internal fun EmulatorKnowledgeContent(
         if (state.confirmResetVisible) {
             PfpModalSpec.Confirm(
                 key = "kb_reset",
-                title = "Reset to built-in?",
-                message = "Downloaded updates and your imported files will be dropped. The emulator " +
-                    "knowledge that ships with PlayField Portal is kept.",
-                confirmLabel = "Reset",
+                title = stringResource(R.string.lib_kb_reset_title),
+                message = stringResource(R.string.lib_kb_reset_message),
+                confirmLabel = stringResource(R.string.lib_kb_reset),
                 destructive = true,
                 onConfirm = onConfirmReset,
                 onCancel = onDismissReset,
@@ -147,10 +147,11 @@ internal fun EmulatorKnowledgeContent(
     )
 
     val importNoticeModal = rememberSettingsModal(
-        state.importNotice?.let { message ->
+        state.importNotice?.let { notice ->
+            val message = notice.asString()
             PfpModalSpec.Notice(
                 key = "kb_import_notice:$message",
-                title = "Couldn't import that file",
+                title = stringResource(R.string.lib_kb_import_failed_title),
                 message = message,
                 onDismiss = onDismissImportNotice,
             )
@@ -159,10 +160,11 @@ internal fun EmulatorKnowledgeContent(
 
     val exportNoticeModal = rememberSettingsModal(
         state.exportNotice?.let { notice ->
+            val message = notice.message.asString()
             PfpModalSpec.Notice(
-                key = "kb_export_notice:${notice.message}",
-                title = notice.title,
-                message = notice.message,
+                key = "kb_export_notice:$message",
+                title = notice.title.asString(),
+                message = message,
                 onDismiss = onDismissExportNotice,
             )
         },
@@ -189,8 +191,8 @@ internal fun EmulatorKnowledgeContent(
         )
     } else {
         SettingsScaffold(
-            title = "Settings",
-            subtitle = "Emulator knowledge",
+            title = stringResource(R.string.settings_title),
+            subtitle = stringResource(R.string.lib_kb_title),
             onBack = onBack,
             modifier = modifier.fillMaxSize(),
             modalOpen = removeModal.open || resetModal.open || importNoticeModal.open || exportNoticeModal.open,
@@ -200,10 +202,10 @@ internal fun EmulatorKnowledgeContent(
             val scrollState = rememberScrollState()
             LocalSettingsScrollStateRegistrar.current(scrollState)
             Column(modifier = Modifier.fillMaxSize().verticalScroll(scrollState)) {
-                SettingsGroup("Status")
+                SettingsGroup(stringResource(R.string.lib_kb_group_status))
                 SettingsRow(
-                    label = state.statusText,
-                    sublabel = state.errorText,
+                    label = state.statusText.asString(),
+                    sublabel = state.errorText?.asString(),
                     focusKey = "knowledge_status",
                     leading = if (state.officialApplied) {
                         { PfpCheckMark(VerifiedGreen) }
@@ -213,23 +215,23 @@ internal fun EmulatorKnowledgeContent(
                 )
                 if (state.gainedFileTypes.isNotEmpty()) {
                     SettingsRow(
-                        label = "New file types",
-                        sublabel = gainedSummary(state.gainedFileTypes) + " Rescan your library to pick them up.",
+                        label = stringResource(R.string.lib_kb_new_file_types),
+                        sublabel = stringResource(R.string.lib_kb_new_file_types_sub, gainedSummary(state.gainedFileTypes)),
                         focusKey = "knowledge_gained",
                     )
                 }
 
-                SettingsGroup("Updates")
+                SettingsGroup(stringResource(R.string.lib_kb_group_updates))
                 SettingsRow(
-                    label = "Check for updates",
+                    label = stringResource(R.string.lib_kb_check),
                     sublabel = if (state.updatesConfigured) {
-                        state.checkResult ?: "Signed files from PlayFieldPortal only"
+                        state.checkResult?.asString() ?: stringResource(R.string.lib_kb_check_sub)
                     } else {
-                        NOT_AVAILABLE
+                        stringResource(R.string.lib_kb_not_available)
                     },
                     focusKey = "knowledge_check",
                     trailing = if (state.isChecking) {
-                        { KnowledgeValueText("Checking…") }
+                        { KnowledgeValueText(stringResource(R.string.lib_kb_checking)) }
                     } else {
                         null
                     },
@@ -238,50 +240,50 @@ internal fun EmulatorKnowledgeContent(
                 )
                 if (state.updatesConfigured) {
                     SettingsToggleRow(
-                        label = "Automatic updates",
-                        sublabel = "At most once a day",
+                        label = stringResource(R.string.lib_kb_auto_update),
+                        sublabel = stringResource(R.string.lib_kb_auto_update_sub),
                         focusKey = "knowledge_auto_update",
                         checked = state.autoUpdate,
                         onToggle = onSetAutoUpdate,
                     )
                 } else {
                     SettingsRow(
-                        label = "Automatic updates",
-                        sublabel = NOT_AVAILABLE,
+                        label = stringResource(R.string.lib_kb_auto_update),
+                        sublabel = stringResource(R.string.lib_kb_not_available),
                         focusKey = "knowledge_auto_update",
                         enabled = false,
                     )
                 }
 
-                SettingsGroup("Files")
+                SettingsGroup(stringResource(R.string.lib_kb_group_files))
                 SettingsRow(
-                    label = "Import a knowledge file",
-                    sublabel = "A .json on this device, reviewed first",
+                    label = stringResource(R.string.lib_kb_import),
+                    sublabel = stringResource(R.string.lib_kb_import_sub),
                     focusKey = "knowledge_import",
                     onClick = onImport,
                 )
                 if (state.userFiles.isNotEmpty()) {
-                    SettingsGroup("Your files")
+                    SettingsGroup(stringResource(R.string.lib_kb_group_your_files))
                     state.userFiles.forEach { file ->
                         SettingsRow(
                             label = file.displayName,
                             sublabel = if (file.unreadable) {
-                                "Cannot be read · not signed"
+                                stringResource(R.string.lib_kb_file_unreadable_sub)
                             } else {
-                                "${file.emulatorCount} ${if (file.emulatorCount == 1) "emulator" else "emulators"} · not signed"
+                                pluralStringResource(R.plurals.lib_kb_file_sub, file.emulatorCount, file.emulatorCount)
                             },
                             focusKey = "knowledge_file_${file.id}",
                             labelTrailing = { FileBadges(file) },
                             actions = listOf(
                                 SettingsRowAction(
-                                    label = "Remove ${file.displayName}",
+                                    label = stringResource(R.string.lib_kb_remove_file, file.displayName),
                                     onClick = { pendingRemove = file },
                                     actionFocusBackgroundColor = lerp(RemoveRed, Color.Black, 0.50f),
-                                    shortLabel = "Remove",
+                                    shortLabel = stringResource(R.string.lib_kb_remove),
                                 ) {
                                     Icon(
                                         Icons.Default.Delete,
-                                        contentDescription = "Remove ${file.displayName}",
+                                        contentDescription = stringResource(R.string.lib_kb_remove_file, file.displayName),
                                         tint = RemoveRed,
                                         modifier = Modifier
                                             .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
@@ -293,16 +295,16 @@ internal fun EmulatorKnowledgeContent(
                     }
                 }
                 SettingsRow(
-                    label = "Export your emulators",
-                    sublabel = "Share your custom and edited emulators as one .json",
+                    label = stringResource(R.string.lib_kb_export),
+                    sublabel = stringResource(R.string.lib_kb_export_sub),
                     focusKey = "knowledge_export",
                     onClick = onExport,
                 )
 
-                SettingsGroup("Reset")
+                SettingsGroup(stringResource(R.string.lib_kb_group_reset))
                 SettingsRow(
-                    label = "Reset to built-in",
-                    sublabel = "Drops updates and your files",
+                    label = stringResource(R.string.lib_kb_reset_row),
+                    sublabel = stringResource(R.string.lib_kb_reset_row_sub),
                     focusKey = "knowledge_reset",
                     onClick = onRequestReset,
                 )
@@ -324,8 +326,8 @@ internal fun gainedSummary(gains: List<PlatformGain>): String =
 @Composable
 private fun FileBadges(file: KbUserFile) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        KnowledgeBadge("Custom", SettingsAccent.copy(alpha = 0.55f))
-        if (file.unreadable) KnowledgeBadge("Unreadable", RemoveRed.copy(alpha = 0.7f))
+        KnowledgeBadge(stringResource(R.string.lib_kb_badge_custom), SettingsAccent.copy(alpha = 0.55f))
+        if (file.unreadable) KnowledgeBadge(stringResource(R.string.lib_kb_badge_unreadable), RemoveRed.copy(alpha = 0.7f))
     }
 }
 

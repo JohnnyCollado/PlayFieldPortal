@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Music playback notification -->
+    <string name="xmbu_music_channel_name">Odtwarzanie muzyki</string>
+    <string name="xmbu_music_channel_description">Sterowanie odtwarzaniem</string>
+    <string name="xmbu_music_notif_previous">Poprzedni</string>
+    <string name="xmbu_music_notif_play_pause">Odtwórz/Wstrzymaj</string>
+    <string name="xmbu_music_notif_next">Następny</string>
+    <string name="xmbu_music_notif_stop">Zatrzymaj</string>
+
+    <string name="xmbu_ptt_hold">"🎙  PRZYTRZYMAJ"</string>
+
+    <!-- Tray notification when a custom boot / Game Boot video cannot play -->
+    <string name="xmbu_clipfail_boot_label">Sekwencja startowa</string>
+    <string name="xmbu_clipfail_gameboot_label">Game Boot</string>
+    <string name="xmbu_clipfail_boot_message">Wideo startowe nie mogło zostać odtworzone na tym urządzeniu, więc odtworzono wbudowaną sekwencję. Wyeksportuj motyw ponownie z Theme Studio (skonwertuje wideo) lub wybierz inny klip w ustawieniach wyświetlania.</string>
+    <string name="xmbu_clipfail_gameboot_message">Wideo Game Boot nie mogło zostać odtworzone na tym urządzeniu, więc odtworzono wbudowaną sekwencję. Wyeksportuj motyw ponownie z Theme Studio (skonwertuje wideo) lub wybierz inny klip w ustawieniach wyświetlania.</string>
+
+    <!-- Common words -->
+    <string name="xmbu_common_options">Opcje</string>
+    <string name="xmbu_common_back">Wstecz</string>
+    <string name="xmbu_common_cancel">Anuluj</string>
+    <string name="xmbu_common_done">Gotowe</string>
+    <string name="xmbu_common_close">Zamknij</string>
+    <string name="xmbu_common_reset">Resetuj</string>
+    <string name="xmbu_common_remove">Usuń</string>
+    <string name="xmbu_common_open">Otwórz</string>
+    <string name="xmbu_common_toggle">Przełącz</string>
+    <string name="xmbu_common_search">Szukaj</string>
+    <string name="xmbu_common_artwork">Grafiki</string>
+    <string name="xmbu_common_edit_title">Edytuj tytuł</string>
+    <string name="xmbu_common_add_to_card">Dodaj do karty</string>
+    <string name="xmbu_common_on">Wł.</string>
+    <string name="xmbu_common_off">Wył.</string>
+    <string name="xmbu_common_move">Przenieś</string>
+    <string name="xmbu_common_navigate">Nawiguj</string>
+    <string name="xmbu_common_play">Odtwórz</string>
+    <string name="xmbu_common_pause">Wstrzymaj</string>
+    <string name="xmbu_common_prev_next">Poprz. / Nast.</string>
+    <string name="xmbu_common_seek">Przewiń</string>
+    <string name="xmbu_common_confirm">Potwierdź</string>
+    <string name="xmbu_common_close_search">Zamknij wyszukiwanie</string>
+    <string name="xmbu_common_ellipsis_search">Szukaj…</string>
+
+    <!-- App Detail: Options menu rows -->
+    <string name="xmbu_app_opt_favorite">Ulubione</string>
+    <string name="xmbu_app_opt_app_info">Informacje o aplikacji</string>
+    <string name="xmbu_app_opt_hide">Ukryj wszędzie</string>
+    <string name="xmbu_app_opt_change_icon">Zmień ikonę</string>
+    <string name="xmbu_app_opt_change_background">Zmień tło</string>
+    <string name="xmbu_app_opt_reset_artwork">Resetuj wszystkie grafiki</string>
+
+    <!-- App Detail: artwork kind names -->
+    <string name="xmbu_app_art_type_icon">Ikona gry</string>
+    <string name="xmbu_app_art_type_hero">Baner główny</string>
+    <string name="xmbu_app_art_type_background">Tło</string>
+
+    <!-- App Detail: artwork picker messages -->
+    <string name="xmbu_app_art_no_api_key">Nie skonfigurowano klucza API SteamGridDB — dodaj go w ustawieniach grafik</string>
+    <string name="xmbu_app_art_search_failed">Wyszukiwanie nie powiodło się: %1$s</string>
+    <string name="xmbu_app_art_no_results">Brak wyników dla „%1$s” w SteamGridDB</string>
+    <string name="xmbu_app_art_load_failed">Nie udało się wczytać grafik: %1$s</string>
+    <string name="xmbu_app_art_none_found">Nie znaleziono grafik (%1$s) w SteamGridDB</string>
+    <string name="xmbu_app_art_download_failed">Nie można pobrać: %1$s</string>
+    <string name="xmbu_app_art_import_failed">Nie można zaimportować: %1$s</string>
+    <string name="xmbu_app_art_updated">Zaktualizowano: %1$s</string>
+    <string name="xmbu_app_art_reset">Zresetowano: %1$s</string>
+    <string name="xmbu_app_art_all_reset">Zresetowano wszystkie grafiki</string>
+    <string name="xmbu_app_no_launchable_package">Ta aplikacja nie ma pakietu, który można uruchomić</string>
+    <string name="xmbu_common_launch">Uruchom</string>
+
+    <!-- App Detail screen -->
+    <string name="xmbu_app_breadcrumb_apps">Aplikacje</string>
+    <string name="xmbu_app_breadcrumb_android_app">Aplikacja Androida</string>
+    <string name="xmbu_app_edit_artwork_description">Edytuj grafiki</string>
+    <string name="xmbu_app_no_icon">Brak ikony</string>
+    <string name="xmbu_app_art_change">Zmień: %1$s</string>
+    <string name="xmbu_app_art_saving">Zapisywanie…</string>
+    <string name="xmbu_app_art_pick_local">Wybierz plik lokalny</string>
+    <string name="xmbu_app_art_restore_icon">Przywróć oryginalną ikonę</string>
+    <string name="xmbu_app_art_remove_custom">Usuń własną grafikę</string>
+    <string name="xmbu_app_art_picker_hint">"◄ ►  Przeglądaj   A  Wybierz   B  Wstecz"</string>
+    <string name="xmbu_app_reset_title">Zresetować wszystkie grafiki?</string>
+    <string name="xmbu_app_reset_message">Własna ikona i tło dla %1$s zostaną usunięte, a aplikacja odzyska swoją ikonę.</string>
+
+    <!-- Add to Card picker panel -->
+    <string name="xmbu_collection_picker_new_row">"＋  Nowa własna karta pamięci"</string>
+    <string name="xmbu_collection_new_title">Nowa własna karta pamięci</string>
+    <string name="xmbu_collection_new_placeholder">np. RPG, Obecnie grane</string>
+    <string name="xmbu_collection_new_create">Utwórz</string>
+    <string name="xmbu_common_sort">Sortuj</string>
+    <string name="xmbu_common_notifications">Powiadomienia</string>
+
+    <!-- App picker -->
+    <string name="xmbu_app_picker_empty">Brak zainstalowanych aplikacji</string>
+    <string name="xmbu_app_picker_no_match">Brak zainstalowanych aplikacji pasujących do „%1$s”</string>
+    <string name="xmbu_app_picker_choose">Wybierz</string>
+
+    <!-- Arrange mode bars -->
+    <string name="xmbu_arrange_place">Umieść</string>
+    <string name="xmbu_arrange_mark">Zaznacz</string>
+    <string name="xmbu_arrange_move_left">Przesuń w lewo</string>
+    <string name="xmbu_arrange_move_right">Przesuń w prawo</string>
+    <string name="xmbu_arrange_move_up">Przesuń w górę</string>
+    <string name="xmbu_arrange_move_down">Przesuń w dół</string>
+
+    <!-- Color Scheme picker overlay -->
+    <string name="xmbu_color_scheme_title">Schemat kolorów</string>
+    <string name="xmbu_color_scheme_tint">Odcień</string>
+    <string name="xmbu_color_scheme_depth">Głębia</string>
+    <string name="xmbu_color_scheme_contrast_top">"%1$s Tekst na górze  %2$s"</string>
+    <string name="xmbu_color_scheme_contrast_bottom">"%1$s Tekst na dole  %2$s"</string>
+    <string name="xmbu_color_scheme_custom_title">Własny kolor</string>
+
+    <!-- Customize XMB Icons overlay -->
+    <string name="xmbu_icons_title">Dostosuj ikony XMB</string>
+    <string name="xmbu_icons_source_user">Twój wybór</string>
+    <string name="xmbu_icons_source_theme">Z motywu</string>
+    <string name="xmbu_icons_source_default">Domyślna</string>
+    <string name="xmbu_icons_source_with_column">%1$s · kolumna %2$s</string>
+    <string name="xmbu_icons_column">Kolumna</string>
+    <string name="xmbu_icons_tab">Karta</string>
+    <string name="xmbu_icons_pick">Wybierz</string>
+    <string name="xmbu_icons_reset_all">Resetuj wszystko</string>
+    <string name="xmbu_icons_save_as_theme">Zapisz jako motyw</string>
+    <string name="xmbu_icons_save_as_theme_button">Zapisz jako motyw…</string>
+
+    <!-- Search box -->
+    <string name="xmbu_game_search_placeholder">Szukaj gier…</string>
+
+    <!-- Game picker -->
+    <string name="xmbu_picker_in_this_category">W tej kategorii</string>
+    <string name="xmbu_picker_in_category">W: %1$s</string>
+    <string name="xmbu_picker_custom_cards">Własne karty pamięci</string>
+    <string name="xmbu_picker_no_changes">Brak zmian</string>
+    <string name="xmbu_picker_menu_view">Widok</string>
+    <string name="xmbu_picker_menu_select_all">Zaznacz wszystko</string>
+    <string name="xmbu_picker_open_toggle">Otwórz / Przełącz</string>
+    <string name="xmbu_picker_no_games">Brak jeszcze gier w bibliotece</string>
+    <string name="xmbu_picker_add_games">Dodaj gry</string>
+    <string name="xmbu_picker_view_mode">Widok: %1$s</string>
+    <string name="xmbu_picker_removing_prefix">"Usuwanie · "</string>
+    <string name="xmbu_picker_search_placeholder">Szukaj na tej półce…</string>
+    <string name="xmbu_picker_shelves">Półki</string>
+    <string name="xmbu_picker_shelf">Półka</string>
+
+    <!-- Music browser -->
+    <string name="xmbu_music_breadcrumb_playlists">"Muzyka  ›  Playlisty"</string>
+    <string name="xmbu_music_breadcrumb_music">Muzyka</string>
+    <string name="xmbu_music_breadcrumb_all_tracks">Wszystkie utwory</string>
+    <string name="xmbu_music_resume">Wznów: %1$s</string>
+
+    <!-- Music player -->
+    <string name="xmbu_music_now_playing">Teraz odtwarzane</string>
+    <string name="xmbu_music_nothing_playing">Nic nie jest odtwarzane</string>
+    <string name="xmbu_music_visualizer">Wizualizacja</string>
+
+    <!-- Media transport buttons -->
+    <string name="xmbu_media_previous_track">Poprzedni utwór</string>
+    <string name="xmbu_media_next_track">Następny utwór</string>
+    <string name="xmbu_media_previous_video">Poprzednie wideo</string>
+    <string name="xmbu_media_next_video">Następne wideo</string>
+    <string name="xmbu_media_back_10">10 sekund wstecz</string>
+    <string name="xmbu_media_forward_10">10 sekund do przodu</string>
+    <string name="xmbu_media_playing">Odtwarzanie</string>
+    <string name="xmbu_media_paused">Wstrzymano</string>
+
+    <!-- Music track picker -->
+    <string name="xmbu_track_picker_title">Dodaj do: %1$s</string>
+    <string name="xmbu_track_picker_add">Dodaj</string>
+    <string name="xmbu_track_picker_empty">Brak utworów do dodania — każdy zeskanowany utwór jest już na tej playliście.</string>
+
+    <!-- Notification panel and detail sheets -->
+    <string name="xmbu_notif_options_description">Opcje powiadomień</string>
+    <string name="xmbu_notif_task_stopping">%1$s — Zatrzymywanie…</string>
+    <string name="xmbu_notif_task_detail">%1$s — %2$s</string>
+    <string name="xmbu_notif_kind_scan">Skanowanie</string>
+    <string name="xmbu_notif_kind_metadata">Metadane</string>
+    <string name="xmbu_notif_kind_achievements">Osiągnięcia</string>
+    <string name="xmbu_notif_kind_system">System</string>
+    <string name="xmbu_notif_kind_download">Pobieranie</string>
+    <string name="xmbu_notif_kind_feed">Aktualności</string>
+    <string name="xmbu_notif_action_go_to_game">Przejdź do gry</string>
+    <string name="xmbu_notif_action_open_card">Otwórz kartę pamięci</string>
+    <string name="xmbu_notif_action_open_settings">Otwórz ustawienia</string>
+    <string name="xmbu_notif_action_open_category">Otwórz kategorię</string>
+    <string name="xmbu_notif_action_review">Przejrzyj</string>
+    <string name="xmbu_time_just_now">Przed chwilą</string>
+
+    <!-- XMB shell -->
+    <string name="xmbu_share_theme">Udostępnij motyw</string>
+    <string name="xmbu_move_position">Przenoszenie · %1$d z %2$d</string>
+    <string name="xmbu_common_later">Później</string>
+
+    <!-- XMB shell dialogs -->
+    <string name="xmbu_shell_rename_shortcut">Zmień nazwę skrótu</string>
+    <string name="xmbu_shell_playlist_name">Nazwa playlisty</string>
+    <string name="xmbu_shell_theme_name">Nazwa motywu</string>
+    <string name="xmbu_shell_source_theme">Z zastosowanego motywu</string>
+    <string name="xmbu_shell_source_device">Z urządzenia</string>
+    <string name="xmbu_shell_source_device_detail">PNG lub GIF</string>
+    <string name="xmbu_shell_continue">Dalej</string>
+    <string name="xmbu_shell_shortcut_title">Dodać skrót?</string>
+    <string name="xmbu_shell_shortcut_message">Aplikacja poprosiła o dodanie skrótu „%1$s”, który otwiera %2$s. Dodaj go tylko, jeśli właśnie sam utworzono ten skrót.</string>
+    <string name="xmbu_shell_shortcut_add">Dodaj</string>
+    <string name="xmbu_shell_shortcut_ignore">Ignoruj</string>
+    <string name="xmbu_shell_windows_title">Dokończ bibliotekę Windows</string>
+    <string name="xmbu_shell_windows_message">Dodano grę PC, ale biblioteka gier Windows nie ma jeszcze folderu. Skonfiguruj ją w menedżerze biblioteki, aby można było skanować foldery gier i osiągnięcia.</string>
+    <string name="xmbu_shell_windows_set_up">Konfiguruj</string>
+    <string name="xmbu_shell_import_position">%1$d z %2$d</string>
+    <string name="xmbu_shell_open_playlist">Otwórz playlistę</string>
+    <string name="xmbu_shell_stop">Zatrzymaj</string>
+    <string name="xmbu_shell_keep_running">Kontynuuj</string>
+
+    <!-- Launch recovery dialog -->
+    <string name="xmbu_recovery_retry">Ponów</string>
+    <string name="xmbu_recovery_change_emulator">Zmień emulator</string>
+    <string name="xmbu_recovery_change_default">Zmień domyślny dla systemu</string>
+    <string name="xmbu_recovery_copy_diagnostics">Kopiuj diagnostykę</string>
+    <string name="xmbu_recovery_title">Nie udało się uruchomić %1$s</string>
+    <string name="xmbu_recovery_select">Wybierz</string>
+    <string name="xmbu_recovery_dismiss">Odrzuć</string>
+
+    <!-- Artwork folder prompts -->
+    <string name="xmbu_artfolder_unavailable_title">Folder grafik niedostępny</string>
+    <string name="xmbu_artfolder_unavailable_message">PFP nie ma dostępu do %1$s. Nowe grafiki są wstrzymane do czasu ponownego połączenia. Posiadane grafiki są nadal widoczne.</string>
+    <string name="xmbu_artfolder_relink">Połącz folder ponownie</string>
+    <string name="xmbu_artfolder_not_now">Nie teraz</string>
+    <string name="xmbu_artfolder_move_title">Przenieś grafiki do własnego folderu</string>
+    <string name="xmbu_artfolder_choose">Wybierz folder grafik</string>
+    <string name="xmbu_artfolder_choose_title">Wybierz folder grafik</string>
+    <string name="xmbu_artfolder_choose_message">Nowe grafiki są zapisywane we własnym folderze. Wybierz go, a PFP będzie tam zapisywać grafiki.</string>
+    <string name="xmbu_artfolder_foreign_title">Ten folder zawiera inną bibliotekę grafik</string>
+    <string name="xmbu_artfolder_use_library">Użyj tej biblioteki</string>
+    <string name="xmbu_artfolder_choose_another">Wybierz inny folder</string>
+
+    <!-- Status strip -->
+    <string name="xmbu_status_controller_connected">Kontroler podłączony</string>
+    <string name="xmbu_status_battery">Bateria</string>
+    <string name="xmbu_status_battery_charging">Bateria, ładowanie</string>
+    <string name="xmbu_status_battery_plugged">Bateria, podłączono zasilanie</string>
+
+    <!-- Adjust XMB Layout overlay -->
+    <string name="xmbu_layout_title">Dostosuj układ XMB</string>
+    <string name="xmbu_layout_readout">"Skala %1$sx    Poziomo %2$d%%    Pionowo %3$d%%"</string>
+    <string name="xmbu_layout_scale">Skala</string>
+    <string name="xmbu_layout_horizontal">Poziomo</string>
+    <string name="xmbu_layout_vertical">Pionowo</string>
+    <string name="xmbu_layout_sliders">Suwaki</string>
+    <string name="xmbu_layout_hide_sliders">Ukryj suwaki</string>
+    <string name="xmbu_layout_save">Zapisz</string>
+
+    <!-- Theme icon picker -->
+    <string name="xmbu_icon_grid_use">Użyj tej ikony</string>
+    <string name="xmbu_status_cellular_signal">Sygnał komórkowy</string>
+
+    <!-- Notification panel section headers -->
+    <string name="xmbu_notif_header_running">TRWAJĄCE</string>
+    <string name="xmbu_notif_header_earlier">WCZEŚNIEJ</string>
+    <string name="xmbu_notif_empty">Brak powiadomień</string>
+
+    <!-- Video player -->
+    <string name="xmbu_video_fit">Dopasuj</string>
+    <string name="xmbu_video_zoom">Powiększ</string>
+    <string name="xmbu_video_fill">Wypełnij</string>
+    <string name="xmbu_video_speed">Szybkość odtwarzania</string>
+    <string name="xmbu_video_subtitles">Napisy</string>
+    <string name="xmbu_video_audio_track">Ścieżka dźwiękowa</string>
+    <string name="xmbu_video_screen_mode">Tryb ekranu</string>
+    <string name="xmbu_video_none">Brak</string>
+    <string name="xmbu_video_default">Domyślna</string>
+    <string name="xmbu_video_track">Ścieżka</string>
+    <string name="xmbu_video_err_not_found">Nie znaleziono wideo.</string>
+    <string name="xmbu_video_err_permission">Brak uprawnień do tego pliku.</string>
+    <string name="xmbu_video_err_decode">Tego wideo nie można zdekodować na tym urządzeniu.</string>
+    <string name="xmbu_video_err_unable">Nie można odtworzyć tego wideo.</string>
+    <string name="xmbu_video_go_back">Wróć</string>
+    <string name="xmbu_video_status">%1$s× · %2$s</string>
+
+    <!-- Photo viewer -->
+    <string name="xmbu_photo_rotate_left">Obróć w lewo</string>
+    <string name="xmbu_photo_rotate_right">Obróć w prawo</string>
+    <string name="xmbu_photo_zoom_in">Powiększ</string>
+    <string name="xmbu_photo_zoom_out">Pomniejsz</string>
+    <string name="xmbu_photo_reset_zoom">Resetuj powiększenie</string>
+    <string name="xmbu_photo_set_wallpaper">Ustaw jako tapetę launchera</string>
+    <string name="xmbu_photo_set_lock_screen">Ustaw jako ekran blokady</string>
+    <string name="xmbu_photo_view_info">Pokaż informacje</string>
+    <string name="xmbu_photo_show_location">Pokaż lokalizację pliku</string>
+    <string name="xmbu_photo_remove">Usuń z biblioteki</string>
+    <string name="xmbu_photo_group_view">Widok</string>
+    <string name="xmbu_photo_group_manage">Zarządzaj</string>
+    <string name="xmbu_photo_in_folder">W: %1$s</string>
+    <string name="xmbu_photo_wallpaper_unreadable">Nie można ustawić tapety — nie odczytano obrazu</string>
+    <string name="xmbu_photo_wallpaper_applied">Zastosowano tapetę</string>
+    <string name="xmbu_photo_unreadable">Nie można odczytać tego zdjęcia</string>
+    <string name="xmbu_photo_lock_screen_set">Ustawiono ekran blokady</string>
+    <string name="xmbu_photo_hide_controls">Ukryj sterowanie</string>
+    <string name="xmbu_photo_show_controls">Pokaż sterowanie</string>
+    <string name="xmbu_photo_wallpaper_title">Ustawić jako tapetę launchera?</string>
+    <string name="xmbu_photo_wallpaper_note">Zastąpi tło z falą XMB.</string>
+    <string name="xmbu_photo_apply">Zastosuj</string>
+    <string name="xmbu_photo_applying">Stosowanie…</string>
+    <string name="xmbu_photo_remove_message">„%1$s” zostanie usunięte z tej biblioteki. Zdjęcie na dysku nie zostanie usunięte.</string>
+    <string name="xmbu_photo_lock_message">„%1$s” stanie się obrazem ekranu blokady urządzenia, przyciętym do rozmiaru ekranu.</string>
+    <string name="xmbu_photo_set">Ustaw</string>
+    <string name="xmbu_photo_info_resolution">Rozdzielczość: %1$s</string>
+    <string name="xmbu_photo_info_taken">Wykonano: %1$s</string>
+    <string name="xmbu_photo_info_modified">Zmodyfikowano: %1$s</string>
+    <string name="xmbu_photo_info_size">Rozmiar: %1$s</string>
+    <string name="xmbu_photo_info_type">Typ: %1$s</string>
+    <string name="xmbu_photo_info_location">Lokalizacja: %1$s</string>
+    <string name="xmbu_photo_info_file">Plik: %1$s</string>
+
+    <!-- Music visualizer picker -->
+    <string name="xmbu_visualizer_portal">Portal</string>
+    <string name="xmbu_visualizer_ripple">Fale</string>
+    <string name="xmbu_visualizer_off">Wył.</string>
+    <string name="xmbu_visualizer_off_tile">WYŁ.</string>
+
+    <plurals name="xmbu_app_picker_selected">
+        <item quantity="one">Wybrano: %d</item>
+        <item quantity="few">Wybrano: %d</item>
+        <item quantity="many">Wybrano: %d</item>
+        <item quantity="other">Wybrano: %d</item>
+    </plurals>
+
+    <plurals name="xmbu_arrange_marked">
+        <item quantity="one">Zaznaczono: %d</item>
+        <item quantity="few">Zaznaczono: %d</item>
+        <item quantity="many">Zaznaczono: %d</item>
+        <item quantity="other">Zaznaczono: %d</item>
+    </plurals>
+
+    <plurals name="xmbu_picker_to_add">
+        <item quantity="one">Do dodania: %d</item>
+        <item quantity="few">Do dodania: %d</item>
+        <item quantity="many">Do dodania: %d</item>
+        <item quantity="other">Do dodania: %d</item>
+    </plurals>
+    <plurals name="xmbu_picker_to_remove">
+        <item quantity="one">Do usunięcia: %d</item>
+        <item quantity="few">Do usunięcia: %d</item>
+        <item quantity="many">Do usunięcia: %d</item>
+        <item quantity="other">Do usunięcia: %d</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_games">
+        <item quantity="one">%1$d gra · zaznaczone: %2$d</item>
+        <item quantity="few">%1$d gry · zaznaczone: %2$d</item>
+        <item quantity="many">%1$d gier · zaznaczone: %2$d</item>
+        <item quantity="other">%1$d gry · zaznaczone: %2$d</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_cards">
+        <item quantity="one">%d karta · wybranie przenosi ją tutaj</item>
+        <item quantity="few">%d karty · wybranie jednej przenosi ją tutaj</item>
+        <item quantity="many">%d kart · wybranie jednej przenosi ją tutaj</item>
+        <item quantity="other">%d karty · wybranie jednej przenosi ją tutaj</item>
+    </plurals>
+    <plurals name="xmbu_picker_card_games">
+        <item quantity="one">%d gra</item>
+        <item quantity="few">%d gry</item>
+        <item quantity="many">%d gier</item>
+        <item quantity="other">%d gry</item>
+    </plurals>
+
+    <!-- Music track picker -->
+    <plurals name="xmbu_track_picker_add_count">
+        <item quantity="one">Dodaj %d</item>
+        <item quantity="few">Dodaj %d</item>
+        <item quantity="many">Dodaj %d</item>
+        <item quantity="other">Dodaj %d</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_selected">
+        <item quantity="one">Wybrano: %d</item>
+        <item quantity="few">Wybrano: %d</item>
+        <item quantity="many">Wybrano: %d</item>
+        <item quantity="other">Wybrano: %d</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_add_tracks">
+        <item quantity="one">Dodaj %d utwór</item>
+        <item quantity="few">Dodaj %d utwory</item>
+        <item quantity="many">Dodaj %d utworów</item>
+        <item quantity="other">Dodaj %d utworu</item>
+    </plurals>
+
+    <!-- Notification age -->
+    <plurals name="xmbu_time_minutes_ago">
+        <item quantity="one">%d minutę temu</item>
+        <item quantity="few">%d minuty temu</item>
+        <item quantity="many">%d minut temu</item>
+        <item quantity="other">%d minuty temu</item>
+    </plurals>
+    <plurals name="xmbu_time_hours_ago">
+        <item quantity="one">%d godzinę temu</item>
+        <item quantity="few">%d godziny temu</item>
+        <item quantity="many">%d godzin temu</item>
+        <item quantity="other">%d godziny temu</item>
+    </plurals>
+
+    <!-- Artwork folder prompts -->
+    <plurals name="xmbu_artfolder_move_message">
+        <item quantity="one">%d obraz jest przechowywany w aplikacji i przepadnie po jej odinstalowaniu. Wybierz folder, a PFP go tam przeniesie.</item>
+        <item quantity="few">%d obrazy są przechowywane w aplikacji i przepadną po jej odinstalowaniu. Wybierz folder, a PFP je tam przeniesie.</item>
+        <item quantity="many">%d obrazów jest przechowywanych w aplikacji i przepadnie po jej odinstalowaniu. Wybierz folder, a PFP je tam przeniesie.</item>
+        <item quantity="other">Obrazy przechowywane w aplikacji (%d) przepadną po jej odinstalowaniu. Wybierz folder, a PFP je tam przeniesie.</item>
+    </plurals>
+    <plurals name="xmbu_artfolder_foreign_message">
+        <item quantity="one">%1$s został skonfigurowany przez inną instalację (%2$d plik). Użyj go, a PFP połączy gry z jego grafikami, lub wybierz inny folder.</item>
+        <item quantity="few">%1$s został skonfigurowany przez inną instalację (%2$d pliki). Użyj go, a PFP połączy gry z jego grafikami, lub wybierz inny folder.</item>
+        <item quantity="many">%1$s został skonfigurowany przez inną instalację (%2$d plików). Użyj go, a PFP połączy gry z jego grafikami, lub wybierz inny folder.</item>
+        <item quantity="other">%1$s został skonfigurowany przez inną instalację (%2$d pliku). Użyj go, a PFP połączy gry z jego grafikami, lub wybierz inny folder.</item>
+    </plurals>
+
+    <plurals name="xmbu_status_notifications_unread">
+        <item quantity="one">Powiadomienia, nieprzeczytane: %d</item>
+        <item quantity="few">Powiadomienia, nieprzeczytane: %d</item>
+        <item quantity="many">Powiadomienia, nieprzeczytane: %d</item>
+        <item quantity="other">Powiadomienia, nieprzeczytane: %d</item>
+    </plurals>
+</resources>

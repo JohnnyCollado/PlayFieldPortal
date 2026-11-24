@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="blur_title">Achtergrondvervaging</string>
+    <string name="blur_sublabel">Hoe sterk het scherm wordt vervaagd achter meldingen en het optiemenu. Zet op nul om het uit te schakelen.</string>
+    <string name="blur_unavailable">Vereist Android 12 of hoger.</string>
+</resources>

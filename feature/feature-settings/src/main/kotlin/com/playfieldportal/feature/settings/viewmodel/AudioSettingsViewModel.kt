@@ -1,5 +1,8 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import com.playfieldportal.core.domain.text.LimitMessages
+import com.playfieldportal.feature.settings.R
+import com.playfieldportal.core.domain.text.UiText
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
@@ -29,7 +32,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /** The label shown when a slot has no user assignment. */
-const val PFP_DEFAULT_LABEL = "PFP Default"
+val PFP_DEFAULT_LABEL: UiText = UiText.res(R.string.setd_pfp_default)
 
 data class AudioSettingsUiState(
     /** Master level, 0..1. At 0 the launcher is silent — this replaced the Menu Sounds toggle. */
@@ -37,10 +40,10 @@ data class AudioSettingsUiState(
     /** Per-channel level, 0..1. Every channel is present; a missing entry would render as 0. */
     val channelLevels: Map<AudioChannel, Float> = emptyMap(),
     /** Per-sound-slot row summary: the imported file's name, "From theme", or [PFP_DEFAULT_LABEL] ([UiMediaRowText.label]). */
-    val soundLabels: Map<UiMediaSlot, String> = emptyMap(),
+    val soundLabels: Map<UiMediaSlot, UiText> = emptyMap(),
     /** Slots the user has actually assigned — drives whether "Use Default" is offered. */
     val assignedSlots: Set<UiMediaSlot> = emptySet(),
-    val message: String? = null,
+    val message: UiText? = null,
     val importing: Boolean = false,
     val confirmResetVisible: Boolean = false,
     /**
@@ -90,7 +93,7 @@ class AudioSettingsViewModel @Inject constructor(
     private var previewHold: kotlinx.coroutines.Job? = null
     private var previewAmbienceHold: com.playfieldportal.core.ui.sound.AmbienceHold? = null
 
-    private val _message = MutableStateFlow<String?>(null)
+    private val _message = MutableStateFlow<UiText?>(null)
     private val _importing = MutableStateFlow(false)
     private val _confirmResetVisible = MutableStateFlow(false)
 
@@ -113,7 +116,7 @@ class AudioSettingsViewModel @Inject constructor(
                 userName = prefs[UiMediaStore.displayNameKey(slot)],
                 userAssigned = slot in assigned,
                 themeSupplied = slot in themed,
-                fallback = "Custom sound",
+                fallback = UiText.res(R.string.sets_audio_custom_sound),
             )
         }
         AudioSettingsUiState(
@@ -121,7 +124,8 @@ class AudioSettingsViewModel @Inject constructor(
             // label can never disagree about which edit they are showing.
             masterLevel = (prefs[masterKey] ?: AudioLevelStore.DEFAULT_LEVEL).coerceIn(0f, 1f),
             channelLevels = AudioChannel.entries.associateWith { channel ->
-                (prefs[channel.levelKey] ?: AudioLevelStore.DEFAULT_LEVEL).coerceIn(0f, 1f)
+                // Category and Options show Navigation's level until they get their own.
+                (channel.resolveLevel { prefs[it.levelKey] } ?: AudioLevelStore.DEFAULT_LEVEL).coerceIn(0f, 1f)
             },
             soundLabels = labels,
             // BOOT_VIDEO / GAMEBOOT_VIDEO are assignments on other screens' concerns, so filter
@@ -167,7 +171,7 @@ class AudioSettingsViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 timber.log.Timber.w(e, "Sound import failed for ${slot.key}")
-                UiMediaStore.ImportResult(false, "That sound couldn't be imported. Try another file.")
+                UiMediaStore.ImportResult(false, context.getString(R.string.sets_audio_import_failed))
             } finally {
                 _importing.value = false
             }
@@ -179,7 +183,7 @@ class AudioSettingsViewModel @Inject constructor(
                 // A refused pick is an ERROR event, not just a dialog: the user did something
                 // and the launcher said no — that is exactly what the Error row customizes.
                 menuSound.play(MenuSound.ERROR)
-                _message.value = result.message
+                _message.value = result.message?.let(LimitMessages::textFor)
             }
         }
     }

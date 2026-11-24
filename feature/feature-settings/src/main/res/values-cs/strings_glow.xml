@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_title">Záře výběru</string>
+    <string name="glow_sub_off">Kolem vybrané ikony není žádná záře.</string>
+    <string name="glow_sub_steady">Jemné světlo kolem vybrané ikony. Zůstává v klidu.</string>
+    <string name="glow_sub_pulsing">Světlo kolem vybrané ikony pomalu sílí a slábne. Zůstává v klidu, dokud je „Pohyb“ nastaveno na „Statické“.</string>
+    <string name="glow_value_off">Vypnuto</string>
+    <string name="glow_value_steady">Stálá</string>
+    <string name="glow_value_pulsing">Pulzující</string>
+</resources>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings ▸ Interface ▸ Display ▸ Focus glow: the light round the selected icon. Off, Steady or Pulsing. -->
+    <string name="glow_title">Focus glow</string>
+    <string name="glow_sub_off">No glow round the selected icon.</string>
+    <string name="glow_sub_steady">A soft light round the selected icon. It holds still.</string>
+    <string name="glow_sub_pulsing">The light round the selected icon slowly swells and fades. It holds still while Motion is set to Static.</string>
+    <string name="glow_value_off">Off</string>
+    <string name="glow_value_steady">Steady</string>
+    <string name="glow_value_pulsing">Pulsing</string>
+</resources>

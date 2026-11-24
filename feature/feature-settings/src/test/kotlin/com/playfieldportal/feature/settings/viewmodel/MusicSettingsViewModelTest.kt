@@ -85,7 +85,7 @@ class MusicSettingsViewModelTest {
         coVerify { mediaRoots.add(MediaRootKind.MUSIC, rootUri) }
         // Rescan ran to completion and reported the empty result.
         assertFalse(vm.uiState.value.scanning)
-        assertTrue(vm.uiState.value.scanMessage.orEmpty().contains("Found 0 tracks"))
+        assertTrue(vm.uiState.value.scanMessage?.resolve(context).orEmpty().contains("Found 0 tracks"))
     }
 
     @Test fun `removeRoot removes and rescans to drop the orphan library`() = runTest(dispatcher) {
@@ -107,6 +107,6 @@ class MusicSettingsViewModelTest {
         vm.rescan()
         advanceUntilIdle()
 
-        assertEquals("Add a root folder first.", vm.uiState.value.scanMessage)
+        assertEquals("Add a root folder first.", vm.uiState.value.scanMessage?.resolve(context))
     }
 }

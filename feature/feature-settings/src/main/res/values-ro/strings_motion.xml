@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">Mișcare</string>
+    <string name="motion_summary">Cât de mult se mișcă de la sine.</string>
+    <string name="motion_detail_animated">Totul se mișcă</string>
+    <string name="motion_detail_reduced">Doar elementul selectat</string>
+    <string name="motion_detail_static">Nimic de la sine</string>
+    <string name="motion_sub_animated">Tot ce se poate mișca se mișcă: ilustrații, pictograme, imagini de fundal, fundalul și strălucirea. Consumă cea mai multă baterie.</string>
+    <string name="motion_sub_reduced">Se mișcă doar elementul selectat: ilustrația, clipul video și strălucirea lui. Fundalul continuă să se miște.</string>
+    <string name="motion_sub_static">Nimic nu se mișcă de la sine. Meniurile încă glisează când navighezi prin ele.</string>
+    <string name="motion_holds_background">Oprit cât timp „Mișcare” este setat la „Static”.</string>
+    <string name="motion_holds_glow">Constantă cât timp „Mișcare” este setat la „Static”.</string>
+</resources>

@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,6 +24,7 @@ import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.XYLayout
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.sound.MenuSound
+import com.playfieldportal.feature.settings.R
 
 /**
  * One user-media assignment row: what it is, what is currently assigned, and the two
@@ -52,6 +54,8 @@ fun MediaAssignmentRow(
     onFocusChanged: (Boolean) -> Unit,
     sublabel: String? = null,
 ) {
+    val previewDescription = stringResource(R.string.setd_media_preview_cd, label)
+    val defaultDescription = stringResource(R.string.setd_media_use_default_cd, label)
     // The value and the preview glyph are accent blue, which all but vanished on the pale cursor
     // fill: under the cursor they turn white, as the row's own label and sublabel do.
     var focused by remember { mutableStateOf(false) }
@@ -74,16 +78,16 @@ fun MediaAssignmentRow(
             if (onPreview != null) {
                 add(
                     SettingsRowAction(
-                        "Preview $label", onPreview,
+                        previewDescription, onPreview,
                         actionFocusBackgroundColor = lerp(SettingsAccent, Color.Black, 0.50f),
                         // The sample IS the feedback here. A cursor tick first would put the thing
                         // being auditioned second, on top of a cue that sounds like the default.
                         plays = null,
-                        shortLabel = "Preview",
+                        shortLabel = stringResource(R.string.setd_media_preview),
                     ) {
                         Icon(
                             Icons.Default.PlayArrow,
-                            contentDescription = "Preview $label",
+                            contentDescription = previewDescription,
                             tint = valueColor,
                             modifier = Modifier
                                 .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
@@ -95,17 +99,17 @@ fun MediaAssignmentRow(
             if (isAssigned) {
                 add(
                     SettingsRowAction(
-                        "Use the PFP default for $label", onUseDefault,
+                        defaultDescription, onUseDefault,
                         actionFocusBackgroundColor = lerp(Color(0xFFE55353), Color.Black, 0.50f),
                         // Throwing away a sample the user imported is a commit, not a descent, so
                         // it takes the confirm cue rather than the ordinary activation one. The
                         // north-face shortcut that does the same job plays the same cue.
                         plays = MenuSound.CONFIRM,
-                        shortLabel = "Default",
+                        shortLabel = stringResource(R.string.setd_media_default),
                     ) {
                         Icon(
                             Icons.Default.Refresh,
-                            contentDescription = "Use the PFP default for $label",
+                            contentDescription = defaultDescription,
                             tint = Color(0xFFE55353),
                             modifier = Modifier
                                 .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
@@ -156,11 +160,12 @@ object MediaRowShortcuts {
      * matches on, so the glyph the user sees is the button they actually have to press under
      * their current X/Y layout.
      */
+    @Composable
     fun promptsFor(
         layout: XYLayout,
         isAssigned: Boolean,
-        resetLabel: String = "Use Default",
-        previewLabel: String = "Preview",
+        resetLabel: String = stringResource(R.string.setd_media_use_default_prompt),
+        previewLabel: String = stringResource(R.string.setd_media_preview),
     ): List<ControllerPromptItem> = buildList {
         if (isAssigned) add(ControllerPromptItem(action = northFace(layout), label = resetLabel))
         add(ControllerPromptItem(action = westFace(layout), label = previewLabel))

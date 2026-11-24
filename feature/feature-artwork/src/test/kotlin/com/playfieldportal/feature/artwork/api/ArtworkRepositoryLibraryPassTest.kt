@@ -3,6 +3,7 @@ package com.playfieldportal.feature.artwork.api
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.domain.model.GameContentType
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.artwork.MetadataFetchResult
 import com.playfieldportal.feature.artwork.MetadataRepository
 import io.mockk.coEvery
@@ -52,7 +53,7 @@ class ArtworkRepositoryLibraryPassTest {
             entity(2L, "android", GameContentType.ANDROID_APP),
         )
         coEvery { metadataRepository.fetchForGame(any(), any(), any(), any(), any(), any()) } returns
-            MetadataFetchResult(success = true, source = "screenscraper", message = "ok")
+            MetadataFetchResult(success = true, source = "screenscraper", message = UiText.raw("ok"))
 
         val result = repo.updateMetadataForAllGames { }
 
@@ -71,7 +72,7 @@ class ArtworkRepositoryLibraryPassTest {
         coEvery { gameDao.getAll() } returns listOf(entity(1L, "psp"), entity(2L, "psp"), entity(3L, "psp"))
         coEvery { metadataRepository.fetchForGame(1L, any(), any(), any(), any(), any()) } coAnswers {
             folder.value = unavailableFolder   // the grant goes away while game 1 is saving
-            MetadataFetchResult(success = true, source = "screenscraper", message = "ok")
+            MetadataFetchResult(success = true, source = "screenscraper", message = UiText.raw("ok"))
         }
 
         val result = repo.scrapeMissingOnly { }
@@ -89,7 +90,7 @@ class ArtworkRepositoryLibraryPassTest {
         coEvery { scrapePreferences.getOptions() } returns ScrapeOptions()
         coEvery { gameDao.getAll() } returns listOf(entity(1L, "psp"), entity(2L, "psp"))
         coEvery { metadataRepository.fetchForGame(any(), any(), any(), any(), any(), any()) } returns
-            MetadataFetchResult(success = true, source = "screenscraper", message = "ok")
+            MetadataFetchResult(success = true, source = "screenscraper", message = UiText.raw("ok"))
 
         val result = repo.updateMetadataForPlatform("psp") { }
 

@@ -44,6 +44,10 @@ class EmulatorIntentResolver(
         romUriMinter: RomUriMinter,
     ) : this(context, romUriMinter, PackageManagerSignerCheck(context))
 
+    // User-facing failure text, resolved in the app's current language when the failure is raised.
+    private fun text(id: Int, vararg args: Any): String =
+        if (args.isEmpty()) context.getString(id) else context.getString(id, *args)
+
     /**
      * Resolves a launch [Intent] for the given [game] and selected [profile].
      *
@@ -56,8 +60,8 @@ class EmulatorIntentResolver(
             val intent = when (profile.intentType) {
                 IntentType.ACTION_VIEW    -> buildViewIntent(game, profile)
                 IntentType.COMPONENT      -> buildComponentIntent(game, profile)
-                IntentType.CUSTOM_COMMAND -> error(CUSTOM_COMMAND_REFUSAL)
-                IntentType.SHORTCUT       -> error("Shortcut launch not supported from this screen")
+                IntentType.CUSTOM_COMMAND -> error(text(R.string.launch_err_custom_command))
+                IntentType.SHORTCUT       -> error(text(R.string.launch_err_shortcut_unsupported))
             }
             Timber.d(
                 "Launch intent resolved: gameId=${game.id}, title=${game.title}, platform=${game.platformId}, emulatorId=${profile.id}, emulatorName=${profile.name}, package=${profile.packageName}, intentType=${profile.intentType}, core=${profile.corePathFor(game.platformId).orEmpty()}, rom=${game.romPath.orEmpty()}, summary=${intent.toUri(Intent.URI_INTENT_SCHEME)}"
@@ -74,9 +78,9 @@ class EmulatorIntentResolver(
     fun resolveNativeApp(game: Game): Result<Intent> {
         return runCatching {
             val packageName = game.packageName
-                ?: error("No Android package recorded for ${game.title}")
+                ?: error(text(R.string.launch_err_no_package, game.title))
             val intent = context.packageManager.getLaunchIntentForPackage(packageName)
-                ?: error("Android app not installed or not launchable: $packageName")
+                ?: error(text(R.string.launch_err_app_not_launchable, packageName))
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             Timber.d(
                 "Native game intent resolved: gameId=${game.id}, title=${game.title}, package=$packageName, summary=${intent.toUri(Intent.URI_INTENT_SCHEME)}"
@@ -97,12 +101,12 @@ class EmulatorIntentResolver(
      * failures refuse with a repair message before startActivity instead of at it.
      */
     fun validateBeforeLaunch(game: Game, profile: EmulatorProfile) {
-        if (profile.intentType == IntentType.CUSTOM_COMMAND) error(CUSTOM_COMMAND_REFUSAL)
+        if (profile.intentType == IntentType.CUSTOM_COMMAND) error(text(R.string.launch_err_custom_command))
 
         try {
             context.packageManager.getPackageInfo(profile.packageName, 0)
         } catch (_: PackageManager.NameNotFoundException) {
-            error("Emulator not installed: ${profile.name} (${profile.packageName})")
+            error(text(R.string.launch_err_emulator_not_installed, profile.name, profile.packageName))
         }
 
         // Optional signer pin: the recipe was written for a specific build, so an installed app
@@ -110,10 +114,7 @@ class EmulatorIntentResolver(
         if (profile.signerSha256.isNotEmpty() &&
             profile.signerSha256.none { signerCheck.matches(profile.packageName, it) }
         ) {
-            error(
-                "${profile.name} (${profile.packageName}) is not the expected build: its signing " +
-                    "certificate does not match. Reinstall the emulator from its official source."
-            )
+            error(text(R.string.launch_err_wrong_build, profile.name, profile.packageName))
         }
 
         // A COMPONENT launch targets a pinned activity by class name, and so does a filesystem-path
@@ -123,10 +124,9 @@ class EmulatorIntentResolver(
         if (profile.intentType == IntentType.COMPONENT || profile.filesystemPathOnly) {
             val activityClass = profile.activityClass ?: error(
                 if (profile.filesystemPathOnly) {
-                    "${profile.name} has no launch activity recorded, so it cannot be handed a file " +
-                        "path. Import its knowledge entry again, or re-detect the emulator."
+                    text(R.string.launch_err_no_activity_for_path, profile.name)
                 } else {
-                    "Activity class required for COMPONENT intent - profile: ${profile.name}"
+                    text(R.string.launch_err_activity_required, profile.name)
                 }
             )
             try {
@@ -135,11 +135,7 @@ class EmulatorIntentResolver(
                     0,
                 )
             } catch (_: PackageManager.NameNotFoundException) {
-                error(
-                    "${profile.name} no longer provides its launch activity " +
-                        "($activityClass). Update the emulator, or pick another " +
-                        "emulator for this platform."
-                )
+                error(text(R.string.launch_err_activity_gone, profile.name, activityClass))
             }
         }
 
@@ -147,7 +143,7 @@ class EmulatorIntentResolver(
         // file — there is nothing on disk for PFP to stat, so validate the token instead.
         if (launchesByToken(profile)) {
             if (game.launchToken.isNullOrBlank()) {
-                error("No launch ID recorded for ${game.title}. Re-scan its library.")
+                error(text(R.string.launch_err_no_launch_id, game.title))
             }
         } else if (!game.romUri.isNullOrBlank()) {
             // A SAF game launches from its granted content:// URI — PFP holds no raw path to stat,
@@ -158,28 +154,25 @@ class EmulatorIntentResolver(
             // refusing only on SecurityException keeps ambiguity (a transient I/O error) on the
             // permissive side so a real failure stays detectable instead of being guessed at.
             val romUri = runCatching { Uri.parse(game.romUri) }.getOrNull()
-                ?: error("This game's ROM link is invalid. Re-scan its library.")
+                ?: error(text(R.string.launch_err_rom_link_invalid))
             try {
                 context.contentResolver.openFileDescriptor(romUri, "r")?.close()
             } catch (_: SecurityException) {
-                error(
-                    "Play Field Portal lost access to this game's file. Reconnect the " +
-                        "storage and rescan its library."
-                )
+                error(text(R.string.launch_err_lost_access))
             } catch (_: Exception) {
                 // Anything else (a provider we cannot see from here, a transient I/O error) is
                 // ambiguous — never guess "broken" when the probe itself may be the problem.
                 // A genuinely revoked grant surfaces as SecurityException above.
             }
         } else {
-            val romPath = game.romPath ?: error("ROM path is required to launch ${game.title}")
-            if (!File(romPath).exists()) error("ROM file not found: $romPath")
+            val romPath = game.romPath ?: error(text(R.string.launch_err_rom_path_required, game.title))
+            if (!File(romPath).exists()) error(text(R.string.launch_err_rom_not_found, romPath))
         }
 
         if (profile.intentType == IntentType.COMPONENT && profile.coreMap.isNotEmpty()) {
             val corePath = profile.corePathFor(game.platformId)
             if (corePath.isNullOrBlank()) {
-                error("No RetroArch core configured for platform '${game.platformId}' in profile '${profile.name}'. Open RetroArch → Core Downloader to install a core for this system.")
+                error(text(R.string.launch_err_no_core, game.platformId, profile.name))
             }
             // We cannot read /data/data/<pkg>/cores/ — it's the emulator's private internal
             // storage. Skip the file-existence check and let RetroArch report a missing core.
@@ -247,7 +240,7 @@ class EmulatorIntentResolver(
             Timber.w(
                 "Intent not resolvable: profile=${profile.name}, package=${profile.packageName}, uri=${uri.scheme}://, mime=$mime, activity=${activityClass ?: "(by package)"}"
             )
-            error("${profile.name} cannot open this ROM type. Try reinstalling the emulator, or verify its app permissions in Android Settings.")
+            error(text(R.string.launch_err_cannot_open_rom_type, profile.name))
         }
 
         intent.grantReadPermissionIfNeeded(uri, game.title, profile.packageName)
@@ -257,7 +250,7 @@ class EmulatorIntentResolver(
 
     private suspend fun buildComponentIntent(game: Game, profile: EmulatorProfile): Intent {
         val activity = profile.activityClass
-            ?: error("Activity class required for COMPONENT intent - profile: ${profile.name}")
+            ?: error(text(R.string.launch_err_activity_required, profile.name))
 
         val needsRomUri = profile.attachRomData ||
             profile.intentExtras.values.any { it.contains(LaunchTemplate.ROM_URI) } ||
@@ -269,7 +262,7 @@ class EmulatorIntentResolver(
         } else null
 
         if (profile.dataUri?.contains("{rom_file_uri") == true && game.romPath == null) {
-            error("${game.title} has no file path on this device, so ${profile.name} can't be told which game to start.")
+            error(text(R.string.launch_err_no_file_path, game.title, profile.name))
         }
 
         val action = profile.intentAction ?: Intent.ACTION_MAIN
@@ -330,7 +323,7 @@ class EmulatorIntentResolver(
         }
         if (safUri != null) return safUri
 
-        val romPath = game.romPath ?: error("ROM path is required to launch ${game.title}")
+        val romPath = game.romPath ?: error(text(R.string.launch_err_rom_path_required, game.title))
         if (profile.useFileUri && !profile.useSafUri && Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             return Uri.fromFile(File(romPath))
         }
@@ -342,10 +335,7 @@ class EmulatorIntentResolver(
         // Minted through RomUriMinter, which refuses any path outside a configured ROM source —
         // the FileProvider's own root is far wider than a launch ever needs.
         return romUriMinter.mint(romPath)
-            ?: error(
-                "${game.title} is not inside a configured ROM folder, so it cannot be handed to " +
-                    "${profile.name}. Check the folder set for this Memory Card in Settings."
-            )
+            ?: error(text(R.string.launch_err_not_in_rom_folder, game.title, profile.name))
     }
 
     private fun Intent.applyProfileFlags(profile: EmulatorProfile) {
@@ -446,9 +436,6 @@ class EmulatorIntentResolver(
     // EmulatorPlatformMapping.kt (shared with EmulatorProfileRepository and the launch ladder) so
     // the path shown to users and the path handed to RetroArch can never drift.
 }
-
-private const val CUSTOM_COMMAND_REFUSAL =
-    "Custom command profiles are no longer supported. Switch this emulator to ACTION_VIEW or COMPONENT."
 
 /** Tells whether the installed [packageName] carries the signing certificate with this SHA-256. */
 fun interface SignerCheck {

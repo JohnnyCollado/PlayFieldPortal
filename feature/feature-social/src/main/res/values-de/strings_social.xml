@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slice H2: feature-social (Discord QR login) -->
+<resources>
+    <!-- QR login screen -->
+    <string name="soc_qr_preparing">Anmeldung wird vorbereitet…</string>
+    <string name="soc_qr_connected">Verbunden</string>
+    <string name="soc_qr_expired">Der Code ist abgelaufen.</string>
+    <string name="soc_qr_declined">Die Anmeldung wurde abgelehnt.</string>
+    <string name="soc_qr_error">Anmeldung fehlgeschlagen. %1$s</string>
+    <string name="soc_qr_content_description">Discord-Anmelde-QR-Code</string>
+    <string name="soc_qr_title">Mit Discord anmelden</string>
+    <string name="soc_qr_copied">Kopiert!</string>
+    <string name="soc_qr_tap_to_copy">Wähle den Code aus, um ihn zu kopieren</string>
+    <string name="soc_qr_instructions">Scanne ihn mit der Kamera deines Handys oder öffne discord.com/activate und füge den Code ein.</string>
+    <string name="soc_qr_expires_in">Läuft ab in %1$ds</string>
+    <string name="soc_qr_expired_short">Abgelaufen</string>
+    <string name="soc_qr_cancel">Abbrechen</string>
+    <string name="soc_qr_try_again">Erneut versuchen</string>
+</resources>

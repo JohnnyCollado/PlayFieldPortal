@@ -43,7 +43,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Monitor
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.CircularProgressIndicator
+import com.playfieldportal.core.ui.components.PfpBusyRing
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -64,8 +64,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import android.content.res.Resources
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -76,6 +79,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.playfieldportal.core.domain.model.ControllerIcon
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.text.asString
+import com.playfieldportal.feature.xmb.R
+import com.playfieldportal.feature.xmb.ui.uiResources
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.components.PfpModalHost
 import com.playfieldportal.core.ui.components.PfpModalSpec
@@ -225,6 +231,7 @@ fun GameDetailScreen(
             onCancelMetadataField = viewModel::cancelMetadataEdit,
             onConfirmTitleReplace = viewModel::confirmTitleReplace,
             onCancelTitleReplace = viewModel::cancelTitleReplace,
+            res = uiResources(),
         ),
         // Touch mode has the buttons themselves to tap; the glyph hints are for the pad.
         showHints = !showTouchControls,
@@ -241,7 +248,7 @@ fun GameDetailScreen(
 
     if (state.isLoading) {
         PfpDetailBackground(modifier = modifier.fillMaxSize()) {
-            CircularProgressIndicator(Modifier.align(Alignment.Center), color = detailPalette().focus)
+            PfpBusyRing(Modifier.align(Alignment.Center), color = detailPalette().focus)
         }
         return
     }
@@ -254,13 +261,17 @@ fun GameDetailScreen(
         PfpDetailScaffold(
             modifier = modifier,
             header = {
-                PfpDetailBreadcrumb(title = "Library", subtitle = "Game not found", onBack = viewModel::close)
+                PfpDetailBreadcrumb(
+                    title = stringResource(R.string.det_library),
+                    subtitle = stringResource(R.string.det_game_not_found),
+                    onBack = viewModel::close,
+                )
             },
         ) {
             Spacer(Modifier.height(24.dp))
-            Text("This game is no longer in your library.", color = themedText(TextPrimary), fontSize = 16.sp)
+            Text(stringResource(R.string.det_game_gone), color = themedText(TextPrimary), fontSize = 16.sp)
             Spacer(Modifier.height(6.dp))
-            Text("Press Back to return to the library.", color = themedSubText(TextMuted), fontSize = 13.sp)
+            Text(stringResource(R.string.det_game_gone_hint), color = themedSubText(TextMuted), fontSize = 13.sp)
         }
         return
     }
@@ -305,15 +316,19 @@ internal fun metadataModalSpec(
     onCancelField: () -> Unit,
     onConfirmTitleReplace: () -> Unit,
     onCancelTitleReplace: () -> Unit,
+    res: Resources,
 ): PfpModalSpec? {
     preview.titleReplace?.let { confirm ->
         return PfpModalSpec.Confirm(
             key = "metadata_title_replace:$gameId",
-            title = "Replace your title?",
-            message = "You set this title by hand. Applying the new one clears yours.\n\n" +
-                "Yours: ${confirm.current.ifBlank { "—" }}\nNew: ${confirm.incoming.ifBlank { "—" }}",
-            confirmLabel = "Replace",
-            cancelLabel = "Keep Mine",
+            title = res.getString(R.string.det_meta_replace_title),
+            message = res.getString(
+                R.string.det_meta_replace_message,
+                confirm.current.ifBlank { "—" },
+                confirm.incoming.ifBlank { "—" },
+            ),
+            confirmLabel = res.getString(R.string.det_meta_replace),
+            cancelLabel = res.getString(R.string.det_meta_keep_mine),
             openOnCancel = true,
             onConfirm = onConfirmTitleReplace,
             onCancel = onCancelTitleReplace,
@@ -322,11 +337,11 @@ internal fun metadataModalSpec(
     val field = preview.editingField ?: return null
     return PfpModalSpec.TextEntry(
         key = "metadata_edit:$gameId:${field.name}",
-        title = "Edit ${field.label}",
+        title = res.getString(R.string.det_meta_edit_field, res.getString(field.labelRes)),
         initial = preview.editText,
         placeholder = formatMetadataValue(preview.current[field]).orEmpty(),
         allowBlank = true,
-        label = field.label,
+        label = res.getString(field.labelRes),
         multiline = field == MetadataField.DESCRIPTION,
         numeric = field.isNumeric,
         onConfirm = onSaveField,
@@ -357,6 +372,7 @@ internal fun gameDetailModalSpec(
     onCancelMetadataField: () -> Unit = {},
     onConfirmTitleReplace: () -> Unit = {},
     onCancelTitleReplace: () -> Unit = {},
+    res: Resources,
 ): PfpModalSpec? {
     val game = state.game ?: return null
     // The metadata overlay's two dialogs come first: they sit on top of that overlay.
@@ -368,23 +384,24 @@ internal fun gameDetailModalSpec(
             onCancelField = onCancelMetadataField,
             onConfirmTitleReplace = onConfirmTitleReplace,
             onCancelTitleReplace = onCancelTitleReplace,
+            res = res,
         )?.let { return it }
     }
     return when {
         state.confirmRemove -> PfpModalSpec.Confirm(
             key = "remove:${game.id}",
-            title = "Remove from Library",
-            message = "\"${game.displayTitle}\" will be removed from your library. ROM/app files are not deleted.",
-            confirmLabel = "Remove",
+            title = res.getString(R.string.det_remove_title),
+            message = res.getString(R.string.det_remove_message, game.displayTitle),
+            confirmLabel = res.getString(R.string.det_remove),
             destructive = true,
             onConfirm = onConfirmRemove,
             onCancel = onCancelRemove,
         )
         state.collectionPicker.showCreateDialog ->
-            collectionNameModalSpec(onCreate = onCreateCollection, onCancel = onCancelCreateCollection)
+            collectionNameModalSpec(onCreate = onCreateCollection, onCancel = onCancelCreateCollection, res = res)
         state.isEditingNote -> PfpModalSpec.TextEntry(
             key = "edit_note:${game.id}",
-            title = "Edit Note",
+            title = res.getString(R.string.det_edit_note),
             initial = game.userNote.orEmpty(),
             allowBlank = true,
             onConfirm = onSaveNote,
@@ -392,7 +409,7 @@ internal fun gameDetailModalSpec(
         )
         state.isEditingTitle -> PfpModalSpec.TextEntry(
             key = "edit_title:${game.id}",
-            title = "Edit Title",
+            title = res.getString(R.string.det_edit_title),
             initial = game.displayTitle,
             placeholder = game.scrapedTitle ?: game.title,
             allowBlank = true,
@@ -480,6 +497,9 @@ private fun GameDetailContent(
             // scrolling and buttons keep working while the controller cursor hides.
             .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false); onTouchInput() } },
         scrollState = pageScrollState,
+        // Update Metadata is a page of its own, drawn in the overlay: this one stays out of sight
+        // (and out of reach) until the user comes back to it.
+        pageHidden = state.metadataPreview != null,
         header = {
             PfpDetailBreadcrumb(
                 title = game.platformLabel(state.platform),
@@ -491,7 +511,7 @@ private fun GameDetailContent(
         },
         footer = {
             PfpDetailHelperFooter(
-                items = gameDetailHelperItems(state),
+                items = gameDetailHelperItems(state, uiResources()),
                 visible = gameDetailFooterVisible(state, showTouchControls),
             )
         },
@@ -516,8 +536,8 @@ private fun GameDetailContent(
             title = game.displayTitle,
             platform = game.platformLabel(state.platform),
             facts = listOfNotNull(
-                game.lastPlayedAt?.let { "Last played ${relativeDays(it)}" },
-                game.totalPlayTimeMillis.takeIf { it > 0 }?.let { "Play time ${formatPlayTime(it)}" },
+                game.lastPlayedAt?.let { stringResource(R.string.det_fact_last_played, relativeDays(it)) },
+                game.totalPlayTimeMillis.takeIf { it > 0 }?.let { stringResource(R.string.det_fact_play_time, formatPlayTime(it)) },
                 game.kindLabel(),
             ),
             favorite = game.isFavorite,
@@ -544,7 +564,7 @@ private fun GameDetailContent(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 PfpDetailLaunchButton(
-                    label = "Launch",
+                    label = stringResource(R.string.det_launch),
                     icon = Icons.Filled.PlayArrow,
                     focused = focus == GameDetailKeys.LAUNCH,
                     fill = PlayGreen,
@@ -558,57 +578,57 @@ private fun GameDetailContent(
                 ) {
                     PfpDetailQuickAction(
                         // One label; the icon carries the state.
-                        label = "Favorite",
+                        label = stringResource(R.string.det_favorite),
                         icon = if (game.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                         focused = focus == GameDetailKeys.FAVORITE,
                         available = true,
                         onClick = { viewModel.onNodeTapped(GameDetailKeys.FAVORITE) },
-                        contentDescription = if (game.isFavorite) "Remove from favorites" else "Add to favorites",
+                        contentDescription = stringResource(if (game.isFavorite) R.string.det_favorite_remove_cd else R.string.det_favorite_add_cd),
                         slotKey = detailSlotKey(GameDetailAction.FAVORITE),
                         overrideAlpha = favoriteOverrideAlpha(game.isFavorite),
                         modifier = Modifier.weight(1f),
                     )
                     PfpDetailQuickAction(
-                        label = "Artwork",
+                        label = stringResource(R.string.det_artwork),
                         icon = Icons.Filled.Brush,
                         focused = focus == GameDetailKeys.ARTWORK,
                         available = true,
                         onClick = { viewModel.onNodeTapped(GameDetailKeys.ARTWORK) },
-                        contentDescription = "Edit artwork",
+                        contentDescription = stringResource(R.string.det_artwork_edit_cd),
                         slotKey = detailSlotKey(GameDetailAction.ARTWORK),
                         modifier = Modifier.weight(1f),
                     )
                     PfpDetailQuickAction(
-                        label = "Manual",
+                        label = stringResource(R.string.det_manual),
                         icon = Icons.AutoMirrored.Filled.MenuBook,
                         focused = focus == GameDetailKeys.MANUAL,
                         // Without a manual it keeps its place in the row (the action set never
                         // moves) but is disabled: drained, untappable and out of the controller graph.
                         available = state.hasManual,
                         onClick = { viewModel.onNodeTapped(GameDetailKeys.MANUAL) },
-                        contentDescription = "Open manual",
+                        contentDescription = stringResource(R.string.det_manual_open_cd),
                         slotKey = detailSlotKey(GameDetailAction.MANUAL),
                         modifier = Modifier.weight(1f),
                     )
                     // The context menu, for touch as much as the controller's Options button. The
                     // emulator is changed by confirming (or tapping) the Game Information band.
                     PfpDetailQuickAction(
-                        label = "Options",
+                        label = stringResource(R.string.det_options),
                         icon = Icons.Filled.MoreVert,
                         focused = focus == GameDetailKeys.OPTIONS_ACTION,
                         available = true,
                         onClick = { viewModel.onNodeTapped(GameDetailKeys.OPTIONS_ACTION) },
-                        contentDescription = "Options",
+                        contentDescription = stringResource(R.string.det_options),
                         slotKey = detailSlotKey(GameDetailAction.MORE),
                         modifier = Modifier.weight(1f),
                     )
                 }
                 if (state.launchError != null) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(state.launchError, color = ActionFail, fontSize = 12.sp)
+                        Text(state.launchError.asString(), color = ActionFail, fontSize = 12.sp)
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            "Get help",
+                            stringResource(R.string.det_get_help),
                             color = detailPalette().focus,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
@@ -616,7 +636,7 @@ private fun GameDetailContent(
                         )
                     }
                 } else (state.actionMessage ?: state.artworkMessage)?.let {
-                    Text(it, color = detailPalette().focus, fontSize = 12.sp)
+                    Text(it.asString(), color = detailPalette().focus, fontSize = 12.sp)
                 }
             }
         }
@@ -640,8 +660,8 @@ private fun GameDetailContent(
             Spacer(Modifier.height(DetailRowSpacing))
             val coins = state.coins
             PfpDetailProgressRow(
-                label = "Shiba Coins",
-                value = coins?.let { "${it.earned.total} / ${it.total.total}" } ?: "Not tracked yet",
+                label = stringResource(R.string.det_shiba_coins),
+                value = coins?.let { "${it.earned.total} / ${it.total.total}" } ?: stringResource(R.string.det_coins_not_tracked),
                 secondary = coins?.let { "${(it.progress * 100).toInt()}%" },
                 progress = coins?.progress ?: 0f,
                 focused = focus == GameDetailKeys.COINS,
@@ -653,10 +673,10 @@ private fun GameDetailContent(
 
         // ── Overview ──────────────────────────────────────────────────────
         Spacer(Modifier.height(DetailRowSpacing))
-        val description = game.displayDescription?.takeIf { it.isNotBlank() } ?: "No description available."
+        val description = game.displayDescription?.takeIf { it.isNotBlank() } ?: stringResource(R.string.det_no_description)
         val expandable = description.length > OVERVIEW_EXPAND_THRESHOLD
         PfpDetailTextRow(
-            label = "Overview",
+            label = stringResource(R.string.det_overview),
             text = description,
             expanded = state.descriptionExpanded,
             focused = focus == GameDetailKeys.OVERVIEW,
@@ -680,7 +700,7 @@ private fun GameDetailContent(
         // ── Media strip ───────────────────────────────────────────────────
         if (state.detailMedia.isNotEmpty()) {
             Spacer(Modifier.height(DetailRowSpacing + 6.dp))
-            PfpDetailSectionLabel("Media Preview")
+            PfpDetailSectionLabel(stringResource(R.string.det_media_preview))
             Spacer(Modifier.height(8.dp))
             LazyRow(
                 state = mediaListState,
@@ -700,7 +720,7 @@ private fun GameDetailContent(
                         focused = focus == key,
                         posterFallbackUri = state.detailMedia.firstOrNull { !it.isVideo }?.uri
                             ?: game.heroUri ?: game.artworkUri,
-                        contentDescription = if (media.isVideo) "Play video" else "Screenshot",
+                        contentDescription = stringResource(if (media.isVideo) R.string.det_media_play_video_cd else R.string.det_media_screenshot_cd),
                         onClick = { viewModel.onNodeTapped(key) },
                         modifier = Modifier.detailNode(key, requesterFor, nodeY),
                     )
@@ -734,7 +754,7 @@ private fun GameDetailOverlays(
             ) {
                 com.playfieldportal.core.ui.motion.ArtworkImage(
                     model = imageUri,
-                    contentDescription = "Media preview",
+                    contentDescription = stringResource(R.string.det_media_preview_cd),
                     contentScale = androidx.compose.ui.layout.ContentScale.Fit,
                     modifier = Modifier.fillMaxSize().padding(12.dp),
                 )
@@ -748,30 +768,50 @@ private fun GameDetailOverlays(
             )
         }
 
-        AnimatedVisibility(state.showOptions, enter = fadeIn(), exit = fadeOut()) {
-            PspContextMenuOverlay(
-                title = state.optionsMenu.title,
-                rows = detailMenuRows(state, emulatorName = state.resolvedLaunch?.profile?.name),
-                selectedIndex = state.optionsIndex,
-                onRowActivated = { viewModel.onOptionRowTapped(state.visibleActions[it]) },
-                onDismiss = viewModel::closeOptions,
-            )
+        // Options, Choose Emulator and Add to Card share one panel: stepping from Options into either
+        // list swaps it in place, the way the Options sub-lists do, rather than fading out one panel
+        // and in another. Which list it shows is held while it fades out, so a closing list fades as
+        // itself rather than flashing the Options list on its way out.
+        val shown = when {
+            state.showEmulatorPicker -> DetailPanel.EMULATORS
+            state.collectionPicker.visible -> DetailPanel.CARDS
+            state.showOptions -> DetailPanel.OPTIONS
+            else -> null
         }
-
-        AnimatedVisibility(state.showEmulatorPicker, enter = fadeIn(), exit = fadeOut()) {
-            EmulatorPickerPanel(
-                options      = state.emulatorPickerOptions,
-                selectedId   = game.emulatorPackage,
-                focusedIndex = state.emulatorPickerIndex,
-                onPick       = viewModel::onEmulatorPickTapped,
-                onClose      = viewModel::closeEmulatorPicker,
-            )
+        val heldPanel = remember { arrayOf(DetailPanel.OPTIONS) }
+        if (shown != null) heldPanel[0] = shown
+        AnimatedVisibility(shown != null, enter = fadeIn(), exit = fadeOut()) {
+            when (heldPanel[0]) {
+                DetailPanel.EMULATORS -> {
+                    val options = state.emulatorPickerOptions
+                    PspContextMenuOverlay(
+                        title = stringResource(R.string.det_emulator_picker_title),
+                        rows = emulatorPickerRows(options, selectedId = game.emulatorPackage),
+                        selectedIndex = state.emulatorPickerIndex,
+                        onRowActivated = { index -> options.getOrNull(index)?.let { viewModel.onEmulatorPickTapped(it.id) } },
+                        onDismiss = viewModel::dismissEmulatorPicker,
+                    )
+                }
+                DetailPanel.CARDS -> CollectionPickerPanel(
+                    ui = state.collectionPicker,
+                    onRowClick = viewModel::onCollectionRowClick,
+                    onDismiss = viewModel::dismissCollectionPicker,
+                )
+                DetailPanel.OPTIONS -> PspContextMenuOverlay(
+                    title = stringResource(state.optionsMenu.titleRes),
+                    rows = detailMenuRows(state, emulatorName = state.resolvedLaunch?.profile?.name, res = uiResources()),
+                    selectedIndex = state.optionsIndex,
+                    onRowActivated = { viewModel.onOptionRowTapped(state.visibleActions[it]) },
+                    onDismiss = viewModel::closeOptions,
+                )
+            }
         }
 
         AnimatedVisibility(state.metadataPreview != null, enter = fadeIn(), exit = fadeOut()) {
             state.metadataPreview?.let { preview ->
-                MetadataPreviewPanel(
+                MetadataUpdatePage(
                     ui                = preview,
+                    gameTitle         = game.title,
                     focusFill         = menuCursorFill(),
                     focusEdge         = menuCursorEdge(),
                     onSelectPolicy    = viewModel::selectMetadataPolicy,
@@ -781,6 +821,7 @@ private fun GameDetailOverlays(
                     onRevertField     = viewModel::revertMetadataField,
                     onApply           = viewModel::applyMetadataPreview,
                     onClose           = viewModel::closeMetadataPreview,
+                    showHints         = !showTouchControls,
                 )
             }
         }
@@ -823,19 +864,11 @@ private fun GameDetailOverlays(
             }
         }
 
-        AnimatedVisibility(state.collectionPicker.visible, enter = fadeIn(), exit = fadeOut()) {
-            CollectionPickerPanel(
-                ui                  = state.collectionPicker,
-                onRowClick          = viewModel::onCollectionRowClick,
-                onClose             = viewModel::closeCollectionPicker,
-            )
-        }
-
         // Topmost overlay — the ViewModel routes all gamepad input here while it's open.
         state.manualViewerUri?.let { source ->
             ManualViewerOverlay(
                 source      = source,
-                title       = "${game.displayTitle} — Manual",
+                title       = stringResource(R.string.det_manual_viewer_title, game.displayTitle),
                 page        = state.manualPage,
                 scrollSteps = state.manualScrollSteps,
                 onPageCount = viewModel::setManualPageCount,
@@ -868,7 +901,7 @@ private fun DiscRow(
     rowModifier: Modifier = Modifier,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        PfpDetailSectionLabel("Discs")
+        PfpDetailSectionLabel(stringResource(R.string.det_discs))
         LazyRow(
             modifier = rowModifier,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -880,7 +913,7 @@ private fun DiscRow(
                 val key = GameDetailKeys.disc(member.id)
                 val isFocused = focusedKey == key
                 val isSelected = selectedId == member.id
-                val label = member.discNumber?.let { "Disc $it" } ?: "Playlist"
+                val label = member.discNumber?.let { stringResource(R.string.det_disc_n, it) } ?: stringResource(R.string.det_disc_playlist)
                 // Preference is communicated by named "Preferred" text and the edge, not by colour
                 // alone.
                 Column(
@@ -904,9 +937,9 @@ private fun DiscRow(
                     Text(label, color = themedText(TextPrimary), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     Text(
                         text = when {
-                            member.isMissing -> "Missing"
-                            isSelected -> "Preferred"
-                            else -> "Available"
+                            member.isMissing -> stringResource(R.string.det_disc_missing)
+                            isSelected -> stringResource(R.string.det_disc_preferred)
+                            else -> stringResource(R.string.det_disc_available)
                         },
                         color = if (member.isMissing) ActionFail else themedSubText(TextMuted),
                         fontSize = 11.sp,
@@ -946,31 +979,31 @@ private fun GameInformationBand(
         // something, the scraped value otherwise. Reading the raw columns is what would let the
         // next Re-scrape All quietly replace a correction on screen.
         game.displayReleaseYear?.let { year ->
-            PfpDetailField(label = "Released", value = year.toString())
+            PfpDetailField(label = stringResource(R.string.det_info_released), value = year.toString())
         }
         game.displayDeveloper?.takeIf { it.isNotBlank() }?.let {
-            PfpDetailField(label = "Developer", value = it)
+            PfpDetailField(label = stringResource(R.string.det_info_developer), value = it)
         }
         // Publisher only when it adds information (it often equals the developer).
         game.displayPublisher?.takeIf { !it.isNullOrBlank() && !it.equals(game.displayDeveloper, ignoreCase = true) }?.let {
-            PfpDetailField(label = "Publisher", value = it)
+            PfpDetailField(label = stringResource(R.string.det_info_publisher), value = it)
         }
         game.displayGenre?.takeIf { it.isNotBlank() }?.let {
-            PfpDetailField(label = "Genre", value = it)
+            PfpDetailField(label = stringResource(R.string.det_info_genre), value = it)
         }
         game.lastPlayedAt?.let {
-            PfpDetailField(label = "Last played", value = relativeDays(it))
+            PfpDetailField(label = stringResource(R.string.det_info_last_played), value = relativeDays(it))
         }
         if (game.totalPlayTimeMillis > 0) {
-            PfpDetailField(label = "Play time", value = formatPlayTime(game.totalPlayTimeMillis))
+            PfpDetailField(label = stringResource(R.string.det_info_play_time), value = formatPlayTime(game.totalPlayTimeMillis))
         }
         if (!state.isPackageBacked && resolved != null) {
             PfpDetailField(
-                label = "Emulator",
+                label = stringResource(R.string.det_info_emulator),
                 value = resolved.profile.name,
                 secondary = listOfNotNull(
-                    resolved.coreName?.let { "Core: $it" },
-                    resolved.source.label.lowercase(),
+                    resolved.coreName?.let { stringResource(R.string.det_info_core, it) },
+                    stringResource(resolved.source.lowerRes),
                 ).joinToString("  ·  ").takeIf { it.isNotBlank() },
                 disclosure = true,
             )
@@ -998,79 +1031,87 @@ internal fun gameDetailFooterVisible(state: GameDetailUiState, showTouchControls
  *
  * Pure function of the state so it can be unit-tested without a composition.
  */
-internal fun gameDetailHelperItems(state: GameDetailUiState): List<ControllerPromptItem> = when {
+internal fun gameDetailHelperItems(state: GameDetailUiState, res: Resources): List<ControllerPromptItem> = when {
     state.imageViewerUri != null || state.showVideoPlayer ->
         listOf(
-            ControllerPromptItem(GamepadAction.SELECT, "Close"),
-            ControllerPromptItem(GamepadAction.BACK, "Back"),
+            ControllerPromptItem(GamepadAction.SELECT, res.getString(R.string.det_close)),
+            ControllerPromptItem(GamepadAction.BACK, res.getString(R.string.det_back)),
         )
     state.manualViewerUri != null ->
         listOf(
             // Left/Right page and Up/Down scroll — what handleManualViewerInput does (survey U4).
-            ControllerPromptItem(listOf(GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT), "Page"),
-            ControllerPromptItem.fixed(listOf(ControllerIcon.DPAD_UP, ControllerIcon.DPAD_DOWN), "Scroll"),
-            ControllerPromptItem(GamepadAction.BACK, "Close"),
+            ControllerPromptItem(
+                listOf(GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT),
+                res.getString(R.string.det_prompt_page),
+            ),
+            ControllerPromptItem.fixed(
+                listOf(ControllerIcon.DPAD_UP, ControllerIcon.DPAD_DOWN),
+                res.getString(R.string.det_prompt_scroll),
+            ),
+            ControllerPromptItem(GamepadAction.BACK, res.getString(R.string.det_close)),
         )
     // The title confirm owns the overlay while it is up, so it owns the hints too.
     state.metadataPreview?.titleReplace != null ->
         listOf(
-            ControllerPromptItem(GamepadAction.SELECT, "Replace"),
-            ControllerPromptItem(GamepadAction.BACK, "Keep Mine"),
+            ControllerPromptItem(GamepadAction.SELECT, res.getString(R.string.det_meta_replace)),
+            ControllerPromptItem(GamepadAction.BACK, res.getString(R.string.det_meta_keep_mine)),
         )
     state.metadataPreview != null ->
         listOf(
-            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Navigate"),
-            ControllerPromptItem(GamepadAction.SELECT, "Apply / Toggle"),
-            ControllerPromptItem(GamepadAction.NAVIGATE_LEFT, "Policy"),
-            ControllerPromptItem(GamepadAction.PREV_CATEGORY, "Source"),
-            ControllerPromptItem(GamepadAction.BACK, "Close"),
+            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, res.getString(R.string.det_prompt_navigate)),
+            ControllerPromptItem(GamepadAction.SELECT, res.getString(R.string.det_prompt_apply_toggle)),
+            ControllerPromptItem(GamepadAction.NAVIGATE_LEFT, res.getString(R.string.det_prompt_policy)),
+            ControllerPromptItem(GamepadAction.PREV_CATEGORY, res.getString(R.string.det_prompt_source)),
+            ControllerPromptItem(GamepadAction.BACK, res.getString(R.string.det_close)),
         )
     state.showEmulatorPicker ->
         listOf(
-            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Navigate"),
-            ControllerPromptItem(GamepadAction.SELECT, "Choose"),
-            ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, res.getString(R.string.det_prompt_navigate)),
+            ControllerPromptItem(GamepadAction.SELECT, res.getString(R.string.det_choose)),
+            ControllerPromptItem(GamepadAction.BACK, res.getString(R.string.det_cancel)),
         )
     state.collectionPicker.visible ->
         listOf(
-            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Navigate"),
-            ControllerPromptItem(GamepadAction.SELECT, "Toggle"),
-            ControllerPromptItem(GamepadAction.BACK, "Close"),
+            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, res.getString(R.string.det_prompt_navigate)),
+            ControllerPromptItem(GamepadAction.SELECT, res.getString(R.string.det_prompt_toggle)),
+            ControllerPromptItem(GamepadAction.BACK, res.getString(R.string.det_close)),
         )
     state.showOptions ->
         listOf(
-            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Navigate"),
-            ControllerPromptItem(GamepadAction.SELECT, "Select"),
+            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, res.getString(R.string.det_prompt_navigate)),
+            ControllerPromptItem(GamepadAction.SELECT, res.getString(R.string.det_prompt_select)),
             // Inside a sub-panel Back goes up a level rather than out of the menu.
             ControllerPromptItem(
                 GamepadAction.BACK,
-                if (state.optionsMenu == DetailMenu.ROOT) "Close" else "Back",
+                res.getString(if (state.optionsMenu == DetailMenu.ROOT) R.string.det_close else R.string.det_back),
             ),
         )
     else -> listOf(
-        ControllerPromptItem(GamepadAction.SELECT, confirmLabelFor(state)),
-        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
-        ControllerPromptItem(GamepadAction.BACK, "Back"),
+        ControllerPromptItem(GamepadAction.SELECT, confirmLabelFor(state, res)),
+        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, res.getString(R.string.det_options)),
+        ControllerPromptItem(GamepadAction.BACK, res.getString(R.string.det_back)),
     )
 }
 
 /** What Confirm means on the page itself, given the focused node. */
-private fun confirmLabelFor(state: GameDetailUiState): String {
-    val focus = state.navFocusKey ?: return "Launch"
+private fun confirmLabelFor(state: GameDetailUiState, res: Resources): String {
+    val focus = state.navFocusKey ?: return res.getString(R.string.det_launch)
     val media = state.detailMedia.firstOrNull { GameDetailKeys.media(mediaStableId(it)) == focus }
-    return when {
-        media != null -> if (media.isVideo) "Play" else "Preview"
-        focus == GameDetailKeys.COINS -> "View"
-        focus == GameDetailKeys.OVERVIEW ->
-            if (state.descriptionExpanded) "Collapse" else "Read more"
-        focus.startsWith("game-detail:disc:") -> "Choose disc"
-        focus == GameDetailKeys.FAVORITE -> "Favorite"
-        focus == GameDetailKeys.ARTWORK -> "Edit artwork"
-        focus == GameDetailKeys.MANUAL -> "Open manual"
-        focus == GameDetailKeys.OPTIONS_ACTION -> "Options"
-        focus == GameDetailKeys.INFO && state.showEmulatorAction -> "Change emulator"
-        else -> "Launch"
-    }
+    return res.getString(
+        when {
+            media != null -> if (media.isVideo) R.string.det_confirm_play else R.string.det_confirm_preview
+            focus == GameDetailKeys.COINS -> R.string.det_confirm_view
+            focus == GameDetailKeys.OVERVIEW ->
+                if (state.descriptionExpanded) R.string.det_confirm_collapse else R.string.det_confirm_read_more
+            focus.startsWith("game-detail:disc:") -> R.string.det_confirm_choose_disc
+            focus == GameDetailKeys.FAVORITE -> R.string.det_favorite
+            focus == GameDetailKeys.ARTWORK -> R.string.det_artwork_edit_cd
+            focus == GameDetailKeys.MANUAL -> R.string.det_manual_open_cd
+            focus == GameDetailKeys.OPTIONS_ACTION -> R.string.det_options
+            focus == GameDetailKeys.INFO && state.showEmulatorAction -> R.string.det_confirm_change_emulator
+            else -> R.string.det_launch
+        },
+    )
 }
 
 /** Launch and the quick actions sit directly under the hero, so focusing any of them shows the page top. */
@@ -1098,44 +1139,48 @@ private fun Modifier.detailNode(
 // The console to name, or the entry's fallback when it has no console row of its own. app_shortcut
 // is an internal sentinel (an app-style row that is not a game), so its raw id must never be
 // printed as if it were a console — these rows are reached from a card like any other game.
+@Composable
 private fun Game.platformLabel(platform: PlatformEntity?): String = when {
     platform != null             -> platform.name
-    platformId == "app_shortcut" -> "App"
+    platformId == "app_shortcut" -> stringResource(R.string.det_kind_app)
     else                         -> platformId.uppercase()
 }
 
 // What this library entry actually is — shown in the hero facts so all three entry kinds share one
 // screen without losing their identity.
+@Composable
 private fun Game.kindLabel(): String = when {
-    shortcutId != null || launchIntentUri != null -> "PC Shortcut"
-    romPath == null && packageName != null        -> "Game App"
-    else                                          -> "ROM"
+    shortcutId != null || launchIntentUri != null -> stringResource(R.string.det_kind_pc_shortcut)
+    romPath == null && packageName != null        -> stringResource(R.string.det_kind_game_app)
+    else                                          -> stringResource(R.string.det_kind_rom)
 }
 
+@Composable
 private fun formatPlayTime(millis: Long): String {
     val minutes = millis / 60_000
     return when {
-        minutes < 1     -> "Under a minute"
-        minutes < 60    -> "$minutes min"
-        else            -> "${minutes / 60} h ${minutes % 60} min"
+        minutes < 1     -> stringResource(R.string.det_time_under_minute)
+        minutes < 60    -> stringResource(R.string.det_time_minutes, minutes)
+        else            -> stringResource(R.string.det_time_hours_minutes, minutes / 60, minutes % 60)
     }
 }
 
+@Composable
 private fun relativeDays(epochMillis: Long): String {
     val days = ((System.currentTimeMillis() - epochMillis) / 86_400_000L).coerceAtLeast(0)
     return when (days) {
-        0L   -> "Today"
-        1L   -> "Yesterday"
-        else -> "$days days ago"
+        0L   -> stringResource(R.string.det_days_today)
+        1L   -> stringResource(R.string.det_days_yesterday)
+        else -> pluralStringResource(R.plurals.det_days_ago, days.toInt(), days.toInt())
     }
 }
 
 private val OptionsPanelMaxHeight: Dp = 440.dp
 private val OptionsRowScrollStep: Dp = 58.dp
 
-internal fun DetailAction.dynamicLabel(refreshing: Boolean): String = when (this) {
-    DetailAction.FETCH_ARTWORK -> if (refreshing) "Fetching Artwork…" else label
-    else -> label
+internal fun DetailAction.dynamicLabel(refreshing: Boolean, res: Resources): String = when (this) {
+    DetailAction.FETCH_ARTWORK -> if (refreshing) res.getString(R.string.det_fetching_artwork) else res.getString(labelRes)
+    else -> res.getString(labelRes)
 }
 
 /**
@@ -1145,111 +1190,43 @@ internal fun DetailAction.dynamicLabel(refreshing: Boolean): String = when (this
  * group — draws none. Favorite keeps one name and states its value beside it: a label that flips
  * to "Unfavorite" makes the row's position the only thing a user can learn.
  */
-internal fun detailMenuRows(state: GameDetailUiState, emulatorName: String?): List<PspMenuRow> {
+internal fun detailMenuRows(state: GameDetailUiState, emulatorName: String?, res: Resources): List<PspMenuRow> {
     val actions = state.visibleActions
     return actions.mapIndexed { index, action ->
         PspMenuRow(
-            label = action.dynamicLabel(refreshing = state.isFetchingArtwork),
+            label = action.dynamicLabel(refreshing = state.isFetchingArtwork, res = res),
             isDestructive = action == DetailAction.REMOVE,
             value = when (action) {
-                DetailAction.FAVORITE -> if (state.game?.isFavorite == true) "On" else "Off"
+                DetailAction.FAVORITE -> res.getString(if (state.game?.isFavorite == true) R.string.det_filter_on else R.string.det_filter_off)
                 DetailAction.EMULATOR -> emulatorName
-                DetailAction.STOREFRONT -> state.storeLinks?.let { if (it.isEmpty()) "None" else it.joinToString(" · ") }
+                DetailAction.STOREFRONT -> state.storeLinks?.let { if (it.isEmpty()) res.getString(R.string.det_none) else it.joinToString(" · ") }
                 else -> null
             },
             // Add to Card opens the card picker, which is not an Options sub-panel.
             opensMenu = action.opens != null || action == DetailAction.COLLECTIONS,
             silent = action == DetailAction.FAVORITE,
-            header = action.group?.takeIf { it != actions.getOrNull(index - 1)?.group }?.label,
+            header = action.group?.takeIf { it != actions.getOrNull(index - 1)?.group }?.let { res.getString(it.labelRes) },
         )
     }
 }
 
-// ── Emulator Picker Panel ─────────────────────────────────────────────────────
+/** Which list the detail page's one side panel is showing. */
+private enum class DetailPanel { OPTIONS, EMULATORS, CARDS }
 
-@Composable
-private fun EmulatorPickerPanel(
+// ── Choose Emulator rows ──────────────────────────────────────────────────────
+
+/**
+ * Choose Emulator as Options rows: one per emulator, the game's current override checked. An
+ * override may be stored as a profile id or (older games) a package name, so either checks it.
+ */
+internal fun emulatorPickerRows(
     options: List<com.playfieldportal.core.domain.model.EmulatorProfile>,
     selectedId: String?,
-    focusedIndex: Int,
-    onPick: (String) -> Unit,
-    onClose: () -> Unit,
-) {
-    Box(
-        Modifier.fillMaxSize().background(Color(0xCC000000)).clickable(onClick = onClose),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier
-                .widthIn(min = 280.dp, max = 460.dp)
-                .fillMaxWidth(0.86f)
-                .heightIn(max = OptionsPanelMaxHeight)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xF20A0A14))
-                .clickable(enabled = false) {}
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Text(
-                "Choose Emulator",
-                color = themedText(TextPrimary),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                "Up/Down  Navigate  •  Select  Confirm  •  B  Cancel",
-                color = themedSubText(TextMuted.copy(alpha = 0.5f)),
-                fontSize = 10.sp,
-            )
-
-            val scrollState = rememberScrollState()
-            val stepPx = with(androidx.compose.ui.platform.LocalDensity.current) { OptionsRowScrollStep.roundToPx() }
-            LaunchedEffect(focusedIndex) { scrollState.animateScrollTo(focusedIndex * stepPx) }
-
-            Column(
-                modifier = Modifier.verticalScroll(scrollState),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                options.forEachIndexed { index, profile ->
-                    val isFocused  = focusedIndex == index
-                    val isSelected = selectedId != null && (profile.id == selectedId || profile.packageName == selectedId)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(
-                                when {
-                                    isFocused  -> menuCursorFill()
-                                    isSelected -> menuCursorFill().copy(alpha = 0.17f)
-                                    else       -> Color(0xFF1B1B26)
-                                }
-                            )
-                            .then(
-                                if (isFocused) Modifier.border(1.5.dp, menuCursorEdge(), RoundedCornerShape(8.dp))
-                                else if (isSelected) Modifier.border(1.dp, menuCursorEdge().copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                                else Modifier
-                            )
-                            .clickable { onPick(profile.id) }
-                            .padding(vertical = 12.dp, horizontal = 12.dp),
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(profile.name, color = themedText(TextPrimary), fontSize = 14.sp, maxLines = 1)
-                            Text(
-                                profile.packageName,
-                                color = themedSubText(TextMuted),
-                                fontSize = 11.sp,
-                                maxLines = 1,
-                            )
-                        }
-                        if (isSelected) {
-                            com.playfieldportal.core.ui.components.PfpCheckMark(PlayGreen, Modifier.padding(start = 8.dp))
-                        }
-                    }
-                }
-            }
-        }
-    }
+): List<PspMenuRow> = options.map { profile ->
+    PspMenuRow(
+        label = profile.name,
+        checked = selectedId != null && (profile.id == selectedId || profile.packageName == selectedId),
+    )
 }
 
 // Fullscreen built-in player for the game's video snap: standard transport controls, black

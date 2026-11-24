@@ -7,6 +7,8 @@ import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.dao.SsMediaCacheDao
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.data.database.entity.SsMediaCacheEntity
+import com.playfieldportal.core.domain.text.UiText
+import com.playfieldportal.feature.artwork.R
 import com.playfieldportal.feature.artwork.api.ArtworkFolderState
 import com.playfieldportal.feature.artwork.api.ArtworkFolderStatus
 import com.playfieldportal.feature.artwork.api.ArtworkScrapePreferences
@@ -35,7 +37,7 @@ import javax.inject.Singleton
 data class MetadataFetchResult(
     val success: Boolean,
     val source: String,   // "screenscraper" | "thegamesdb" | "steamgriddb" | "igdb" | "none"
-    val message: String,
+    val message: UiText,
     val scrapedTitle: String? = null,
     /**
      * The artwork folder was not Ready after the asset phase: the text metadata was written, but no
@@ -172,11 +174,11 @@ class MetadataRepository @Inject constructor(
                 }
             }
             if (!usedSsCache) {
-            onAssetProgress?.invoke("ScreenScraper", "Hashing ROM…")
+            onAssetProgress?.invoke("ScreenScraper", context.getString(R.string.art_progress_hashing))
             romIdentity = romHasher.identify(gameEntity?.romPath ?: romPath, gameEntity?.romUri)
             val skipUnhashed = ssUnhashedStopped && romIdentity.crc32 == null && gameEntity?.ssId == null
             if (!skipUnhashed) {
-                onAssetProgress?.invoke("ScreenScraper", "Searching…")
+                onAssetProgress?.invoke("ScreenScraper", context.getString(R.string.art_progress_searching))
                 val ssResult = screenScraper.fetchGameInfo(
                     platformId = platformId,
                     rom        = romIdentity,
@@ -201,7 +203,7 @@ class MetadataRepository @Inject constructor(
         // ── 2. TheGamesDB (fills what ScreenScraper left open) ────────────────
         var tgdbInfo: TgdbGameInfo? = null
         if (ssInfo == null || ssInfo.artworkUrl == null || ssInfo.description == null) {
-            onAssetProgress?.invoke("TheGamesDB", "Searching…")
+            onAssetProgress?.invoke("TheGamesDB", context.getString(R.string.art_progress_searching))
             tgdbInfo = runCatching {
                 theGamesDb.fetchGameInfo(platformId = platformId, title = bestTitle)
             }.onFailure { Timber.w(it, "TheGamesDB error for '$bestTitle'") }.getOrNull()
@@ -216,7 +218,7 @@ class MetadataRepository @Inject constructor(
             val needsBoxArt = ssInfo?.artworkUrl == null && tgdbInfo?.artworkUrl == null
             val needsHero   = ssInfo?.heroUrl == null && tgdbInfo?.heroUrl == null
             if (options.metadataOnly || needsBoxArt || needsHero) {
-                onAssetProgress?.invoke("IGDB", "Searching…")
+                onAssetProgress?.invoke("IGDB", context.getString(R.string.art_progress_searching))
                 igdbInfo = runCatching {
                     // Strongest identity first, title only as a last resort: a saved igdb_id, then
                     // the Windows storefront PAIR through external_games (C23 T4), then the title
@@ -237,7 +239,7 @@ class MetadataRepository @Inject constructor(
         var sgdbGameId:  Long?   = null
 
         if (!sgdbKey.isNullOrBlank() && !options.metadataOnly) {
-            onAssetProgress?.invoke("SteamGridDB", "Searching…")
+            onAssetProgress?.invoke("SteamGridDB", context.getString(R.string.art_progress_searching))
             runCatching {
                 val match = steamGridDb.searchGame(bestTitle).getOrNull()?.firstOrNull()
                 if (match != null) {
@@ -294,8 +296,8 @@ class MetadataRepository @Inject constructor(
         if (game == null || game.platformId != WINDOWS_PLATFORM_ID) return emptyList()
         // Named for the stores actually being asked, which was "Steam" only while Steam was alone.
         onAssetProgress?.invoke(
-            storefrontResolver.availableStores().joinToString(", ") { it.label }.ifBlank { "Storefronts" },
-            "Searching…",
+            storefrontResolver.availableStores().joinToString(", ") { it.label }.ifBlank { context.getString(R.string.art_source_storefronts) },
+            context.getString(R.string.art_progress_searching),
         )
         val resolution = runCatching { storefrontResolver.resolve(game) }
             .onFailure { Timber.w(it, "Storefront resolve failed for game %d", game.id) }
@@ -335,7 +337,7 @@ class MetadataRepository @Inject constructor(
         // ── Nothing found ──────────────────────────────────────────────────────
         if (candidates.isEmpty) {
             Timber.i("No metadata found for '${candidates.bestTitle}'")
-            return MetadataFetchResult(false, "none", "Not found on any source")
+            return MetadataFetchResult(false, "none", UiText.res(R.string.art_error_not_found_any_source))
         }
 
         val gameEntity  = candidates.gameEntity
@@ -382,45 +384,45 @@ class MetadataRepository @Inject constructor(
         // Metadata-only runs stop here: no asset is downloaded and no artwork column is written.
         if (!options.metadataOnly) {
 
-        if (options.downloadHeroes) onAssetProgress?.invoke(src, "Hero")
+        if (options.downloadHeroes) onAssetProgress?.invoke(src, context.getString(R.string.art_asset_hero))
         heroPath = if (options.downloadHeroes) finalHeroUrl?.let { savedTracked(ArtworkKind.HERO, it, fromSs = it == ssInfo?.heroUrl) } else null
 
         // Background (artworkUri) drives the full-screen XMB background, so it MUST be full
         // resolution. The old path composited box art into a tiny fixed-size card (≈288px) which
         // looked crunchy stretched to fullscreen. Download full-res instead, preferring a landscape
         // hero (reuse the hero file if we already have it), else the box/grid art.
-        onAssetProgress?.invoke(src, "Background")
+        onAssetProgress?.invoke(src, context.getString(R.string.art_asset_background))
         backgroundPath = heroPath
             ?: finalHeroUrl?.let { savedTracked(ArtworkKind.BACKGROUND, it, fromSs = it == ssInfo?.heroUrl) }
             ?: finalBoxArtUrl?.let { savedTracked(ArtworkKind.BACKGROUND, it, fromSs = it == ssInfo?.artworkUrl) }
 
-        if (options.downloadClearLogos) onAssetProgress?.invoke(src, "Logo")
+        if (options.downloadClearLogos) onAssetProgress?.invoke(src, context.getString(R.string.art_asset_logo))
         logoPath = finalLogoUrl?.let { savedTracked(ArtworkKind.LOGO, it, fromSs = it == ssInfo?.logoUrl) }
 
         // Icon-display-mode tiles — small images, always fetched (no toggles). Box art accepts
         // TGDB/IGDB covers as fallback; SGDB grids are stylized, not boxes, so they stay out.
         // Physical media and 3D boxes are ScreenScraper-only.
         val boxArtSrcUrl = ssInfo?.boxArtUrl ?: tgdbInfo?.artworkUrl ?: igdbInfo?.artworkUrl
-        if (boxArtSrcUrl != null) onAssetProgress?.invoke(src, "Box Art")
+        if (boxArtSrcUrl != null) onAssetProgress?.invoke(src, context.getString(R.string.art_asset_box_art))
         boxArtPath = boxArtSrcUrl?.let { savedTracked(ArtworkKind.BOX_ART, it, fromSs = it == ssInfo?.boxArtUrl) }
         physicalMediaPath = ssInfo?.physicalMediaUrl?.let {
-            onAssetProgress?.invoke("ScreenScraper", "Physical Media")
+            onAssetProgress?.invoke("ScreenScraper", context.getString(R.string.art_asset_physical_media))
             savedTracked(ArtworkKind.PHYSICAL_MEDIA, it, fromSs = true)
         }
         box3dPath = ssInfo?.box3dUrl?.let {
-            onAssetProgress?.invoke("ScreenScraper", "3D Box")
+            onAssetProgress?.invoke("ScreenScraper", context.getString(R.string.art_asset_3d_box))
             savedTracked(ArtworkKind.BOX_3D, it, fromSs = true)
         }
         // In-game screenshot for Game Detail's SCREENSHOT panel (record-only kind, no column).
         ssInfo?.screenshotUrl?.let {
-            onAssetProgress?.invoke("ScreenScraper", "Screenshot")
+            onAssetProgress?.invoke("ScreenScraper", context.getString(R.string.art_asset_screenshot))
             savedTracked(ArtworkKind.SCREENSHOT, it, fromSs = true)
         }
 
         // ScreenScraper-only extras — stored under fixed names, looked up via ArtworkStore.find
         // (never referenced from game columns).
         if (options.downloadManuals) ssInfo?.manualUrl?.let {
-            onAssetProgress?.invoke("ScreenScraper", "Manual")
+            onAssetProgress?.invoke("ScreenScraper", context.getString(R.string.art_asset_manual))
             savedTracked(ArtworkKind.MANUAL, it, fromSs = true)
         }
         if (options.downloadVideoSnaps) {
@@ -431,7 +433,7 @@ class MetadataRepository @Inject constructor(
             // ALWAYS kept as-is, and ICON1 is generated from it only when SS has no normalized
             // snap of its own.
             val rawFile = rawUrl?.let {
-                onAssetProgress?.invoke("ScreenScraper", "Video")
+                onAssetProgress?.invoke("ScreenScraper", context.getString(R.string.art_asset_video))
                 ArtworkTempIO.downloadToTemp(httpClient, context.cacheDir, ArtworkKind.VIDEO, it)
             }
             // 1) Store the full video untouched as VIDEO (a copy — saveFromFile consumes it).
@@ -444,11 +446,11 @@ class MetadataRepository @Inject constructor(
             // 2) ICON1 snap: SS's normalized snap if it has one, else transcode from the full.
             when {
                 snapUrl != null -> {
-                    onAssetProgress?.invoke("ScreenScraper", "Icon Video")
+                    onAssetProgress?.invoke("ScreenScraper", context.getString(R.string.art_asset_icon_video))
                     savedTracked(ArtworkKind.ICON1, snapUrl, fromSs = true)
                 }
                 rawFile != null -> {
-                    onAssetProgress?.invoke("ScreenScraper", "Icon Video (converting)")
+                    onAssetProgress?.invoke("ScreenScraper", context.getString(R.string.art_asset_icon_video_converting))
                     val snap = java.io.File.createTempFile("snap_", ".mp4", context.cacheDir)
                     val ok = runCatching { videoSnapTranscoder.transcode(rawFile, snap) }
                         .onFailure { Timber.w(it, "Snap transcode crashed") }
@@ -555,7 +557,7 @@ class MetadataRepository @Inject constructor(
         if (!options.metadataOnly && !paused) fetchHorizontalIcon(gameId, bestTitle, sgdbGameId)
 
         Timber.i("Metadata from $src: '$bestTitle' (scrapedTitle='$newScrapedTitle')")
-        return MetadataFetchResult(true, src, "Found via $src", scrapedTitle = newScrapedTitle, paused = paused)
+        return MetadataFetchResult(true, src, UiText.res(R.string.art_found_via, src), scrapedTitle = newScrapedTitle, paused = paused)
     }
 
     // The store re-probes a non-Ready folder on every write, so this probes only when no write ran

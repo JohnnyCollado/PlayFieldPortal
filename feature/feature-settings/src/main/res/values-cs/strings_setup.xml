@@ -1,0 +1,414 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Wizard chrome -->
+    <string name="setup_title">Úvodní nastavení</string>
+    <string name="setup_prompt_enter">Otevřít</string>
+    <string name="setup_prompt_change">Změnit</string>
+    <string name="setup_prompt_back">Zpět</string>
+    <string name="setup_prompt_skip">Přeskočit</string>
+    <string name="setup_row_edit">Upravit</string>
+    <string name="setup_row_remove">Odebrat</string>
+    <string name="setup_message_dismiss_hint">Výběrem zavřete — nebo potvrďte na tomto řádku</string>
+
+    <!-- Page names -->
+    <string name="setup_step_welcome">Vítejte</string>
+    <string name="setup_step_controller">Ovladač</string>
+    <string name="setup_step_rom_roots">Složky ROM</string>
+    <string name="setup_step_music">Hudba</string>
+    <string name="setup_step_video">Video</string>
+    <string name="setup_step_photo">Fotky</string>
+    <string name="setup_step_artwork">Grafika</string>
+    <string name="setup_step_services">Online služby</string>
+    <string name="setup_step_achievements">Služby achievementů</string>
+    <string name="setup_step_local_achievements">Místní achievementy</string>
+    <string name="setup_step_retroarch">RetroArch</string>
+    <string name="setup_step_emulators">Emulátory</string>
+    <string name="setup_step_windows">Hry pro Windows</string>
+    <string name="setup_step_hints">Nápovědy a dotyk</string>
+    <string name="setup_step_home_app">Domovská aplikace</string>
+    <string name="setup_step_finish">Dokončení</string>
+
+    <!-- Page headings -->
+    <string name="setup_heading_welcome">Vítejte v Play Field Portal.</string>
+    <string name="setup_heading_controller">Vyberte svůj ovladač.</string>
+    <string name="setup_heading_rom_roots">Vyberte složky ROM.</string>
+    <string name="setup_heading_music">Vyberte složky s hudbou.</string>
+    <string name="setup_heading_video">Vyberte složky s videi.</string>
+    <string name="setup_heading_photo">Vyberte složky s fotkami.</string>
+    <string name="setup_heading_artwork">Vyberte složku grafiky.</string>
+    <string name="setup_heading_services">Připojte zdroje grafiky.</string>
+    <string name="setup_heading_achievements">Připojte služby achievementů.</string>
+    <string name="setup_heading_local_achievements">Propojte datové složky emulátorů.</string>
+    <string name="setup_heading_retroarch">Propojte složku jader RetroArch.</string>
+    <string name="setup_heading_emulators">Zkontrolujte emulátory.</string>
+    <string name="setup_heading_windows">Nastavte hry pro Windows.</string>
+    <string name="setup_heading_hints">Vyberte, jak vám launcher pomáhá.</string>
+    <string name="setup_heading_home_app">Nastavte Play Field Portal jako domovskou obrazovku.</string>
+    <string name="setup_heading_finish">Vše je připraveno!</string>
+
+    <!-- Page hints -->
+    <string name="setup_hint_welcome">Většina kroků je volitelná. Je nutné vybrat složku grafiky.</string>
+    <string name="setup_hint_controller">Nastaví ikony tlačítek a tlačítko pro potvrzení, aby každá další výzva odpovídala vašemu ovladači.</string>
+    <string name="setup_hint_rom_roots">Přidejte jednu či více složek ROM — hry každé konzole jsou v jejich podsložkách.</string>
+    <string name="setup_hint_media_roots">Přidejte více kořenů, abyste pokryli vnitřní úložiště i SD kartu.</string>
+    <string name="setup_hint_artwork">Povinné. Vaše grafika je uložena zde, mimo aplikaci, takže přežije přeinstalaci.</string>
+    <string name="setup_hint_services">Vše volitelné a zdarma. SteamGridDB, TheGamesDB, IGDB a ScreenScraper stahují grafiku a metadata her.</string>
+    <string name="setup_hint_achievements">RetroAchievements a Steam sledují achievementy jako Shiba Coins.</string>
+    <string name="setup_hint_local_achievements">Trofeje a achievementy, které emulátory ukládají v tomto zařízení. Jedno udělení přístupu na emulátor propojí všechny tituly.</string>
+    <string name="setup_hint_retroarch">Launcher přesně zjistí, která jádra máte, a nabídne jen ta.</string>
+    <string name="setup_hint_emulators">Výchozí emulátor každé konzole, vybraný z nainstalovaných. Změňte ty, které nesedí.</string>
+    <string name="setup_hint_windows">Je nainstalován emulátor Windows — vyberte, kde jsou vaše hry pro PC.</string>
+    <string name="setup_hint_hints">Nápovědy tlačítek se zobrazí, když se zastavíte, a zmizí, jakmile cokoli stisknete.</string>
+    <string name="setup_hint_home_app">Tlačítko Domů vás pak vrátí sem místo do výchozího launcheru.</string>
+    <string name="setup_hint_finish">Vše níže lze kdykoli upravit v Nastavení.</string>
+
+    <!-- Continue row -->
+    <string name="setup_continue">Pokračovat</string>
+    <string name="setup_continue_next">Další: %1$s</string>
+    <string name="setup_continue_blocked">Nejprve vyberte složku</string>
+
+    <!-- Welcome page -->
+    <string name="setup_welcome_intro">Toto rychlé nastavení nasměruje launcher na vaše složky s médii a připojí online služby pro grafiku a achievementy.</string>
+    <string name="setup_welcome_start">Začít</string>
+    <string name="setup_welcome_start_sub">Nejprve vyberte ovladač</string>
+    <string name="setup_welcome_skip">Přeskočit nastavení</string>
+    <string name="setup_welcome_skip_sub">Přejít rovnou do launcheru — průvodce nastavením lze kdykoli spustit v Nastavení ▸ Systém</string>
+
+    <!-- Folder rows -->
+    <string name="setup_root_access_lost">Přístup ztracen — pomocí ✎ jej znovu udělte</string>
+
+    <!-- ROM roots page -->
+    <string name="setup_rom_empty">Zatím žádné složky ROM. Přidejte složku s hrami vašich konzolí — jedna podsložka na konzoli, prohledávají se automaticky.</string>
+    <string name="setup_rom_add">Přidat složku ROM</string>
+    <string name="setup_rom_add_sub">Udělte přístup ke složce ROM s podsložkou pro každou konzoli</string>
+    <string name="setup_rom_rescan">Znovu prohledat složky ROM</string>
+    <string name="setup_rom_rescan_sub">Automaticky rozpoznat konzole a prohledat jejich hry</string>
+    <string name="setup_rom_root_linked">Propojeno — složky konzolí se čtou odsud</string>
+    <string name="setup_rom_create_folders">Vytvořit standardní složky</string>
+    <string name="setup_rom_create_folders_sub">Jedna podsložka na konzoli, pojmenovaná pro vaše hry</string>
+
+    <!-- Music roots page -->
+    <string name="setup_music_empty">Zatím žádné kořeny hudby. Přidejte složku s hudbou — více kořenů může pokrýt vnitřní úložiště i SD kartu.</string>
+    <string name="setup_music_add">Přidat kořen hudby</string>
+    <string name="setup_music_add_sub">Udělte přístup ke kořenové složce (např. /Music) — přidejte více pro různá umístění</string>
+    <string name="setup_music_root_linked">Zde je hudební knihovna</string>
+    <string name="setup_music_rescan">Znovu prohledat hudební knihovnu</string>
+
+    <!-- Video roots page -->
+    <string name="setup_video_empty">Zatím žádné kořeny videa. Přidejte složku s videi — více kořenů může pokrýt vnitřní úložiště i SD kartu.</string>
+    <string name="setup_video_add">Přidat kořen videa</string>
+    <string name="setup_video_add_sub">Udělte přístup ke kořenové složce (např. /Videos) — přidejte více pro různá umístění</string>
+    <string name="setup_video_root_linked">Zde je knihovna videí</string>
+    <string name="setup_video_rescan">Znovu prohledat knihovnu videí</string>
+
+    <!-- Photo roots page -->
+    <string name="setup_photo_empty">Zatím žádné kořeny fotek. Přidejte složku s fotkami — více kořenů může pokrýt vnitřní úložiště i SD kartu.</string>
+    <string name="setup_photo_add">Přidat kořen fotek</string>
+    <string name="setup_photo_add_sub">Udělte přístup ke kořenové složce (např. /Photos) — přidejte více pro různá umístění</string>
+    <string name="setup_photo_root_linked">Zde je knihovna fotek</string>
+    <string name="setup_photo_rescan">Znovu prohledat knihovnu fotek</string>
+
+    <string name="setup_media_rescan_sub">Aktualizovat knihovny ze všech kořenových složek</string>
+
+    <!-- Artwork page -->
+    <string name="setup_artwork_empty">Vyberte složku s možností zápisu. Launcher v ní automaticky založí knihovnu grafiky — hry dostanou grafiku při přidání.</string>
+    <string name="setup_artwork_unavailable">Nedostupné. Znovu propojte pro pokračování nové grafiky</string>
+    <string name="setup_artwork_folder_sub">Knihovna grafiky — pomocí ✎ vyberte jinou složku</string>
+    <string name="setup_artwork_choose">Vybrat složku grafiky</string>
+    <string name="setup_artwork_choose_sub">Jedna složka hostí knihovnu grafiky</string>
+    <string name="setup_artwork_import_title">Importovat grafiku nyní?</string>
+    <string name="setup_artwork_import_sub_one">Zkopírovat %1$s ze složky import/ do knihovny</string>
+    <plurals name="setup_artwork_import_sub_many">
+        <item quantity="one">Zkopírovat %1$d zdrojovou složku ze složky import/ do knihovny</item>
+        <item quantity="few">Zkopírovat %1$d zdrojové složky ze složky import/ do knihovny</item>
+        <item quantity="many">Zkopírovat %1$d zdrojové složky ze složky import/ do knihovny</item>
+        <item quantity="other">Zkopírovat %1$d zdrojových složek ze složky import/ do knihovny</item>
+    </plurals>
+    <string name="setup_artwork_import_row">Import grafiky</string>
+    <string name="setup_artwork_import_none_sub">Zatím není co importovat — přidejte složku médií jiného launcheru do import/</string>
+
+    <!-- Online services page -->
+    <string name="setup_services_intro">Všechny účty jsou volitelné a zdarma. SteamGridDB, TheGamesDB, IGDB a ScreenScraper stahují grafiku a metadata her pro vaši knihovnu.</string>
+    <string name="setup_field_api_key">Klíč API</string>
+    <string name="setup_field_api_key_saved">Klíč API (uložen)</string>
+    <string name="setup_field_web_api_key">Klíč Web API</string>
+    <string name="setup_field_web_api_key_saved">Klíč Web API (uložen)</string>
+    <string name="setup_field_client_id">Client ID</string>
+    <string name="setup_field_client_id_saved">Client ID (uloženo)</string>
+    <string name="setup_field_client_secret">Client Secret</string>
+    <string name="setup_field_client_secret_saved">Client Secret (uloženo)</string>
+    <string name="setup_field_username">Uživatelské jméno</string>
+    <string name="setup_field_username_saved">Uživatelské jméno (uloženo)</string>
+    <string name="setup_field_password">Heslo</string>
+    <string name="setup_field_password_saved">Heslo (uloženo)</string>
+    <string name="setup_field_steam_id">SteamID64 nebo vlastní název</string>
+    <string name="setup_field_steam_id_saved">SteamID64 nebo vlastní název (uloženo)</string>
+    <string name="setup_placeholder_tap_to_replace">Výběrem nahradíte</string>
+    <string name="setup_placeholder_secret_saved">••••••••  (výběrem nahradíte)</string>
+    <string name="setup_placeholder_sgdb_key">Vložte klíč SteamGridDB</string>
+    <string name="setup_placeholder_tgdb_key">Vložte klíč TheGamesDB</string>
+    <string name="setup_placeholder_twitch_client_id">Twitch Client ID</string>
+    <string name="setup_placeholder_twitch_client_secret">Twitch Client Secret</string>
+    <string name="setup_placeholder_ss_username">Uživatelské jméno ScreenScraper</string>
+    <string name="setup_placeholder_ss_password">Heslo ScreenScraper</string>
+    <string name="setup_placeholder_ra_username">Vaše uživatelské jméno RA</string>
+    <string name="setup_placeholder_ra_key">Vložte klíč RA Web API</string>
+    <string name="setup_placeholder_steam_id">7656119… nebo vlastní název z URL</string>
+    <string name="setup_placeholder_steam_key">Vložte klíč Steam Web API</string>
+    <string name="setup_connect_sgdb">Připojit SteamGridDB</string>
+    <string name="setup_connect_tgdb">Připojit TheGamesDB</string>
+    <string name="setup_connect_igdb">Připojit IGDB</string>
+    <string name="setup_connect_ss">Připojit ScreenScraper</string>
+    <string name="setup_connect_ra">Připojit RetroAchievements</string>
+    <string name="setup_connect_steam">Připojit Steam</string>
+    <string name="setup_test_credentials">Otestovat údaje</string>
+    <string name="setup_test_account">Otestovat účet</string>
+    <string name="setup_connected_as">Připojeno jako</string>
+
+    <!-- Achievement services page -->
+    <string name="setup_achievements_intro">Volitelné a zdarma. RetroAchievements a Steam sledují achievementy jako Shiba Coins.</string>
+
+    <!-- Controller page -->
+    <string name="setup_controller_type">Typ ovladače</string>
+    <string name="setup_controller_type_sub">Změní ikony tlačítek ve všech výzvách</string>
+    <string name="setup_controller_ab_swap">Prohodit potvrzení a zpět</string>
+    <string name="setup_controller_xy_swap">Prohodit možnosti a řazení</string>
+    <string name="setup_controller_xy_swap_sub">Jen nabídky launcheru — ovládání emulátorů se nemění</string>
+    <string name="setup_on">Zap.</string>
+    <string name="setup_off">Vyp.</string>
+    <string name="setup_controller_summary">%1$s · %2$s potvrzuje</string>
+    <string name="setup_button_circle">Kolečko</string>
+    <string name="setup_button_cross">Křížek</string>
+    <string name="setup_confirm_swap_off">Vyp. — %1$s potvrzuje, %2$s jde zpět</string>
+    <string name="setup_confirm_swap_on">Zap. — %1$s potvrzuje, %2$s jde zpět</string>
+
+    <!-- Local achievements page -->
+    <string name="setup_local_vita_header">PS Vita · Vita3K</string>
+    <string name="setup_local_vita_set">Nastavit datovou složku Vita3K</string>
+    <string name="setup_local_vita_set_sub">Udělte přístup ke složce ux0 (nebo ke složce, která ji obsahuje)</string>
+    <string name="setup_local_vita_folder_sub">Datová složka Vita3K — pomocí ✎ vyberte jinou</string>
+    <string name="setup_local_ps3_header">PS3 · ARMSX3</string>
+    <string name="setup_local_ps3_set">Nastavit datovou složku ARMSX3</string>
+    <string name="setup_local_ps3_set_sub">Udělte přístup k PS3/config/dev_hdd0 — nebo ke kterékoli složce nad ní či pod ní</string>
+    <string name="setup_local_ps3_folder_sub">Datová složka ARMSX3 — pomocí ✎ vyberte jinou</string>
+    <string name="setup_local_x360_header">Xbox 360 · X360 Mobile</string>
+    <string name="setup_local_x360_set">Nastavit datovou složku X360 Mobile</string>
+    <string name="setup_local_x360_set_sub">V bočním menu výběru složek zvolte X360 Mobile a povolte přístup</string>
+    <string name="setup_local_x360_folder_sub">Datová složka X360 Mobile — pomocí ✎ vyberte jinou</string>
+    <string name="setup_local_xendroid_header">Xbox 360 · XenDroid</string>
+    <string name="setup_local_xendroid_set">Nastavit datovou složku XenDroid</string>
+    <string name="setup_local_xendroid_set_sub">Udělte přístup k Android/data/xendroid.compose — nebo ke kterékoli složce nad ní či pod ní</string>
+    <string name="setup_local_xendroid_folder_sub">Datová složka XenDroid — pomocí ✎ vyberte jinou</string>
+
+    <!-- RetroArch page -->
+    <string name="setup_retroarch_cores_folder">Složka jader</string>
+    <plurals name="setup_retroarch_cores_detected">
+        <item quantity="one">Rozpoznáno %1$d jádro</item>
+        <item quantity="few">Rozpoznána %1$d jádra</item>
+        <item quantity="many">Rozpoznáno %1$d jádra</item>
+        <item quantity="other">Rozpoznáno %1$d jader</item>
+    </plurals>
+    <string name="setup_retroarch_linked">Propojeno</string>
+    <string name="setup_retroarch_relink">Znovu propojit složku</string>
+    <string name="setup_retroarch_relink_sub">Znovu vyberte složku RetroArch</string>
+    <string name="setup_retroarch_recheck">Znovu zkontrolovat jádra</string>
+    <string name="setup_retroarch_recheck_sub">Po instalaci nových jader</string>
+    <string name="setup_retroarch_unlink">Odpojit RetroArch</string>
+    <string name="setup_retroarch_unlink_sub">Vrátit se k nabízení všech vybraných jader</string>
+    <string name="setup_retroarch_intro">RetroArch je nainstalován. Propojte jeho složku, aby se při spouštění her nabízela jen jádra, která skutečně máte — jinak se zobrazí všechna vybraná jádra (neověřeno).</string>
+    <string name="setup_retroarch_link">Propojit složku RetroArch</string>
+    <string name="setup_retroarch_link_sub">Vyberte strom dokumentů com.retroarch</string>
+
+    <!-- Emulators page -->
+    <string name="setup_emulators_empty">Zatím žádné konzole s hrami. Po prohledání složek ROM se zde každá konzole zobrazí s emulátorem, který spustí — kdykoli to změníte v Nastavení ▸ Emulátory.</string>
+    <string name="setup_emulators_none">Žádný</string>
+
+    <!-- Windows games page -->
+    <string name="setup_windows_intro">Vyberte složku s jednou podsložkou na hru. PFP v ní hledá vaše hry pro Windows; nic v ní nemění.</string>
+    <string name="setup_windows_detected">Rozpoznáno</string>
+    <string name="setup_windows_set">Nastavit složku her pro Windows</string>
+    <string name="setup_windows_change">Změnit složku her pro Windows</string>
+    <string name="setup_windows_set_sub">Udělte přístup ke složce, kde jsou hry nainstalovány</string>
+
+    <!-- Hints and touch page -->
+    <string name="setup_hints_enabled">Nápovědy tlačítek</string>
+    <string name="setup_hints_enabled_sub">Nápověda při nečinnosti v XMB, v Nastavení a na obrazovkách médií</string>
+    <string name="setup_hints_delay">Prodleva nápovědy</string>
+    <string name="setup_hints_delay_sub">Jak dlouho čekat, než se nápovědy zobrazí (1–5 sekund)</string>
+    <plurals name="setup_hints_delay_seconds">
+        <item quantity="one">%1$d sekunda</item>
+        <item quantity="few">%1$d sekundy</item>
+        <item quantity="many">%1$d sekundy</item>
+        <item quantity="other">%1$d sekund</item>
+    </plurals>
+    <string name="setup_hints_delay_fraction">%1$s sekundy</string>
+    <string name="setup_hints_touch">Dotykové tlačítko</string>
+    <string name="setup_hints_touch_sub">Tlačítko Seznamu aplikací na obrazovce — Automaticky jej zobrazí po dotyku obrazovky</string>
+    <string name="setup_touch_auto">Automaticky</string>
+    <string name="setup_touch_always_show">Vždy zobrazit</string>
+    <string name="setup_touch_always_hide">Vždy skrýt</string>
+    <string name="setup_hints_summary_on">Zap. · %1$s</string>
+
+    <!-- Home app page -->
+    <string name="setup_home_intro">Android vás požádá o výběr domovské aplikace a potvrzení. Zpět můžete kdykoli přepnout v nastavení Výchozí aplikace v Androidu.</string>
+    <string name="setup_home_current">Aktuální domovská aplikace</string>
+    <string name="setup_home_set">Nastavit jako domovskou aplikaci</string>
+    <string name="setup_home_set_sub">Otevře výběr domovské aplikace v Androidu</string>
+    <string name="setup_home_is_pfp">Play Field Portal</string>
+    <string name="setup_home_not_pfp">Není Play Field Portal</string>
+
+    <!-- Finish page -->
+    <string name="setup_finish_nothing">Zatím nebylo nic nastaveno — všechny složky a služby lze kdykoli přidat v Nastavení.</string>
+    <string name="setup_finish_summary">Souhrn</string>
+    <string name="setup_summary_controller">Ovladač</string>
+    <string name="setup_summary_rom">Knihovna ROM</string>
+    <string name="setup_summary_music">Hudba</string>
+    <string name="setup_summary_video">Video</string>
+    <string name="setup_summary_photo">Fotky</string>
+    <string name="setup_summary_artwork">Knihovna grafiky</string>
+    <string name="setup_summary_vita">Datová složka Vita</string>
+    <string name="setup_summary_ps3">Datová složka PS3</string>
+    <string name="setup_summary_x360">Datová složka X360 Mobile</string>
+    <string name="setup_summary_xendroid">Datová složka XenDroid</string>
+    <string name="setup_summary_windows">Hry pro Windows</string>
+    <string name="setup_summary_hints">Nápovědy tlačítek</string>
+    <string name="setup_summary_home">Domovská aplikace</string>
+    <string name="setup_not_set">Nenastaveno</string>
+    <string name="setup_connected">Připojeno</string>
+    <string name="setup_retroarch_not_linked">Nepropojeno</string>
+    <plurals name="setup_retroarch_cores_count">
+        <item quantity="one">%1$d jádro</item>
+        <item quantity="few">%1$d jádra</item>
+        <item quantity="many">%1$d jádra</item>
+        <item quantity="other">%1$d jader</item>
+    </plurals>
+    <string name="setup_roots_more">%1$s +%2$d další</string>
+    <string name="setup_finish_xmb_header">Rozložení XMB</string>
+    <string name="setup_finish_autofit">Automaticky přizpůsobit rozložení XMB (proporce PSP) — kdykoli lze změnit v Nastavení</string>
+    <string name="setup_finish_open_lm">Otevřít Správce knihovny</string>
+    <string name="setup_finish_open_lm_sub">Přidat konzole a prohledat právě nastavené složky ROM</string>
+    <string name="setup_finish_go_library">Přejít do knihovny</string>
+    <string name="setup_finish_go_library_sub">Přejít rovnou na Všechny hry</string>
+    <string name="setup_finish_done">Dokončit</string>
+    <string name="setup_finish_done_sub">Přejít do launcheru</string>
+
+    <!-- Messages -->
+    <string name="setup_status_testing">Testování…</string>
+    <plurals name="setup_msg_rom_folders_created">
+        <item quantity="one">Vytvořena %1$d složka konzole. Zkopírujte hry do odpovídajících složek.</item>
+        <item quantity="few">Vytvořeny %1$d složky konzolí. Zkopírujte hry do odpovídajících složek.</item>
+        <item quantity="many">Vytvořeno %1$d složky konzolí. Zkopírujte hry do odpovídajících složek.</item>
+        <item quantity="other">Vytvořeno %1$d složek konzolí. Zkopírujte hry do odpovídajících složek.</item>
+    </plurals>
+    <plurals name="setup_msg_rom_folders_created_existing">
+        <item quantity="one">Vytvořena %1$d složka konzole (již existuje: %2$d). Zkopírujte hry do odpovídajících složek.</item>
+        <item quantity="few">Vytvořeny %1$d složky konzolí (již existuje: %2$d). Zkopírujte hry do odpovídajících složek.</item>
+        <item quantity="many">Vytvořeno %1$d složky konzolí (již existuje: %2$d). Zkopírujte hry do odpovídajících složek.</item>
+        <item quantity="other">Vytvořeno %1$d složek konzolí (již existuje: %2$d). Zkopírujte hry do odpovídajících složek.</item>
+    </plurals>
+    <string name="setup_msg_artwork_failed">V této složce nelze založit knihovnu grafiky. Vyberte složku s možností zápisu.</string>
+    <string name="setup_msg_artwork_reconnected">Stávající knihovna grafiky znovu připojena.</string>
+    <string name="setup_msg_artwork_created">Knihovna grafiky vytvořena.</string>
+    <plurals name="setup_msg_artwork_games_linked">
+        <item quantity="one">%1$d hra propojena se soubory, které již ve složce jsou.</item>
+        <item quantity="few">%1$d hry propojeny se soubory, které již ve složce jsou.</item>
+        <item quantity="many">%1$d hry propojeno se soubory, které již ve složce jsou.</item>
+        <item quantity="other">%1$d her propojeno se soubory, které již ve složce jsou.</item>
+    </plurals>
+    <string name="setup_msg_artwork_import_hint">Umístěte média jiných launcherů do její složky import/, aby se shromáždila zde.</string>
+    <string name="setup_msg_import_none_yet">Zatím není co importovat — umístěte soubory do adresáře import/ ve složce grafiky.</string>
+    <string name="setup_msg_import_unreadable">Tento zdroj importu nelze přečíst.</string>
+    <string name="setup_msg_import_empty">Není co importovat — vše již existuje.</string>
+    <string name="setup_msg_import_started">Import „%1$s“ — průběh se zobrazuje v oznámeních; podrobnosti najdete v Nastavení ▸ Import grafiky.</string>
+    <string name="setup_msg_retroarch_linked">RetroArch propojen — nainstalovaná jádra se nyní nabízejí v Emulátorech.</string>
+    <string name="setup_msg_retroarch_rechecked">Jádra RetroArch znovu zkontrolována.</string>
+    <string name="setup_msg_retroarch_unlinked">Propojení s RetroArchem odebráno — dokud jej znovu nepropojíte, nebudou se nabízet žádná jádra RetroArch.</string>
+    <string name="setup_msg_vita_set">Datová složka Vita3K nastavena. Nainstalované tituly lze prohledat z Paměťové karty PS Vita ve Správci knihovny.</string>
+    <string name="setup_msg_vita_released">Datová složka Vita3K uvolněna — soubory na disku zůstaly nedotčeny.</string>
+    <string name="setup_msg_ps3_set">Datová složka PS3 nastavena. Spusťte Automatické přiřazení v Nastavení ▸ Achievementy ▸ Aktualizovat achievementy a propojte trofeje PS3.</string>
+    <string name="setup_msg_ps3_released">Datová složka PS3 uvolněna — soubory na disku zůstaly nedotčeny.</string>
+    <string name="setup_msg_x360_set">Datová složka %1$s nastavena. Spusťte Automatické přiřazení v Nastavení ▸ Achievementy ▸ Aktualizovat achievementy a propojte achievementy Xbox 360.</string>
+    <string name="setup_msg_x360_released">Datová složka %1$s uvolněna — soubory na disku zůstaly nedotčeny.</string>
+    <string name="setup_msg_sgdb_connected">SteamGridDB připojeno</string>
+    <string name="setup_msg_tgdb_connected">TheGamesDB připojeno</string>
+    <string name="setup_msg_igdb_connected">IGDB připojeno</string>
+    <string name="setup_msg_ss_connected">ScreenScraper připojen</string>
+    <string name="setup_msg_ra_connected">RetroAchievements připojeno</string>
+
+    <!-- ROM root scan report -->
+    <string name="setup_rom_scan_no_root">Nejprve přidejte složku ROM v Nastavení ▸ Knihovna ▸ Správce knihovny.</string>
+    <string name="setup_rom_scan_none">Prohledáno: %1$s (%2$s); nebyly nalezeny žádné nové ROM. Zkopírujte hry do odpovídajících složek systémů a zkuste to znovu.</string>
+    <string name="setup_rom_scan_loaded">Načteno: %1$s, %2$s (%3$s).</string>
+    <string name="setup_rom_scan_systems_new">%1$s (%2$s)</string>
+    <plurals name="setup_rom_scan_folders">
+        <item quantity="one">%1$d složka</item>
+        <item quantity="few">%1$d složky</item>
+        <item quantity="many">%1$d složky</item>
+        <item quantity="other">%1$d složek</item>
+    </plurals>
+    <plurals name="setup_rom_scan_systems">
+        <item quantity="one">%1$d systém</item>
+        <item quantity="few">%1$d systémy</item>
+        <item quantity="many">%1$d systému</item>
+        <item quantity="other">%1$d systémů</item>
+    </plurals>
+    <plurals name="setup_rom_scan_new_consoles">
+        <item quantity="one">%1$d nová konzole</item>
+        <item quantity="few">%1$d nové konzole</item>
+        <item quantity="many">%1$d nové konzole</item>
+        <item quantity="other">%1$d nových konzolí</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roms">
+        <item quantity="one">%1$d ROM</item>
+        <item quantity="few">%1$d ROM</item>
+        <item quantity="many">%1$d ROM</item>
+        <item quantity="other">%1$d ROM</item>
+    </plurals>
+    <plurals name="setup_rom_scan_roots">
+        <item quantity="one">%1$d složka ROM</item>
+        <item quantity="few">%1$d složky ROM</item>
+        <item quantity="many">%1$d složky ROM</item>
+        <item quantity="other">%1$d složek ROM</item>
+    </plurals>
+    <plurals name="setup_rom_scan_skipped">
+        <item quantity="one">%1$d složka přeskočena (knihovnu nelze přečíst).</item>
+        <item quantity="few">%1$d složky přeskočeny (knihovnu nelze přečíst).</item>
+        <item quantity="many">%1$d složky přeskočeno (knihovnu nelze přečíst).</item>
+        <item quantity="other">%1$d složek přeskočeno (knihovnu nelze přečíst).</item>
+    </plurals>
+
+    <!-- Media library scans -->
+    <string name="setup_media_add_root_first">Nejprve přidejte kořenovou složku.</string>
+    <string name="setup_media_not_ready">Úložiště této složky ještě není připraveno. Zkuste to znovu za chvíli.</string>
+    <string name="setup_media_scan_failed_title">Prohledání %1$s selhalo</string>
+    <string name="setup_media_scan_finished_title">Prohledání %1$s dokončeno</string>
+    <string name="setup_media_scan_stopped_title">Prohledání %1$s zastaveno</string>
+    <string name="setup_media_scanning_title">Prohledávání: %1$s</string>
+    <string name="setup_media_stop_note">Složka se příště prohledá znovu.</string>
+    <string name="setup_media_stopped">Zastaveno před dokončením</string>
+    <plurals name="setup_media_tracks">
+        <item quantity="one">%1$d skladba</item>
+        <item quantity="few">%1$d skladby</item>
+        <item quantity="many">%1$d skladby</item>
+        <item quantity="other">%1$d skladeb</item>
+    </plurals>
+    <plurals name="setup_media_photos">
+        <item quantity="one">%1$d fotka</item>
+        <item quantity="few">%1$d fotky</item>
+        <item quantity="many">%1$d fotky</item>
+        <item quantity="other">%1$d fotek</item>
+    </plurals>
+    <plurals name="setup_media_videos">
+        <item quantity="one">%1$d video</item>
+        <item quantity="few">%1$d videa</item>
+        <item quantity="many">%1$d videa</item>
+        <item quantity="other">%1$d videí</item>
+    </plurals>
+    <plurals name="setup_media_roots">
+        <item quantity="one">%1$d kořen</item>
+        <item quantity="few">%1$d kořeny</item>
+        <item quantity="many">%1$d kořene</item>
+        <item quantity="other">%1$d kořenů</item>
+    </plurals>
+    <string name="setup_media_found">Nalezeno: %1$s (%2$s).</string>
+</resources>

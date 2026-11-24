@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Music playback notification -->
+    <string name="xmbu_music_channel_name">音樂播放</string>
+    <string name="xmbu_music_channel_description">正在播放的控制項</string>
+    <string name="xmbu_music_notif_previous">上一首</string>
+    <string name="xmbu_music_notif_play_pause">播放/暫停</string>
+    <string name="xmbu_music_notif_next">下一首</string>
+    <string name="xmbu_music_notif_stop">停止</string>
+
+    <!-- Floating push-to-talk overlay button shown over a running game; the text starts with a microphone emoji and two spaces (quoted to keep both spaces) -->
+    <string name="xmbu_ptt_hold">"🎙  按住"</string>
+
+    <!-- Tray notification when a custom boot / Game Boot video cannot play -->
+    <string name="xmbu_clipfail_boot_label">開機序列</string>
+    <string name="xmbu_clipfail_gameboot_label">Game Boot</string>
+    <string name="xmbu_clipfail_boot_message">你的開機影片無法在這部裝置上播放，因此改為播放內建序列。請從 Theme Studio 重新匯出主題（會轉換影片），或在顯示設定中選擇其他片段。</string>
+    <string name="xmbu_clipfail_gameboot_message">你的 Game Boot 影片無法在這部裝置上播放，因此改為播放內建序列。請從 Theme Studio 重新匯出主題（會轉換影片），或在顯示設定中選擇其他片段。</string>
+
+    <!-- Common words reused across the XMB shell screens (buttons, footer prompts, menu titles) -->
+    <string name="xmbu_common_options">選項</string>
+    <string name="xmbu_common_back">返回</string>
+    <string name="xmbu_common_cancel">取消</string>
+    <string name="xmbu_common_done">完成</string>
+    <string name="xmbu_common_close">關閉</string>
+    <string name="xmbu_common_reset">重設</string>
+    <string name="xmbu_common_remove">移除</string>
+    <string name="xmbu_common_open">開啟</string>
+    <string name="xmbu_common_toggle">切換</string>
+    <string name="xmbu_common_search">搜尋</string>
+    <string name="xmbu_common_artwork">圖片</string>
+    <string name="xmbu_common_edit_title">編輯標題</string>
+    <string name="xmbu_common_add_to_card">加入卡片</string>
+    <string name="xmbu_common_on">開啟</string>
+    <string name="xmbu_common_off">關閉</string>
+    <string name="xmbu_common_move">移動</string>
+    <string name="xmbu_common_navigate">導覽</string>
+    <string name="xmbu_common_play">播放</string>
+    <string name="xmbu_common_pause">暫停</string>
+    <string name="xmbu_common_prev_next">上一個 / 下一個</string>
+    <string name="xmbu_common_seek">跳轉</string>
+    <string name="xmbu_common_confirm">確認</string>
+    <string name="xmbu_common_close_search">關閉搜尋</string>
+    <string name="xmbu_common_ellipsis_search">搜尋…</string>
+
+    <!-- App Detail: Options menu rows -->
+    <string name="xmbu_app_opt_favorite">我的最愛</string>
+    <string name="xmbu_app_opt_app_info">應用程式資訊</string>
+    <string name="xmbu_app_opt_hide">全部隱藏</string>
+    <string name="xmbu_app_opt_change_icon">變更圖示</string>
+    <string name="xmbu_app_opt_change_background">變更背景</string>
+    <string name="xmbu_app_opt_reset_artwork">重設所有圖片</string>
+
+    <!-- App Detail: artwork kind names, used inside the messages below -->
+    <string name="xmbu_app_art_type_icon">遊戲圖示</string>
+    <string name="xmbu_app_art_type_hero">主視覺橫幅</string>
+    <string name="xmbu_app_art_type_background">背景</string>
+
+    <!-- App Detail: artwork picker messages. %1$s is an artwork kind name (Game Icon, Hero Banner, Background) -->
+    <string name="xmbu_app_art_no_api_key">尚未設定 SteamGridDB API 金鑰，請在圖片設定中新增</string>
+    <string name="xmbu_app_art_search_failed">搜尋失敗：%1$s</string>
+    <string name="xmbu_app_art_no_results">在 SteamGridDB 上找不到「%1$s」的結果</string>
+    <string name="xmbu_app_art_load_failed">無法載入圖片：%1$s</string>
+    <string name="xmbu_app_art_none_found">在 SteamGridDB 上找不到%1$s圖片</string>
+    <string name="xmbu_app_art_download_failed">無法下載%1$s</string>
+    <string name="xmbu_app_art_import_failed">無法匯入%1$s</string>
+    <string name="xmbu_app_art_updated">已更新%1$s</string>
+    <string name="xmbu_app_art_reset">已重設%1$s</string>
+    <string name="xmbu_app_art_all_reset">已重設所有圖片</string>
+    <string name="xmbu_app_no_launchable_package">這個應用程式沒有可啟動的套件</string>
+    <string name="xmbu_common_launch">啟動</string>
+
+    <!-- App Detail screen -->
+    <string name="xmbu_app_breadcrumb_apps">應用程式</string>
+    <string name="xmbu_app_breadcrumb_android_app">Android 應用程式</string>
+    <string name="xmbu_app_edit_artwork_description">編輯圖片</string>
+    <string name="xmbu_app_no_icon">無圖示</string>
+    <string name="xmbu_app_art_change">變更%1$s</string>
+    <string name="xmbu_app_art_saving">正在儲存…</string>
+    <string name="xmbu_app_art_pick_local">選擇本機檔案</string>
+    <string name="xmbu_app_art_restore_icon">還原原生圖示</string>
+    <string name="xmbu_app_art_remove_custom">移除自訂圖片</string>
+    <string name="xmbu_app_art_picker_hint">"◄ ►  瀏覽   A  選擇   B  返回"</string>
+    <string name="xmbu_app_reset_title">要重設所有圖片嗎？</string>
+    <string name="xmbu_app_reset_message">%1$s 的自訂圖示和背景將被移除，並恢復應用程式本身的圖示。</string>
+
+    <!-- Add to Card (collection) picker panel -->
+    <string name="xmbu_collection_picker_new_row">"＋  新增自訂記憶卡"</string>
+    <string name="xmbu_collection_new_title">新增自訂記憶卡</string>
+    <string name="xmbu_collection_new_placeholder">例如：角色扮演遊戲、正在玩</string>
+    <string name="xmbu_collection_new_create">建立</string>
+    <string name="xmbu_common_sort">排序</string>
+    <string name="xmbu_common_notifications">通知</string>
+
+    <!-- App picker (Add Apps / Remove Apps) -->
+    <string name="xmbu_app_picker_empty">沒有已安裝的應用程式</string>
+    <string name="xmbu_app_picker_no_match">沒有符合「%1$s」的已安裝應用程式</string>
+    <string name="xmbu_app_picker_choose">選擇</string>
+
+    <!-- Arrange mode bars (moving a card or marking games) -->
+    <string name="xmbu_arrange_place">放置</string>
+    <string name="xmbu_arrange_mark">標記</string>
+    <string name="xmbu_arrange_move_left">左移</string>
+    <string name="xmbu_arrange_move_right">右移</string>
+    <string name="xmbu_arrange_move_up">上移</string>
+    <string name="xmbu_arrange_move_down">下移</string>
+
+    <!-- Color Scheme picker overlay -->
+    <string name="xmbu_color_scheme_title">配色</string>
+    <string name="xmbu_color_scheme_tint">色調</string>
+    <string name="xmbu_color_scheme_depth">深淺</string>
+    <string name="xmbu_color_scheme_contrast_top">"%1$s 上方文字  %2$s"</string>
+    <string name="xmbu_color_scheme_contrast_bottom">"%1$s 下方文字  %2$s"</string>
+    <string name="xmbu_color_scheme_custom_title">自訂顏色</string>
+
+    <!-- Customize XMB Icons overlay -->
+    <string name="xmbu_icons_title">自訂 XMB 圖示</string>
+    <string name="xmbu_icons_source_user">你的選擇</string>
+    <string name="xmbu_icons_source_theme">來自主題</string>
+    <string name="xmbu_icons_source_default">預設</string>
+    <string name="xmbu_icons_source_with_column">%1$s · %2$s欄</string>
+    <string name="xmbu_icons_column">欄</string>
+    <string name="xmbu_icons_tab">分頁</string>
+    <string name="xmbu_icons_pick">選擇</string>
+    <string name="xmbu_icons_reset_all">全部重設</string>
+    <string name="xmbu_icons_save_as_theme">儲存為主題</string>
+    <string name="xmbu_icons_save_as_theme_button">儲存為主題…</string>
+
+    <!-- Search box -->
+    <string name="xmbu_game_search_placeholder">搜尋遊戲…</string>
+
+    <!-- Game picker (Add Games to a category) -->
+    <string name="xmbu_picker_in_this_category">在這個類別中</string>
+    <string name="xmbu_picker_in_category">在「%1$s」中</string>
+    <string name="xmbu_picker_custom_cards">自訂記憶卡</string>
+    <string name="xmbu_picker_no_changes">沒有變更</string>
+    <string name="xmbu_picker_menu_view">檢視</string>
+    <string name="xmbu_picker_menu_select_all">全選</string>
+    <string name="xmbu_picker_open_toggle">開啟 / 切換</string>
+    <string name="xmbu_picker_no_games">你的收藏庫中還沒有遊戲</string>
+    <string name="xmbu_picker_add_games">新增遊戲</string>
+    <string name="xmbu_picker_view_mode">檢視：%1$s</string>
+    <string name="xmbu_picker_removing_prefix">"移除中 · "</string>
+    <string name="xmbu_picker_search_placeholder">搜尋這個架子…</string>
+    <string name="xmbu_picker_shelves">架子列表</string>
+    <string name="xmbu_picker_shelf">架子</string>
+
+    <!-- Music browser -->
+    <string name="xmbu_music_breadcrumb_playlists">"音樂  ›  播放清單"</string>
+    <string name="xmbu_music_breadcrumb_music">音樂</string>
+    <string name="xmbu_music_breadcrumb_all_tracks">所有曲目</string>
+    <string name="xmbu_music_resume">繼續播放：%1$s</string>
+
+    <!-- Music player -->
+    <string name="xmbu_music_now_playing">正在播放</string>
+    <string name="xmbu_music_nothing_playing">沒有正在播放的內容</string>
+    <string name="xmbu_music_visualizer">視覺效果</string>
+
+    <!-- Media transport buttons (music and video players): spoken descriptions -->
+    <string name="xmbu_media_previous_track">上一首曲目</string>
+    <string name="xmbu_media_next_track">下一首曲目</string>
+    <string name="xmbu_media_previous_video">上一部影片</string>
+    <string name="xmbu_media_next_video">下一部影片</string>
+    <string name="xmbu_media_back_10">倒轉 10 秒</string>
+    <string name="xmbu_media_forward_10">快轉 10 秒</string>
+    <string name="xmbu_media_playing">播放中</string>
+    <string name="xmbu_media_paused">已暫停</string>
+
+    <!-- Music track picker (add songs to a playlist) -->
+    <string name="xmbu_track_picker_title">新增至「%1$s」</string>
+    <string name="xmbu_track_picker_add">新增</string>
+    <string name="xmbu_track_picker_empty">沒有更多可新增的曲目，所有掃描到的歌曲都已在這個播放清單中。</string>
+
+    <!-- Notification panel and notification detail sheets -->
+    <string name="xmbu_notif_options_description">通知選項</string>
+    <string name="xmbu_notif_task_stopping">%1$s：正在停止…</string>
+    <string name="xmbu_notif_task_detail">%1$s：%2$s</string>
+    <string name="xmbu_notif_kind_scan">掃描</string>
+    <string name="xmbu_notif_kind_metadata">中繼資料</string>
+    <string name="xmbu_notif_kind_achievements">成就</string>
+    <string name="xmbu_notif_kind_system">系統</string>
+    <string name="xmbu_notif_kind_download">下載</string>
+    <string name="xmbu_notif_kind_feed">動態</string>
+    <string name="xmbu_notif_action_go_to_game">前往遊戲</string>
+    <string name="xmbu_notif_action_open_card">開啟記憶卡</string>
+    <string name="xmbu_notif_action_open_settings">開啟設定</string>
+    <string name="xmbu_notif_action_open_category">開啟類別</string>
+    <string name="xmbu_notif_action_review">檢查</string>
+    <string name="xmbu_time_just_now">剛剛</string>
+
+    <!-- XMB shell: share sheet title when sharing a saved icon theme -->
+    <string name="xmbu_share_theme">分享主題</string>
+    <string name="xmbu_move_position">移動中 · 第 %1$d 個，共 %2$d 個</string>
+    <string name="xmbu_common_later">稍後</string>
+
+    <!-- XMB shell dialogs -->
+    <string name="xmbu_shell_rename_shortcut">重新命名捷徑</string>
+    <string name="xmbu_shell_playlist_name">播放清單名稱</string>
+    <string name="xmbu_shell_theme_name">主題名稱</string>
+    <string name="xmbu_shell_source_theme">來自所套用的主題</string>
+    <string name="xmbu_shell_source_device">來自你的裝置</string>
+    <string name="xmbu_shell_source_device_detail">PNG 或 GIF</string>
+    <string name="xmbu_shell_continue">繼續</string>
+    <string name="xmbu_shell_shortcut_title">要新增捷徑嗎？</string>
+    <string name="xmbu_shell_shortcut_message">有應用程式要求新增捷徑「%1$s」，用來開啟 %2$s。只有在你剛剛自行建立這個捷徑時，才新增它。</string>
+    <string name="xmbu_shell_shortcut_add">新增</string>
+    <string name="xmbu_shell_shortcut_ignore">忽略</string>
+    <string name="xmbu_shell_windows_title">完成 Windows 收藏庫設定</string>
+    <string name="xmbu_shell_windows_message">已新增一款 PC 遊戲，但 Windows 遊戲收藏庫尚未設定資料夾。請在收藏庫管理員中進行設定，以便掃描遊戲資料夾和成就。</string>
+    <string name="xmbu_shell_windows_set_up">設定</string>
+    <string name="xmbu_shell_import_position">第 %1$d 個，共 %2$d 個</string>
+    <string name="xmbu_shell_open_playlist">開啟播放清單</string>
+    <string name="xmbu_shell_stop">停止</string>
+    <string name="xmbu_shell_keep_running">繼續執行</string>
+
+    <!-- Launch recovery dialog (a game failed to start) -->
+    <string name="xmbu_recovery_retry">重試</string>
+    <string name="xmbu_recovery_change_emulator">變更模擬器</string>
+    <string name="xmbu_recovery_change_default">變更各系統預設值</string>
+    <string name="xmbu_recovery_copy_diagnostics">複製診斷資訊</string>
+    <string name="xmbu_recovery_title">無法啟動 %1$s</string>
+    <string name="xmbu_recovery_select">選取</string>
+    <string name="xmbu_recovery_dismiss">關閉</string>
+
+    <!-- Artwork folder prompts. "PFP" is the app name -->
+    <string name="xmbu_artfolder_unavailable_title">無法使用圖片資料夾</string>
+    <string name="xmbu_artfolder_unavailable_message">PFP 無法存取 %1$s。在你重新連結前，新圖片會暫停取得。已有的圖片仍會顯示。</string>
+    <string name="xmbu_artfolder_relink">重新連結資料夾</string>
+    <string name="xmbu_artfolder_not_now">暫時不要</string>
+    <string name="xmbu_artfolder_move_title">將圖片移至你擁有的資料夾</string>
+    <string name="xmbu_artfolder_choose">選擇圖片資料夾</string>
+    <string name="xmbu_artfolder_choose_title">選擇圖片資料夾</string>
+    <string name="xmbu_artfolder_choose_message">新圖片會儲存在你擁有的資料夾中。選擇一個資料夾，PFP 就會將圖片儲存在那裡。</string>
+    <string name="xmbu_artfolder_foreign_title">這個資料夾包含另一個圖片庫</string>
+    <string name="xmbu_artfolder_use_library">使用這個圖片庫</string>
+    <string name="xmbu_artfolder_choose_another">選擇其他資料夾</string>
+
+    <!-- Status strip: spoken descriptions of the icons -->
+    <string name="xmbu_status_controller_connected">控制器已連線</string>
+    <string name="xmbu_status_battery">電池</string>
+    <string name="xmbu_status_battery_charging">電池，充電中</string>
+    <string name="xmbu_status_battery_plugged">電池，已接上電源</string>
+
+    <!-- Adjust XMB Layout overlay -->
+    <string name="xmbu_layout_title">調整 XMB 版面配置</string>
+    <string name="xmbu_layout_readout">"縮放 %1$sx    水平 %2$d%%    垂直 %3$d%%"</string>
+    <string name="xmbu_layout_scale">縮放</string>
+    <string name="xmbu_layout_horizontal">水平</string>
+    <string name="xmbu_layout_vertical">垂直</string>
+    <string name="xmbu_layout_sliders">滑桿</string>
+    <string name="xmbu_layout_hide_sliders">隱藏滑桿</string>
+    <string name="xmbu_layout_save">儲存</string>
+
+    <!-- Theme icon picker -->
+    <string name="xmbu_icon_grid_use">使用這個圖示</string>
+    <string name="xmbu_status_cellular_signal">行動網路訊號</string>
+
+    <!-- Notification panel section headers (shown in capitals) and empty state -->
+    <string name="xmbu_notif_header_running">進行中</string>
+    <string name="xmbu_notif_header_earlier">較早</string>
+    <string name="xmbu_notif_empty">沒有通知</string>
+
+    <!-- Video player -->
+    <string name="xmbu_video_fit">符合</string>
+    <string name="xmbu_video_zoom">縮放</string>
+    <string name="xmbu_video_fill">填滿</string>
+    <string name="xmbu_video_speed">播放速度</string>
+    <string name="xmbu_video_subtitles">字幕</string>
+    <string name="xmbu_video_audio_track">音軌</string>
+    <string name="xmbu_video_screen_mode">畫面模式</string>
+    <string name="xmbu_video_none">無</string>
+    <string name="xmbu_video_default">預設</string>
+    <string name="xmbu_video_track">音軌</string>
+    <string name="xmbu_video_err_not_found">找不到影片。</string>
+    <string name="xmbu_video_err_permission">沒有這個檔案的存取權限。</string>
+    <string name="xmbu_video_err_decode">無法在這部裝置上解碼這部影片。</string>
+    <string name="xmbu_video_err_unable">無法播放這部影片。</string>
+    <string name="xmbu_video_go_back">返回</string>
+    <string name="xmbu_video_status">%1$s× · %2$s</string>
+
+    <!-- Photo viewer -->
+    <string name="xmbu_photo_rotate_left">向左旋轉</string>
+    <string name="xmbu_photo_rotate_right">向右旋轉</string>
+    <string name="xmbu_photo_zoom_in">放大</string>
+    <string name="xmbu_photo_zoom_out">縮小</string>
+    <string name="xmbu_photo_reset_zoom">重設縮放</string>
+    <string name="xmbu_photo_set_wallpaper">設為啟動器桌布</string>
+    <string name="xmbu_photo_set_lock_screen">設為鎖定畫面</string>
+    <string name="xmbu_photo_view_info">檢視資訊</string>
+    <string name="xmbu_photo_show_location">顯示檔案位置</string>
+    <string name="xmbu_photo_remove">從收藏庫中移除</string>
+    <string name="xmbu_photo_group_view">檢視</string>
+    <string name="xmbu_photo_group_manage">管理</string>
+    <string name="xmbu_photo_in_folder">位置：%1$s</string>
+    <string name="xmbu_photo_wallpaper_unreadable">無法設定桌布：無法讀取圖片</string>
+    <string name="xmbu_photo_wallpaper_applied">已套用桌布</string>
+    <string name="xmbu_photo_unreadable">無法讀取該相片</string>
+    <string name="xmbu_photo_lock_screen_set">已設定鎖定畫面</string>
+    <string name="xmbu_photo_hide_controls">隱藏控制項</string>
+    <string name="xmbu_photo_show_controls">顯示控制項</string>
+    <string name="xmbu_photo_wallpaper_title">要設為啟動器桌布嗎？</string>
+    <string name="xmbu_photo_wallpaper_note">這會取代 XMB 波浪背景。</string>
+    <string name="xmbu_photo_apply">套用</string>
+    <string name="xmbu_photo_applying">正在套用…</string>
+    <string name="xmbu_photo_remove_message">「%1$s」將從這個收藏庫中移除。不會刪除磁碟上的相片。</string>
+    <string name="xmbu_photo_lock_message">「%1$s」將成為裝置的鎖定畫面圖片，並裁剪以符合螢幕大小。</string>
+    <string name="xmbu_photo_set">設定</string>
+    <string name="xmbu_photo_info_resolution">解析度：%1$s</string>
+    <string name="xmbu_photo_info_taken">拍攝時間：%1$s</string>
+    <string name="xmbu_photo_info_modified">修改時間：%1$s</string>
+    <string name="xmbu_photo_info_size">大小：%1$s</string>
+    <string name="xmbu_photo_info_type">類型：%1$s</string>
+    <string name="xmbu_photo_info_location">位置：%1$s</string>
+    <string name="xmbu_photo_info_file">檔案：%1$s</string>
+
+    <!-- Music visualizer picker -->
+    <string name="xmbu_visualizer_portal">Portal</string>
+    <string name="xmbu_visualizer_ripple">漣漪</string>
+    <string name="xmbu_visualizer_off">關閉</string>
+    <string name="xmbu_visualizer_off_tile">關閉</string>
+
+    <!-- App picker header: how many apps are ticked -->
+    <plurals name="xmbu_app_picker_selected">
+        <item quantity="other">已選取 %d 個</item>
+    </plurals>
+
+    <!-- Arrange mode: how many games are marked -->
+    <plurals name="xmbu_arrange_marked">
+        <item quantity="other">已標記 %d 款</item>
+    </plurals>
+
+    <!-- Game picker header: pending changes -->
+    <plurals name="xmbu_picker_to_add">
+        <item quantity="other">要新增 %d 款</item>
+    </plurals>
+    <plurals name="xmbu_picker_to_remove">
+        <item quantity="other">要移除 %d 款</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_games">
+        <item quantity="other">%1$d 款遊戲 · 已勾選 %2$d 款</item>
+    </plurals>
+    <plurals name="xmbu_picker_shelf_cards">
+        <item quantity="other">%d 張卡片 · 選擇一張即可將其移至這裡</item>
+    </plurals>
+    <plurals name="xmbu_picker_card_games">
+        <item quantity="other">%d 款遊戲</item>
+    </plurals>
+
+    <!-- Music track picker -->
+    <plurals name="xmbu_track_picker_add_count">
+        <item quantity="other">新增 %d 首</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_selected">
+        <item quantity="other">已選取 %d 首</item>
+    </plurals>
+    <plurals name="xmbu_track_picker_add_tracks">
+        <item quantity="other">新增 %d 首曲目</item>
+    </plurals>
+
+    <!-- Notification age -->
+    <plurals name="xmbu_time_minutes_ago">
+        <item quantity="other">%d 分鐘前</item>
+    </plurals>
+    <plurals name="xmbu_time_hours_ago">
+        <item quantity="other">%d 小時前</item>
+    </plurals>
+
+    <!-- Artwork folder prompts. %d is the number of images stored inside the app -->
+    <plurals name="xmbu_artfolder_move_message">
+        <item quantity="other">有 %d 張圖片儲存在應用程式內，解除安裝時將會遺失。選擇一個資料夾，PFP 就會將它們移到那裡。</item>
+    </plurals>
+    <plurals name="xmbu_artfolder_foreign_message">
+        <item quantity="other">%1$s 是由另一次安裝所設定的（%2$d 個檔案）。使用它，PFP 就會將你的遊戲重新連結至其中的圖片；或選擇其他資料夾。</item>
+    </plurals>
+
+    <!-- Status strip: spoken description of the notification bell when some are unread -->
+    <plurals name="xmbu_status_notifications_unread">
+        <item quantity="other">通知，%d 則未讀</item>
+    </plurals>
+</resources>

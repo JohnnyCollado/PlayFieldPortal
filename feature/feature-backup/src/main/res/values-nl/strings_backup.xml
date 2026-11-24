@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Backup failures -->
+    <string name="bak_no_folder">Geen back-upmap ingesteld. Kies er een via Instellingen → Back-up en herstel → Back-upmap.</string>
+    <string name="bak_too_large">Deze back-up zou te groot zijn om te herstellen (maximaal 20.000 bestanden en 2 GB). Verwijder ongebruikte artwork of media en probeer het opnieuw.</string>
+    <string name="bak_write_failed">Kan niet naar de back-upmap schrijven. Kies de back-upmap opnieuw in Instellingen ▸ Systeem ▸ Back-up en herstel.</string>
+    <string name="bak_unknown_error">Onbekende fout</string>
+
+    <!-- Restore failures -->
+    <string name="bak_open_failed">Kan back-upbestand niet openen</string>
+    <string name="bak_missing_manifest">Manifest ontbreekt in back-up</string>
+    <string name="bak_format_too_new">Back-upformaat v%1$d is nieuwer dan deze app ondersteunt (v%2$d)</string>
+    <string name="bak_no_uri">Geen URI opgegeven</string>
+
+    <!-- Notification titles -->
+    <string name="bak_task_created">Back-up gemaakt</string>
+    <string name="bak_task_failed">Back-up mislukt</string>
+    <string name="bak_task_restored">Back-up hersteld</string>
+    <string name="bak_task_restore_failed">Herstellen mislukt</string>
+    <string name="bak_results_restored">Hersteld</string>
+    <plurals name="bak_items_skipped">
+        <item quantity="one">%d item overgeslagen</item>
+        <item quantity="other">%d items overgeslagen</item>
+    </plurals>
+
+    <!-- Items turned away during restore -->
+    <string name="bak_refused_out_of_root">\'%1$s\' geweigerd: niet in een herstelbare map</string>
+    <string name="bak_refused_profiles_unparseable">Emulatorprofielen geweigerd: bestand kan niet worden verwerkt</string>
+    <string name="bak_refused_profile">Emulatorprofiel \'%1$s\' geweigerd: %2$s</string>
+</resources>

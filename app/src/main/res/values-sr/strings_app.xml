@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Localization slice G1: app module -->
+    <!-- Title of the system chooser listing other home apps (launchers) -->
+    <string name="app_switch_launcher_chooser">Промени лаунчер</string>
+    <!-- Name shown for an app shortcut request that arrived without a name -->
+    <string name="app_shortcut_fallback_name">Пречица</string>
+    <!-- Name shown for the app requesting a shortcut when its name cannot be read -->
+    <string name="app_shortcut_fallback_host">Друга апликација</string>
+</resources>

@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ===== Shared Shiba page text ===== -->
+    <string name="shiba_prompt_select">选择</string>
+    <string name="shiba_prompt_close">关闭</string>
+    <string name="shiba_prompt_done">完成</string>
+    <string name="shiba_prompt_back">返回</string>
+    <string name="shiba_prompt_options">选项</string>
+    <string name="shiba_prompt_search">搜索</string>
+    <string name="shiba_prompt_type">输入</string>
+    <string name="shiba_prompt_change_view">切换视图</string>
+    <string name="shiba_prompt_switch_source">切换来源</string>
+    <string name="shiba_prompt_view_game">查看游戏</string>
+    <string name="shiba_prompt_view_achievements">查看成就</string>
+    <string name="shiba_prompt_attempt_match">尝试匹配</string>
+    <string name="shiba_prompt_search_online">在线搜索</string>
+    <string name="shiba_prompt_auto_match">自动匹配</string>
+    <string name="shiba_prompt_pick_game_folder">选择游戏文件夹</string>
+    <string name="shiba_prompt_reveal">显示</string>
+    <string name="shiba_prompt_hide">隐藏</string>
+    <string name="shiba_prompt_navigate">导航</string>
+
+    <!-- Buttons in the Auto-Match panels. -->
+    <string name="shiba_action_yes">是</string>
+    <string name="shiba_action_no">否</string>
+    <string name="shiba_action_cancel">取消</string>
+    <string name="shiba_action_close">关闭</string>
+    <string name="shiba_action_link">关联</string>
+
+    <string name="shiba_options_title">选项</string>
+    <string name="shiba_options_sort">排序</string>
+    <string name="shiba_options_provider">服务</string>
+    <string name="shiba_options_update_installed">更新已安装游戏的成就</string>
+    <string name="shiba_options_updating">正在更新…</string>
+
+    <string name="shiba_sort_newest">最新</string>
+    <string name="shiba_sort_rarest">最稀有</string>
+    <string name="shiba_sort_tier">等级</string>
+    <string name="shiba_sort_earned">已获得</string>
+    <string name="shiba_filter_all">全部</string>
+
+    <!-- Coin tier names. -->
+    <string name="shiba_tier_bronze">铜</string>
+    <string name="shiba_tier_silver">银</string>
+    <string name="shiba_tier_gold">金</string>
+    <string name="shiba_tier_platinum">白金</string>
+
+    <!-- Header statistics labels -->
+    <string name="shiba_stat_shiba_level">SHIBA 等级</string>
+    <string name="shiba_stat_next_level">下一级</string>
+    <string name="shiba_stat_total_coins">金币总数</string>
+    <string name="shiba_stat_total">总计</string>
+
+    <string name="shiba_platform_not_installed">%1$s · 未安装</string>
+
+    <!-- Relative times -->
+    <string name="shiba_time_just_now">刚刚</string>
+    <string name="shiba_time_minutes_ago">%1$d 分钟前</string>
+    <string name="shiba_time_hours_ago">%1$d 小时前</string>
+    <string name="shiba_time_yesterday">昨天</string>
+    <plurals name="shiba_time_days_ago">
+        <item quantity="other">%1$d 天前</item>
+    </plurals>
+
+    <string name="shiba_search_games_placeholder">搜索游戏…</string>
+
+    <!-- ===== Player Status ===== -->
+    <string name="shiba_player_status_title">玩家状态</string>
+    <string name="shiba_player_status_no_rarest">尚无最稀有成就。</string>
+    <string name="shiba_player_status_rarest_unlocked">已解锁的最稀有成就</string>
+    <string name="shiba_player_status_rarity_caption">的玩家拥有</string>
+    <string name="shiba_player_status_game_and_time">%1$s · %2$s</string>
+    <plurals name="shiba_status_checking_games">
+        <item quantity="other">正在检查第 %1$d 个游戏，共 %2$d 个…</item>
+    </plurals>
+    <string name="shiba_status_updating_achievements">正在更新已安装游戏的成就…</string>
+
+    <!-- ===== Achievements library (Tracked / Untracked Games) ===== -->
+    <string name="shiba_library_view_tracked">已追踪的游戏</string>
+    <string name="shiba_library_view_untracked">未追踪的游戏</string>
+    <string name="shiba_library_breadcrumb">成就 / %1$s</string>
+    <plurals name="shiba_library_game_count">
+        <item quantity="other">%1$d 个游戏</item>
+    </plurals>
+    <string name="shiba_library_empty_no_match">没有与“%1$s”匹配的游戏。</string>
+    <string name="shiba_library_empty_tracked">尚无已追踪的游戏。</string>
+    <string name="shiba_library_empty_untracked">所有符合条件的游戏均已追踪。</string>
+    <string name="shiba_library_sort_title_asc">标题 A–Z</string>
+    <string name="shiba_library_sort_title_desc">标题 Z–A</string>
+    <string name="shiba_library_sort_progress_asc">进度从低到高</string>
+    <string name="shiba_library_sort_progress_desc">进度从高到低</string>
+    <string name="shiba_library_sort_platform_asc">平台 A–Z</string>
+    <string name="shiba_library_sort_platform_desc">平台 Z–A</string>
+    <string name="shiba_library_search_online">在线搜索</string>
+    <string name="shiba_library_search_online_subtitle">查找不在此设备上的游戏</string>
+    <string name="shiba_library_awaiting_sync">等待同步</string>
+
+    <!-- ===== A game's Shiba Coins page ===== -->
+    <string name="shiba_coins_search_placeholder">搜索金币…</string>
+    <string name="shiba_coins_stat_completion">完成度</string>
+    <string name="shiba_coins_stat_earned">已获得</string>
+    <string name="shiba_coins_tab_all">全部 %1$d</string>
+    <string name="shiba_coins_tab_earned">已获得 %1$d</string>
+    <string name="shiba_coins_tab_locked">未解锁 %1$d</string>
+    <string name="shiba_coins_synced">同步于 %1$s</string>
+    <string name="shiba_coins_not_linked">未关联</string>
+    <string name="shiba_coins_never_synced">从未同步</string>
+    <string name="shiba_coins_owned_on_steam">已在 Steam 上拥有</string>
+    <string name="shiba_coins_tracked_locally">本地追踪</string>
+
+    <!-- Empty-list messages -->
+    <string name="shiba_coins_empty_no_match">没有与“%1$s”匹配的金币。</string>
+    <string name="shiba_coins_empty_none_earned">尚未获得金币。</string>
+    <string name="shiba_coins_empty_all_earned">已获得所有金币。</string>
+    <string name="shiba_coins_empty_default">没有可显示的金币。</string>
+
+    <!-- Options menu rows. -->
+    <string name="shiba_coins_options_update">更新成就</string>
+    <string name="shiba_coins_options_change_match">更改匹配</string>
+    <string name="shiba_coins_options_unlink">取消关联游戏</string>
+
+    <!-- Unlink confirmation -->
+    <string name="shiba_coins_unlink_title">取消关联游戏？</string>
+    <string name="shiba_coins_unlink_message">%1$s 将不再匹配，其金币将不再显示。已缓存的金币会保留，重新匹配后即会恢复。</string>
+    <string name="shiba_coins_unlink_confirm">取消关联</string>
+
+    <!-- Coin rows -->
+    <string name="shiba_coin_hidden_title">隐藏金币</string>
+    <string name="shiba_coin_hidden_hint">继续游戏，或按确认键显示</string>
+    <string name="shiba_coin_description_secret">Steam 对此项的描述保密</string>
+    <string name="shiba_coin_metric_of_players">的玩家</string>
+    <string name="shiba_coin_status_earned">已获得</string>
+    <string name="shiba_coin_status_locked">未解锁</string>
+    <string name="shiba_platinum_crown_title">白金皇冠</string>
+    <string name="shiba_platinum_crown_description">获得此游戏中的其他所有金币</string>
+    <string name="shiba_platinum_crown_metric">已获得金币</string>
+
+    <!-- Auto-Match panel for a game that is not linked yet. -->
+    <string name="shiba_link_not_linked_yet_game">此游戏尚未关联</string>
+    <string name="shiba_link_not_linked_yet">尚未关联</string>
+    <string name="shiba_link_steam_body">自动匹配会先询问这是否为正版 Steam 副本，然后通过 Steam 进行匹配，或扫描你的游戏文件夹以查找 Steam 模拟器数据。</string>
+    <string name="shiba_link_retro_body">RetroAchievements 通过 ROM 哈希值识别游戏。自动匹配会计算此 ROM 的哈希值并进行查找，只有在 RetroAchievements 上登记过的已验证镜像才能关联。</string>
+    <string name="shiba_link_local_steam_body">选择此游戏的文件夹后，PFP 会读取其 Steam App ID：如有 steam_appid.txt 则从中读取，否则通过标题进行匹配。PFP 会记住该文件夹，之后无需再次查找。</string>
+    <string name="shiba_link_vita_body">PS Vita 奖杯会通过 Vita3K 自动关联。请在库中设置你的 Vita3K 数据文件夹并扫描，即可关联此游戏。</string>
+    <string name="shiba_link_ps3_body">PS3 奖杯通过游戏自身的光盘关联。请在库中设置你的 PS3 数据文件夹，然后使用自动匹配。</string>
+    <string name="shiba_link_x360_body">Xbox 360 成就通过游戏自身的 Title ID 关联。请在库中设置 X360 Mobile 或 XenDroid 数据文件夹，然后使用自动匹配。</string>
+    <string name="shiba_link_auto_match">自动匹配</string>
+    <string name="shiba_link_matching">正在匹配…</string>
+    <string name="shiba_link_pick_game_folder">选择游戏文件夹</string>
+
+    <string name="shiba_link_copy_title">这是正版 Steam 副本吗？</string>
+    <string name="shiba_link_copy_body">正版副本会与你的 Steam 帐号匹配。其他副本则通过游戏自身的文件夹进行追踪，PFP 会请你指定该文件夹。</string>
+
+    <string name="shiba_link_folder_title">此游戏位于哪个文件夹？</string>
+    <string name="shiba_link_folder_body">请选择游戏自身的文件夹，即其 .exe 所在的文件夹。PFP 会从中读取 Steam App ID，并追踪模拟器写入其中的解锁记录。你的 Windows 游戏可以放在任何位置，PFP 会记住此游戏的位置，无需再次查找。</string>
+
+    <string name="shiba_link_identify_title_steam">正在查找 Steam 匹配项…</string>
+    <string name="shiba_link_identify_title_appid">正在确定 Steam App ID…</string>
+    <string name="shiba_link_identify_body_steam">正在 Steam 上搜索此游戏的标题。选择正确的结果即可重新关联。</string>
+    <string name="shiba_link_identify_body_appid">正在从文件夹中读取 steam_appid.txt；如果没有该文件，则通过 Steam 匹配游戏标题。</string>
+
+    <string name="shiba_link_kit_title">该文件夹中还没有成就列表</string>
+    <string name="shiba_link_kit_body_generic">模拟器需要成就列表才能记录解锁。</string>
+    <string name="shiba_link_kit_body">“%1$s”的 Steam App ID 为 %2$s，但模拟器没有可用于记录的成就列表。“安装并关联”会将 achievements.json、stats.json 和 configs.user.ini 写入该文件夹，创建 saves 文件夹，并将 steam_api64.dll 重命名为 steam_api64_o.dll，以便内置模拟器通过它加载。请先备份此游戏的存档。“仅关联”会以 0%% 进度追踪，不再写入其他内容。</string>
+    <string name="shiba_link_kit_installer_off">“安装并关联”需要在成就设置中开启“安装 Goldberg 并转换游戏”。</string>
+    <string name="shiba_link_kit_install">安装并关联</string>
+    <string name="shiba_link_kit_link_only">仅关联</string>
+
+    <string name="shiba_link_no_emu_title">该文件夹中没有可追踪的内容</string>
+    <string name="shiba_link_no_emu_default">该文件夹中没有 Steam 模拟器数据。</string>
+    <string name="shiba_link_try_another_folder">尝试其他文件夹</string>
+
+    <string name="shiba_link_appid_title">未找到自动匹配项</string>
+    <string name="shiba_link_appid_body">请输入该游戏的 Steam App ID：</string>
+    <string name="shiba_link_appid_field">Steam App ID</string>
+
+    <!-- Messages shown on the page after linking or syncing. -->
+    <string name="shiba_coins_folder_unreadable">无法读取该文件夹。请重新选择，或重新挂载其所在的存储设备。</string>
+    <string name="shiba_coins_linked_to">已关联到 %1$s（appid %2$s）。</string>
+    <string name="shiba_coins_nothing_written">未写入任何内容。请在“游戏详情 ▸ 匹配游戏”中设置该游戏的 Steam 匹配项，然后再次使用自动匹配，PFP 将使用该 ID。</string>
+    <string name="shiba_coins_appid_not_number">Steam App ID 是一个数字。请前往 steamdb.info 查看该游戏的更多信息</string>
+    <string name="shiba_coins_appid_no_match">App ID %1$s 不匹配。请前往 steamdb.info 查看该游戏的更多信息</string>
+    <string name="shiba_coins_sync_not_linked">请先将此游戏关联到服务 ID</string>
+    <string name="shiba_coins_sync_not_installed">此游戏未安装，显示的是已保存的成就</string>
+    <string name="shiba_coins_sync_missing_credentials">请在“设置 ▸ 成就 ▸ 服务凭据”中添加你的密钥</string>
+    <string name="shiba_coins_sync_profile_private">你的 Steam 个人资料中的游戏详情为私密</string>
+    <string name="shiba_coins_sync_not_found">未找到此游戏的成就</string>
+    <string name="shiba_coins_sync_failed">同步失败：%1$s</string>
+
+    <!-- ===== Video Detail ===== -->
+    <string name="shiba_video_play">播放</string>
+    <string name="shiba_video_resume">继续播放</string>
+    <string name="shiba_video_restart">从头开始</string>
+    <string name="shiba_video_resume_at">从 %1$s 继续播放</string>
+    <string name="shiba_video_group_library">库</string>
+    <string name="shiba_video_group_customize">自定义</string>
+    <string name="shiba_video_group_manage">管理</string>
+    <string name="shiba_video_favorite">收藏夹</string>
+    <string name="shiba_video_favorite_on">开</string>
+    <string name="shiba_video_favorite_off">关</string>
+    <string name="shiba_video_add_to_playlist">添加到播放列表</string>
+    <string name="shiba_video_create_playlist">新建播放列表</string>
+    <string name="shiba_video_edit_title">编辑标题</string>
+    <string name="shiba_video_change_thumbnail">更换缩略图</string>
+    <string name="shiba_video_view_information">查看信息</string>
+    <string name="shiba_video_show_location">显示文件位置</string>
+    <string name="shiba_video_remove">从库中移除</string>
+    <string name="shiba_video_remove_message">“%1$s”将从此库中移除。磁盘上的文件不会被删除。</string>
+    <string name="shiba_video_remove_confirm">移除</string>
+    <string name="shiba_video_new_playlist_title">新建播放列表</string>
+    <string name="shiba_video_new_playlist_placeholder">播放列表名称</string>
+    <string name="shiba_video_new_playlist_create">创建</string>
+    <string name="shiba_video_launching">正在启动…</string>
+    <string name="shiba_video_player_ask">外部播放器</string>
+    <string name="shiba_video_player_fallback">外部播放器</string>
+    <string name="shiba_video_launch_error_title">无法播放视频</string>
+    <string name="shiba_video_added_favorite">已添加到收藏夹</string>
+    <string name="shiba_video_removed_favorite">已从收藏夹中移除</string>
+    <string name="shiba_video_import_failed">无法导入图片</string>
+    <string name="shiba_video_thumbnail_updated">缩略图已更新</string>
+    <string name="shiba_video_location_in">位于：%1$s</string>
+    <string name="shiba_video_info_duration">时长：%1$s</string>
+    <string name="shiba_video_info_resolution">分辨率：%1$s</string>
+    <string name="shiba_video_info_format">格式：%1$s</string>
+    <string name="shiba_video_info_type">类型：%1$s</string>
+    <string name="shiba_video_info_size">大小：%1$s</string>
+    <string name="shiba_video_info_location">位置：%1$s</string>
+    <string name="shiba_video_info_file">文件：%1$s</string>
+
+    <!-- ===== Manual viewer ===== -->
+    <string name="shiba_manual_failed">无法显示此说明书。</string>
+    <string name="shiba_manual_page_description">%1$s：说明书第 %2$d 页</string>
+    <string name="shiba_manual_footer_hint">"◀ ▶  翻页   •   ▲ ▼  滚动   •   B  关闭"</string>
+
+</resources>

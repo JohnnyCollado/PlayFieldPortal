@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Voice microphone sensitivity (Discord) -->
+    <string name="data_mic_sensitivity_auto">Automática</string>
+    <string name="data_mic_sensitivity_high">Alta</string>
+    <string name="data_mic_sensitivity_low">Baixa · filtra cliques</string>
+    <string name="data_mic_sensitivity_minimal">Mínima · só voz alta</string>
+
+    <!-- Discord sign-in errors -->
+    <string name="data_discord_offline">Está offline. Volte a ligar-se à internet e tente novamente.</string>
+    <string name="data_discord_unreachable">Não foi possível aceder ao Discord</string>
+    <string name="data_discord_signin_network_error">Erro de rede ao iniciar sessão</string>
+
+    <!-- Music and video players -->
+    <string name="data_music_no_player">Nenhum leitor de música conseguiu abrir esta faixa. Instale um leitor ou escolha um em Definições → Música.</string>
+    <string name="data_video_no_player_open">Nenhum leitor de vídeo conseguiu abrir este ficheiro. Instale um leitor ou escolha um em Definições → Vídeo.</string>
+    <string name="data_video_chooser_title">Reproduzir vídeo com…</string>
+    <string name="data_video_none_installed">Nenhum leitor de vídeo instalado.</string>
+    <string name="data_video_bad_location">O local deste vídeo é inválido.</string>
+    <string name="data_video_unreachable">Este ficheiro de vídeo não foi encontrado ou o acesso foi perdido. Tente verificar novamente a biblioteca.</string>
+    <string name="data_video_player_cannot_open">%1$s não consegue abrir este vídeo ou não está instalado.</string>
+    <string name="data_video_that_player">Esse leitor</string>
+    <string name="data_video_none_installed_for_file">Nenhum leitor de vídeo instalado para abrir este ficheiro.</string>
+
+    <!-- Lock screen image -->
+    <string name="data_lockscreen_unreadable">Não foi possível ler essa imagem</string>
+    <string name="data_lockscreen_rejected">Este dispositivo não aceitou uma imagem de ecrã de bloqueio</string>
+
+    <!-- PSP theme import (.ptf) -->
+    <string name="data_ptf_unreadable">Não foi possível ler o ficheiro (ou é demasiado grande)</string>
+    <string name="data_ptf_not_ptf">Não é um ficheiro de tema do PSP (.ptf)</string>
+    <string name="data_ptf_unparseable">Não foi possível interpretar o ficheiro de tema</string>
+    <string name="data_ptf_wallpaper_missing">O tema não tem imagem de fundo</string>
+    <string name="data_ptf_wallpaper_unsupported">Este tema comprime a imagem de fundo com um método não compatível</string>
+    <string name="data_ptf_wallpaper_damaged">A imagem de fundo do tema está danificada e não pôde ser descodificada</string>
+    <string name="data_ptf_save_failed">Não foi possível guardar o tema</string>
+
+    <!-- Custom media names -->
+    <string name="data_custom_video">Vídeo personalizado</string>
+    <string name="data_custom_sound">Som personalizado</string>
+
+    <!-- Controllers -->
+    <string name="data_controller_fallback_name">Comando</string>
+</resources>

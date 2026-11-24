@@ -1,0 +1,330 @@
+# Theme Studio in ja. English<TAB>translation; {0} {1} are gaps filled at run time.
+New	新規
+Open…	開く…
+Upgrade folder…	フォルダーをアップグレード…
+Convert .ptf…	.ptf を変換…
+Batch convert…	一括変換…
+Unpack assets…	アセットを展開…
+Undo	元に戻す
+Redo	やり直す
+Export .pfptheme…	.pfptheme を書き出す…
+Import PSP theme ▾	PSP テーマをインポート ▾
+Working…	処理中…
+Open ▾	開く ▾
+Open: {0} ▾	開く: {0} ▾
+XMB (back to the crossbar)	XMB（クロスバーに戻る）
+Stop {0}	{0} を停止
+Play {0}	{0} を再生
+Video only — sound plays on the device	映像のみ — 音はデバイスで再生されます
+This theme uses an older format. Saving upgrades it to the current one.	このテーマは古い形式です。保存すると現在の形式にアップグレードされます。
+See changes	変更を見る
+Something went wrong	問題が発生しました
+OK	OK
+Cancel	キャンセル
+Open theme	テーマを開く
+PSP theme to convert	変換する PSP テーマ
+Export theme	テーマを書き出す
+Info	情報
+Color	カラー
+Background	背景
+Legibility	読みやすさ
+Layout	レイアウト
+Icons	アイコン
+Sounds	サウンド
+Boot & Game Boot	Boot と Game Boot
+Export check	書き出しチェック
+Untitled	無題
+Video	ビデオ
+Image	画像
+Wave	ウェーブ
+Not set	未設定
+Set	設定済み
+Preview only	プレビューのみ
+None custom	カスタムなし
+{0} custom	カスタム {0}
+None set	未設定
+{0} set	{0} 件設定
+{0} of 2	{0} / 2
+Ready	準備完了
+Untitled Theme	無題のテーマ
+App Drawer	アプリドロワー
+Settings	設定
+App Picker	アプリピッカー
+Game Picker	ゲームピッカー
+Artwork Studio	アートワークスタジオ
+Game Detail Screen	ゲーム詳細画面
+Achievement Screen	実績画面
+Per-Game Achievement Screen	ゲーム別実績画面
+Lock Screen	ロック画面
+Boot	Boot
+Game Boot	Game Boot
+In this file	このファイルの内容
+Nothing embedded yet	まだ何も埋め込まれていません
+Theme name	テーマ名
+Author	作者
+Short description	短い説明
+New theme — not saved yet	新しいテーマ — 未保存
+Saved: name, author and description travel inside the .pfptheme. The updated date is set when you export.	保存内容: 名前、作者、説明は .pfptheme 内に保存されます。更新日は書き出し時に設定されます。
+Accent color	アクセントカラー
+Auto (from the wallpaper)	自動（壁紙から）
+Custom	カスタム
+Each new wallpaper or video sets the accent. Pick a color to keep your own.	新しい壁紙やビデオごとにアクセントが設定されます。自分の色を保つには色を選んでください。
+Your accent stays when the wallpaper or video changes.	壁紙やビデオが変わってもアクセントは変わりません。
+Custom accent	カスタムアクセント
+Icon color	アイコンの色
+Auto (follows the theme)	自動（テーマに従う）
+White	白
+Main text color	メインテキストの色
+Titles and labels: the crossbar, list rows and status strip, and every screen.	タイトルとラベル: クロスバー、リスト行、ステータスバー、すべての画面。
+Auto (built-in colors)	自動（組み込みの色）
+Use my exact color	指定した色をそのまま使う
+Subtext color	サブテキストの色
+Subtitles, sublabels and values.	サブタイトル、サブラベル、値。
+Same as main text	メインテキストと同じ
+Source	ソース
+Wave motion	波の動き
+Video playback	動画の再生
+Moving	動く
+Moving, dim	動く（暗め）
+Still	静止
+Still, dim	静止（暗め）
+None — live wave background	なし — ライブ波の背景
+Replace…	置き換え…
+Re-crop…	再トリミング…
+Clear	消去
+Clear video	動画を消去
+Pick frame…	フレームを選択…
+The preview always shows a frozen wave; the style plays on the device.	プレビューには常に静止した波が表示されます。スタイルはデバイス上で再生されます。
+Lock screen	ロック画面
+None — the theme leaves the device lock screen alone	なし — テーマはデバイスのロック画面を変更しません
+Choose Image…	画像を選択…
+Use Poster	ポスターを使用
+Use Wallpaper	壁紙を使用
+A still only. The device crops it to its own screen, and only sets it when the user agrees on apply.	静止画のみ。デバイスが自分の画面に合わせて切り抜き、適用時にユーザーが同意した場合にのみ設定します。
+Crop	切り抜き
+Zoom	ズーム
+Center	中央
+Apply	適用
+Reset	リセット
+Text	テキスト
+Automatic	自動
+None	なし
+Drop shadow	ドロップシャドウ
+Outline	アウトライン
+Contrast plate	コントラストプレート
+Offset shadow (dark)	オフセットシャドウ（暗）
+Offset shadow (light)	オフセットシャドウ（明）
+Contour dark	輪郭（暗）
+Contour light	輪郭（明）
+Contour auto	輪郭（自動）
+Solid unfocused icons	非フォーカスのアイコンを塗りつぶす
+Older launchers ignore these and show plain text and icons.	古いランチャーはこれらを無視し、通常のテキストとアイコンを表示します。
+Preview with my layout	自分のレイアウトでプレビュー
+Preview only — never saved in the theme. Remembered on this computer.	プレビュー専用 — テーマには保存されません。このコンピューターに記憶されます。
+Use my layout in the preview	プレビューで自分のレイアウトを使用
+Scale — {0}	スケール — {0}
+Horizontal — {0}	水平 — {0}
+Vertical — {0}	垂直 — {0}
+Biblically Accurate preview	原典に忠実なプレビュー
+Adjust on preview	プレビュー上で調整
+All {0}	すべて {0}
+Crossbar {0}	クロスバー {0}
+Items {0}	項目 {0}
+Consoles {0}	コンソール {0}
+Physical Media {0}	物理メディア {0}
+On screen	画面上
+Customized {0}	カスタマイズ済み {0}
+Showing {0} of {1}	{1} 件中 {0} 件を表示
+Select a slot to see it at real size, replace it, or export its template.	スロットを選択すると、実寸で確認、置き換え、テンプレートの書き出しができます。
+Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.	画像ファイル（png, gif, jpg, bmp, webp）をスロットにドロップするとアイコンを置き換えられます。
+Import icon pack… ▾	アイコンパックを読み込む… ▾
+Export templates…	テンプレートを書き出す…
+Reset all	すべてリセット
+Local file…	ローカルファイル…
+From theme…	テーマから…
+Export template	テンプレートを書き出す
+Menu sounds	メニューサウンド
+Anything you leave empty keeps the built-in sound. Clips must fit each row's cap.	空のままにした項目は内蔵サウンドのままになります。クリップは各行の上限に収める必要があります。
+Navigation	ナビゲーション
+Category change	カテゴリ変更
+Options panel	オプションパネル
+Back / cancel	戻る / キャンセル
+Confirm / apply	決定 / 適用
+Error / invalid	エラー / 無効
+Notification	通知
+Ambience (loops)	環境音（ループ）
+Built-in	内蔵
+Up to {0}	最大 {0}
+Choose…	選択…
+▶ Play	▶ 再生
+■ Stop	■ 停止
+Boot sequences	起動シーケンス
+Choose the built-in sequence or your own MP4 for each.	それぞれに内蔵シーケンスまたは自分の MP4 を選択します。
+The launcher's own {0} sequence.	ランチャー独自の {0} シーケンス。
+Your own MP4 (H.264).	自分の MP4（H.264）。
+Choose MP4…	MP4 を選択…
+Play in preview	プレビューで再生
+Use built-in	内蔵を使用
+All media is within limits	すべてのメディアが制限内です
+Opens on older launchers	古いランチャーでも開けます
+Fix the items marked ✕ before exporting.	書き出す前に ✕ の付いた項目を修正してください。
+A preview image of the finished theme is rendered when you export and shows as its thumbnail in the launcher's theme gallery.	完成したテーマのプレビュー画像は書き出し時に作成され、ランチャーのテーマギャラリーでサムネイルとして表示されます。
+Opened {0}	{0} を開きました
+Exported {0}	{0} を書き出しました
+Folder of .pfptheme files to upgrade	アップグレードする .pfptheme ファイルのフォルダー
+Folder with .ptf files	.ptf ファイルのフォルダー
+Output folder for .pfptheme files	.pfptheme ファイルの出力先フォルダー
+PSP theme to unpack	展開する PSP テーマ
+Folder for unpacked assets	展開した素材の保存先フォルダー
+Converting {0}  ({1}/{2})	{0} を変換中  ({1}/{2})
+This theme was made by a newer version (format v{0}). Parts this version doesn't know are kept when you save.	このテーマは新しいバージョン（形式 v{0}）で作られています。このバージョンが知らない部分は保存時もそのまま残ります。
+CXMB theme	CXMB テーマ
+This file is a CXMB custom firmware theme (.ctf). Those replace PSP system files rather than describing wallpaper and colors, so they can't be converted. Official PSP themes (.ptf) open fine.	このファイルはカスタムファームウェア用の CXMB テーマ（.ctf）です。壁紙や色を記述するのではなく PSP のシステムファイルを置き換えるものなので、変換できません。公式の PSP テーマ（.ptf）は問題なく開けます。
+Batch conversion finished	一括変換が完了しました
+Converted: {0}	変換済み: {0}
+Converted with caveats: {0}	注意付きで変換: {0}
+Skipped (CXMB): {0} — {1}	スキップ（CXMB）: {0} — {1}
+Failed: {0}	失敗: {0}
+Theme upgrade finished	テーマのアップグレードが完了しました
+Upgraded: {0} (originals kept as .bak)	アップグレード済み: {0}（元のファイルは .bak として保存）
+Already current: {0}	最新の状態: {0}
+Made by a newer version, left alone: {0}	新しいバージョン製のため変更なし: {0}
+Report: {0}	レポート: {0}
+Background motion	背景の動き
+Still: frame at {0}	静止画: {0} のフレーム
+Still: baked into the theme	静止画: テーマに埋め込み済み
+Import wallpaper	壁紙を読み込む
+Import video	動画を読み込む
+Lock screen image	ロック画面の画像
+(embedded image)	（埋め込み画像）
+Fit	合わせ方
+Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.	にぎやかな壁紙です — ラベルが読みにくいかもしれません。やわらかくコントラストの低い画像が最適です。
+The still is the video's poster — it shows whenever playback is frozen (battery saver, a game, a Still style, or Motion set to Static on the device).	静止画は動画のポスターです — 再生が止まっているとき（省電力、ゲーム中、静止スタイル、または端末でモーションを静止に設定）に表示されます。
+The theme offers this image for the device lock screen	このテーマは端末のロック画面用にこの画像を提供します
+Output {0}×{1}	出力 {0}×{1}
+{0}–{1} recommended, {2} max, {3} MB max	推奨 {0}–{1}、最大 {2}、最大 {3} MB
+Whether the boot video and Game Boot play at all is a device setting: {0}	起動動画と Game Boot を再生するかどうかは端末の設定です: {0}
+This clip is longer than the cap — the launcher will refuse it.	このクリップは上限より長いため、ランチャーは受け付けません。
+Choose a {0} video	{0} の動画を選択
+Dark icon color — icons may be hard to see over the wallpaper scrim.	アイコンの色が暗めです — 壁紙の暗幕の上では見えにくいかもしれません。
+Saved in the theme for a later update. The launcher currently shows the color exactly as picked.	今後のアップデートのためにテーマに保存されます。現在、ランチャーは選んだとおりの色で表示します。
+Original	オリジナル
+Classic Blue	クラシックブルー
+Sunset Orange	サンセットオレンジ
+Fresh Green	フレッシュグリーン
+Royal Purple	ロイヤルパープル
+Crimson Red	クリムゾンレッド
+Silver	シルバー
+Sakura Pink	サクラピンク
+Golden Amber	ゴールデンアンバー
+Aqua Teal	アクアティール
+Midnight Navy	ミッドナイトネイビー
+Charcoal	チャコール
+Format: schema {0} → {1}	形式: スキーマ {0} → {1}
+Format: new theme → {0}	形式: 新しいテーマ → {0}
+Kept	保持
+Added	追加
+Repaired	修復
+Can't recover	復元不可
+What saving does	保存で行われること
+Motion has a still poster	モーションに静止画のポスターがあります
+Motion needs a still wallpaper as its poster - add one or remove the video	モーションにはポスターとなる静止画の壁紙が必要です - 追加するか動画を削除してください
+Media outside limits: {0}	上限を超えたメディア: {0}
+This wallpaper is busy behind the labels - pick a text legibility style so they stay readable	この壁紙はラベルの背後がにぎやかです - 読みやすさを保つためテキストの読みやすさスタイルを選んでください
+Text should read clearly on this wallpaper	この壁紙ではテキストが読みやすいはずです
+{0} - launchers from before this format refuse files over 64 MB	{0} - この形式より前のランチャーは 64 MB を超えるファイルを受け付けません
+Opens on older launchers, which ignore sounds, boot clips, legibility and crop	古いランチャーでも開けますが、サウンド、起動クリップ、読みやすさ、切り抜きは無視されます
+{0} is over the {1} MB limit for a theme file	{0} はテーマファイルの上限 {1} MB を超えています
+Saving upgrades this theme from {0}; {1} part(s) can't be recovered	保存するとこのテーマを {0} からアップグレードします。復元できない部分: {1}
+Saving upgrades this theme from {0}	保存するとこのテーマを {0} からアップグレードします
+an older format	古い形式
+Imported from {0}	{0} から読み込み
+Imported from {0} — firmware {1}	{0} から読み込み — ファームウェア {1}
+a PSP theme	PSP テーマ
+Created {0}	作成 {0}
+On the device these live in {0}.	端末では {0} にあります。
+Scale	スケール
+Horizontal	水平
+Vertical	垂直
+This wallpaper is busy behind the labels — a text style helps them stay readable.	この壁紙はラベルの背後がにぎやかです — テキストスタイルを使うと読みやすくなります。
+Settings › Interface › Display › Adjust XMB Layout	設定 › インターフェース › 表示 › XMB レイアウトの調整
+Settings › Interface › Sound	設定 › インターフェース › サウンド
+Settings › Interface › Display › Show Boot Sequence / Game Boot	設定 › インターフェース › 表示 › 起動シーケンス / Game Boot を表示
+Battery Saver and Thermal Throttle (Settings › Interface › Display) freeze the animated wave on the device.	省電力と温度制限（設定 › インターフェース › 表示）は端末上のアニメーションする波を止めます。
+Pick…	選択…
+Plays on the device	端末で再生されます
+Length unknown	長さ不明
+Volumes stay on the device: {0}	音量は端末で設定します: {0}
+Couldn't play {0} here — it will play on the device.	{0} はここでは再生できません — 端末では再生されます。
+Choose a sound for {0}	{0} のサウンドを選択
+Icon image for {0}	{0} のアイコン画像
+Template for {0}	{0} のテンプレート
+Template written to {0}	テンプレートを {0} に書き出しました
+Template export failed: {0}	テンプレートの書き出しに失敗しました: {0}
+Search {0} slots: battery, PS3, voice…	{0} 個のスロットを検索: バッテリー、PS3、ボイス…
+No slot matches. Clear the search or a filter.	一致するスロットがありません。検索かフィルターを解除してください。
+Pack folder…	パックのフォルダー…
+Icon pack folder	アイコンパックのフォルダー
+Pack .zip…	パックの .zip…
+Icon pack zip	アイコンパックの .zip
+Folder for icon templates	アイコンテンプレートの保存先フォルダー
+Packs are folders or zips of <slot key>.png / .gif, the names the templates use. Multi-frame GIFs animate on the launcher when focused; they must stay within 512px, 120 frames and 10 seconds.	パックは <スロットキー>.png / .gif（テンプレートと同じ名前）を入れたフォルダーまたは zip です。複数フレームの GIF はフォーカス時にランチャーでアニメーションします。512 px、120 フレーム、10 秒以内に収めてください。
+Icon pack imported	アイコンパックを読み込みました
+Icon pack refused	アイコンパックを受け付けませんでした
+{0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	{0}: 追加 {1}、置き換え {2}、一致なし {3}、拒否 {4}
+Icon pack {0}: {1} added, {2} replaced, {3} unmatched, {4} rejected	アイコンパック {0}: 追加 {1}、置き換え {2}、一致なし {3}、拒否 {4}
+{0} - did you mean {1}?	{0} - もしかして {1}？
+{0} - no matching slot	{0} - 一致するスロットなし
+{0} error	エラー {0} 件
+{0} errors	エラー {0} 件
+{0} warning	警告 {0} 件
+{0} warnings	警告 {0} 件
+{0} of {1} MB	{0} / {1} MB
+{0} of {1} MB - older launchers refuse over 64 MB	{0} / {1} MB - 古いランチャーは 64 MB を超えると受け付けません
+Wallpaper	壁紙
+Preview	プレビュー
+Motion	モーション
+Ambience	環境音
+Other files	その他のファイル
+{0} is too large to be a theme file	{0} はテーマファイルとしては大きすぎます
+Imported {0}	{0} を読み込みました
+Imported with a caveat	注意付きで読み込みました
+{0} is not a valid .pfptheme bundle	{0} は有効な .pfptheme バンドルではありません
+{0} — {1} icon(s) for parts themes don't customize were left out	{0} — テーマでカスタマイズしない部分のアイコン {1} 個を除外しました
+Motion wallpaper: {0}	動く壁紙: {0}
+Could not keep: {0}	保持できませんでした: {0}
+Parts of the theme not kept	テーマの一部を保持できませんでした
+Motion wallpaper not kept	動く壁紙を保持できませんでした
+{0} is not a readable image	{0} は読み取れる画像ではありません
+{0} converted to H.264 for Android ({1})	{0} を Android 用に H.264 へ変換しました（{1}）
+Couldn't read that frame of the video	動画のそのフレームを読み取れませんでした
+The crop does not match this image	切り抜きがこの画像と合いません
+Wallpaper: {0} ({1}×{2})	壁紙: {0}（{1}×{2}）
+Added {0} — converted to H.264 for Android ({1})	{0} を追加しました — Android 用に H.264 へ変換（{1}）
+Added {0}	{0} を追加しました
+Export failed: {0}	書き出しに失敗しました: {0}
+{0} is not a PSP theme file	{0} は PSP テーマファイルではありません
+Unpack failed: {0}	展開に失敗しました: {0}
+Theme unpacked	テーマを展開しました
+{0} images written to {1} (see report.txt).	画像 {0} 枚を {1} に書き出しました（report.txt を参照）。
+{0} images and {1} data files written to {2} (see report.txt).	画像 {0} 枚とデータファイル {1} 個を {2} に書き出しました（report.txt を参照）。
+Unpacked {0}: {1} images	{0} を展開しました: 画像 {1} 枚
+Templates exported to {0} ({1} icons)	テンプレートを {0} に書き出しました（アイコン {1} 個）
+WebM clips can't be checked in the Studio (it reads MP4/H.264 only) — convert the clip to MP4	WebM クリップは Studio では確認できません（MP4/H.264 のみ対応）— クリップを MP4 に変換してください
+That isn't a media slot this import can fill	この読み込みで埋められるメディアスロットではありません
+That file is too large for a theme — {0} MB or less	テーマには大きすぎるファイルです — {0} MB 以下にしてください
+Unsupported video — use an MP4 (H.264)	対応していない動画です — MP4（H.264）を使ってください
+{0} video isn't guaranteed to play on Android	{0} 動画は Android での再生が保証されません
+H.264 {0} doesn't play on Android	H.264 {0} は Android で再生できません
+{0} video doesn't play on Android	{0} 動画は Android で再生できません
+Couldn't convert this video for Android ({0}). Re-encode it as MP4 H.264 and try again.	この動画を Android 用に変換できませんでした（{0}）。MP4 H.264 で再エンコードしてもう一度お試しください。
+{0} is not a folder or .zip	{0} はフォルダーでも .zip でもありません
+Pack refused: {0}	パックを受け付けませんでした: {0}
+Pack could not be read	パックを読み取れませんでした
+Pack could not be read: {0}	パックを読み取れませんでした: {0}
+Pack has more than {0} files	パックのファイル数が {0} 個を超えています
+Not a PSP theme file	PSP テーマファイルではありません
+Corrupt or truncated PTF	破損しているか途中で切れた PTF です
+This theme contains no wallpaper image.	このテーマには壁紙画像が含まれていません。
+The wallpaper could not be extracted: this theme uses a compression method this importer doesn't recognize. The theme was imported without its wallpaper.	壁紙を取り出せませんでした: このテーマはこのインポーターが認識できない圧縮方式を使っています。テーマは壁紙なしで読み込まれました。
+The wallpaper data in this theme is damaged and could not be decoded. The theme was imported without its wallpaper.	このテーマの壁紙データは破損しており、デコードできませんでした。テーマは壁紙なしで読み込まれました。

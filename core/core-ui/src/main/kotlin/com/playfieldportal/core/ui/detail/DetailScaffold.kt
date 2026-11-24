@@ -21,14 +21,17 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import android.os.Build
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
@@ -36,16 +39,27 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsPropertyKey
+import androidx.compose.ui.semantics.SemanticsPropertyReceiver
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.ScrollState
+import com.playfieldportal.core.ui.R
 import com.playfieldportal.core.ui.components.ControllerHintBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.components.MENU_BACK_KEY
 import com.playfieldportal.core.ui.components.MenuGlyphOverride
+import com.playfieldportal.core.ui.components.LocalPfpBackdropBlur
+import com.playfieldportal.core.ui.components.PfpBackdropBlurState
+import com.playfieldportal.core.ui.components.PfpScrollBar
+import com.playfieldportal.core.ui.components.pfpBackdropBlur
 import com.playfieldportal.core.ui.theme.dimmed
 
 // ── Console-style detail page: background, scaffold, header, footer ───────────
@@ -118,12 +132,17 @@ internal fun detailFooterSurface(): Color = detailPalette().footer
 @Composable
 fun PfpDetailBackground(
     modifier: Modifier = Modifier,
+    // False draws no surface of its own: the page is hidden under another page, whose surface is the
+    // one that shows (two stacked would read darker than every other page).
+    drawSurface: Boolean = true,
     content: @Composable BoxScope.() -> Unit,
 ) {
     Box(
-        modifier = modifier.background(
-            Brush.verticalGradient(0f to detailSurfaceTop(), 1f to detailSurfaceBottom()),
-        ),
+        modifier = if (drawSurface) {
+            modifier.background(Brush.verticalGradient(0f to detailSurfaceTop(), 1f to detailSurfaceBottom()))
+        } else {
+            modifier
+        },
         content = content,
     )
 }
@@ -144,13 +163,26 @@ fun PfpDetailScaffold(
     scrollState: ScrollState = rememberScrollState(),
     contentMaxWidth: Dp = DetailContentMaxWidth,
     horizontalPadding: Dp = DetailContentPadding,
+    showScrollBar: Boolean = true,
+    // Covered by a page of its own in [overlay] (Game Detail under Update Metadata): the page is kept
+    // laid out — its scroll, cursor and geometry are exactly as left — but not drawn, not touchable
+    // and not read out, until the user comes back to it.
+    pageHidden: Boolean = false,
     header: @Composable () -> Unit = {},
     footer: @Composable () -> Unit = {},
     overlay: @Composable BoxScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    PfpDetailBackground(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
+    // The page keeps its own blur state: its prompts and panels sit in [overlay], above the layer
+    // that gets blurred, and must not blur the enclosing host (the shell) they are drawn inside.
+    ProvidePfpBackdropBlur { blur ->
+    // The page is see-through: while it blurs, what shows through it blurs too (see LocalPfpBackdropBehind).
+    com.playfieldportal.core.ui.components.RaiseWhile(
+        com.playfieldportal.core.ui.components.LocalPfpBackdropBehind.current,
+        active = Build.VERSION.SDK_INT >= 31 && blur.active,
+    )
+    PfpDetailBackground(modifier = modifier.fillMaxSize(), drawSurface = !pageHidden) {
+        Column(modifier = Modifier.fillMaxSize().pfpBackdropBlurLayer(blur).hiddenPage(pageHidden)) {
             header()
             // Hard viewport edge: nothing in the body may paint into the header or footer rows.
             BoxWithConstraints(modifier = Modifier.fillMaxWidth().weight(1f).clipToBounds()) {
@@ -166,12 +198,67 @@ fun PfpDetailScaffold(
                             .padding(start = horizontalPadding, end = horizontalPadding, bottom = 22.dp),
                         content = content,
                     )
+                    // Slim scroll bar on the page's end edge, over the body's gutter; hidden when the
+                    // page fits. Display-only for a controller (never focusable).
+                    if (showScrollBar) {
+                        PfpScrollBar(scrollState, Modifier.align(Alignment.CenterEnd))
+                    }
                 }
             }
             footer()
         }
         overlay()
     }
+    }
+}
+
+/** See PfpDetailScaffold's pageHidden: invisible, every touch stopped before it reaches the page, no semantics. */
+private fun Modifier.hiddenPage(hidden: Boolean): Modifier =
+    if (!hidden) {
+        this
+    } else {
+        alpha(0f)
+            .clearAndSetSemantics {}
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
+                }
+            }
+    }
+
+// ── Backdrop blur: one layer for the content, a sibling above it for prompts and panels ────────
+//
+// A prompt or panel cannot blur what is behind it; the host that owns the content does, by putting
+// [pfpBackdropBlurLayer] on the layer holding the screen's own content and drawing the prompt in a
+// sibling layer above. [ProvidePfpBackdropBlur] gives that host its own state, so a screen nested in
+// another host (Settings or a detail page inside the shell) blurs its own content, not the shell's.
+
+/** Set on the layer that carries the backdrop blur: true while it is actually blurred. Tests read it. */
+val PfpBackdropBlurAppliedKey = SemanticsPropertyKey<Boolean>("PfpBackdropBlurApplied")
+var SemanticsPropertyReceiver.pfpBackdropBlurApplied by PfpBackdropBlurAppliedKey
+
+/** [pfpBackdropBlur] for a content layer, marking it for tests. Never put it on a layer that holds a prompt. */
+@Composable
+fun Modifier.pfpBackdropBlurLayer(state: PfpBackdropBlurState?): Modifier {
+    val applied = state != null && Build.VERSION.SDK_INT >= 31 && state.active
+    return this.pfpBackdropBlur(state).semantics { pfpBackdropBlurApplied = applied }
+}
+
+/**
+ * Provides a fresh [PfpBackdropBlurState] to [content] (and to [LocalPfpBackdropBlur] below it).
+ * Its switch follows [enabled], or the enclosing host's state when null (so the shell's Performance /
+ * Thermal decision reaches nested screens), or is on when there is no enclosing host.
+ */
+@Composable
+fun ProvidePfpBackdropBlur(
+    enabled: Boolean? = null,
+    content: @Composable (PfpBackdropBlurState) -> Unit,
+) {
+    val outer = LocalPfpBackdropBlur.current
+    val allowed = enabled ?: outer?.enabled ?: true
+    val state = remember { PfpBackdropBlurState(allowed) }
+    SideEffect { state.enabled = allowed }
+    CompositionLocalProvider(LocalPfpBackdropBlur provides state) { content(state) }
 }
 
 /** The height of the scrolling body between the header and the footer (unbounded outside a scaffold). */
@@ -217,7 +304,7 @@ fun PfpDetailBreadcrumb(
                 // 48dp touch target (Android's minimum) around a 16sp glyph, so the arrow stays easy to
                 // hit without a visible chip.
                 Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-                    if (!MenuGlyphOverride(MENU_BACK_KEY, 18.dp, "Back")) {
+                    if (!MenuGlyphOverride(MENU_BACK_KEY, 18.dp, stringResource(R.string.core_back))) {
                         Text(text = "◀", color = DetailTextMuted, fontSize = 16.sp)
                     }
                 }

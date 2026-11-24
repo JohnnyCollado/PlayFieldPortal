@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ach_upd_running">A atualizar proezas instaladas</string>
+    <string name="ach_upd_running_stop_note">As proezas já atualizadas são mantidas.</string>
+    <string name="ach_upd_progress">A verificar %1$d de %2$d jogos</string>
+    <string name="ach_upd_stopped">Atualização de proezas interrompida</string>
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="one">%d jogo verificado; progresso guardado mantido</item>
+        <item quantity="many">%d jogos verificados; progresso guardado mantido</item>
+        <item quantity="other">%d jogos verificados; progresso guardado mantido</item>
+    </plurals>
+    <string name="ach_upd_some_failed">Algumas proezas não puderam ser atualizadas</string>
+    <plurals name="ach_upd_failed_message">
+        <item quantity="one">%1$d de %2$d jogo precisa de outra tentativa</item>
+        <item quantity="many">%1$d de %2$d jogos precisam de outra tentativa</item>
+        <item quantity="other">%1$d de %2$d jogos precisam de outra tentativa</item>
+    </plurals>
+    <string name="ach_upd_results_done">Atualizados</string>
+    <string name="ach_upd_updated">Proezas atualizadas</string>
+    <plurals name="ach_upd_updated_message">
+        <item quantity="one">%1$d jogo atualizado · %2$d sem alteração</item>
+        <item quantity="many">%1$d jogos atualizados · %2$d sem alteração</item>
+        <item quantity="other">%1$d jogos atualizados · %2$d sem alteração</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">As proezas estão em dia</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="one">%d jogo instalado verificado</item>
+        <item quantity="many">%d jogos instalados verificados</item>
+        <item quantity="other">%d jogos instalados verificados</item>
+    </plurals>
+    <string name="ach_upd_paused">Atualização de proezas em pausa</string>
+    <string name="ach_upd_fact_service">Serviço</string>
+    <string name="ach_upd_pause_offline">Ligue-se à internet</string>
+    <string name="ach_upd_pause_reconnect">Volte a ligar %1$s</string>
+    <string name="ach_upd_pause_steam_private">Os detalhes de jogos da Steam não estão disponíveis</string>
+
+    <!-- Auto-match notifications -->
+    <string name="ach_match_running">A associar jogos automaticamente</string>
+    <string name="ach_match_running_stop_note">Os jogos já associados continuam ligados.</string>
+    <string name="ach_match_stopped_note">Os jogos já associados continuam ligados</string>
+    <string name="ach_match_stopped">Associação automática interrompida</string>
+    <string name="ach_match_recognized">Jogos reconhecidos</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="one">%d jogo instalado associado. A atualizar as proezas.</item>
+        <item quantity="many">%d jogos instalados associados. A atualizar as proezas.</item>
+        <item quantity="other">%d jogos instalados associados. A atualizar as proezas.</item>
+    </plurals>
+
+    <!-- Clearing achievement records -->
+    <string name="ach_clear_done">Registos de proezas apagados</string>
+    <string name="ach_clear_done_message">Os jogos instalados têm de ser sincronizados novamente para mostrar as proezas</string>
+    <string name="ach_clear_failed">Não foi possível apagar as proezas</string>
+    <string name="ach_clear_failed_message">Nada foi removido. Tente novamente em Definições ▸ Proezas</string>
+    <string name="ach_ls_unavail_store">não foi possível consultar a loja</string>
+    <string name="ach_ls_unavail_steam">A Steam não está disponível neste momento</string>
+    <string name="ach_ls_steam_unreachable">Não foi possível aceder à Steam</string>
+    <string name="ach_ls_steam_rate_limited">A Steam está a limitar os pedidos</string>
+    <string name="ach_ls_steam_error">A Steam devolveu um erro</string>
+    <string name="ach_ls_steam_needs_key">A Steam precisa da sua chave da Web API</string>
+    <string name="ach_link_no_match">A Steam não tem nenhum jogo correspondente a \"%1$s\". Mude o nome da pasta para o nome do jogo na Steam ou associe-o primeiro em Detalhes do jogo ▸ Associar jogo.</string>
+    <string name="ach_link_unavailable">%1$s, por isso não foi possível descobrir o app id desta pasta. Nada foi alterado — tente novamente quando estiver online.</string>
+    <string name="ach_link_marker_failed">Não foi possível criar steam_appid.txt nessa pasta — talvez o PFP só tenha acesso de leitura.</string>
+    <string name="ach_link_not_recorded">Não foi possível registar a associação escolhida.</string>
+    <string name="ach_link_installer_off">Ative Instalar Goldberg e converter jogos nas definições de proezas antes de o PFP gravar numa pasta de jogo.</string>
+    <string name="ach_link_no_app_id">Essa pasta já não declara um app id — escolha-a novamente.</string>
+    <string name="ach_link_need_key">Adicione a sua chave da Steam Web API em Definições ▸ Proezas ▸ Credenciais de provedores — a lista de proezas vem dela.</string>
+    <string name="ach_link_no_achievements">A Steam não lista proezas para o app id %1$s, por isso não há nada para acompanhar.</string>
+    <string name="ach_link_kit_failed">Não foi possível gravar o kit de proezas: %1$s</string>
+    <string name="ach_link_read_back_failed">Não foi possível voltar a ler essa pasta. Se estiver num armazenamento amovível, monte-o novamente e escolha a pasta outra vez.</string>
+    <string name="ach_link_not_steam_build">Nenhum ficheiro de biblioteca da Steam (steam_api64.dll) nessa pasta, por isso não é uma versão da Steam e não há nada para o emulador acompanhar. Escolha a pasta onde está o .exe do jogo.</string>
+    <string name="ach_pick_checking">A verificar na Steam…</string>
+    <plurals name="ach_pick_coins">
+        <item quantity="one">%1$d moeda  ·  appid %2$s</item>
+        <item quantity="many">%1$d moedas  ·  appid %2$s</item>
+        <item quantity="other">%1$d moedas  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">Sem lista na Steam  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">Precisa da sua chave da Steam Web API  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">A Steam não respondeu  ·  appid %1$s</string>
+
+    <!-- Local Steam: batch match summary -->
+    <string name="ach_batch_already_running">Uma associação em lote já está em curso.</string>
+    <string name="ach_batch_no_folders">Não há pastas de jogos aí. Escolha a pasta que CONTÉM as pastas dos seus jogos, não a pasta de um jogo.</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="one">%d pasta encontrada, mas nenhuma é uma versão da Steam — sem biblioteca steam_api, não há nada para o emulador acompanhar.</item>
+        <item quantity="many">%d pastas encontradas, mas nenhuma é uma versão da Steam — sem biblioteca steam_api, não há nada para o emulador acompanhar.</item>
+        <item quantity="other">%d pastas encontradas, mas nenhuma é uma versão da Steam — sem biblioteca steam_api, não há nada para o emulador acompanhar.</item>
+    </plurals>
+    <string name="ach_batch_linked">%1$d ligadas a jogos da biblioteca</string>
+    <string name="ach_batch_tracked">%1$d acompanhadas separadamente</string>
+    <string name="ach_batch_converting">%1$d a aguardar conversão</string>
+    <plurals name="ach_batch_matched">
+        <item quantity="one">%1$d de %2$d pasta associada.</item>
+        <item quantity="many">%1$d de %2$d pastas associadas.</item>
+        <item quantity="other">%1$d de %2$d pastas associadas.</item>
+    </plurals>
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="one">%1$d de %2$d pasta associada: %3$s.</item>
+        <item quantity="many">%1$d de %2$d pastas associadas: %3$s.</item>
+        <item quantity="other">%1$d de %2$d pastas associadas: %3$s.</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="one">%1$d não pôde ser identificada pelo nome — abra a página Shiba Coins do jogo e use Associar automaticamente para escolher a pasta.</item>
+        <item quantity="many">%1$d não puderam ser identificadas pelo nome — abra a página Shiba Coins de cada jogo e use Associar automaticamente para escolher a pasta.</item>
+        <item quantity="other">%1$d não puderam ser identificadas pelo nome — abra a página Shiba Coins de cada jogo e use Associar automaticamente para escolher a pasta.</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="one">%1$d não está na sua biblioteca — adicione-a primeiro ao cartão Windows e associe novamente.</item>
+        <item quantity="many">%1$d não estão na sua biblioteca — adicione-as primeiro ao cartão Windows e associe novamente.</item>
+        <item quantity="other">%1$d não estão na sua biblioteca — adicione-as primeiro ao cartão Windows e associe novamente.</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="one">%1$d não é uma versão da Steam.</item>
+        <item quantity="many">%1$d não são versões da Steam.</item>
+        <item quantity="other">%1$d não são versões da Steam.</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="one">%1$d falhou — consulte o registo.</item>
+        <item quantity="many">%1$d falharam — consulte o registo.</item>
+        <item quantity="other">%1$d falharam — consulte o registo.</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">Não foi possível abrir essa pasta.</string>
+    <string name="ach_batch_fail_read_back">%1$s: não foi possível voltar a ler após a identificação.</string>
+    <string name="ach_batch_fail_reason">%1$s: %2$s.</string>
+    <string name="ach_batch_fail_marker">%1$s: não foi possível criar steam_appid.txt.</string>
+
+    <!-- Vita3K library scan results -->
+    <string name="ach_vita_set_folder">Defina primeiro a pasta de dados do Vita3K (ux0).</string>
+    <string name="ach_vita_link_invalid">A ligação à pasta do Vita3K é inválida — conceda novamente o acesso.</string>
+    <string name="ach_vita_no_ux0">ux0/app não foi encontrada na pasta concedida — escolha a pasta ux0 do Vita3K (ou a pasta que a contém).</string>
+    <string name="ach_vita_no_app">Nenhuma pasta app/ em ux0 — verifique a pasta concedida.</string>
+    <string name="ach_vita_none_installed">Nenhum jogo de Vita instalado encontrado em ux0/app. Instale primeiro um jogo no Vita3K.</string>
+    <plurals name="ach_vita_no_new">
+        <item quantity="one">Nenhum jogo de Vita novo — %d já está na sua biblioteca.</item>
+        <item quantity="many">Nenhum jogo de Vita novo — %d já estão na sua biblioteca.</item>
+        <item quantity="other">Nenhum jogo de Vita novo — %d já estão na sua biblioteca.</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="one">%d jogo de Vita importado.</item>
+        <item quantity="many">%d jogos de Vita importados.</item>
+        <item quantity="other">%d jogos de Vita importados.</item>
+    </plurals>
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="one">%1$d jogo de Vita importado, %2$d atualizados.</item>
+        <item quantity="many">%1$d jogos de Vita importados, %2$d atualizados.</item>
+        <item quantity="other">%1$d jogos de Vita importados, %2$d atualizados.</item>
+    </plurals>
+</resources>

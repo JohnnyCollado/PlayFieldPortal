@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ach_upd_running">正在更新已安裝遊戲的成就</string>
+    <string name="ach_upd_running_stop_note">已更新的成就會保留。</string>
+    <string name="ach_upd_progress">正在檢查第 %1$d 款，共 %2$d 款遊戲</string>
+    <string name="ach_upd_stopped">成就更新已停止</string>
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="other">已檢查 %d 款遊戲，已保留儲存的進度</item>
+    </plurals>
+    <string name="ach_upd_some_failed">部分成就無法更新</string>
+    <plurals name="ach_upd_failed_message">
+        <item quantity="other">%2$d 款遊戲中有 %1$d 款需要重試</item>
+    </plurals>
+    <string name="ach_upd_results_done">已更新</string>
+    <string name="ach_upd_updated">成就已更新</string>
+    <plurals name="ach_upd_updated_message">
+        <item quantity="other">已更新 %1$d 款遊戲 · %2$d 款未變更</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">成就已是最新狀態</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="other">已檢查 %d 款已安裝的遊戲</item>
+    </plurals>
+    <string name="ach_upd_paused">成就更新已暫停</string>
+    <string name="ach_upd_fact_service">服務</string>
+    <string name="ach_upd_pause_offline">請連上網際網路</string>
+    <string name="ach_upd_pause_reconnect">重新連線 %1$s</string>
+    <string name="ach_upd_pause_steam_private">無法取得 Steam 遊戲詳細資料</string>
+
+    <!-- Auto-match notifications -->
+    <string name="ach_match_running">正在自動配對遊戲</string>
+    <string name="ach_match_running_stop_note">已配對的遊戲會保持連結。</string>
+    <string name="ach_match_stopped_note">已配對的遊戲會保持連結</string>
+    <string name="ach_match_stopped">自動配對已停止</string>
+    <string name="ach_match_recognized">已辨識遊戲</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="other">已配對 %d 款已安裝的遊戲，正在更新其成就。</item>
+    </plurals>
+
+    <!-- Clearing achievement records -->
+    <string name="ach_clear_done">已清除成就記錄</string>
+    <string name="ach_clear_done_message">已安裝的遊戲需要重新同步才能再次顯示成就</string>
+    <string name="ach_clear_failed">無法清除成就</string>
+    <string name="ach_clear_failed_message">未移除任何內容。請從「設定 ▸ 成就」再試一次</string>
+
+    <!-- Local Steam: why a game's Steam identity could not be checked. These phrases are placed at the
+         start of a sentence or after a folder name, so they keep their own capitalisation. -->
+    <string name="ach_ls_unavail_store">無法查詢商店</string>
+    <string name="ach_ls_unavail_steam">Steam 目前無法使用</string>
+    <string name="ach_ls_steam_unreachable">無法連線至 Steam</string>
+    <string name="ach_ls_steam_rate_limited">Steam 正在限制請求頻率</string>
+    <string name="ach_ls_steam_error">Steam 傳回錯誤</string>
+    <string name="ach_ls_steam_needs_key">Steam 需要你的 Web API 金鑰</string>
+
+    <!-- Local Steam: linking a picked game folder -->
+    <string name="ach_link_no_match">Steam 上沒有與「%1$s」相符的遊戲。請將資料夾重新命名為遊戲在 Steam 上的名稱，或先從「遊戲詳細資料 ▸ 配對遊戲」連結。</string>
+    <string name="ach_link_unavailable">%1$s，因此無法判斷這個資料夾的 App ID。未做任何變更，請在恢復連線後再試一次。</string>
+    <string name="ach_link_marker_failed">無法在該資料夾中建立 steam_appid.txt，PFP 可能只有讀取權限。</string>
+    <string name="ach_link_not_recorded">無法記錄所選的配對。</string>
+    <string name="ach_link_installer_off">在 PFP 寫入遊戲資料夾前，請先在成就設定中開啟「安裝 Goldberg 並轉換遊戲」。</string>
+    <string name="ach_link_no_app_id">該資料夾已不再宣告 App ID，請重新選擇。</string>
+    <string name="ach_link_need_key">請在「設定 ▸ 成就 ▸ 提供者憑證」中新增你的 Steam Web API 金鑰，成就清單由此取得。</string>
+    <string name="ach_link_no_achievements">Steam 上 App ID %1$s 沒有任何成就，因此沒有可追蹤的內容。</string>
+    <string name="ach_link_kit_failed">無法寫入成就套件：%1$s</string>
+    <string name="ach_link_read_back_failed">無法重新讀取該資料夾。如果它位於卸除式儲存裝置上，請重新掛接後再選擇一次。</string>
+    <string name="ach_link_not_steam_build">該資料夾中找不到 Steam 程式庫檔案（steam_api64.dll），因此它不是 Steam 版本，模擬器沒有可追蹤的內容。請選擇遊戲 .exe 所在的資料夾。</string>
+
+    <!-- Local Steam: convert picker rows. %2$s / %1$s is a Steam app id; the dots separate the two parts of the note. -->
+    <string name="ach_pick_checking">正在檢查 Steam…</string>
+    <plurals name="ach_pick_coins">
+        <item quantity="other">%1$d 枚硬幣  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">Steam 上沒有清單  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">需要你的 Steam Web API 金鑰  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">Steam 沒有回應  ·  appid %1$s</string>
+
+    <!-- Local Steam: batch match summary -->
+    <string name="ach_batch_already_running">批次配對已在執行中。</string>
+    <string name="ach_batch_no_folders">這裡沒有遊戲資料夾。請選擇「包含」遊戲資料夾的資料夾，而不是單一遊戲的資料夾。</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="other">找到 %d 個資料夾，但都不是 Steam 版本：沒有 steam_api 程式庫，因此模擬器沒有可追蹤的內容。</item>
+    </plurals>
+    <string name="ach_batch_linked">%1$d 個已連結至收藏庫遊戲</string>
+    <string name="ach_batch_tracked">%1$d 個獨立追蹤</string>
+    <string name="ach_batch_converting">%1$d 個等待轉換</string>
+    <plurals name="ach_batch_matched">
+        <item quantity="other">已配對 %1$d 個資料夾，共 %2$d 個。</item>
+    </plurals>
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="other">已配對 %1$d 個資料夾，共 %2$d 個：%3$s。</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="other">%1$d 個無法從名稱辨識。請開啟各遊戲的 Shiba Coins 頁面，並使用自動配對來選擇其資料夾。</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="other">%1$d 個不在你的收藏庫中。請先將其加入 Windows 卡片，再重新配對。</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="other">%1$d 個不是 Steam 版本。</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="other">%1$d 個失敗，請查看記錄。</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">無法開啟該資料夾。</string>
+    <string name="ach_batch_fail_read_back">%1$s：辨識後無法重新讀取。</string>
+    <string name="ach_batch_fail_reason">%1$s：%2$s。</string>
+    <string name="ach_batch_fail_marker">%1$s：無法建立 steam_appid.txt。</string>
+
+    <!-- Vita3K library scan results -->
+    <string name="ach_vita_set_folder">請先設定你的 Vita3K 資料資料夾（ux0）。</string>
+    <string name="ach_vita_link_invalid">該 Vita3K 資料夾連結無效，請重新授予權限。</string>
+    <string name="ach_vita_no_ux0">在已授權的資料夾中找不到 ux0/app。請選擇你的 Vita3K ux0 資料夾（或包含它的資料夾）。</string>
+    <string name="ach_vita_no_app">ux0 下沒有 app/ 資料夾，請檢查已授權的資料夾。</string>
+    <string name="ach_vita_none_installed">在 ux0/app 下找不到已安裝的 Vita 遊戲。請先在 Vita3K 中安裝遊戲。</string>
+    <plurals name="ach_vita_no_new">
+        <item quantity="other">沒有新的 Vita 遊戲，已有 %d 款在你的收藏庫中。</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="other">已匯入 %d 款 Vita 遊戲。</item>
+    </plurals>
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="other">已匯入 %1$d 款 Vita 遊戲，已更新 %2$d 款。</item>
+    </plurals>
+</resources>

@@ -1,9 +1,11 @@
 package com.playfieldportal.feature.settings.viewmodel
 
+import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.feature.launcher.InstalledPcLauncher
 import com.playfieldportal.feature.launcher.LauncherChoice
 import com.playfieldportal.feature.launcher.UnknownLauncher
 import com.playfieldportal.feature.launcher.PcLauncherType
+import com.playfieldportal.feature.settings.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -45,9 +47,9 @@ class PcLauncherRowsTest {
     }
 
     @Test fun `undecided unknown apps show, Not a launcher ones hide behind Show Hidden Apps`() {
-        val undecided = UnknownLauncher("com.example.wine", "Wine", "s1", "not in PFP's list", choice = null)
-        val hidden = UnknownLauncher("com.example.box", "Box64", "s2", "not in PFP's list", LauncherChoice.NOT_A_LAUNCHER)
-        val chosen = UnknownLauncher("com.example.fork", "Fork", "s3", "not in PFP's list", LauncherChoice.WINLATOR)
+        val undecided = UnknownLauncher("com.example.wine", "Wine", "s1", UiText.raw("not in PFP's list"), choice = null)
+        val hidden = UnknownLauncher("com.example.box", "Box64", "s2", UiText.raw("not in PFP's list"), LauncherChoice.NOT_A_LAUNCHER)
+        val chosen = UnknownLauncher("com.example.fork", "Fork", "s3", UiText.raw("not in PFP's list"), LauncherChoice.WINLATOR)
 
         val group = unknownLauncherGroup(listOf(undecided, hidden, chosen))
 
@@ -56,12 +58,12 @@ class PcLauncherRowsTest {
     }
 
     @Test fun `an unknown row reads its choice, or Choose when undecided`() {
-        assertEquals("Choose…", unknownLauncherRow(UnknownLauncher("p", "P", null, "r", null)).value)
+        assertEquals(UiText.res(R.string.lib_lm_unknown_choose), unknownLauncherRow(UnknownLauncher("p", "P", null, UiText.raw("r"), null)).value)
         assertEquals(
-            "Not a launcher",
-            unknownLauncherRow(UnknownLauncher("p", "P", null, "r", LauncherChoice.NOT_A_LAUNCHER)).value,
+            LauncherChoice.NOT_A_LAUNCHER.label,
+            unknownLauncherRow(UnknownLauncher("p", "P", null, UiText.raw("r"), LauncherChoice.NOT_A_LAUNCHER)).value,
         )
-        assertEquals("p · r", unknownLauncherRow(UnknownLauncher("p", "P", null, "r", null)).sublabel)
+        assertEquals(UiText.Joined(listOf(UiText.raw("p"), UiText.raw("r")), " · "), unknownLauncherRow(UnknownLauncher("p", "P", null, UiText.raw("r"), null)).sublabel)
     }
 
     @Test fun `GameHub-family rows support add by id, Winlator does not`() {

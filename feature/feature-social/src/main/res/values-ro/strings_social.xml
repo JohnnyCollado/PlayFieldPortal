@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- QR login screen -->
+    <string name="soc_qr_preparing">Se pregătește conectarea…</string>
+    <string name="soc_qr_connected">Conectat</string>
+    <string name="soc_qr_expired">Codul a expirat.</string>
+    <string name="soc_qr_declined">Conectarea a fost refuzată.</string>
+    <string name="soc_qr_error">Conectarea nu a reușit. %1$s</string>
+    <string name="soc_qr_content_description">Cod QR de conectare Discord</string>
+    <string name="soc_qr_title">Conectează-te cu Discord</string>
+    <string name="soc_qr_copied">Copiat!</string>
+    <string name="soc_qr_tap_to_copy">Selectează codul pentru a-l copia</string>
+    <string name="soc_qr_instructions">Scanează cu camera telefonului sau accesează discord.com/activate și lipește codul.</string>
+    <string name="soc_qr_expires_in">Expiră în %1$ds</string>
+    <string name="soc_qr_expired_short">Expirat</string>
+    <string name="soc_qr_cancel">Anulează</string>
+    <string name="soc_qr_try_again">Încearcă din nou</string>
+</resources>

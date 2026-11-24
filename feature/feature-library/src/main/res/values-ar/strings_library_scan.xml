@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Scan error messages -->
+    <string name="scan_error_card_not_found">لم يتم العثور على بطاقة الذاكرة.</string>
+    <string name="scan_error_scan_failed">فشل الفحص — راجع السجل.</string>
+    <string name="scan_error_library_unreadable">تعذّرت قراءة المكتبة.</string>
+    <string name="scan_error_save_failed">تعذّر حفظ لعبة تم فحصها.</string>
+    <string name="scan_error_rom_dir_not_found">لم يتم العثور على مجلد ROM: %1$s</string>
+    <string name="scan_error_folder_link_invalid">رابط مجلد هذه المكتبة غير صالح. أعِد إضافة المجلد.</string>
+    <string name="scan_error_root_unreadable">تعذّرت قراءة أحد مجلدات ROM. إذا كان على بطاقة SD، فتأكّد من إدخال البطاقة.</string>
+    <string name="scan_error_permission_lost">فُقد الإذن، أعِد اختيار المجلد.</string>
+    <string name="scan_error_partial_read">تعذّرت قراءة جزء من المجلد، لذا لم يتغير شيء. حاول مجددًا بعد قليل.</string>
+
+    <!-- One-line scan outcome. %1$s is the Memory Card name, %2$s is the outcome sentence below -->
+    <string name="scan_outcome_line">‏%1$s: %2$s</string>
+    <string name="scan_outcome_no_source">لم يتم ضبط مجلد ROM.</string>
+    <string name="scan_outcome_busy">هناك فحص قيد التشغيل بالفعل.</string>
+    <string name="scan_outcome_failed">فشل الفحص.</string>
+    <string name="scan_outcome_no_new">لا توجد ROM جديدة</string>
+    <string name="scan_outcome_no_new_none_missing">لا توجد ROM جديدة، ولا مفقودة</string>
+    <string name="scan_outcome_no_new_marked_missing">لا توجد ROM جديدة، ووُضعت علامة مفقود على %1$d</string>
+    <plurals name="scan_outcome_added">
+        <item quantity="zero">لم تُضَف أي ROM جديدة</item>
+        <item quantity="one">تمت إضافة ROM جديدة واحدة</item>
+        <item quantity="two">تمت إضافة ROM جديدتين</item>
+        <item quantity="few">تمت إضافة %1$d ROM جديدة</item>
+        <item quantity="many">تمت إضافة %1$d ROM جديدة</item>
+        <item quantity="other">تمت إضافة %1$d ROM جديدة</item>
+    </plurals>
+    <plurals name="scan_outcome_added_none_missing">
+        <item quantity="zero">لم تُضَف أي ROM جديدة، ولا مفقودة</item>
+        <item quantity="one">تمت إضافة ROM جديدة واحدة، ولا مفقودة</item>
+        <item quantity="two">تمت إضافة ROM جديدتين، ولا مفقودة</item>
+        <item quantity="few">تمت إضافة %1$d ROM جديدة، ولا مفقودة</item>
+        <item quantity="many">تمت إضافة %1$d ROM جديدة، ولا مفقودة</item>
+        <item quantity="other">تمت إضافة %1$d ROM جديدة، ولا مفقودة</item>
+    </plurals>
+    <plurals name="scan_outcome_added_marked_missing">
+        <item quantity="zero">لم تُضَف أي ROM جديدة، ووُضعت علامة مفقود على %2$d</item>
+        <item quantity="one">تمت إضافة ROM جديدة واحدة، ووُضعت علامة مفقود على %2$d</item>
+        <item quantity="two">تمت إضافة ROM جديدتين، ووُضعت علامة مفقود على %2$d</item>
+        <item quantity="few">تمت إضافة %1$d ROM جديدة، ووُضعت علامة مفقود على %2$d</item>
+        <item quantity="many">تمت إضافة %1$d ROM جديدة، ووُضعت علامة مفقود على %2$d</item>
+        <item quantity="other">تمت إضافة %1$d ROM جديدة، ووُضعت علامة مفقود على %2$d</item>
+    </plurals>
+    <string name="scan_with_error_note">%1$s (%2$s)</string>
+
+    <!-- Per-card line in the scan results list -->
+    <!-- Short badge on a card that scanned but found no new games -->
+    <string name="scan_badge_no_new">لا جديد</string>
+    <string name="scan_reason_no_new">لا توجد ألعاب جديدة</string>
+    <string name="scan_reason_no_new_marked_missing">لا توجد ألعاب جديدة، ووُضعت علامة مفقود على %1$d</string>
+    <plurals name="scan_reason_added">
+        <item quantity="zero">لم تُضَف أي لعبة جديدة</item>
+        <item quantity="one">تمت إضافة لعبة جديدة واحدة</item>
+        <item quantity="two">تمت إضافة لعبتين جديدتين</item>
+        <item quantity="few">تمت إضافة %1$d ألعاب جديدة</item>
+        <item quantity="many">تمت إضافة %1$d لعبة جديدة</item>
+        <item quantity="other">تمت إضافة %1$d لعبة جديدة</item>
+    </plurals>
+    <plurals name="scan_reason_added_marked_missing">
+        <item quantity="zero">لم تُضَف أي لعبة جديدة، ووُضعت علامة مفقود على %2$d</item>
+        <item quantity="one">تمت إضافة لعبة جديدة واحدة، ووُضعت علامة مفقود على %2$d</item>
+        <item quantity="two">تمت إضافة لعبتين جديدتين، ووُضعت علامة مفقود على %2$d</item>
+        <item quantity="few">تمت إضافة %1$d ألعاب جديدة، ووُضعت علامة مفقود على %2$d</item>
+        <item quantity="many">تمت إضافة %1$d لعبة جديدة، ووُضعت علامة مفقود على %2$d</item>
+        <item quantity="other">تمت إضافة %1$d لعبة جديدة، ووُضعت علامة مفقود على %2$d</item>
+    </plurals>
+</resources>

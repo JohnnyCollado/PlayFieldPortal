@@ -20,10 +20,11 @@ private val PanelToHintGap = 8.dp
 
 /**
  * The height a [KeyboardPlacement.BOTTOM_CENTER] keyboard takes from the bottom of the screen:
- * panel (188 dp), the gap, the prompt pill and the bottom inset, rounded up. A screen keeps what
- * the user is typing into above this line, as `imePadding()` does for the system keyboard.
+ * the tallest panel ([VirtualKeyboardMetrics.MaxPanelHeight], 48 dp keys), the gap, the prompt pill
+ * (about 36 dp) and the bottom inset. A screen keeps what the user is typing into above this line,
+ * as `imePadding()` does for the system keyboard.
  */
-val VirtualKeyboardBottomReserve = 256.dp
+val VirtualKeyboardBottomReserve = VirtualKeyboardMetrics.MaxPanelHeight + PanelToHintGap + 36.dp + BottomInset
 
 /**
  * The shell's keyboard layer, for every session the settings scaffold does not draw itself:

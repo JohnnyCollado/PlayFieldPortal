@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_title">焦點光暈</string>
+    <string name="glow_sub_off">所選圖示周圍不顯示光暈。</string>
+    <string name="glow_sub_steady">所選圖示周圍顯示柔和的光。保持靜止。</string>
+    <string name="glow_sub_pulsing">所選圖示周圍的光緩慢增強再減弱。當「動態」設為「靜態」時保持靜止。</string>
+    <string name="glow_value_off">關閉</string>
+    <string name="glow_value_steady">靜止</string>
+    <string name="glow_value_pulsing">脈動</string>
+</resources>

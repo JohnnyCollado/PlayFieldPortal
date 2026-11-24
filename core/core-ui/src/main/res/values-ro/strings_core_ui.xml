@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Shared button and prompt labels -->
+    <string name="core_cancel">Anulează</string>
+    <string name="core_ok">OK</string>
+    <string name="core_save">Salvează</string>
+    <string name="core_apply">Aplică</string>
+    <string name="core_select">Selectează</string>
+    <string name="core_close">Închide</string>
+    <string name="core_back">Înapoi</string>
+
+    <!-- Modals (text entry) -->
+    <string name="core_modal_name_label">Nume</string>
+    <string name="core_modal_counter">%1$d / %2$d</string>
+
+    <!-- Convert-to-achievement-tracking picker -->
+    <string name="core_steam_convert_title">Instalezi urmărirea realizărilor?</string>
+    <string name="core_steam_convert_selected_count">%1$d din %2$d</string>
+    <string name="core_steam_convert_found_count">%1$d găsite</string>
+    <string name="core_steam_convert_hints">"Sus/Jos  Rânduri  •  Select  Comută  •  △  Toate/Niciunul  •  Start  Instalează  •  B  Anulează"</string>
+    <string name="core_steam_convert_loading">Se citește lista de realizări a fiecărui joc de pe Steam…</string>
+    <string name="core_steam_convert_install">Instalează (%1$d)</string>
+    <string name="core_steam_convert_none">Niciunul</string>
+    <string name="core_steam_convert_all">Toate</string>
+    <string name="core_steam_convert_skip_sync">Omite și sincronizează</string>
+    <string name="core_steam_convert_write_notice">În dosarul fiecărui joc bifat, PFP scrie achievements.json, stats.json și configs.user.ini, creează un dosar saves și redenumește steam_api64.dll în steam_api64_o.dll, astfel încât emulatorul inclus să se poată încărca prin el.</string>
+    <string name="core_steam_convert_backup_warning">Fă backup la salvările oricărui joc pe care l-ai jucat deja înainte de a-l converti — emulatorul va începe să citească din noua locație a salvărilor.</string>
+
+    <!-- Shiba player card -->
+    <string name="core_shiba_xp">%1$s XP</string>
+    <string name="core_shiba_progress_next_bone">%1$s / %2$s până la următorul Os</string>
+    <string name="core_shiba_progress_next_level">%1$s / %2$s până la nivelul %3$d</string>
+    <string name="core_shiba_level_abbrev">NV</string>
+
+    <!-- Colour picker -->
+    <string name="core_hsv_hex">Hex</string>
+    <string name="core_hsv_hue">Nuanță</string>
+    <string name="core_hsv_saturation">Saturație</string>
+    <string name="core_hsv_brightness">Luminozitate</string>
+    <string name="core_hsv_hint_move">Mută</string>
+    <string name="core_hsv_hint_type_hex">Introdu hex</string>
+    <string name="core_hsv_hint_adjust">Ajustează</string>
+    <string name="core_hsv_sample_text">Text exemplu</string>
+    <string name="core_color_default">Implicit</string>
+    <string name="core_color_pink">Roz</string>
+    <string name="core_color_gold">Auriu</string>
+    <string name="core_color_aqua">Acvamarin</string>
+    <string name="core_color_sky_blue">Albastru cer</string>
+    <string name="core_color_green">Verde</string>
+    <string name="core_color_coral">Coral</string>
+    <string name="core_color_slate">Ardezie</string>
+    <string name="core_color_custom">Personalizat</string>
+
+    <!-- Notification detail sheets -->
+    <string name="core_sheet_copied">Copiat</string>
+    <string name="core_sheet_copy_details">Copiază detaliile</string>
+    <string name="core_sheet_copy_list">Copiază lista</string>
+    <string name="core_sheet_filter">Filtru</string>
+    <string name="core_sheet_what_happened">Ce s-a întâmplat</string>
+    <string name="core_sheet_diagnostic_open">"▾  Detalii de diagnostic"</string>
+    <string name="core_sheet_diagnostic_closed">"▸  Detalii de diagnostic"</string>
+    <string name="core_sheet_diagnostic_heading">Diagnostic</string>
+    <string name="core_sheet_summary_chip">%1$d %2$s</string>
+    <string name="core_sheet_filter_all">Toate</string>
+    <string name="core_sheet_more">+%1$d în plus</string>
+    <string name="core_sheet_what_you_can_do">Ce poți face</string>
+
+    <!-- On-screen keyboard -->
+    <string name="core_vk_prompt_type">Tastează</string>
+    <string name="core_vk_prompt_delete">Șterge</string>
+    <string name="core_vk_prompt_cursor">Cursor</string>
+    <string name="core_vk_prompt_caps">Majuscule</string>
+    <string name="core_vk_key_space">Spațiu</string>
+    <string name="core_vk_key_shift">Shift</string>
+    <string name="core_vk_key_backspace">Backspace</string>
+    <string name="core_vk_key_done">Gata</string>
+    <string name="core_vk_shift_off">Dezactivat</string>
+    <string name="core_vk_shift_once">Activat pentru următoarea literă</string>
+    <string name="core_vk_shift_held">Activat cât timp este apăsat</string>
+    <string name="core_vk_shift_locked">Caps Lock activat</string>
+
+    <!-- Background tasks -->
+    <string name="core_task_failed">Sarcina a eșuat</string>
+    <string name="core_task_done">Gata</string>
+
+    <!-- Detail screens -->
+    <string name="core_detail_favorite_badge">PREFERAT</string>
+    <string name="core_detail_video_badge">VIDEO</string>
+    <string name="core_detail_confirm_collapse">Confirmă pentru a restrânge</string>
+    <string name="core_detail_confirm_read_more">Confirmă pentru a citi mai mult</string>
+
+    <!-- Rotate-to-landscape prompt -->
+    <string name="core_rotate_title">Rotește în modul peisaj</string>
+    <string name="core_rotate_message">PlayField Portal rulează în modul peisaj. Întoarce dispozitivul pe orizontală pentru a continua.</string>
+    <string name="core_rotate_switch_launcher">Schimbă launcherul</string>
+</resources>

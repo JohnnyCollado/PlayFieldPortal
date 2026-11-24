@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="motion_title">Moviment</string>
+    <string name="motion_summary">Quant es mou per si sol.</string>
+    <string name="motion_detail_animated">Tot es mou</string>
+    <string name="motion_detail_reduced">Només la selecció</string>
+    <string name="motion_detail_static">Res per si sol</string>
+    <string name="motion_sub_animated">Tot el que es pot moure es mou: il·lustracions, icones, fons de pantalla, el fons i la lluentor. És el que més bateria gasta.</string>
+    <string name="motion_sub_reduced">Només es mou l\'element seleccionat: la seva il·lustració, el seu fragment de vídeo i la seva lluentor. El fons continua movent-se.</string>
+    <string name="motion_sub_static">Res no es mou per si sol. Els menús encara llisquen quan t\'hi mous.</string>
+    <string name="motion_holds_background">Aturat mentre «Moviment» estigui en «Estàtic».</string>
+    <string name="motion_holds_glow">Fix mentre «Moviment» estigui en «Estàtic».</string>
+</resources>

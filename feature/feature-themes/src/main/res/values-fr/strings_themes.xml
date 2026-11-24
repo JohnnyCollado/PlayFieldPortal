@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="thm_error_manifest_missing">Fichier theme.json requis absent de l\'archive</string>
+    <string name="thm_error_manifest_invalid">theme.json non valide : %1$s</string>
+    <string name="thm_error_id_invalid">Identifiant de thème non valide \'%1$s\' — utilisez des lettres, des chiffres, \'.\', \'_\' ou \'-\' (64 max.)</string>
+    <string name="thm_error_color_invalid">%1$s non valide \'%2$s\' — format attendu #RRGGBB ou #AARRGGBB</string>
+</resources>

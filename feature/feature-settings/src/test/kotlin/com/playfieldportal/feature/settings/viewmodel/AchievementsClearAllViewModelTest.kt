@@ -42,6 +42,8 @@ class AchievementsClearAllViewModelTest {
     private val steamApi = mockk<SteamRemoteDataSource>()
     private val matchAndUpdate = mockk<AchievementMatchAndUpdate>(relaxed = true)
     private val repository = mockk<AchievementController>(relaxed = true)
+    // Relaxed: getString answers "" — these tests do not read the tray text.
+    private val context = mockk<android.content.Context>(relaxed = true)
     private val tasks = mockk<com.playfieldportal.core.ui.notification.BackgroundTaskCenter>(relaxed = true)
     private val paused = MutableStateFlow(false)
     private lateinit var vm: AchievementsSettingsViewModel
@@ -57,7 +59,7 @@ class AchievementsClearAllViewModelTest {
         every { repository.observeWallet() } returns flowOf(CoinWallet.EMPTY)
         every { repository.observeAutoUpdatesPaused() } returns paused
         coEvery { repository.clearAllTrackedAchievements() } returns true
-        vm = AchievementsSettingsViewModel(credentials, steamApi, matchAndUpdate, repository, tasks)
+        vm = AchievementsSettingsViewModel(context, credentials, steamApi, matchAndUpdate, repository, tasks)
     }
 
     @After fun tearDown() = Dispatchers.resetMain()

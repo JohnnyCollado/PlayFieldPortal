@@ -6,6 +6,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
 /**
  * The shape of the Options menu: eight rows in four groups, with the editing tools one level down.
@@ -13,7 +17,12 @@ import org.junit.Test
  * Pure state, so it needs no ViewModel. What it pins is which panel an action lives in and which
  * entries are offered at all — the things a user navigates by.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class GameDetailOptionsMenuTest {
+
+    private val res get() = RuntimeEnvironment.getApplication().resources
+
 
     private val rom = GameDetailUiState(
         isLoading = false,
@@ -22,10 +31,49 @@ class GameDetailOptionsMenuTest {
 
     private val withManual = rom.copy(hasManual = true)
 
+    private fun detailMenuRows(state: GameDetailUiState, emulatorName: String?) = detailMenuRows(state, emulatorName, res)
+
+    private fun gameDetailHelperItems(state: GameDetailUiState) = gameDetailHelperItems(state, res)
+
+    private fun DetailAction.label() = res.getString(labelRes)
+
     private val windows = GameDetailUiState(
         isLoading = false,
         game = Game(id = 2L, title = "Portal 2", platformId = "windows", packageName = "banner.hub"),
     )
+
+    private fun profile(id: String, name: String, pkg: String) = com.playfieldportal.core.domain.model.EmulatorProfile(
+        id = id,
+        name = name,
+        packageName = pkg,
+        intentType = com.playfieldportal.core.domain.model.IntentType.ACTION_VIEW,
+        supportedPlatformIds = listOf("psx"),
+    )
+
+    private val emulators = listOf(
+        profile("duckstation", "DuckStation", "com.github.stenzek.duckstation"),
+        profile("retroarch_swanstation", "RetroArch (SwanStation)", "com.retroarch.aarch64"),
+    )
+
+    @Test
+    fun `Choose Emulator is drawn as Options rows, one per emulator, the current one checked`() {
+        val rows = emulatorPickerRows(emulators, selectedId = "retroarch_swanstation")
+        assertEquals(listOf("DuckStation", "RetroArch (SwanStation)"), rows.map { it.label })
+        assertEquals(listOf(false, true), rows.map { it.checked })
+        // A pick commits; nothing here opens a further list or is destructive.
+        assertFalse(rows.any { it.opensMenu || it.isDestructive })
+    }
+
+    @Test
+    fun `an override stored as a package name still checks its emulator`() {
+        val rows = emulatorPickerRows(emulators, selectedId = "com.github.stenzek.duckstation")
+        assertEquals(listOf(true, false), rows.map { it.checked })
+    }
+
+    @Test
+    fun `with no override nothing is checked`() {
+        assertFalse(emulatorPickerRows(emulators, selectedId = null).any { it.checked })
+    }
 
     @Test
     fun `the top level is eight rows, most-used first and Remove last`() {
@@ -99,12 +147,12 @@ class GameDetailOptionsMenuTest {
 
     @Test
     fun `the renamed rows read as agreed`() {
-        assertEquals("Store Match", DetailAction.STOREFRONT.label)
-        assertEquals("Show File Location", DetailAction.LOCATION.label)
-        assertEquals("Add to Card", DetailAction.COLLECTIONS.label)
-        assertEquals("Remove from Library", DetailAction.REMOVE.label)
-        assertEquals("Fetching Artwork…", DetailAction.FETCH_ARTWORK.dynamicLabel(refreshing = true))
-        assertEquals("Artwork Studio", DetailAction.ARTWORK.label)
+        assertEquals("Store Match", DetailAction.STOREFRONT.label())
+        assertEquals("Show File Location", DetailAction.LOCATION.label())
+        assertEquals("Add to Card", DetailAction.COLLECTIONS.label())
+        assertEquals("Remove from Library", DetailAction.REMOVE.label())
+        assertEquals("Fetching Artwork…", DetailAction.FETCH_ARTWORK.dynamicLabel(refreshing = true, res = res))
+        assertEquals("Artwork Studio", DetailAction.ARTWORK.label())
     }
 
     // -- Rows as drawn ---------------------------------------------------------

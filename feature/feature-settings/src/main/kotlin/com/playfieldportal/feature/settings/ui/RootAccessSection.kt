@@ -1,5 +1,8 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.feature.settings.R
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -21,6 +24,9 @@ fun RootAccessSection(
     groupTitle: String,
     // What the roots hold, for the empty and fallback rows: "ROM", "Music", "Photo", "Video".
     rootKind: String,
+    // The same word as a string resource, for a screen that has one: it is what gets drawn.
+    // [rootKind] stays for callers that only have the English word.
+    @StringRes rootKindRes: Int? = null,
     roots: List<RootFolderRow>,
     addLabel: String,
     addSublabel: String,
@@ -32,20 +38,21 @@ fun RootAccessSection(
     onAutoDetect: (() -> Unit)? = null,
 ) {
     SettingsGroup(groupTitle)
+    val kind = rootKindRes?.let { stringResource(it) } ?: rootKind
 
     if (roots.isEmpty()) {
         SettingsRow(
-            label = "No $rootKind roots configured",
-            sublabel = "Add a folder below to start managing your library",
+            label = stringResource(R.string.sets_root_none, kind),
+            sublabel = stringResource(R.string.sets_root_none_help),
         )
     } else {
         roots.forEach { root ->
             DirectoryRow(
                 label = root.name,
                 sublabel = when {
-                    !root.linked -> "Access lost — use Edit to re-grant access"
-                    root.consoles != null -> "Consoles: ${root.consoles}"
-                    else -> "$rootKind root"
+                    !root.linked -> stringResource(R.string.sets_root_access_lost)
+                    root.consoles != null -> stringResource(R.string.sets_root_consoles, root.consoles)
+                    else -> stringResource(R.string.sets_root_kind_root, kind)
                 },
                 onEdit = { onRelinkRoot(root) },
                 onRemove = { onRemoveRoot(root) },
@@ -69,6 +76,8 @@ fun DirectoryRow(
     onEdit: () -> Unit,
     onRemove: () -> Unit,
 ) {
+    val editLabel = stringResource(SettingsLabels.EDIT_FOLDER_RES)
+    val removeLabel = stringResource(SettingsLabels.REMOVE_FOLDER_RES)
     SettingsRow(
         label = label,
         sublabel = sublabel,
@@ -76,13 +85,13 @@ fun DirectoryRow(
         onClick = null,
         actions = listOf(
             SettingsRowAction(
-                SettingsLabels.EDIT_FOLDER, onEdit,
+                editLabel, onEdit,
                 actionFocusBackgroundColor = lerp(SettingsAccent, Color.Black, 0.50f),
-                shortLabel = "Edit",
+                shortLabel = stringResource(R.string.sets_root_edit_short),
             ) {
                 Icon(
                     Icons.Default.Create,
-                    contentDescription = SettingsLabels.EDIT_FOLDER,
+                    contentDescription = editLabel,
                     tint = SettingsAccent,
                     modifier = Modifier
                         .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
@@ -90,13 +99,13 @@ fun DirectoryRow(
                 )
             },
             SettingsRowAction(
-                SettingsLabels.REMOVE_FOLDER, onRemove,
+                removeLabel, onRemove,
                 actionFocusBackgroundColor = lerp(Color(0xFFE55353), Color.Black, 0.50f),
-                shortLabel = "Remove",
+                shortLabel = stringResource(R.string.sets_root_remove_short),
             ) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = SettingsLabels.REMOVE_FOLDER,
+                    contentDescription = removeLabel,
                     tint = Color(0xFFE55353),
                     modifier = Modifier
                         .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))

@@ -2,6 +2,8 @@ package com.playfieldportal.feature.xmb.ui.visualizer
 
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.annotation.StringRes
+import com.playfieldportal.feature.xmb.R
 
 /**
  * One tick of whatever is driving the field.
@@ -52,7 +54,7 @@ data class VisualizerFrame(
  */
 interface PfpVisualizer {
     val id: String
-    val label: String
+    @get:StringRes val labelRes: Int
 
     /** Draws [budget] elements of the shared field into the current bounds. */
     fun DrawScope.render(frame: VisualizerFrame, budget: Int, sprite: ImageBitmap)
@@ -67,9 +69,10 @@ object VisualizerIds {
     /** Picker order: `Off` first, so the cheapest option is the one under the cursor by default. */
     val ALL = listOf(OFF, PORTAL, RIPPLE)
 
-    fun labelFor(id: String): String = when (id) {
-        PORTAL -> "Portal"
-        RIPPLE -> "Ripple"
-        else -> "Off"
+    @StringRes
+    fun labelRes(id: String): Int = when (id) {
+        PORTAL -> R.string.xmbu_visualizer_portal
+        RIPPLE -> R.string.xmbu_visualizer_ripple
+        else -> R.string.xmbu_visualizer_off
     }
 }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="thm_error_manifest_missing">압축 파일에 필수 theme.json이 없습니다</string>
+    <string name="thm_error_manifest_invalid">잘못된 theme.json: %1$s</string>
+    <string name="thm_error_id_invalid">잘못된 테마 ID \'%1$s\' — 영문자, 숫자, \'.\', \'_\', \'-\'만 사용하세요(최대 64자)</string>
+    <string name="thm_error_color_invalid">잘못된 %1$s \'%2$s\' — #RRGGBB 또는 #AARRGGBB 형식이어야 합니다</string>
+</resources>

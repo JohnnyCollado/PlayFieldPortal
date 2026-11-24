@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launch refusals shown before an emulator starts -->
+    <string name="launch_err_custom_command">カスタムコマンドのプロファイルはサポートされなくなりました。このエミュレーターの起動方法を「ROM をアプリで開く」または「アプリの画面を開く」に切り替えてください。</string>
+    <string name="launch_err_shortcut_unsupported">この画面からはショートカットを起動できません</string>
+    <string name="launch_err_no_package">%1$s の Android パッケージが記録されていません</string>
+    <string name="launch_err_app_not_launchable">Android アプリがインストールされていないか、起動できません: %1$s</string>
+    <string name="launch_err_emulator_not_installed">エミュレーターがインストールされていません: %1$s（%2$s）</string>
+    <string name="launch_err_wrong_build">%1$s（%2$s）は想定されたビルドではありません。署名証明書が一致しません。公式の配布元からエミュレーターを再インストールしてください。</string>
+    <string name="launch_err_no_activity_for_path">%1$s には起動アクティビティが記録されていないため、ファイルパスを渡せません。ナレッジエントリーを再インポートするか、エミュレーターを再検出してください。</string>
+    <string name="launch_err_activity_required">この起動方法にはアプリの画面名が必要です - プロファイル: %1$s</string>
+    <string name="launch_err_activity_gone">%1$s は起動アクティビティ（%2$s）を提供しなくなりました。エミュレーターを更新するか、このプラットフォーム用に別のエミュレーターを選択してください。</string>
+    <string name="launch_err_no_launch_id">%1$s の起動 ID が記録されていません。ライブラリを再スキャンしてください。</string>
+    <string name="launch_err_rom_link_invalid">このゲームの ROM リンクが無効です。ライブラリを再スキャンしてください。</string>
+    <string name="launch_err_lost_access">Play Field Portal はこのゲームのファイルにアクセスできなくなりました。ストレージを再接続し、ライブラリを再スキャンしてください。</string>
+    <string name="launch_err_rom_path_required">%1$s を起動するには ROM のパスが必要です</string>
+    <string name="launch_err_rom_not_found">ROM ファイルが見つかりません: %1$s</string>
+    <string name="launch_err_no_core">プロファイル「%2$s」でプラットフォーム「%1$s」用の RetroArch コアが設定されていません。RetroArch → コアダウンローダーを開いて、このシステム用のコアをインストールしてください。</string>
+    <string name="launch_err_cannot_open_rom_type">%1$s はこの種類の ROM を開けません。エミュレーターを再インストールするか、Android の設定でアプリの権限を確認してください。</string>
+    <string name="launch_err_no_file_path">%1$s にはこのデバイス上のファイルパスがないため、%2$s に起動するゲームを指定できません。</string>
+    <string name="launch_err_not_in_rom_folder">%1$s は設定された ROM フォルダ内にないため、%2$s に渡せません。設定でこのメモリーカードに設定されたフォルダを確認してください。</string>
+
+    <!-- Emulator choice problems -->
+    <string name="launch_err_configured_missing">%1$sのエミュレーターがインストールされていないか、利用できません: %2$s</string>
+    <string name="launch_err_core_not_installed">%1$s は%2$sとして設定されていますが、そのコアは RetroArch にインストールされていません。インストールするか、別のエミュレーターを選択してください。</string>
+    <string name="launch_err_no_longer_available">%1$s は%2$sとして設定されていますが、利用できなくなりました。別のエミュレーターを選択してください。</string>
+    <string name="launch_err_not_configured_for_platform">%1$s は %2$s 用に設定されていません</string>
+    <string name="launch_err_no_emulator_for_platform">%1$s 用のエミュレーターが設定されていません。このゲーム用のエミュレーターを選択するか、プラットフォームのデフォルトを設定してください。</string>
+
+    <!-- Where an emulator choice came from -->
+    <string name="launch_source_per_game">ゲーム別の設定</string>
+    <string name="launch_source_per_game_lower">ゲーム別の設定</string>
+    <string name="launch_source_memory_card">メモリーカードのデフォルト</string>
+    <string name="launch_source_memory_card_lower">メモリーカードのデフォルト</string>
+    <string name="launch_source_platform">プラットフォームのデフォルト</string>
+    <string name="launch_source_platform_lower">プラットフォームのデフォルト</string>
+    <string name="launch_source_recommended">推奨</string>
+    <string name="launch_source_recommended_lower">推奨</string>
+    <string name="launch_phrase_per_game">ゲーム別の設定</string>
+    <string name="launch_phrase_memory_card">メモリーカード</string>
+    <string name="launch_phrase_platform">プラットフォームのデフォルト</string>
+
+    <!-- Launch hand-off failures -->
+    <string name="launch_err_emulator_not_found">エミュレーターが見つかりません。インストールされていますか？</string>
+    <string name="launch_err_permission_denied">エミュレーターの起動が拒否されました</string>
+    <string name="launch_err_open_emulator">エミュレーターを開けませんでした: %1$s</string>
+    <string name="launch_never_foreground">起動後、エミュレーターが前面に表示されませんでした。</string>
+    <string name="launch_never_appeared">エミュレーターが表示されませんでした。インストールされていて最新の状態か確認してから、もう一度起動してください。</string>
+    <plurals name="launch_history_failed">
+        <item quantity="other">このゲームの直近 %2$d 回の起動のうち %1$d 回が失敗しました。</item>
+    </plurals>
+
+    <!-- Launch failure notification -->
+    <string name="launch_rec_title">%1$s を起動できませんでした</string>
+    <string name="launch_rec_could_not_start">エミュレーターを開始できませんでした</string>
+    <string name="launch_rec_never_foreground">エミュレーターが前面に表示されませんでした</string>
+    <string name="launch_fact_emulator">エミュレーター</string>
+    <string name="launch_fact_core">コア</string>
+    <string name="launch_fact_platform">プラットフォーム</string>
+    <string name="launch_fact_recent">最近の起動</string>
+    <string name="launch_fact_recent_value">直近 %2$d 回中 %1$d 回失敗</string>
+
+    <!-- Shortcut requests -->
+    <string name="launch_shortcut_request_title">ショートカットのリクエスト: %1$s（%2$s を開く）</string>
+    <string name="launch_shortcut_request_message">このショートカットをご自身で作成した場合のみ追加してください。</string>
+    <string name="launch_shortcut_added_title">ショートカットを追加しました: %1$s</string>
+    <string name="launch_shortcut_ignored_title">ショートカットを無視しました: %1$s</string>
+    <string name="launch_shortcut_from">%1$s から</string>
+    <string name="launch_windows_added_title">「%1$s」を Windows ゲームに追加しました</string>
+    <string name="launch_windows_added_message">フォルダをスキャンするには、Windows ライブラリの設定を完了してください</string>
+
+    <!-- First-run setup prompts -->
+    <string name="launch_setup_add_rom_folder">ROM フォルダを追加してライブラリを作成しましょう</string>
+    <string name="launch_setup_add_console_card">スキャン先となるゲーム機のメモリーカードを追加しましょう</string>
+    <string name="launch_setup_install_emulator">ゲームをプレイするにはエミュレーターをインストールしましょう</string>
+
+    <!-- Emulator detection notes -->
+    <string name="launch_inspect_known">%1$s の内蔵プロファイルから自動入力しました。プラットフォームを確認して保存してください。</string>
+    <string name="launch_inspect_best_guess">このアプリが ROM ファイルを開く方法から推測しました。プラットフォームを設定し、保存する前に ROM でテストしてください。</string>
+    <string name="launch_inspect_minimal">このアプリが ROM を受け取る方法を検出できませんでした。アクティビティ / インテントの設定を手動で入力し、ROM でテストしてください。</string>
+
+    <!-- Emulator knowledge file updates -->
+    <string name="launch_kb_too_many_files">インポートできるナレッジファイルは最大 %1$d 個です。先に 1 つ削除してください</string>
+    <string name="launch_kb_installed">更新しました</string>
+    <string name="launch_kb_not_configured">このビルドでは更新が設定されていません</string>
+    <string name="launch_kb_offline">更新サーバーに接続できませんでした</string>
+    <string name="launch_kb_too_large">更新ファイルが大きすぎます</string>
+    <string name="launch_kb_signature_invalid">更新の署名が無効です</string>
+    <string name="launch_kb_needs_app_update">この更新には新しいバージョンのアプリが必要です</string>
+    <string name="launch_kb_older">この更新はインストール済みのものより古いバージョンです</string>
+    <string name="launch_kb_invalid_content">更新ファイルの内容が無効です</string>
+    <string name="launch_kb_storage_failed">更新を保存できませんでした</string>
+    <string name="launch_kb_skipped">確認は不要でした</string>
+
+    <!-- Windows game launchers -->
+    <string name="launch_unknown_gamehub_or_bannerhub">GameHub または BannerHub の可能性があります</string>
+    <string name="launch_unknown_gamehublite_or_bannerhub">GameHub Lite または BannerHub の可能性があります</string>
+    <string name="launch_unknown_not_in_list">PFP のリストにありません</string>
+    <string name="launch_choice_not_a_launcher">ランチャーではない</string>
+    <string name="launch_id_prompt_gamehub">ゲーム ID — ゲームのページで「Local Game ID」の横の「Copy」をタップするか、⋮ → Banner Tools → Show Game ID</string>
+    <string name="launch_id_prompt_gamenative">インストール済みゲームの Steam App ID（またはストアのアプリ ID）</string>
+</resources>

@@ -123,6 +123,10 @@ object UiMediaLimits {
     // ── Per-slot specs ───────────────────────────────────────────────────────
     // Every AUDIO spec: zero floor (no minimum length), maxBytes = the staging ceiling.
     val NAVIGATION   = Spec(Kind.SOUND,       0L,    250L,   SOUND_MAX_MS,   AUDIO_STAGE_MAX_BYTES)
+    // Category and Options are navigation-family cues (a category change, a panel opening), so
+    // they carry Navigation's caps rather than the looser Confirm ones.
+    val CATEGORY     = Spec(Kind.SOUND,       0L,    250L,   SOUND_MAX_MS,   AUDIO_STAGE_MAX_BYTES)
+    val OPTIONS      = Spec(Kind.SOUND,       0L,    250L,   SOUND_MAX_MS,   AUDIO_STAGE_MAX_BYTES)
     val CONFIRM      = Spec(Kind.SOUND,       0L,   500L,   CONFIRM_MAX_MS, AUDIO_STAGE_MAX_BYTES)
     val BACK         = Spec(Kind.SOUND,       0L,   500L,   CONFIRM_MAX_MS, AUDIO_STAGE_MAX_BYTES)
     val NOTIFICATION = Spec(Kind.SOUND,       0L, 1_500L,   NOTIFICATION_MAX_MS, AUDIO_STAGE_MAX_BYTES)

@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Slice H2: feature-achievements (achievement updates, Local Steam folders, Vita scan) -->
+<resources>
+    <!-- Achievement update notifications. "Games" are the installed games being checked. -->
+    <string name="ach_upd_running">Updating installed achievements</string>
+    <string name="ach_upd_running_stop_note">Achievements already updated are kept.</string>
+    <!-- %1$d games checked so far, %2$d games in total -->
+    <string name="ach_upd_progress">Checking %1$d of %2$d games</string>
+    <string name="ach_upd_stopped">Achievement update stopped</string>
+    <!-- %d is how many games were checked before the run stopped -->
+    <plurals name="ach_upd_checked_kept">
+        <item quantity="one">%d game checked; saved progress kept</item>
+        <item quantity="other">%d games checked; saved progress kept</item>
+    </plurals>
+    <string name="ach_upd_some_failed">Some achievements couldn\'t update</string>
+    <!-- %1$d games failed, %2$d games in total -->
+    <plurals name="ach_upd_failed_message">
+        <item quantity="one">%1$d of %2$d game needs another try</item>
+        <item quantity="other">%1$d of %2$d games need another try</item>
+    </plurals>
+    <!-- Heading for the games that did update, in the failure detail list -->
+    <string name="ach_upd_results_done">Updated</string>
+    <string name="ach_upd_updated">Achievements updated</string>
+    <!-- %1$d games updated, %2$d games unchanged -->
+    <plurals name="ach_upd_updated_message">
+        <item quantity="one">%1$d game updated · %2$d unchanged</item>
+        <item quantity="other">%1$d games updated · %2$d unchanged</item>
+    </plurals>
+    <string name="ach_upd_up_to_date">Achievements are up to date</string>
+    <plurals name="ach_upd_up_to_date_message">
+        <item quantity="one">%d installed game checked</item>
+        <item quantity="other">%d installed games checked</item>
+    </plurals>
+    <string name="ach_upd_paused">Achievement update paused</string>
+    <!-- Label of the fact naming the online service involved (RetroAchievements, Steam ...) -->
+    <string name="ach_upd_fact_service">Service</string>
+    <string name="ach_upd_pause_offline">Connect to the internet</string>
+    <!-- %1$s is a service name such as RetroAchievements or Steam -->
+    <string name="ach_upd_pause_reconnect">Reconnect %1$s</string>
+    <string name="ach_upd_pause_steam_private">Steam Game Details aren\'t available</string>
+
+    <!-- Auto-match notifications -->
+    <string name="ach_match_running">Auto-matching games</string>
+    <string name="ach_match_running_stop_note">Games already matched stay linked.</string>
+    <string name="ach_match_stopped_note">Games already matched stay linked</string>
+    <string name="ach_match_stopped">Auto-match stopped</string>
+    <string name="ach_match_recognized">Games recognized</string>
+    <plurals name="ach_match_recognized_message">
+        <item quantity="one">%d installed game matched. Updating their achievements.</item>
+        <item quantity="other">%d installed games matched. Updating their achievements.</item>
+    </plurals>
+
+    <!-- Clearing achievement records -->
+    <string name="ach_clear_done">Achievement records cleared</string>
+    <string name="ach_clear_done_message">Installed games need to be resynced to show achievements again</string>
+    <string name="ach_clear_failed">Couldn’t clear achievements</string>
+    <string name="ach_clear_failed_message">Nothing was removed. Try again from Settings ▸ Achievements</string>
+
+    <!-- Local Steam: why a game's Steam identity could not be checked. These phrases are placed at the
+         start of a sentence or after a folder name, so they keep their own capitalisation. -->
+    <string name="ach_ls_unavail_store">the store could not be asked</string>
+    <string name="ach_ls_unavail_steam">Steam is not available right now</string>
+    <string name="ach_ls_steam_unreachable">Steam could not be reached</string>
+    <string name="ach_ls_steam_rate_limited">Steam is rate-limiting requests</string>
+    <string name="ach_ls_steam_error">Steam returned an error</string>
+    <string name="ach_ls_steam_needs_key">Steam needs your Web API key</string>
+
+    <!-- Local Steam: linking a picked game folder -->
+    <!-- %1$s is the folder name -->
+    <string name="ach_link_no_match">Steam has no game matching \"%1$s\". Rename the folder to the game\'s Steam name, or link it from Game Detail ▸ Match Game first.</string>
+    <!-- %1$s is a reason phrase from ach_ls_* -->
+    <string name="ach_link_unavailable">%1$s, so this folder\'s app id could not be worked out. Nothing was changed — try again when you are back online.</string>
+    <string name="ach_link_marker_failed">Could not create steam_appid.txt in that folder — PFP may only have read access to it.</string>
+    <string name="ach_link_not_recorded">The chosen match could not be recorded.</string>
+    <string name="ach_link_installer_off">Turn on Install Goldberg &amp; Convert Games in Achievement settings before PFP writes into a game folder.</string>
+    <string name="ach_link_no_app_id">That folder no longer declares an app id — pick it again.</string>
+    <string name="ach_link_need_key">Add your Steam Web API key in Settings ▸ Achievements ▸ Provider Credentials — the achievement list comes from it.</string>
+    <!-- %1$s is a Steam app id -->
+    <string name="ach_link_no_achievements">Steam lists no achievements for app id %1$s, so there is nothing to track.</string>
+    <!-- %1$s is a short technical reason -->
+    <string name="ach_link_kit_failed">Could not write the achievement kit: %1$s</string>
+    <string name="ach_link_read_back_failed">That folder could not be read back. If it is on removable storage, remount it and pick it again.</string>
+    <string name="ach_link_not_steam_build">No Steam library file (steam_api64.dll) anywhere in that folder, so it is not a Steam build and there is nothing for the emulator to track. Pick the folder the game\'s .exe lives in.</string>
+
+    <!-- Local Steam: convert picker rows. %2$s / %1$s is a Steam app id; the dots separate the two parts of the note. -->
+    <string name="ach_pick_checking">Checking Steam…</string>
+    <!-- A "coin" is PFP's word for an achievement. %1$d is the number of coins, %2$s the app id -->
+    <plurals name="ach_pick_coins">
+        <item quantity="one">%1$d coin  ·  appid %2$s</item>
+        <item quantity="other">%1$d coins  ·  appid %2$s</item>
+    </plurals>
+    <string name="ach_pick_no_list">No list on Steam  ·  appid %1$s</string>
+    <string name="ach_pick_needs_key">Needs your Steam Web API key  ·  appid %1$s</string>
+    <string name="ach_pick_no_answer">Steam didn\'t answer  ·  appid %1$s</string>
+
+    <!-- Local Steam: batch match summary -->
+    <string name="ach_batch_already_running">A batch match is already running.</string>
+    <string name="ach_batch_no_folders">No game folders in there. Pick the folder that CONTAINS your game folders, not one game\'s own folder.</string>
+    <plurals name="ach_batch_none_steam">
+        <item quantity="one">Found %d folder, but none of them is a Steam build — no steam_api library, so there is nothing for the emulator to track.</item>
+        <item quantity="other">Found %d folders, but none of them is a Steam build — no steam_api library, so there is nothing for the emulator to track.</item>
+    </plurals>
+    <!-- Parts of the "Matched" sentence, joined with commas. %1$d is a number of folders -->
+    <string name="ach_batch_linked">%1$d linked to library games</string>
+    <string name="ach_batch_tracked">%1$d tracked on their own</string>
+    <string name="ach_batch_converting">%1$d awaiting conversion</string>
+    <!-- %1$d folders matched, %2$d folders found -->
+    <plurals name="ach_batch_matched">
+        <item quantity="one">Matched %1$d of %2$d folder.</item>
+        <item quantity="other">Matched %1$d of %2$d folders.</item>
+    </plurals>
+    <!-- %1$d folders matched, %2$d folders found, %3$s a comma-separated breakdown -->
+    <plurals name="ach_batch_matched_detail">
+        <item quantity="one">Matched %1$d of %2$d folder: %3$s.</item>
+        <item quantity="other">Matched %1$d of %2$d folders: %3$s.</item>
+    </plurals>
+    <plurals name="ach_batch_needs_identifying">
+        <item quantity="one">%1$d could not be identified from its name — open the game\'s Shiba Coins page and Auto-Match to pick its folder.</item>
+        <item quantity="other">%1$d could not be identified from their names — open each game\'s Shiba Coins page and Auto-Match to pick its folder.</item>
+    </plurals>
+    <plurals name="ach_batch_not_in_library">
+        <item quantity="one">%1$d is not in your library — add it to the Windows card first, then match again.</item>
+        <item quantity="other">%1$d are not in your library — add them to the Windows card first, then match again.</item>
+    </plurals>
+    <plurals name="ach_batch_not_steam_builds">
+        <item quantity="one">%1$d is not a Steam build.</item>
+        <item quantity="other">%1$d are not Steam builds.</item>
+    </plurals>
+    <plurals name="ach_batch_failed">
+        <item quantity="one">%1$d failed — see the log.</item>
+        <item quantity="other">%1$d failed — see the log.</item>
+    </plurals>
+    <string name="ach_batch_cannot_open">That folder could not be opened.</string>
+    <!-- %1$s is a folder name -->
+    <string name="ach_batch_fail_read_back">%1$s: could not be read back after identifying.</string>
+    <!-- %1$s is a folder name, %2$s a reason phrase from ach_ls_* -->
+    <string name="ach_batch_fail_reason">%1$s: %2$s.</string>
+    <string name="ach_batch_fail_marker">%1$s: steam_appid.txt could not be created.</string>
+
+    <!-- Vita3K library scan results -->
+    <string name="ach_vita_set_folder">Set your Vita3K data folder (ux0) first.</string>
+    <string name="ach_vita_link_invalid">That Vita3K folder link is invalid — re-grant it.</string>
+    <string name="ach_vita_no_ux0">Couldn\'t find ux0/app in the granted folder — pick your Vita3K ux0 folder (or the folder that contains it).</string>
+    <string name="ach_vita_no_app">No app/ folder under ux0 — check the granted folder.</string>
+    <string name="ach_vita_none_installed">No installed Vita games found under ux0/app. Install a game in Vita3K first.</string>
+    <!-- %d is how many installed games are already in the library -->
+    <plurals name="ach_vita_no_new">
+        <item quantity="one">No new Vita games — %d already in your library.</item>
+        <item quantity="other">No new Vita games — %d already in your library.</item>
+    </plurals>
+    <plurals name="ach_vita_imported">
+        <item quantity="one">Imported %d Vita game.</item>
+        <item quantity="other">Imported %d Vita games.</item>
+    </plurals>
+    <!-- %1$d games imported, %2$d games updated -->
+    <plurals name="ach_vita_imported_updated">
+        <item quantity="one">Imported %1$d Vita game, updated %2$d.</item>
+        <item quantity="other">Imported %1$d Vita games, updated %2$d.</item>
+    </plurals>
+</resources>

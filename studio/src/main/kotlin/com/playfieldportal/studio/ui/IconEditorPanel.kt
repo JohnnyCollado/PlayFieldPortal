@@ -1,5 +1,6 @@
 package com.playfieldportal.studio.ui
 
+import com.playfieldportal.studio.ui.sections.ButtonRow
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,7 +33,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import com.playfieldportal.studio.i18n.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -193,7 +194,7 @@ fun IconEditorPanel(
 
         HorizontalDivider()
         MutedText("Drop an image file (png, gif, jpg, bmp, webp) onto any slot to replace its icon.", fontSize = 11)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        ButtonRow {
             var packMenu by remember { mutableStateOf(false) }
             Box {
                 OutlinedButton(onClick = { packMenu = true }, enabled = !state.busy) { Text("Import icon pack… ▾", fontSize = 12.sp) }

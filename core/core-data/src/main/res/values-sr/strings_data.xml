@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Slice G2: core-data strings (data-layer messages and enum labels) -->
+
+    <!-- Voice microphone sensitivity (Discord) -->
+    <!-- How strictly the microphone filters out background sound during a voice call. Shown on a settings row. -->
+    <string name="data_mic_sensitivity_auto">Аутоматски</string>
+    <string name="data_mic_sensitivity_high">Висока</string>
+    <!-- "Low" sensitivity: the microphone opens only for louder sound, so button clicks on a handheld are ignored. -->
+    <string name="data_mic_sensitivity_low">Ниска · филтрира кликове</string>
+    <!-- "Minimal" sensitivity: the microphone opens only for loud speech. -->
+    <string name="data_mic_sensitivity_minimal">Минимална · само гласан говор</string>
+
+    <!-- Discord sign-in errors -->
+    <!-- Shown on the Discord QR sign-in screen when the device has no internet. -->
+    <string name="data_discord_offline">Нисте повезани на мрежу. Поново се повежите на интернет и покушајте поново.</string>
+    <string name="data_discord_unreachable">Повезивање са Discord-ом није успело</string>
+    <string name="data_discord_signin_network_error">Грешка мреже при пријављивању</string>
+
+    <!-- Music and video players -->
+    <!-- Shown when no app can play a music file. "Settings → Music" is a path in this app's settings. -->
+    <string name="data_music_no_player">Ниједан музички плејер није могао да отвори ову нумеру. Инсталирајте плејер или га изаберите у Подешавања → Музика.</string>
+    <!-- Shown when no app can play a video file. "Settings → Video" is a path in this app's settings. -->
+    <string name="data_video_no_player_open">Ниједан видео плејер није могао да отвори ову датотеку. Инсталирајте плејер или га изаберите у Подешавања → Видео.</string>
+    <!-- Title of the Android app chooser for opening a video. -->
+    <string name="data_video_chooser_title">Пусти видео помоћу…</string>
+    <string name="data_video_none_installed">Није инсталиран ниједан видео плејер.</string>
+    <string name="data_video_bad_location">Локација овог видеа је неважећа.</string>
+    <string name="data_video_unreachable">Ова видео датотека није пронађена или је приступ изгубљен. Покушајте поново да скенирате библиотеку.</string>
+    <!-- %1$s is the name of a video player app, or "That player" when the name is unknown. -->
+    <string name="data_video_player_cannot_open">%1$s не може да отвори овај видео или није инсталиран.</string>
+    <!-- Stands in for a video player app's name when it cannot be looked up. -->
+    <string name="data_video_that_player">Тај плејер</string>
+    <string name="data_video_none_installed_for_file">Није инсталиран ниједан видео плејер који може да отвори ову датотеку.</string>
+
+    <!-- Lock screen image -->
+    <string name="data_lockscreen_unreadable">Читање те слике није успело</string>
+    <string name="data_lockscreen_rejected">Овај уређај није прихватио слику за закључани екран</string>
+
+    <!-- PSP theme import (.ptf) -->
+    <!-- Errors shown when importing a theme file made for the PlayStation Portable (.ptf). -->
+    <string name="data_ptf_unreadable">Читање датотеке није успело (или је превелика)</string>
+    <string name="data_ptf_not_ptf">Није датотека PSP теме (.ptf)</string>
+    <string name="data_ptf_unparseable">Датотеку теме није могуће обрадити</string>
+    <string name="data_ptf_wallpaper_missing">Тема нема слику позадине</string>
+    <string name="data_ptf_wallpaper_unsupported">Ова тема компримује позадину методом која није подржана</string>
+    <string name="data_ptf_wallpaper_damaged">Позадина теме је оштећена и није је могуће декодирати</string>
+    <string name="data_ptf_save_failed">Чување теме није успело</string>
+
+    <!-- Custom media names -->
+    <!-- Name shown for a video the user picked when its file name cannot be read. -->
+    <string name="data_custom_video">Прилагођени видео</string>
+    <!-- Name shown for a sound the user picked when its file name cannot be read. -->
+    <string name="data_custom_sound">Прилагођени звук</string>
+
+    <!-- Controllers -->
+    <!-- Name shown for a connected game controller that reports no name. -->
+    <string name="data_controller_fallback_name">Контролер</string>
+
+    <!-- Xbox 360 emulator names (proper nouns, not translated) -->
+</resources>

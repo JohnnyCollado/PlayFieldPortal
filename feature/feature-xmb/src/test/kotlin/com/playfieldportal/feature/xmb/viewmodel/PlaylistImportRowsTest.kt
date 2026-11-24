@@ -6,8 +6,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /** Pins the Import Playlist rows and the browser menu entry that open the playlist file picker. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class PlaylistImportRowsTest {
 
     private val music = playlistRootItems(listOf(Playlist(1, "Road Trip"), Playlist(2, "Gym")))
@@ -17,8 +22,8 @@ class PlaylistImportRowsTest {
     fun `music playlist rows end with Create Playlist then Import Playlist`() {
         assertEquals(listOf("pl_1", "pl_2", "create_playlist", "import_playlist"), music.map { it.id })
         val import = music.last()
-        assertEquals("Import Playlist", import.title)
-        assertEquals("From an .m3u, .m3u8, .pls or .xspf file", import.subtitle)
+        assertEquals("Import Playlist", import.titleUi.en())
+        assertEquals("From an .m3u, .m3u8, .pls or .xspf file", import.subtitleUi.enOrNull())
         assertEquals(XMBItemType.ADD_ACTION, import.type)
     }
 
@@ -32,8 +37,8 @@ class PlaylistImportRowsTest {
     fun `video playlist rows end with Create Playlist then their own Import row`() {
         assertEquals(listOf("vpl_1", "create_video_playlist", "import_video_playlist"), video.map { it.id })
         val import = video.last()
-        assertEquals("Import Playlist", import.title)
-        assertEquals("From an .m3u, .m3u8, .pls or .xspf file", import.subtitle)
+        assertEquals("Import Playlist", import.titleUi.en())
+        assertEquals("From an .m3u, .m3u8, .pls or .xspf file", import.subtitleUi.enOrNull())
         assertEquals(XMBItemType.ADD_ACTION, import.type)
         assertNotEquals(music.last().id, import.id)
     }

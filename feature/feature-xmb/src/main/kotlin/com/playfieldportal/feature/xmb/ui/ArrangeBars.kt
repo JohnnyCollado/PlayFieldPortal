@@ -22,6 +22,9 @@ import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerHintBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import com.playfieldportal.feature.xmb.R
 
 // ── Move and multi-select bars ────────────────────────────────────────────────
 //
@@ -54,8 +57,8 @@ fun MoveModeBar(
     if (!touch) {
         ControllerHintBar(
             items = listOf(
-                ControllerPromptItem(GamepadAction.SELECT, "Place"),
-                ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+                ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.xmbu_arrange_place)),
+                ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.xmbu_common_cancel)),
             ),
             modifier = modifier,
             compact = true,
@@ -64,14 +67,14 @@ fun MoveModeBar(
     }
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         if (horizontal) {
-            BarButton("◀", onMoveUp, contentDescription = "Move left")
-            BarButton("▶", onMoveDown, contentDescription = "Move right")
+            BarButton("◀", onMoveUp, contentDescription = stringResource(R.string.xmbu_arrange_move_left))
+            BarButton("▶", onMoveDown, contentDescription = stringResource(R.string.xmbu_arrange_move_right))
         } else {
-            BarButton("▲", onMoveUp, contentDescription = "Move up")
-            BarButton("▼", onMoveDown, contentDescription = "Move down")
+            BarButton("▲", onMoveUp, contentDescription = stringResource(R.string.xmbu_arrange_move_up))
+            BarButton("▼", onMoveDown, contentDescription = stringResource(R.string.xmbu_arrange_move_down))
         }
-        BarButton("Place", onPlace)
-        BarButton("Cancel", onCancel)
+        BarButton(stringResource(R.string.xmbu_arrange_place), onPlace)
+        BarButton(stringResource(R.string.xmbu_common_cancel), onCancel)
     }
 }
 
@@ -97,20 +100,20 @@ fun MarkModeBar(
             contentAlignment = Alignment.Center,
         ) {
             // Sized to the compact chip beside it on a controller.
-            Text("$count marked", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Text(pluralStringResource(R.plurals.xmbu_arrange_marked, count, count), color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
         }
         if (!touch) {
             ControllerHintBar(
                 items = listOf(
-                    ControllerPromptItem(GamepadAction.SELECT, "Mark"),
-                    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Add to Card"),
-                    ControllerPromptItem(GamepadAction.BACK, "Done"),
+                    ControllerPromptItem(GamepadAction.SELECT, stringResource(R.string.xmbu_arrange_mark)),
+                    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, stringResource(R.string.xmbu_common_add_to_card)),
+                    ControllerPromptItem(GamepadAction.BACK, stringResource(R.string.xmbu_common_done)),
                 ),
                 compact = true,
             )
         } else {
-            BarButton("Add to Card", onAddToCard, enabled = count > 0)
-            BarButton("Done", onDone)
+            BarButton(stringResource(R.string.xmbu_common_add_to_card), onAddToCard, enabled = count > 0)
+            BarButton(stringResource(R.string.xmbu_common_done), onDone)
         }
     }
 }

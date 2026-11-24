@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Voice microphone sensitivity (Discord) -->
+    <string name="data_mic_sensitivity_auto">自動</string>
+    <string name="data_mic_sensitivity_high">高</string>
+    <string name="data_mic_sensitivity_low">低 · クリック音を除去</string>
+    <string name="data_mic_sensitivity_minimal">最小 · 大きな声のみ</string>
+
+    <!-- Discord sign-in errors -->
+    <string name="data_discord_offline">オフラインです。インターネットに再接続してから、もう一度お試しください。</string>
+    <string name="data_discord_unreachable">Discord に接続できませんでした</string>
+    <string name="data_discord_signin_network_error">サインイン中にネットワークエラーが発生しました</string>
+
+    <!-- Music and video players -->
+    <string name="data_music_no_player">この曲を開ける音楽プレーヤーがありません。プレーヤーをインストールするか、設定 → 音楽で選択してください。</string>
+    <string name="data_video_no_player_open">このファイルを開けるビデオプレーヤーがありません。プレーヤーをインストールするか、設定 → ビデオで選択してください。</string>
+    <string name="data_video_chooser_title">ビデオを再生するアプリ…</string>
+    <string name="data_video_none_installed">ビデオプレーヤーがインストールされていません。</string>
+    <string name="data_video_bad_location">このビデオの場所が無効です。</string>
+    <string name="data_video_unreachable">このビデオファイルが見つからないか、アクセス権が失われました。ライブラリを再スキャンしてみてください。</string>
+    <string name="data_video_player_cannot_open">%1$s ではこのビデオを開けないか、インストールされていません。</string>
+    <string name="data_video_that_player">そのプレーヤー</string>
+    <string name="data_video_none_installed_for_file">このファイルを開けるビデオプレーヤーがインストールされていません。</string>
+
+    <!-- Lock screen image -->
+    <string name="data_lockscreen_unreadable">その画像を読み込めませんでした</string>
+    <string name="data_lockscreen_rejected">このデバイスはロック画面の画像を受け付けませんでした</string>
+
+    <!-- PSP theme import (.ptf) -->
+    <string name="data_ptf_unreadable">ファイルを読み込めませんでした（またはサイズが大きすぎます）</string>
+    <string name="data_ptf_not_ptf">PSP テーマ（.ptf）ファイルではありません</string>
+    <string name="data_ptf_unparseable">テーマファイルを解析できませんでした</string>
+    <string name="data_ptf_wallpaper_missing">テーマに壁紙画像がありません</string>
+    <string name="data_ptf_wallpaper_unsupported">このテーマの壁紙はサポートされていない方式で圧縮されています</string>
+    <string name="data_ptf_wallpaper_damaged">テーマの壁紙が破損しているため、デコードできませんでした</string>
+    <string name="data_ptf_save_failed">テーマを保存できませんでした</string>
+
+    <!-- Custom media names -->
+    <string name="data_custom_video">カスタムビデオ</string>
+    <string name="data_custom_sound">カスタムサウンド</string>
+
+    <!-- Controllers -->
+    <string name="data_controller_fallback_name">コントローラ</string>
+</resources>

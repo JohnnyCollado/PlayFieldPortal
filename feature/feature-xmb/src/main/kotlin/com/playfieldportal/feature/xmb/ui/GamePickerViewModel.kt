@@ -166,7 +166,8 @@ class GamePickerViewModel @Inject constructor(
     private fun menuAction(action: GamepadAction) {
         val state = _state.value
         val menu = state.menu ?: return
-        val rows = state.menuRows()
+        // Only the row count and cues matter here, not the labels.
+        val rows = state.menuRows { "" }
         val depth = if (menu.level == PickerMenuLevel.ROOT) 0 else 1
         val cue = rows.getOrNull(menu.selectedIndex)?.cue ?: PspMenuCue.NONE
         when (val outcome = PspMenuNav.handle(action, menu.selectedIndex, rows.size, depth, cue, MenuSoundSink { menuSound.play(it) })) {

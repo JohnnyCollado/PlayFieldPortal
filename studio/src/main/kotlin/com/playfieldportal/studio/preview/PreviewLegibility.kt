@@ -70,7 +70,7 @@ data class PreviewLegibility(
 
     companion object {
         /** A theme that says nothing: today's shadowed labels and plain icons. */
-        val DEFAULT = PreviewLegibility(LabelProtection.SHADOW, IconMatteStyle.NONE, solidUnfocusedIcons = false)
+        val DEFAULT = PreviewLegibility(LabelProtection.SHADOW, IconMatteStyle.OFFSET_SHADOW, solidUnfocusedIcons = false)
 
         const val UNFOCUSED_ALPHA = 0.58f
 
@@ -109,7 +109,8 @@ data class PreviewLegibility(
                 "contour_dark" -> IconMatteStyle.CONTOUR_DARK
                 "contour_light" -> IconMatteStyle.CONTOUR_LIGHT
                 "contour_auto" -> IconMatteStyle.CONTOUR_AUTO
-                else -> IconMatteStyle.NONE
+                "none" -> IconMatteStyle.NONE
+                else -> IconMatteStyle.OFFSET_SHADOW // unset or unknown: the launcher's default (dark offset shadow)
             },
             solidUnfocusedIcons = legibility?.solidUnfocusedIcons == true,
         )
