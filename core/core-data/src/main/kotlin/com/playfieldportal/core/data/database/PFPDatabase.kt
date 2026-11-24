@@ -123,7 +123,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         com.playfieldportal.core.data.database.entity.UmdSlotEntity::class,
         com.playfieldportal.core.data.database.entity.AppUsageEntity::class,
     ],
-    version = 58,
+    version = 59,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -1731,6 +1731,16 @@ abstract class PFPDatabase : RoomDatabase() {
                     WHERE platform_id = 'ps2' AND supported_extensions = 'iso,bin,chd'
                     """.trimIndent()
                 )
+            }
+        }
+
+        /**
+         * v59 — the user's "Mark / Unmark as Game" per app, apart from the Android Games card. NULL
+         * (every existing row) follows the Play Store's category, as before.
+         */
+        val MIGRATION_58_59 = object : Migration(58, 59) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE app_overrides ADD COLUMN game_override INTEGER DEFAULT NULL")
             }
         }
     }

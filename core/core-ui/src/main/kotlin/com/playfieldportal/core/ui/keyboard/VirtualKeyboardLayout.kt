@@ -33,7 +33,11 @@ sealed interface VirtualKey {
 
 enum class KeyboardLayer { LETTERS, SYMBOLS }
 
-/** The approved layout (Virtual Keyboard plan section 4): ten columns, five rows per layer. */
+/**
+ * Ten columns, four rows per layer, laid out as Gboard does (2026-11-24): letters with no digit row,
+ * digits on ?123. Four rows let the keyboard match the system keyboard's height with keys about its
+ * size; the symbols page keeps the common twenty (^ = [ ] { } \ | < > left out).
+ */
 object VirtualKeyboardLayout {
 
     const val COLUMNS = 10
@@ -49,7 +53,6 @@ object VirtualKeyboardLayout {
     )
 
     private val letters: List<List<VirtualKey>> = listOf(
-        row("1234567890"),
         row("qwertyuiop"),
         row("asdfghjkl-"),
         row("zxcvbnm_.@"),
@@ -58,9 +61,8 @@ object VirtualKeyboardLayout {
 
     private val symbols: List<List<VirtualKey>> = listOf(
         row("1234567890"),
-        row("!@#$%^&*()"),
-        row("-_=+[]{}\\|"),
-        row(";:'\",.<>/?"),
+        row("@#$%&*()-+"),
+        row("!?'\",.:;_/"),
         bottomRow(KeyboardLayer.SYMBOLS),
     )
 

@@ -38,8 +38,8 @@ data class VirtualKeyboardState(
         get() = VirtualKeyboardLayout.rows(layer).getOrNull(focus.row)?.getOrNull(focus.cell)
 
     companion object {
-        /** `q`: row 1, first key. */
-        val INITIAL_FOCUS = SpanGridCursor(1, 0)
+        /** `q`: the top row's first key (there is no digit row since 2026-11-24). */
+        val INITIAL_FOCUS = SpanGridCursor(0, 0)
     }
 }
 

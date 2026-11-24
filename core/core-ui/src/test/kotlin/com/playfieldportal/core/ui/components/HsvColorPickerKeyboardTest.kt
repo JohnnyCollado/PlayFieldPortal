@@ -11,7 +11,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import com.playfieldportal.core.ui.keyboard.InputSource
 import com.playfieldportal.core.ui.keyboard.LocalVirtualKeyboard
-import com.playfieldportal.core.ui.keyboard.VirtualKeyboardBottomReserve
 import com.playfieldportal.core.ui.keyboard.VirtualKeyboardController
 import com.playfieldportal.core.ui.theme.PFPTheme
 import org.junit.Assert.assertNull
@@ -66,7 +65,7 @@ class HsvColorPickerKeyboardTest {
     private fun assertAboveKeyboard(tag: String) {
         val node = bounds(tag)
         val screen = bounds(HsvPickerTags.SCRIM)
-        val keyboardTop = screen.bottom - with(composeRule.density) { VirtualKeyboardBottomReserve.toPx() }
+        val keyboardTop = screen.bottom - with(composeRule.density) { pfpKeyboardReserve(screen.height.toDp()).toPx() }
         assertTrue("keyboard must be open", keyboard.isOpen)
         assertTrue("$tag top ${node.top} must be on screen (${screen.top})", node.top >= screen.top)
         assertTrue("$tag bottom ${node.bottom} must clear the keyboard ($keyboardTop)", node.bottom <= keyboardTop)

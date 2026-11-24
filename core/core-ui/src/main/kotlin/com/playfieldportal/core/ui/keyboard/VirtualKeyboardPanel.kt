@@ -62,32 +62,47 @@ private val ShiftOnFill = Color.White.copy(alpha = 0.45f)
 private const val DISABLED_KEY_ALPHA = 0.35f
 
 /**
- * Key sizing, derived from the width a host offers. One size serves touch and controller alike, so
- * the panel never jumps when input switches mid-typing. Every host that reserves room for the panel
- * ([MaxPanelHeight], via `VirtualKeyboardBottomReserve`) derives from these same numbers.
+ * Key sizing. One size serves touch and controller alike, so the panel never jumps when input
+ * switches mid-typing. Two ways in: [forWidth] (a panel hung under its field, sized by the width on
+ * offer) and [forKeyHeight] (the bottom keyboard, whose height matches the system keyboard's; see
+ * [virtualKeyboardBottomReserve]). Every host that reserves room for the panel derives from these.
  */
 internal data class VirtualKeyboardMetrics(val keyUnit: Dp, val keyHeight: Dp) {
     companion object {
         val PanelPadding = 8.dp
         val KeyGap = 3.dp
         const val COLUMNS = 10
-        const val ROWS = 5
+        const val ROWS = 4
         private val MaxKeyUnit = 48.dp   // Android's touch-target guideline
         private val MinKeyHeight = 44.dp
+        /** The smallest key a matched keyboard shrinks to: about Gboard's on a short screen. */
+        val MinMatchedKeyHeight = 36.dp
         private const val HEIGHT_PER_UNIT = 32f / 34f // the original compact key's proportions
 
         private fun heightFor(unit: Dp): Dp = maxOf(MinKeyHeight, unit * HEIGHT_PER_UNIT)
 
+        private fun widthFit(availableWidth: Dp): Dp =
+            maxOf((availableWidth - PanelPadding * 2 - KeyGap * (COLUMNS - 1)) / COLUMNS, 0.dp)
+
         /** The key unit that fits ten columns, gaps and padding in [availableWidth], capped at 48 dp. */
         fun forWidth(availableWidth: Dp): VirtualKeyboardMetrics {
-            val fit = (availableWidth - PanelPadding * 2 - KeyGap * (COLUMNS - 1)) / COLUMNS
-            val unit = minOf(MaxKeyUnit, maxOf(fit, 0.dp))
+            val unit = minOf(MaxKeyUnit, widthFit(availableWidth))
             return VirtualKeyboardMetrics(unit, heightFor(unit))
         }
 
-        /** The tallest the panel gets (a 48 dp unit); what a host reserves. */
-        val MaxPanelHeight: Dp =
-            heightFor(MaxKeyUnit) * ROWS + KeyGap * (ROWS - 1) + PanelPadding * 2
+        /**
+         * Keys [keyHeight] tall, as wide as the key's proportions ask for and the width allows: a tall
+         * key on a tablet is a wide one too, as on the system keyboard.
+         */
+        fun forKeyHeight(keyHeight: Dp, availableWidth: Dp): VirtualKeyboardMetrics =
+            VirtualKeyboardMetrics(minOf(widthFit(availableWidth), keyHeight / HEIGHT_PER_UNIT), keyHeight)
+
+        /** The panel's height for keys [keyHeight] tall. */
+        fun panelHeight(keyHeight: Dp): Dp = keyHeight * ROWS + KeyGap * (ROWS - 1) + PanelPadding * 2
+
+        /** The key height that makes the panel [panelHeight] tall, never below [MinMatchedKeyHeight]. */
+        fun keyHeightFor(panelHeight: Dp): Dp =
+            maxOf(MinMatchedKeyHeight, (panelHeight - PanelPadding * 2 - KeyGap * (ROWS - 1)) / ROWS)
     }
 }
 
@@ -115,13 +130,19 @@ fun virtualKeyboardPrompts(): List<ControllerPromptItem> = listOf(
 )
 
 /**
- * The keyboard panel: five rows of ten columns, the focused key under the menu cursor. Keys scale
- * with the width on offer up to 48 dp ([VirtualKeyboardMetrics]), at most [VirtualKeyboardMetrics.MaxPanelHeight] tall.
+ * The keyboard panel: four rows of ten columns, the focused key under the menu cursor. Keys scale
+ * with the width on offer up to 48 dp ([VirtualKeyboardMetrics.forWidth]), or are [keyHeight] tall
+ * when the host matches the system keyboard's height ([VirtualKeyboardMetrics.forKeyHeight]).
  */
 @Composable
-fun VirtualKeyboardPanel(state: VirtualKeyboardState, modifier: Modifier = Modifier) {
+fun VirtualKeyboardPanel(
+    state: VirtualKeyboardState,
+    modifier: Modifier = Modifier,
+    keyHeight: Dp? = null,
+) {
     BoxWithConstraints(modifier) {
-        val metrics = VirtualKeyboardMetrics.forWidth(if (constraints.hasBoundedWidth) maxWidth else 960.dp)
+        val width = if (constraints.hasBoundedWidth) maxWidth else 960.dp
+        val metrics = keyHeight?.let { VirtualKeyboardMetrics.forKeyHeight(it, width) } ?: VirtualKeyboardMetrics.forWidth(width)
         Column(
             modifier = Modifier
                 .clip(RoundedCornerShape(PanelCorner))

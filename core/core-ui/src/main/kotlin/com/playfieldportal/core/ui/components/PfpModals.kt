@@ -81,7 +81,7 @@ import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.R
 import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
-import com.playfieldportal.core.ui.keyboard.VirtualKeyboardBottomReserve
+import com.playfieldportal.core.ui.keyboard.virtualKeyboardBottomReserve
 import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
 import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
 import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
@@ -672,12 +672,12 @@ fun PfpTextEntryModal(
         onCancel = onCancel,
         showHints = showHints && !fieldFocused,
         modifier = modifier,
-        keyboardReserve = if (edit.isOpen) VirtualKeyboardBottomReserve else 0.dp,
+        keyboardReserve = if (edit.isOpen) virtualKeyboardBottomReserve() else 0.dp,
         allowCompact = true,
     ) { cancel ->
-        // On a short screen under the system keyboard the buttons move up beside the field. The
-        // field keeps one place in the tree either way: re-creating it would drop its focus, close
-        // the keyboard and flip the layout straight back.
+        // Above a keyboard on a short screen the prompt is three centred rows (title, field, buttons)
+        // without the field's label. The field keeps one place in the tree either way: re-creating
+        // it would drop its focus, close the keyboard and flip the layout straight back.
         val compact = LocalModalCompact.current
         val buttons: @Composable (Modifier) -> Unit = { rowModifier ->
             ModalButtonRow(
@@ -692,10 +692,23 @@ fun PfpTextEntryModal(
                 modifier = rowModifier,
             )
         }
-        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            if (!compact) Text(label, style = PromptTextStyle, color = themedSubText(ModalSubtext), fontSize = 13.sp)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Box(Modifier.weight(1f)) {
+        // The field is half the screen wide and centred (owner's call, 2026-11-24); its label and the
+        // error / counter line under it share that width, so all three line up.
+        val halfScreen = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp / 2
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            if (!compact) {
+                Text(label, style = PromptTextStyle, color = themedSubText(ModalSubtext), fontSize = 13.sp, modifier = Modifier.width(halfScreen))
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
+            ) {
+            Box(Modifier.width(halfScreen)) {
             VirtualKeyboardTextInput(edit) {
             BasicTextField(
                 value = edit.fieldValue,
@@ -756,10 +769,9 @@ fun PfpTextEntryModal(
             )
             }
             }
-            if (compact) buttons(Modifier)
             }
             if (error != null || maxLength != null) {
-                Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Row(modifier = Modifier.width(halfScreen), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     Box(Modifier.weight(1f)) {
                         if (error != null) {
                             Text(
@@ -781,7 +793,7 @@ fun PfpTextEntryModal(
                 }
             }
         }
-        if (!compact) buttons(Modifier.fillMaxWidth())
+        buttons(Modifier.fillMaxWidth())
     }
 }
 
@@ -812,15 +824,17 @@ private fun PfpModalScaffold(
         keyboardReserve = keyboardReserve,
         allowCompact = allowCompact,
     ) { compact ->
-        Text(
-            title,
-            style = PromptTextStyle,
-            color = themedText(Color.White.copy(alpha = 0.92f)),
-            fontSize = if (compact) 15.sp else 19.sp,
-            fontWeight = FontWeight.Light,
-            textAlign = TextAlign.Center,
-            maxLines = if (compact) 1 else 2,
-        )
+        if (!LocalModalTight.current) {
+            Text(
+                title,
+                style = PromptTextStyle,
+                color = themedText(Color.White.copy(alpha = 0.92f)),
+                fontSize = if (compact) 15.sp else 19.sp,
+                fontWeight = FontWeight.Light,
+                textAlign = TextAlign.Center,
+                maxLines = if (compact) 1 else 2,
+            )
+        }
         content(cancel)
     }
 }
@@ -880,8 +894,21 @@ internal fun PfpPromptFrame(
         // PFP draws edge-to-edge, so the system keyboard overlays the window rather than resizing
         // it; the band is placed in what the keyboard leaves, so the field is never under it.
         val systemKeyboard = systemKeyboardHeight()
+        // PFP's keyboard sizes itself to the share of the screen the system keyboard takes.
+        val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+        LaunchedEffect(systemKeyboard, configuration.screenHeightDp, configuration.orientation) {
+            com.playfieldportal.core.ui.keyboard.SystemKeyboardShare.record(
+                systemKeyboard,
+                configuration.screenHeightDp.dp,
+                configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE,
+            )
+        }
+        val spaceAboveKeyboard = maxHeight - systemKeyboard - keyboardReserve
         val compact = allowCompact &&
-            useCompactImeLayout(systemKeyboard > 0.dp, maxHeight - systemKeyboard - keyboardReserve)
+            // PFP's own keyboard counts too: it reports no inset, but its reserve is just as real.
+            useCompactImeLayout(systemKeyboard > 0.dp || keyboardReserve > 0.dp, spaceAboveKeyboard)
+        // On a very short screen even three rows do not fit: the title steps aside for the field.
+        val tight = compact && spaceAboveKeyboard < TightImeThreshold
         val hintsShown = showHints && !compact && hints.isNotEmpty()
         val reserve = if (hintsShown) PromptHintReserve else 0.dp
         Box(
@@ -913,7 +940,7 @@ internal fun PfpPromptFrame(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(if (compact) 8.dp else 12.dp, Alignment.CenterVertically),
                 ) {
-                    CompositionLocalProvider(LocalModalCompact provides compact) { content(compact) }
+                    CompositionLocalProvider(LocalModalCompact provides compact, LocalModalTight provides tight) { content(compact) }
                 }
                 PromptHairline(PfpModalTags.LINE_BOTTOM)
             }
@@ -962,6 +989,9 @@ private fun PromptHairline(tag: String) {
 
 /** True inside a modal laid out as its one-strip system-keyboard form. */
 private val LocalModalCompact = compositionLocalOf { false }
+
+/** The band is above a keyboard on a screen too short for its title (see [TightImeThreshold]). */
+private val LocalModalTight = compositionLocalOf { false }
 
 private const val COMPACT_BAND_WIDTH_FRACTION = 0.94f
 private val CompactBandMaxWidth = 820.dp

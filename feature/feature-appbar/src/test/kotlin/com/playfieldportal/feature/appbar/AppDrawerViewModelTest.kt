@@ -64,7 +64,6 @@ class AppDrawerViewModelTest {
             menuSound,
             mockk(relaxed = true),   // discordPresence
             gameRepository,
-            mockk(relaxed = true),   // memoryCardRepository
         )
     }
 
@@ -231,7 +230,6 @@ class AppDrawerViewModelTest {
             mockk(relaxed = true),   // menuSound
             mockk(relaxed = true),   // discordPresence
             mockk(relaxed = true),   // gameRepository
-            mockk(relaxed = true),   // memoryCardRepository
         )
         testDispatcher.scheduler.advanceUntilIdle()
         viewModel.setFilter(AppFilter.RECENT)
@@ -545,7 +543,6 @@ class AppDrawerViewModelTest {
         val rows = viewModel.uiState.value.menuRows
         assertEquals("PPSSPP", viewModel.uiState.value.menuApp?.label)
         assertEquals(UiText.res(R.string.apps_value_on), rows.first { it.id == "favorite_toggle" }.value)
-        assertEquals(UiText.res(R.string.apps_value_on), rows.first { it.label == UiText.res(R.string.apps_menu_mark_game) }.value)
     }
 
     @Test
@@ -561,7 +558,7 @@ class AppDrawerViewModelTest {
     fun `a system app menu has no Uninstall`() {
         coEvery { repository.getInstalledApps() } returns fakeApps().map { it.copy(isSystemApp = true) }
         viewModel = AppDrawerViewModel(
-            repository, appCategoryRepository, menuSound, mockk(relaxed = true), gameRepository, mockk(relaxed = true),
+            repository, appCategoryRepository, menuSound, mockk(relaxed = true), gameRepository,
         )
         openMenu()
 
@@ -623,20 +620,64 @@ class AppDrawerViewModelTest {
         assertEquals(null, viewModel.uiState.value.menuApp)
     }
 
+    /** The user's game choices, as the category repository would hold them. */
+    private val gameChoices = mutableMapOf<String, Boolean>()
+
+    private fun rememberGameChoices() {
+        coEvery { appCategoryRepository.gameOverrides() } answers { gameChoices.toMap() }
+        coEvery { appCategoryRepository.setGameOverride(any(), any()) } answers {
+            gameChoices[firstArg()] = secondArg()
+        }
+    }
+
+    private fun gamesTab(): List<String> {
+        viewModel.setFilter(AppFilter.GAMES)
+        testDispatcher.scheduler.advanceUntilIdle()
+        return viewModel.uiState.value.visibleApps.map { it.packageName }
+    }
+
     @Test
-    fun `Mark as Game promotes the app and Unmark demotes it`() {
-        openMenu()
+    fun `Mark as Game puts the app in the Games tab and leaves the Android Games card alone`() {
+        rememberGameChoices()
+        testDispatcher.scheduler.advanceUntilIdle()
+        val browser = viewModel.uiState.value.allApps.first { it.packageName == "com.example.browser" }
+        viewModel.openAppMenu(browser)
+        testDispatcher.scheduler.advanceUntilIdle()
         focusRow("mark_game")
         viewModel.handleGamepadAction(GamepadAction.SELECT)
         testDispatcher.scheduler.advanceUntilIdle()
-        coVerify { gameRepository.upsert(match { it.platformId == "android" && it.contentType == GameContentType.GAME }) }
 
-        coEvery { gameRepository.getAppEntry(any()) } returns appEntry(isFavorite = false, isGame = true)
-        openMenu()
+        assertTrue("the Games tab updates at once", "com.example.browser" in gamesTab())
+        // Marking says what the app is; which cards it sits on is the user's to decide.
+        coVerify(exactly = 0) { gameRepository.upsert(any()) }
+    }
+
+    @Test
+    fun `Unmark as Game takes even a Play Store game out of the Games tab`() {
+        rememberGameChoices()
+        assertTrue("com.mojang.minecraftpe" in gamesTab())
+        val minecraft = viewModel.uiState.value.allApps.first { it.packageName == "com.mojang.minecraftpe" }
+        viewModel.openAppMenu(minecraft)
+        testDispatcher.scheduler.advanceUntilIdle()
         focusRow("unmark_game")
         viewModel.handleGamepadAction(GamepadAction.SELECT)
         testDispatcher.scheduler.advanceUntilIdle()
-        coVerify { gameRepository.upsert(match { it.platformId == "app_shortcut" }) }
+
+        assertFalse("com.mojang.minecraftpe" in gamesTab())
+        coVerify(exactly = 0) { gameRepository.upsert(any()) }
+    }
+
+    @Test
+    fun `the menu's Mark as Game state is the app's own game state`() {
+        rememberGameChoices()
+        gameChoices["com.example.browser"] = true
+        viewModel.refresh()
+        testDispatcher.scheduler.advanceUntilIdle()
+        val browser = viewModel.uiState.value.allApps.first { it.packageName == "com.example.browser" }
+        viewModel.openAppMenu(browser)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(UiText.res(R.string.apps_value_on), viewModel.uiState.value.menuRows.first { it.label == UiText.res(R.string.apps_menu_mark_game) }.value)
     }
 
     // ── isLoading ────────────────────────────────────────────────────────

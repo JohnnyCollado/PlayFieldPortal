@@ -7474,13 +7474,10 @@ class XMBViewModel @Inject constructor(
         viewModelScope.launch {
             val entry = gameRepository.getAppEntry(pkg)
             val isFavorite = entry?.isFavorite == true
-            // An app can be marked as a game and still be listed in an app category (the two are
-            // independent), so the row's state follows the app's own games-table entry — the same
-            // test the App Drawer makes. Left out, the menu offered a no-op "Mark as Game" on a
-            // row that was already one.
-            val isGame = entry != null &&
-                entry.platformId == ANDROID_PLATFORM_ID &&
-                entry.contentType == GameContentType.GAME
+            // Whether the app is a game is its own state (the user's Mark / Unmark as Game, else the
+            // Play Store's category), the same one the App Drawer's Games tab shows. It is apart from
+            // the Android Games card, which only the user fills.
+            val isGame = appCategoryRepository.isGame(pkg)
             val isSystemApp = appCategoryRepository.allInstalledApps().firstOrNull { it.packageName == pkg }?.isSystemApp == true
             val items = appMenuItems(AppMenuContext(
                 byTouch      = byTouch,
@@ -7976,39 +7973,10 @@ class XMBViewModel @Inject constructor(
                 } else when (itemId) {
                     "launch"    -> appCategoryRepository.launch(pkg)
                     "edit_app"  -> openAppDetail(menu.gameId, pkg)
-                    // Promote a standard app to the Android card as a real game (reuses any
-                    // existing decoration row so art/favorites/collections carry over).
-                    "mark_game" -> appAction {
-                        val existing = gameRepository.getAppEntry(pkg)
-                        if (existing == null) {
-                            gameRepository.upsert(Game(
-                                title         = menu.title.resolve(context),
-                                platformId    = ANDROID_PLATFORM_ID,
-                                packageName   = pkg,
-                                isManualEntry = true,
-                                contentType   = GameContentType.GAME,
-                            ))
-                        } else {
-                            gameRepository.upsert(existing.copy(
-                                platformId  = ANDROID_PLATFORM_ID,
-                                contentType = GameContentType.GAME,
-                            ))
-                        }
-                        memoryCardRepository.recountGames(ANDROID_PLATFORM_ID)
-                    }
-                    // The other half of the same row: demote the app's own entry back to the
-                    // decoration shortcut so it leaves the card and All Games, keeping its art,
-                    // favorites and card memberships for a later re-mark.
-                    AppMenuIds.UNMARK_GAME -> appAction {
-                        val existing = gameRepository.getAppEntry(pkg)
-                        if (existing != null) {
-                            gameRepository.upsert(existing.copy(
-                                platformId  = APP_SHORTCUT_PLATFORM_ID,
-                                contentType = GameContentType.ANDROID_APP,
-                            ))
-                        }
-                        memoryCardRepository.recountGames(ANDROID_PLATFORM_ID)
-                    }
+                    // Mark / Unmark as Game: the app's own state, as in the App Drawer. It adds the
+                    // app to no memory card and takes it off none.
+                    "mark_game" -> appAction { appCategoryRepository.setGameOverride(pkg, true) }
+                    AppMenuIds.UNMARK_GAME -> appAction { appCategoryRepository.setGameOverride(pkg, false) }
                     AppMenuIds.FAVORITE -> toggleAppFavorite(pkg, menu.title.resolve(context))
                     AppMenuIds.APP_INFO -> installedAppRepository.openAppInfo(pkg)
                     "add_to_collection" -> addAppToCollection(pkg, menu.title.resolve(context))

@@ -71,7 +71,7 @@ import com.playfieldportal.core.domain.model.ControllerIcon
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.R
 import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
-import com.playfieldportal.core.ui.keyboard.VirtualKeyboardBottomReserve
+import com.playfieldportal.core.ui.keyboard.virtualKeyboardBottomReserve
 import com.playfieldportal.core.ui.keyboard.VirtualKeyboardTextInput
 import com.playfieldportal.core.ui.keyboard.rememberVirtualKeyboardEdit
 import com.playfieldportal.core.ui.keyboard.virtualKeyboardField
@@ -94,7 +94,7 @@ import kotlin.math.roundToInt
  *
  * The title and swatch stay pinned and the Hex field comes first under them, so neither keyboard
  * covers what is being typed; everything under them scrolls inside whatever height the card
- * is given, which with PFP's keyboard up is only what sits above [VirtualKeyboardBottomReserve].
+ * is given, which with PFP's keyboard up is only what sits above [virtualKeyboardBottomReserve].
  * The focused stop is always brought into view, so the Hex field being typed is never under it.
  *
  * Every value is also given in words — the colour's name beside the swatch, and each bar's
@@ -183,7 +183,7 @@ fun HsvColorPickerDialog(
         // for the card (a phone in landscape) the picker becomes one strip resting on the
         // keyboard: swatch, Hex field, Apply and Cancel — the sliders return once it closes.
         val systemKeyboard = systemKeyboardHeight()
-        val pfpReserve = if (edit.isOpen) VirtualKeyboardBottomReserve else 0.dp
+        val pfpReserve = if (edit.isOpen) virtualKeyboardBottomReserve() else 0.dp
         val compact = useCompactImeLayout(systemKeyboard > 0.dp, maxHeight - systemKeyboard - pfpReserve)
     Box(
         modifier = Modifier

@@ -14,17 +14,17 @@ class CompactImeLayoutTest {
 
     @Test
     fun `a phone keyboard leaving too little room goes compact`() {
-        assertTrue(useCompactImeLayout(systemKeyboardOpen = true, spaceAboveKeyboard = 150.dp))
+        assertTrue(useCompactImeLayout(keyboardOpen = true, spaceAboveKeyboard = 150.dp))
     }
 
     @Test
     fun `enough room above the keyboard keeps the full card`() {
-        assertFalse(useCompactImeLayout(systemKeyboardOpen = true, spaceAboveKeyboard = 500.dp))
-        assertFalse(useCompactImeLayout(systemKeyboardOpen = true, spaceAboveKeyboard = CompactImeThreshold))
+        assertFalse(useCompactImeLayout(keyboardOpen = true, spaceAboveKeyboard = 500.dp))
+        assertFalse(useCompactImeLayout(keyboardOpen = true, spaceAboveKeyboard = CompactImeThreshold))
     }
 
     @Test
     fun `no system keyboard never goes compact, however short the screen`() {
-        assertFalse(useCompactImeLayout(systemKeyboardOpen = false, spaceAboveKeyboard = 150.dp))
+        assertFalse(useCompactImeLayout(keyboardOpen = false, spaceAboveKeyboard = 150.dp))
     }
 }
