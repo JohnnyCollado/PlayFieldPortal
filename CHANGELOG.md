@@ -5,7 +5,23 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 ## [Unreleased]
 
+## [1.3.5] - 2026-11-24
+
+1.3.4 was built but never released; its changes ship here.
+
 ### Added
+- **22 languages.** The launcher follows the device language in Arabic, Bosnian, Catalan, Czech,
+  Chinese (Simplified and Traditional), Croatian, Dutch, French, German, Italian, Japanese, Korean,
+  Polish, Portuguese (Brazil and Portugal), Romanian, Russian, Serbian, Spanish, Swedish and
+  Vietnamese, with dates and times in the region's format. The Theme Studio (1.3.1) follows too, from
+  a language menu in its toolbar.
+- **Focus glow.** The selected icon glows in its own shape; *Display › Focus glow* sets Steady,
+  Pulsing (slow) or Off.
+- **Motion.** One setting at the top of *Display*: Animated, Reduced or Static. It replaces Artwork's
+  Animated images under the same stored value; Static also holds the wave, a motion wallpaper and
+  video previews still.
+- **Background blur** behind menus and prompts on Android 12 and later, with a strength slider in
+  *Display*. Battery Saver and Thermal Throttle turn it off.
 - **System Update.** *Settings › System › System Update* checks this project's GitHub releases for
   a newer version, at most once a day and whenever you press **Check for updates**. A found update
   is posted to Notifications once, then at most once a day; **Update notifications** turns that off.
@@ -17,6 +33,19 @@ All notable changes to Play Field Portal are documented here. This project follo
   different key.
 
 ### Changed
+- **Status bar.** One size and colour, anchored to the right in the order sort, notifications,
+  controller, connections, date, time and battery; with touch, sort and notifications are slim glass
+  pills in the colour scheme that grow with a large system font.
+- **Icon legibility starts on Offset Shadow (Dark).** None is still offered; an existing choice stays.
+- **On-screen keyboard matches the system keyboard.** Gboard-style: controller hints on top, four
+  rows, digits on ?123. It takes the share of the screen the system keyboard takes, with keys no
+  smaller than 36dp. Name prompts fit above it in three centred rows, the field half the screen wide.
+- **Game page menus.** Choose Emulator and Add to Card open in the shared side panel and Back returns
+  to Options; Update Metadata is its own page, opening at the top.
+- **Mark as Game** is the app's own state: it updates the App Drawer's Games tab at once and no
+  longer adds the app to the Android Games card. Unmarking works on Play Store games too.
+- **Shiba Coins** redrawn as pixel art; the player card shows the Shiba's head and Title · Level ·
+  Bones. Settings and the App Drawer use the game pages' header; Settings sections have icons.
 - **Colour Scheme: shades you can pick by name.** Each preset in *Display › Colour Scheme* now has
   **Tint** and **Depth** steppers under the list, two steps either way, so one preset offers 25
   shades. D-pad left and right step the tint and the bumpers the depth; touch taps the arrows. The
@@ -27,6 +56,10 @@ All notable changes to Play Field Portal are documented here. This project follo
   The chosen tint and depth are included in backups.
 
 ### Fixed
+- **Games stop showing as missing when their folder could not be read.** A game is marked missing
+  only when the scan saw other ROMs in the same folder.
+- In the App Drawer, an empty tab's message is centred; on a game page the wallpaper no longer shows
+  sharp through the menu blur.
 - **RetroArch uses your own settings when a game is started from PFP** (GitHub issue 19). A launch
   named only the game and the core, so RetroArch up to 1.22.2 started on built-in defaults: your
   hotkeys, controller mapping, shaders and overlays were ignored and nothing you changed could be
