@@ -208,6 +208,21 @@ class AppCategoryRepository @Inject constructor(
         appOverrideDao.upsert(ov.copy(isHidden = hidden))
     }
 
+    /** The user's Mark / Unmark as Game per package; an app with no entry follows the Play Store. */
+    suspend fun gameOverrides(): Map<String, Boolean> =
+        appOverrideDao.getAll().mapNotNull { ov -> ov.gameOverride?.let { ov.packageName to it } }.toMap()
+
+    /** Whether [pkg] is a game: the user's Mark / Unmark as Game, else the Play Store's category. */
+    suspend fun isGame(pkg: String): Boolean =
+        appOverrideDao.getByPackage(pkg)?.gameOverride
+            ?: (installedApps().firstOrNull { it.packageName == pkg }?.isGame == true)
+
+    /** Marks ([isGame] true) or unmarks an app as a game. Touches no memory card. */
+    suspend fun setGameOverride(pkg: String, isGame: Boolean) {
+        val ov = appOverrideDao.getByPackage(pkg) ?: AppOverrideEntity(pkg)
+        appOverrideDao.upsert(ov.copy(gameOverride = isGame))
+    }
+
     suspend fun rename(pkg: String, label: String?) {
         val ov = appOverrideDao.getByPackage(pkg) ?: AppOverrideEntity(pkg)
         appOverrideDao.upsert(ov.copy(customLabel = label?.trim()?.takeIf { it.isNotBlank() }))

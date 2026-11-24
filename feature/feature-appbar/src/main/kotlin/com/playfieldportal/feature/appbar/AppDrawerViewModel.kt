@@ -26,8 +26,6 @@ const val GRID_COLUMNS = 6
 
 // The Android Memory Card's platform id, and the sentinel platform for rows that only back an
 // app's artwork/favorites/collections without placing it in the library (mirrors XMBViewModel).
-private const val ANDROID_PLATFORM_ID = "android"
-private const val APP_SHORTCUT_PLATFORM_ID = "app_shortcut"
 
 enum class AppFilter(val labelRes: Int) {
     ALL(R.string.apps_filter_all),
@@ -76,7 +74,6 @@ class AppDrawerViewModel @Inject constructor(
     private val menuSound: MenuSoundPlayer,
     private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
     private val gameRepository: com.playfieldportal.core.domain.repository.GameRepository,
-    private val memoryCardRepository: com.playfieldportal.core.data.repository.MemoryCardRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AppDrawerUiState())
@@ -111,7 +108,11 @@ class AppDrawerViewModel @Inject constructor(
         loadJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val hasUsageAccess = appRepository.hasUsageAccess()
-            val apps = appRepository.getInstalledApps()
+            // The user's Mark / Unmark as Game outranks the Play Store's category.
+            val gameChoices = appCategoryRepository.gameOverrides()
+            val apps = appRepository.getInstalledApps().map { app ->
+                gameChoices[app.packageName]?.let { app.copy(isGame = it) } ?: app
+            }
             _uiState.update {
                 it.copy(
                     allApps = apps,
@@ -176,9 +177,9 @@ class AppDrawerViewModel @Inject constructor(
         // they are read, so it opens with the right values instead of flipping a label under the cursor.
         menuJob = viewModelScope.launch {
             val entry = gameRepository.getAppEntry(app.packageName)
-            val isGame = entry != null &&
-                entry.platformId == ANDROID_PLATFORM_ID &&
-                entry.contentType == com.playfieldportal.core.domain.model.GameContentType.GAME
+            // Whether it is a game is the app's own state (the user's choice, else the Play Store's
+            // category): the same one the Games tab shows, apart from any memory card.
+            val isGame = _uiState.value.allApps.firstOrNull { it.packageName == app.packageName }?.isGame ?: app.isGame
             val rows = appDrawerMenuItems(
                 isFavorite = entry?.isFavorite == true,
                 isGame = isGame,
@@ -221,33 +222,14 @@ class AppDrawerViewModel @Inject constructor(
     // Marking puts the app in the Android Memory Card as a real game (counts in All Games, joins
     // gaming categories); unmarking demotes it to a decoration row (app_shortcut sentinel) so its
     // artwork, favorites and collection memberships survive a later re-mark.
+    /**
+     * Mark / Unmark as Game: the app's own state, shown at once in the Games tab. It adds the app to
+     * no memory card and takes it off none; the Android Games card is the user's to fill.
+     */
     private fun setMarkedAsGame(app: InstalledApp, marked: Boolean) {
         viewModelScope.launch {
-            val existing = gameRepository.getAppEntry(app.packageName)
-            if (marked) {
-                if (existing == null) {
-                    gameRepository.upsert(
-                        com.playfieldportal.core.domain.model.Game(
-                            title         = app.label,
-                            platformId    = ANDROID_PLATFORM_ID,
-                            packageName   = app.packageName,
-                            isManualEntry = true,
-                            contentType   = com.playfieldportal.core.domain.model.GameContentType.GAME,
-                        )
-                    )
-                } else {
-                    gameRepository.upsert(existing.copy(
-                        platformId  = ANDROID_PLATFORM_ID,
-                        contentType = com.playfieldportal.core.domain.model.GameContentType.GAME,
-                    ))
-                }
-            } else if (existing != null) {
-                gameRepository.upsert(existing.copy(
-                    platformId  = APP_SHORTCUT_PLATFORM_ID,
-                    contentType = com.playfieldportal.core.domain.model.GameContentType.ANDROID_APP,
-                ))
-            }
-            memoryCardRepository.recountGames(ANDROID_PLATFORM_ID)
+            appCategoryRepository.setGameOverride(app.packageName, marked)
+            loadApps()
         }
     }
 
