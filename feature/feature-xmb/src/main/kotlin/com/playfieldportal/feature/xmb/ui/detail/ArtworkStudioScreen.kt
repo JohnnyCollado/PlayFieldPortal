@@ -200,8 +200,8 @@ fun ArtworkStudioScreen(
             actions = viewModel,
             showTouchControls = showTouchControls,
             onTouchInput = onTouchInput,
+            overlay = { modal.Content() },
         )
-        modal.Content()
     }
 }
 
@@ -262,6 +262,8 @@ internal fun ArtworkStudioContent(
     showTouchControls: Boolean,
     onTouchInput: () -> Unit,
     modifier: Modifier = Modifier,
+    // Drawn above everything, never blurred or hidden: the screen's shared modal.
+    overlay: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {},
 ) {
     val pfpColors = LocalPFPColors.current
     val accent = menuCursorEdge()
@@ -279,6 +281,8 @@ internal fun ArtworkStudioContent(
                 )
             ),
     ) {
+      // The Studio's page is the layer its menus blur and its prompts hide; they and its panels draw after it, in [overlay].
+      com.playfieldportal.core.ui.detail.PfpBlurLayers(content = {
         Column(Modifier.fillMaxSize().padding(horizontal = 26.dp, vertical = 14.dp)) {
 
             // ── Header row (36 dp) — back, game title, and the query the providers are asked for ──
@@ -1408,6 +1412,7 @@ internal fun ArtworkStudioContent(
                 }
             }
         }
+      }, overlay = {
 
         // ── Options menu overlay (Y / triangle) — the shared XMB-style context menu ──
         // One Filters row comes first when the active source has filters, then the slot and source
@@ -1584,6 +1589,10 @@ internal fun ArtworkStudioContent(
                 PfpBusyRing(color = accent)
             }
         }
+
+        // The screen's own prompts (Clear Artwork, Forget Match). Last, so they draw over everything.
+        overlay()
+      })
     }
 }
 

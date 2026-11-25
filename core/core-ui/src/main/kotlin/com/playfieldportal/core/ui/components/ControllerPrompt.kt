@@ -154,6 +154,9 @@ fun ControllerPromptGlyphs(
     glyphSize: Dp = 22.dp,
     spacing: Dp = 4.dp,
     glyphSpacing: Dp = 2.dp,
+    // False on a prompt's silver, where the crisp dark twin reads as a heavy outline: the caller's
+    // own style is used as given and the glyph is drawn plain.
+    shadowTwin: Boolean = true,
 ) {
     if (icons.isEmpty()) return
     PromptRow(
@@ -162,12 +165,16 @@ fun ControllerPromptGlyphs(
         modifier = modifier,
         labelColor = labelColor,
         // A crisp zero-blur twin replaces any softer drop shadow the caller's style carried.
-        labelStyle = shadowTwinTextStyle(labelColor, labelStyle),
+        labelStyle = if (shadowTwin) shadowTwinTextStyle(labelColor, labelStyle) else labelStyle,
         glyphSize = glyphSize,
         spacing = spacing,
         glyphSpacing = glyphSpacing,
         glyph = { icon ->
-            ShadowTwinControllerGlyph(icon = icon, family = family, size = glyphSize, matteSource = labelColor)
+            if (shadowTwin) {
+                ShadowTwinControllerGlyph(icon = icon, family = family, size = glyphSize, matteSource = labelColor)
+            } else {
+                ControllerIconGlyph(icon = icon, family = family, size = glyphSize)
+            }
         },
     )
 }
@@ -294,6 +301,8 @@ fun ControllerPromptBar(
     labelStyle: TextStyle = TextStyle.Default,
     glyphSize: Dp = 22.dp,
     arrangement: Arrangement.Horizontal = Arrangement.spacedBy(28.dp, Alignment.CenterHorizontally),
+    // See ControllerPromptGlyphs: false on a prompt's silver.
+    shadowTwin: Boolean = true,
 ) {
     Row(
         modifier = modifier,
@@ -308,6 +317,7 @@ fun ControllerPromptBar(
                 labelColor = labelColor,
                 labelStyle = labelStyle,
                 glyphSize = glyphSize,
+                shadowTwin = shadowTwin,
             )
         }
     }

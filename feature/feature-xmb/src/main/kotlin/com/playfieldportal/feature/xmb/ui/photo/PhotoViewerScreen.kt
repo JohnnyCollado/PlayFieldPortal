@@ -141,6 +141,23 @@ fun PhotoViewerScreen(
                 onTransform = viewModel::onGesture,
             ),
     ) {
+      // The photo and its controls are the layer the options menu blurs and a prompt hides; they draw above it.
+      com.playfieldportal.core.ui.detail.PfpBlurLayers(
+        overlay = {
+            // ── Options menu — the shared themed context menu, like every other context menu ──
+            if (state.showOptions) {
+                PspContextMenuOverlay(
+                    title = stringResource(R.string.xmbu_common_options),
+                    rows = photoOptionRows(state, uiResources()),
+                    selectedIndex = state.optionsIndex,
+                    onRowActivated = { viewModel.activate(state.optionsActions[it]) },
+                    onDismiss = viewModel::closeOptions,
+                )
+            }
+            // Information and the removal prompt. Last, so it draws over everything else.
+            modal.Content()
+        },
+      ) {
         AsyncImage(
             model = photo.uri,
             contentDescription = photo.displayName,
@@ -272,17 +289,6 @@ fun PhotoViewerScreen(
             }
         }
 
-        // ── Options menu — the shared themed context menu, like every other context menu ──
-        if (state.showOptions) {
-            PspContextMenuOverlay(
-                title = stringResource(R.string.xmbu_common_options),
-                rows = photoOptionRows(state, uiResources()),
-                selectedIndex = state.optionsIndex,
-                onRowActivated = { viewModel.activate(state.optionsActions[it]) },
-                onDismiss = viewModel::closeOptions,
-            )
-        }
-
         // ── Wallpaper preview: the photo as it would look, with confirm/cancel ──
         if (state.wallpaperPreviewVisible) {
             Column(
@@ -339,9 +345,7 @@ fun PhotoViewerScreen(
                 )
             }
         }
-
-        // Information and the removal prompt. Last, so it draws over everything else.
-        modal.Content()
+      }
     }
 }
 

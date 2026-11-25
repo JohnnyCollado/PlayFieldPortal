@@ -38,7 +38,10 @@ class DetailScaffoldBackdropBlurTest {
     val composeRule = createComposeRule()
 
     private val hostState = PfpBackdropBlurState()
+    // The options menu: it blurs the page. (Named for the overlay it is; the tests below are the blur's.)
     private val promptShown = mutableStateOf(false)
+    // A prompt: it hides the page body instead.
+    private val confirmShown = mutableStateOf(false)
 
     private fun setUp(host: PfpBackdropBlurState? = hostState) {
         composeRule.setContent {
@@ -48,6 +51,15 @@ class DetailScaffoldBackdropBlurTest {
                         overlay = {
                             Box(Modifier.testTag("overlayProbe"))
                             if (promptShown.value) {
+                                com.playfieldportal.core.ui.components.PspContextMenuOverlay(
+                                    title = "Options",
+                                    rows = listOf(com.playfieldportal.core.ui.components.PspMenuRow("Play")),
+                                    selectedIndex = 0,
+                                    onRowActivated = {},
+                                    onDismiss = {},
+                                )
+                            }
+                            if (confirmShown.value) {
                                 PfpConfirmModal(
                                     title = "Delete",
                                     message = "Sure?",
@@ -136,6 +148,31 @@ class DetailScaffoldBackdropBlurTest {
         promptShown.value = true
         composeRule.waitForIdle()
         assertFalse("the enclosing host must not blur the page that holds the prompt", hostState.requested)
+    }
+
+    private fun hidden(): Boolean = layerNode().config[PfpBackdropHiddenKey]
+
+    @Test
+    fun `a prompt hides the page body instead of blurring it, and it comes back after`() {
+        setUp()
+        assertFalse(hidden())
+        confirmShown.value = true
+        composeRule.waitForIdle()
+        assertTrue(hidden())
+        assertFalse(blurApplied())
+        assertFalse("the prompt itself stays", hasLayerAncestor("overlayProbe"))
+        confirmShown.value = false
+        composeRule.waitForIdle()
+        assertFalse(hidden())
+    }
+
+    @Test
+    fun `a prompt hides the page even with the blur switched off`() {
+        setUp()
+        hostState.enabled = false
+        confirmShown.value = true
+        composeRule.waitForIdle()
+        assertTrue(hidden())
     }
 
     @Test

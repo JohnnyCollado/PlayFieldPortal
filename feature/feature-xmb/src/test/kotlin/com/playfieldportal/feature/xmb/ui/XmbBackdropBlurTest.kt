@@ -54,6 +54,18 @@ class XmbBackdropBlurTest {
         )
     }
 
+    // The options menu: what blurs the layer (a prompt hides it instead).
+    @androidx.compose.runtime.Composable
+    private fun Menu() {
+        com.playfieldportal.core.ui.components.PspContextMenuOverlay(
+            title = "Options",
+            rows = listOf(com.playfieldportal.core.ui.components.PspMenuRow("Play")),
+            selectedIndex = 0,
+            onRowActivated = {},
+            onDismiss = {},
+        )
+    }
+
     private fun setUp() {
         composeRule.setContent {
             PFPTheme {
@@ -64,7 +76,7 @@ class XmbBackdropBlurTest {
                             if (nestedPromptShown.value) Confirm()
                         }
                         Box(Modifier.testTag("promptLayerProbe"))
-                        if (promptShown.value) Confirm()
+                        if (promptShown.value) Menu()
                     }
                 }
             }
@@ -119,6 +131,124 @@ class XmbBackdropBlurTest {
         state.enabled = true
         composeRule.waitForIdle()
         assertTrue(blurApplied())
+    }
+
+    @Test
+    fun `a prompt over the XMB hides the cross and keeps the wallpaper`() {
+        composeRule.setContent {
+            PFPTheme {
+                CompositionLocalProvider(LocalPfpBackdropBlur provides state) {
+                    Box(Modifier.fillMaxSize()) {
+                        XmbBlurredLayer(state, background = { Text("wallpaper", Modifier.testTag("wallpaper")) }) {
+                            Text("cross", Modifier.testTag("cross"))
+                        }
+                        if (promptShown.value) Confirm()
+                    }
+                }
+            }
+        }
+        promptShown.value = true
+        composeRule.waitForIdle()
+        fun hiddenAncestor(tag: String): Boolean {
+            var node: SemanticsNode? = composeRule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode().parent
+            while (node != null) {
+                if (node.config.getOrElse(com.playfieldportal.core.ui.detail.PfpBackdropHiddenKey) { false }) return true
+                node = node.parent
+            }
+            return false
+        }
+        assertTrue("the cross goes while the prompt is up", hiddenAncestor("cross"))
+        assertFalse("the wallpaper stays", hiddenAncestor("wallpaper"))
+        assertTrue("the wallpaper blurs, so it does not bleed through the silver", backgroundBlurred())
+        promptShown.value = false
+        composeRule.waitForIdle()
+        assertFalse("the cross comes back", hiddenAncestor("cross"))
+        assertFalse(backgroundBlurred())
+    }
+
+    private fun backgroundBlurred(): Boolean {
+        var node: SemanticsNode? = composeRule.onNodeWithTag("wallpaper", useUnmergedTree = true).fetchSemanticsNode().parent
+        while (node != null) {
+            if (node.config.getOrElse(XmbBackgroundBlurredKey) { false }) return true
+            node = node.parent
+        }
+        return false
+    }
+
+    @Test
+    fun `a prompt in the App Drawer hides the drawer and blurs the wallpaper behind it`() {
+        val behind = PfpBackdropBlurState()
+        composeRule.setContent {
+            PFPTheme {
+                CompositionLocalProvider(
+                    LocalPfpBackdropBlur provides state,
+                    com.playfieldportal.core.ui.components.LocalPfpBackdropBehind provides behind,
+                ) {
+                    Box(Modifier.fillMaxSize()) {
+                        XmbBlurredLayer(state, behind = behind, background = { Box(Modifier.testTag("wallpaper")) }) {
+                            com.playfieldportal.core.ui.detail.PfpBlurLayers(overlay = { if (promptShown.value) Confirm() }) {
+                                Text("drawerGrid", Modifier.testTag("drawerGrid"))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        promptShown.value = true
+        composeRule.waitForIdle()
+        assertTrue("the wallpaper behind the drawer blurs", backgroundBlurred())
+        assertFalse("layer A itself is not asked", behind.requested)
+    }
+
+    @Test
+    fun `a screen inside the layer that blurs for pages above (the App Drawer) blurs itself and the wallpaper`() {
+        // Layer A: the wallpaper (its background), the XMB and the App Drawer (its content). The
+        // drawer's menu must blur the drawer and the wallpaper showing through it (or that reads sharp
+        // through the blur, ghosting), but never layer A's content, which holds the menu itself.
+        val behind = PfpBackdropBlurState()
+        composeRule.setContent {
+            PFPTheme {
+                CompositionLocalProvider(
+                    LocalPfpBackdropBlur provides state,
+                    com.playfieldportal.core.ui.components.LocalPfpBackdropBehind provides behind,
+                ) {
+                    Box(Modifier.fillMaxSize()) {
+                        XmbBlurredLayer(state, behind = behind, background = { Box(Modifier.testTag("wallpaper")) }) {
+                            com.playfieldportal.core.ui.detail.PfpBlurLayers(
+                                overlay = { Box(Modifier.testTag("drawerMenu")); Menu() },
+                            ) {
+                                Text("drawerGrid", Modifier.testTag("drawerGrid"))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        assertFalse("layer A must not be asked to blur", behind.requested)
+        assertFalse(state.requested)
+        val applied = composeRule.onAllNodes(SemanticsMatcher.expectValue(PfpBackdropBlurAppliedKey, true), useUnmergedTree = true)
+            .fetchSemanticsNodes()
+        assertTrue("one layer is blurred: the drawer's content", applied.size == 1)
+        fun blurredAncestor(tag: String): Boolean {
+            var node: SemanticsNode? = composeRule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode().parent
+            while (node != null) {
+                if (node.config.getOrElse(PfpBackdropBlurAppliedKey) { false }) return true
+                node = node.parent
+            }
+            return false
+        }
+        assertTrue(blurredAncestor("drawerGrid"))
+        assertFalse("the menu itself stays sharp", blurredAncestor("drawerMenu"))
+        fun backgroundBlurred(): Boolean {
+            var node: SemanticsNode? = composeRule.onNodeWithTag("wallpaper", useUnmergedTree = true).fetchSemanticsNode().parent
+            while (node != null) {
+                if (node.config.getOrElse(XmbBackgroundBlurredKey) { false }) return true
+                node = node.parent
+            }
+            return false
+        }
+        assertTrue("the wallpaper behind the drawer blurs with it", backgroundBlurred())
     }
 
     @Test

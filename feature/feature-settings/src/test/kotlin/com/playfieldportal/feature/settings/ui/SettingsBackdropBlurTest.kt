@@ -42,7 +42,10 @@ class SettingsBackdropBlurTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val shellState = PfpBackdropBlurState()
+    // The options menu, which blurs the page.
     private val promptShown = mutableStateOf(false)
+    // A prompt, which hides the page instead.
+    private val confirmShown = mutableStateOf(false)
 
     private fun setUp() {
         composeRule.setContent {
@@ -55,6 +58,15 @@ class SettingsBackdropBlurTest {
                             }
                             Box(Modifier.testTag("promptLayerProbe"))
                             if (promptShown.value) {
+                                com.playfieldportal.core.ui.components.PspContextMenuOverlay(
+                                    title = "Options",
+                                    rows = listOf(com.playfieldportal.core.ui.components.PspMenuRow("Reset")),
+                                    selectedIndex = 0,
+                                    onRowActivated = {},
+                                    onDismiss = {},
+                                )
+                            }
+                            if (confirmShown.value) {
                                 PfpConfirmModal(
                                     title = "Delete",
                                     message = "Sure?",
@@ -125,7 +137,21 @@ class SettingsBackdropBlurTest {
     fun `a settings prompt does not raise the shell's own state`() {
         setUp()
         promptShown.value = true
+        confirmShown.value = true
         composeRule.waitForIdle()
         assertFalse(shellState.requested)
+        assertFalse(shellState.hidden)
+    }
+
+    @Test
+    fun `a prompt hides the settings page, and it comes back after`() {
+        setUp()
+        confirmShown.value = true
+        composeRule.waitForIdle()
+        assertTrue(layer().config[com.playfieldportal.core.ui.detail.PfpBackdropHiddenKey])
+        assertFalse(insideBlurLayer("promptLayerProbe"))
+        confirmShown.value = false
+        composeRule.waitForIdle()
+        assertFalse(layer().config[com.playfieldportal.core.ui.detail.PfpBackdropHiddenKey])
     }
 }

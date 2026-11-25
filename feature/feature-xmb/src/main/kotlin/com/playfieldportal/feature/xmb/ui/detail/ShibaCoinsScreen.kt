@@ -186,6 +186,42 @@ fun ShibaCoinsScreen(
                 }
             },
     ) {
+      // The page is the layer its menu blurs and a prompt hides; the menu, the match picker and the
+      // Unlink prompt draw above it.
+      com.playfieldportal.core.ui.detail.PfpBlurLayers(
+        overlay = {
+            // The ambiguous-match picker, reused verbatim from Game Detail — same panel, same keys, and
+            // therefore the same controller-navigable screen for free.
+            state.storefrontMatch?.let { match ->
+                StorefrontMatchPanel(
+                    ui                = match,
+                    focusFill         = menuCursorFill(),
+                    focusEdge         = menuCursorEdge(),
+                    showTouchControls = showTouchControls,
+                    onRowClick        = viewModel::onStorefrontRowTapped,
+                    onMoreInfo        = viewModel::openStorefrontMoreInfo,
+                    onCloseMoreInfo   = viewModel::closeStorefrontMoreInfo,
+                    onChooseFocused   = { viewModel.chooseStorefrontCandidate(match.focus) },
+                    onClose           = viewModel::cancelAutoMatch,
+                    // Coins only ever matches Steam, so the picker has one store and no chips to tap.
+                    onStoreClick      = {},
+                )
+            }
+
+            // Sort, Update Achievements and Change Match: the same right-side menu the library opens on Triangle.
+            state.options?.let { menu ->
+                PspContextMenuOverlay(
+                    title = menu.title.asString(),
+                    rows = state.optionRows.map { row -> PspMenuRow(label = row.label.asString(), isDestructive = row.isDestructive, checked = row.checked, value = row.value?.asString(), opensMenu = row.opensMenu) },
+                    selectedIndex = menu.selectedIndex,
+                    onRowActivated = viewModel::onOptionActivated,
+                    onDismiss = viewModel::closeOptions,
+                )
+            }
+
+            modal.Content()
+        },
+      ) {
         Column(Modifier.fillMaxSize()) {
             ShibaCoinsHeader(
                 state,
@@ -264,37 +300,7 @@ fun ShibaCoinsScreen(
                 // tappable already).
             }
         }
-
-        // The ambiguous-match picker, reused verbatim from Game Detail — same panel, same keys, and
-        // therefore the same controller-navigable screen for free.
-        state.storefrontMatch?.let { match ->
-            StorefrontMatchPanel(
-                ui                = match,
-                focusFill         = menuCursorFill(),
-                focusEdge         = menuCursorEdge(),
-                showTouchControls = showTouchControls,
-                onRowClick        = viewModel::onStorefrontRowTapped,
-                onMoreInfo        = viewModel::openStorefrontMoreInfo,
-                onCloseMoreInfo   = viewModel::closeStorefrontMoreInfo,
-                onChooseFocused   = { viewModel.chooseStorefrontCandidate(match.focus) },
-                onClose           = viewModel::cancelAutoMatch,
-                // Coins only ever matches Steam, so the picker has one store and no chips to tap.
-                onStoreClick      = {},
-            )
-        }
-
-        // Sort, Update Achievements and Change Match: the same right-side menu the library opens on Triangle.
-        state.options?.let { menu ->
-            PspContextMenuOverlay(
-                title = menu.title.asString(),
-                rows = state.optionRows.map { row -> PspMenuRow(label = row.label.asString(), isDestructive = row.isDestructive, checked = row.checked, value = row.value?.asString(), opensMenu = row.opensMenu) },
-                selectedIndex = menu.selectedIndex,
-                onRowActivated = viewModel::onOptionActivated,
-                onDismiss = viewModel::closeOptions,
-            )
-        }
-
-        modal.Content()
+      }
     }
 }
 

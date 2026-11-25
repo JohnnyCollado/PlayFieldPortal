@@ -52,6 +52,8 @@ import com.playfieldportal.core.domain.model.lightBackgroundAnchors
 import com.playfieldportal.core.domain.text.UiText
 import com.playfieldportal.core.ui.components.PfpModalSpec
 import com.playfieldportal.core.ui.components.PspContextMenuOverlay
+import com.playfieldportal.core.ui.detail.PfpBlurLayers
+import androidx.compose.foundation.layout.BoxScope
 import com.playfieldportal.core.ui.components.PspMenuRow
 import com.playfieldportal.core.ui.components.rememberPfpModalHost
 import com.playfieldportal.core.ui.keyboard.KeyboardPlacement
@@ -227,8 +229,8 @@ fun AppDrawerScreen(
             onMenuAction = { viewModel.onMenuAction(it) },
             onCloseMenu = { viewModel.closeAppMenu() },
             onGrantUsageAccess = { viewModel.openUsageAccessSettings() },
+            overlay = { modal.Content() },
         )
-        modal.Content()
     }
 }
 
@@ -280,6 +282,8 @@ internal fun AppDrawerContent(
     modifier: Modifier = Modifier,
     onCloseSearch: () -> Unit = {},
     searchReopens: Int = 0,
+    // Drawn above the drawer with its options menu, never blurred or hidden: the screen's shared modal (Uninstall).
+    overlay: @Composable BoxScope.() -> Unit = {},
 ) {
     val searchFocus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
@@ -323,6 +327,24 @@ internal fun AppDrawerContent(
                 )
             ),
     ) {
+      // The header, tabs and grid are the layer the options menu blurs and a prompt hides; they draw above it.
+      PfpBlurLayers(
+        overlay = {
+            state.menuApp?.let { app ->
+                val actions = state.menuRows
+                LocalConfiguration.current
+                val resources = LocalContext.current.resources
+                PspContextMenuOverlay(
+                    title = app.label,
+                    rows = actions.map { row -> row.toPspMenuRow { it.resolve(resources) } },
+                    selectedIndex = state.menuIndex,
+                    onRowActivated = { onMenuAction(actions[it]) },
+                    onDismiss = onCloseMenu,
+                )
+            }
+            overlay()
+        },
+      ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // ── Header / breadcrumb bar ──────────────────────────────────
             AppDrawerHeader(
@@ -410,20 +432,7 @@ internal fun AppDrawerContent(
                 AppDrawerHintBar(modifier = Modifier.alpha(if (keyboardOpen) 0f else hintAlpha))
             }
         }
-
-        // ── Overlays ──────────────────────────────────────────────────────
-        state.menuApp?.let { app ->
-            val actions = state.menuRows
-            LocalConfiguration.current
-            val resources = LocalContext.current.resources
-            PspContextMenuOverlay(
-                title = app.label,
-                rows = actions.map { row -> row.toPspMenuRow { it.resolve(resources) } },
-                selectedIndex = state.menuIndex,
-                onRowActivated = { onMenuAction(actions[it]) },
-                onDismiss = onCloseMenu,
-            )
-        }
+      }
     }
 }
 

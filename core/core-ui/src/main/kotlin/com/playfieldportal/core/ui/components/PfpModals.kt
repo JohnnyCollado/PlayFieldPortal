@@ -50,6 +50,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -57,12 +58,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -270,13 +269,16 @@ internal val ModalSurface = Color(0xFF15151F)
 // the same weights.
 internal val ModalSubtext = Color.White.copy(alpha = 0.7f)
 private val ModalDanger = Color(0xFFFF7070)
+// A destructive prompt button (Uninstall, Delete): a dim grey on the silver, quiet so it is not
+// pressed by accident and not a bright red against the light backdrop. Prompts open on Cancel.
+private val ModalDestructiveButton = Color(0xFF6E727B)
 private val ModalControlShape = RoundedCornerShape(4.dp)
 
-/** The blue-grey a prompt multiplies over the screen when the theme gives nothing better. */
-internal val PromptTintFallback = Color(0.6f, 0.62f, 0.7f)
-
-/** How much of the tint a prompt applies: 85% of the way from "no change" to the tint colour. */
-internal const val PromptTintStrength = 0.85f
+/**
+ * The PSP-style silver a prompt lays over the whole screen, while what was behind it is hidden.
+ * The options panel does not use it: it keeps its own light scrim and blurs the screen instead.
+ */
+val PfpPromptVeil = Color(0xFFC6CAD2).copy(alpha = 0.75f)
 
 private const val PromptBandWidthFraction = 0.75f
 private val PromptHairlineColor = Color.White.copy(alpha = 0.9f)
@@ -286,28 +288,10 @@ private val PromptHintReserve = 56.dp
 private const val PromptFadeMs = 100
 
 // White with a soft shadow, the look of every line of text in a prompt.
+// Light: on the silver a heavy dark shadow reads as a dirty halo round every letter ("fried").
 private val PromptTextStyle = TextStyle(
-    shadow = Shadow(color = Color.Black.copy(alpha = 0.75f), offset = Offset(0f, 2f), blurRadius = 4f),
+    shadow = Shadow(color = Color.Black.copy(alpha = 0.3f), offset = Offset(0f, 1f), blurRadius = 2f),
 )
-
-/**
- * The colour a prompt multiplies over the screen, taken from the theme's background so a red or
- * green theme gets a matching tint. The background's hue is lightened and blended halfway into
- * the blue-grey, so it stays a gentle veil; a theme with no usable hue (grey, near-black or white)
- * gets [PromptTintFallback] itself.
- */
-internal fun promptTintFor(top: Color, bottom: Color): Color {
-    val mid = lerp(top, bottom, 0.5f)
-    val high = maxOf(mid.red, mid.green, mid.blue)
-    val low = minOf(mid.red, mid.green, mid.blue)
-    if (high - low < 0.12f) return PromptTintFallback
-    val veil = lerp(PromptTintFallback, lerp(mid.copy(alpha = 1f), Color.White, 0.6f), 0.5f)
-    return Color(
-        red = veil.red.coerceAtLeast(0.45f),
-        green = veil.green.coerceAtLeast(0.45f),
-        blue = veil.blue.coerceAtLeast(0.45f),
-    )
-}
 
 // ── Blur behind a prompt or the options panel (Android 12+) ───────────────────
 //
@@ -334,20 +318,39 @@ internal fun backdropBlurRadius(strength: Float): Dp = BackdropBlur.radiusDp(str
 /** Whether a prompt or panel should ask for the backdrop blur: Android 12+ and not opted out. */
 internal fun backdropBlurWanted(allowBlur: Boolean, sdkInt: Int): Boolean = allowBlur && sdkInt >= 31
 
-/** How many prompts / panels are showing and want the backdrop blurred, and whether the host allows it. */
+/**
+ * What the host should do with its content right now. The options panel asks for the blur; a prompt
+ * asks the host to hide its content (its background stays), the PSP way, so the prompt is the only
+ * thing on screen. Hiding wins over the blur while both are asked for.
+ */
 class PfpBackdropBlurState(initiallyEnabled: Boolean = true) {
-    /** The host's switch: false while Performance or Thermal settings ask for no blur. */
+    /** The host's switch for the blur: false while Performance or Thermal settings ask for none. */
     var enabled: Boolean by mutableStateOf(initiallyEnabled)
     private var requests by mutableIntStateOf(0)
+    private var hideRequests by mutableIntStateOf(0)
 
-    /** Some prompt or panel is showing and asked for the blur. */
+    /** Some panel is showing and asked for the blur. */
     val requested: Boolean get() = requests > 0
 
+    /**
+     * A prompt is showing: the host hides its content until it closes. Not subject to [enabled], as
+     * hiding costs nothing to draw.
+     */
+    val hidden: Boolean get() = hideRequests > 0
+
     /** The host should blur its content now. */
-    val active: Boolean get() = enabled && requests > 0
+    val active: Boolean get() = enabled && requests > 0 && !hidden
+
+    /**
+     * A background (the wallpaper, the wave: what is never hidden) should blur now: under the panel,
+     * and under a prompt too, or its sharp lines bleed through the prompt's silver.
+     */
+    val backgroundActive: Boolean get() = enabled && (requests > 0 || hidden)
 
     internal fun raise() { requests++ }
     internal fun lower() { if (requests > 0) requests-- }
+    internal fun raiseHide() { hideRequests++ }
+    internal fun lowerHide() { if (hideRequests > 0) hideRequests-- }
 }
 
 /** The host's blur state. Null (the default) means nobody blurs and prompts stay a flat tint. */
@@ -373,11 +376,34 @@ internal fun RaiseWhile(state: PfpBackdropBlurState?, active: Boolean) {
     }
 }
 
-/** Blurs the content it is applied to while a prompt or panel is showing, on Android 12+. */
+/**
+ * The host's content under a prompt or panel: hidden while a prompt is up (it comes back when the
+ * prompt closes), blurred while the options panel is up on Android 12+, otherwise as it is.
+ */
 @Composable
-fun Modifier.pfpBackdropBlur(state: PfpBackdropBlurState?): Modifier {
+fun Modifier.pfpBackdropBlur(
+    state: PfpBackdropBlurState?,
+    // False for a background (the wallpaper, the wave): it blurs with the rest but stays under a prompt.
+    hideable: Boolean = true,
+): Modifier {
+    if (state?.hidden == true && hideable) return alpha(0f)
     val radius = backdropBlurRadius(LocalPfpBackdropBlurStrength.current)
-    return if (state != null && Build.VERSION.SDK_INT >= 31 && state.active && radius > 0.dp) blur(radius) else this
+    val blurNow = state != null && (if (hideable) state.active else state.backgroundActive)
+    return if (blurNow && Build.VERSION.SDK_INT >= 31 && radius > 0.dp) blur(radius) else this
+}
+
+/** Asks [LocalPfpBackdropBlur]'s host to hide its content for as long as this is in the composition. */
+@Composable
+internal fun RaiseBackdropHide() {
+    val state = LocalPfpBackdropBlur.current
+    DisposableEffect(state) {
+        if (state != null) {
+            state.raiseHide()
+            onDispose { state.lowerHide() }
+        } else {
+            onDispose { }
+        }
+    }
 }
 
 /** Raises [LocalPfpBackdropBlur] for as long as this is in the composition. */
@@ -865,28 +891,18 @@ internal fun PfpPromptFrame(
     // wide strip resting on the keyboard (see LocalModalCompact).
     allowCompact: Boolean = false,
     bandTag: String = PfpModalTags.CARD,
-    // Ask the host to blur what is behind the tint (Android 12+; see LocalPfpBackdropBlur). False
-    // keeps today's flat tint.
-    allowBlur: Boolean = true,
     content: @Composable ColumnScope.(compact: Boolean) -> Unit,
 ) {
-    RaiseBackdropBlur(allowBlur)
+    // The host hides what is behind the prompt until it closes (see LocalPfpBackdropBlur).
+    RaiseBackdropHide()
     val currentDismiss by rememberUpdatedState(onDismiss)
-    val colors = LocalPFPColors.current
-    val tint = remember(colors.backgroundTop, colors.backgroundBottom) {
-        promptTintFor(colors.backgroundTop, colors.backgroundBottom)
-    }
     val fade = rememberPromptFade()
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .testTag(PfpModalTags.SCRIM)
-            .drawBehind {
-                drawRect(
-                    color = lerp(Color.White, tint, PromptTintStrength * fade.value),
-                    blendMode = BlendMode.Multiply,
-                )
-            }
+            // The PSP silver over the whole screen, fading in with the prompt.
+            .drawBehind { drawRect(PfpPromptVeil.copy(alpha = PfpPromptVeil.alpha * fade.value)) }
             // Pointer input rather than clickable: a clickable merges its descendants' semantics, which
             // would fold the whole modal into one node for accessibility and for tests.
             .pointerInput(Unit) { detectTapGestures { currentDismiss() } },
@@ -956,6 +972,8 @@ internal fun PfpPromptFrame(
                     labelStyle = PromptTextStyle.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold),
                     glyphSize = 20.dp,
                     arrangement = Arrangement.spacedBy(28.dp, Alignment.CenterHorizontally),
+                    // The prompt's own light shadow, not the crisp dark outline: it sits on the silver.
+                    shadowTwin = false,
                 )
             }
         }
@@ -1084,7 +1102,7 @@ private fun ModalButton(
             fontWeight = if (showCursor) FontWeight.SemiBold else FontWeight.Normal,
             color = when {
                 !enabled -> themedText(Color.White.copy(alpha = 0.3f))
-                destructive -> ModalDanger
+                destructive -> ModalDestructiveButton
                 showCursor -> themedText(Color.White)
                 else -> themedText(ModalSubtext)
             },

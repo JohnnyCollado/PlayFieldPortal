@@ -314,37 +314,5 @@ class PfpPromptBandTest {
         composeRule.onNodeWithTag(PfpModalTags.HINTS).assertExists()
     }
 
-    // ── The tint ────────────────────────────────────────────────────────────────
-
-    @Test
-    fun `a grey or missing theme background falls back to the blue-grey tint`() {
-        val grey = Color(0xFF808080)
-        assertEquals(PromptTintFallback, promptTintFor(grey, grey))
-    }
-
-    @Test
-    fun `a red theme gets a reddish tint and a green theme a greenish one`() {
-        val red = promptTintFor(Color(0xFF7A1010), Color(0xFFA02020))
-        assertTrue("red tint should lean red: $red", red.red > red.blue && red.red > red.green)
-
-        val green = promptTintFor(Color(0xFF106A20), Color(0xFF20A040))
-        assertTrue("green tint should lean green: $green", green.green > green.red && green.green > green.blue)
-    }
-
-    @Test
-    fun `the tint is always a light multiply colour`() {
-        listOf(Color(0xFF000010), Color(0xFF26106C), Color(0xFF7A1010), Color(0xFFFFFFFF)).forEach {
-            val tint = promptTintFor(it, it)
-            assertTrue("$tint too dark", minOf(tint.red, tint.green, tint.blue) >= 0.45f)
-            assertEquals(1f, tint.alpha, 0f)
-        }
-    }
-
-    @Test
-    fun `the fallback is the approved blue-grey`() {
-        assertEquals(0.6f, PromptTintFallback.red, 0.005f)
-        assertEquals(0.62f, PromptTintFallback.green, 0.005f)
-        assertEquals(0.7f, PromptTintFallback.blue, 0.005f)
-        assertFalse(PromptTintStrength > 1f)
-    }
+    // (The silver a prompt lays over the screen is checked by PromptVeilTest.)
 }

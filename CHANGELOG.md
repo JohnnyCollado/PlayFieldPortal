@@ -5,6 +5,25 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 ## [Unreleased]
 
+## [1.3.6] - 2026-11-24
+
+A hotfix for how menus and prompts sit over the screen.
+
+### Changed
+- **Prompts look like the PSP's.** A prompt (Uninstall, Delete, a name entry, a notice) lays a
+  see-through silver over the screen and hides what was behind it until it closes, so the prompt is
+  the only thing to read. The wallpaper stays, blurred. Its text has a lighter shadow, the controller
+  hints under it drop their dark outline, and a destructive button (Uninstall, Delete) is a dim grey
+  rather than red. Prompts still open on Cancel.
+- **Options menus keep the blur** (with *Display › Background blur* to set or turn it off), and no
+  longer share it with prompts.
+
+### Fixed
+- **The App Drawer, Artwork Studio, Shiba Coins and the Video and Photo pages blur under their
+  options menus.** They only darkened before, so the screen read sharp through the menu.
+- **The App Drawer's options menu stays sharp**, and the wallpaper behind the drawer blurs with it
+  instead of ghosting through.
+
 ## [1.3.5] - 2026-11-24
 
 1.3.4 was built but never released; its changes ship here.

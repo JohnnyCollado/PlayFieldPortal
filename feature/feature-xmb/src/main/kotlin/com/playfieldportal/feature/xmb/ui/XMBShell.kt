@@ -44,6 +44,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,6 +84,7 @@ import com.playfieldportal.core.domain.model.toNotificationAction
 import com.playfieldportal.core.ui.components.PfpChoiceOption
 import com.playfieldportal.core.ui.components.LocalPfpBackdropBlur
 import com.playfieldportal.core.ui.components.PfpBackdropBlurState
+import com.playfieldportal.core.ui.components.pfpBackdropBlur
 import com.playfieldportal.core.ui.components.PfpModalSpec
 import com.playfieldportal.core.ui.components.XmbTouchButton
 import com.playfieldportal.core.ui.components.rememberPfpModalHost
@@ -817,7 +819,16 @@ fun XMBShell(
             )
             // Layer A: the wave, the cross and every screen below the options panel. Blurred while a
             // prompt or the panel is up. Closed just before the panel (see "end: layer A").
-            XmbBlurredLayer(blurState, behind = behindBlur) {
+            // Per-game background art (XMB hover): reads only artworkUri — the dedicated
+            // background slot. heroUri is reserved for the Game Detail hero banner. A focused UMD
+            // slot shows none until its disc has been read, as the PSP does.
+            val focusedItem = uiState.currentItems.getOrNull(uiState.selectedItemIndex)
+            val umdRead = rememberUmdRead(umdReadKey(focusedItem, uiState.selectedCategoryIndex))
+            val focusedArtItem = focusedItem?.afterUmdRead(umdRead)
+            val selectedBg = focusedArtItem?.artworkUri
+            // The wave, the wallpaper and the game art are the layer's background: a prompt over the
+            // XMB hides the cross and leaves these, as the PSP does.
+            XmbBlurredLayer(blurState, behind = behindBlur, background = {
             XmbBackground(
                 waveStyle           = effectiveWaveStyle,
                 customWallpaperPath = uiState.customWallpaperPath,
@@ -826,14 +837,6 @@ fun XMBShell(
                 motionCrop          = uiState.motionCrop,
                 modifier            = Modifier.fillMaxSize(),
             )
-
-            // Per-game background art (XMB hover): reads only artworkUri — the dedicated
-            // background slot. heroUri is reserved for the Game Detail hero banner. A focused UMD
-            // slot shows none until its disc has been read, as the PSP does.
-            val focusedItem = uiState.currentItems.getOrNull(uiState.selectedItemIndex)
-            val umdRead = rememberUmdRead(umdReadKey(focusedItem, uiState.selectedCategoryIndex))
-            val focusedArtItem = focusedItem?.afterUmdRead(umdRead)
-            val selectedBg = focusedArtItem?.artworkUri
             Crossfade(targetState = selectedBg, animationSpec = tween(320), label = "xmbGameBackground") { bg ->
                 if (bg != null) {
                     Box(Modifier.fillMaxSize()) {
@@ -859,6 +862,7 @@ fun XMBShell(
                 }
             }
 
+            }) {
             // Hide the XMB foreground (status strip + category bar + item list) while a fullscreen
             // menu is open — only the wallpaper/wave background shows behind it. Restored
             // automatically when the menu closes. Besides the visual, this REMOVES the XMB's
@@ -1777,16 +1781,43 @@ fun XMBShell(
  * go to a separate state nobody blurs with: blurring the layer would blur the prompt too. Settings
  * and detail pages inside it start their own blur from that state's switch.
  */
+/** Set on a layer's background (the wallpaper and wave): true while it is blurred. Tests read it. */
+internal val XmbBackgroundBlurredKey = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("XmbBackgroundBlurred")
+internal var androidx.compose.ui.semantics.SemanticsPropertyReceiver.xmbBackgroundBlurred by XmbBackgroundBlurredKey
+
 @Composable
 internal fun XmbBlurredLayer(
     state: PfpBackdropBlurState,
     // Also blur while a page drawn over this layer blurs itself (see behindBlur in the shell).
     behind: PfpBackdropBlurState? = null,
+    // The wallpaper and wave: blurred with the layer under the options panel, but kept under a
+    // prompt, which hides only [content] (the PSP way: the prompt over the bare background).
+    background: (@Composable BoxScope.() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
+    // What a screen inside this layer (the App Drawer) blurs behind itself: only this layer's
+    // [background], the wallpaper showing through it. Never [content]: that holds the screen and its
+    // own menu, which would blur too.
+    val backgroundBehind = remember { PfpBackdropBlurState() }
+    SideEffect { backgroundBehind.enabled = state.enabled }
     ProvidePfpBackdropBlur(enabled = state.enabled) {
-        val applied = if (behind != null && behind.active && !state.active) behind else state
-        Box(Modifier.fillMaxSize().pfpBackdropBlurLayer(applied), content = content)
+        val applied = if (behind != null && behind.active && !state.active && !state.hidden) behind else state
+        val inner = if (behind != null) backgroundBehind else com.playfieldportal.core.ui.components.LocalPfpBackdropBehind.current
+        CompositionLocalProvider(com.playfieldportal.core.ui.components.LocalPfpBackdropBehind provides inner) {
+            Box(Modifier.fillMaxSize()) {
+                if (background != null) {
+                    val bg = if (backgroundBehind.active && !applied.backgroundActive) backgroundBehind else applied
+                    val blurred = android.os.Build.VERSION.SDK_INT >= 31 && bg.backgroundActive
+                    Box(
+                        Modifier.fillMaxSize()
+                            .pfpBackdropBlur(bg, hideable = false)
+                            .semantics { xmbBackgroundBlurred = blurred },
+                        content = background,
+                    )
+                }
+                Box(Modifier.fillMaxSize().pfpBackdropBlurLayer(applied), content = content)
+            }
+        }
     }
 }
 

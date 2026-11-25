@@ -200,6 +200,70 @@ fun VideoDetailScreen(
                 )
             ),
     ) {
+      // The page is the layer its menus blur and a prompt hides; they, the launch overlay and the player draw above it.
+      com.playfieldportal.core.ui.detail.PfpBlurLayers(
+        overlay = {
+        if (state.showOptions) {
+            PspContextMenuOverlay(
+                title = stringResource(R.string.shiba_options_title),
+                rows = videoOptionRows(state).map { row ->
+                    PspMenuRow(
+                        label = row.label.asString(),
+                        isDestructive = row.isDestructive,
+                        value = row.value?.asString(),
+                        opensMenu = row.opensMenu,
+                        silent = row.silent,
+                        header = row.header?.asString(),
+                    )
+                },
+                selectedIndex = state.optionsIndex,
+                onRowActivated = { viewModel.activate(state.optionsActions[it]) },
+                onDismiss = viewModel::closeOptions,
+            )
+        }
+
+        if (state.showPlaylistPicker) {
+            PspContextMenuOverlay(
+                title = stringResource(R.string.shiba_video_add_to_playlist),
+                rows = state.playlistOptions.map { PspMenuRow(label = it.name, checked = it.checked) } +
+                    PspMenuRow(label = stringResource(R.string.shiba_video_create_playlist)),
+                selectedIndex = state.playlistPickerIndex,
+                onRowActivated = viewModel::onPlaylistRowClick,
+                onDismiss = viewModel::closePlaylistPicker,
+            )
+        }
+
+        // New Playlist, Information, Edit Title, the removal prompt and an external-player
+        // launch error — one at a time, over the page and its menus.
+        modal.Content()
+
+        // Themed launch overlay — shown while handing off to an external player; fades in, and is
+        // dropped when PFP regains focus (or after the safety timeout).
+        androidx.compose.animation.AnimatedVisibility(
+            visible = state.externalLaunch != null,
+            enter = androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.fadeOut(),
+        ) {
+            state.externalLaunch?.let { launch -> ExternalLaunchOverlay(launch) }
+        }
+
+        // Fullscreen player overlay.
+        if (state.playing) {
+            VideoPlayerScreen(
+                videos = state.siblings.ifEmpty { listOf(video) },
+                startIndex = state.siblings.indexOfFirst { it.id == video.id }.coerceAtLeast(0),
+                startPositionMs = state.playStartPositionMs,
+                onSaveResume = viewModel::saveResume,
+                onExit = viewModel::onPlaybackExit,
+                pendingGamepadAction = pendingGamepadAction,
+                onGamepadActionConsumed = onGamepadActionConsumed,
+                showTouchControls = showTouchControls,
+                onTouchInput = onTouchInput,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+        },
+      ) {
         Column(
             modifier = Modifier.fillMaxSize().widthIn(max = 920.dp).align(Alignment.Center)
                 // Outside the scroll, so it shortens the VIEWPORT rather than padding the content.
@@ -320,65 +384,7 @@ fun VideoDetailScreen(
             }
         }
 
-        if (state.showOptions) {
-            PspContextMenuOverlay(
-                title = stringResource(R.string.shiba_options_title),
-                rows = videoOptionRows(state).map { row ->
-                    PspMenuRow(
-                        label = row.label.asString(),
-                        isDestructive = row.isDestructive,
-                        value = row.value?.asString(),
-                        opensMenu = row.opensMenu,
-                        silent = row.silent,
-                        header = row.header?.asString(),
-                    )
-                },
-                selectedIndex = state.optionsIndex,
-                onRowActivated = { viewModel.activate(state.optionsActions[it]) },
-                onDismiss = viewModel::closeOptions,
-            )
-        }
-
-        if (state.showPlaylistPicker) {
-            PspContextMenuOverlay(
-                title = stringResource(R.string.shiba_video_add_to_playlist),
-                rows = state.playlistOptions.map { PspMenuRow(label = it.name, checked = it.checked) } +
-                    PspMenuRow(label = stringResource(R.string.shiba_video_create_playlist)),
-                selectedIndex = state.playlistPickerIndex,
-                onRowActivated = viewModel::onPlaylistRowClick,
-                onDismiss = viewModel::closePlaylistPicker,
-            )
-        }
-
-        // New Playlist, Information, Edit Title, the removal prompt and an external-player
-        // launch error — one at a time, over the page and its menus.
-        modal.Content()
-
-        // Themed launch overlay — shown while handing off to an external player; fades in, and is
-        // dropped when PFP regains focus (or after the safety timeout).
-        androidx.compose.animation.AnimatedVisibility(
-            visible = state.externalLaunch != null,
-            enter = androidx.compose.animation.fadeIn(),
-            exit = androidx.compose.animation.fadeOut(),
-        ) {
-            state.externalLaunch?.let { launch -> ExternalLaunchOverlay(launch) }
-        }
-
-        // Fullscreen player overlay.
-        if (state.playing) {
-            VideoPlayerScreen(
-                videos = state.siblings.ifEmpty { listOf(video) },
-                startIndex = state.siblings.indexOfFirst { it.id == video.id }.coerceAtLeast(0),
-                startPositionMs = state.playStartPositionMs,
-                onSaveResume = viewModel::saveResume,
-                onExit = viewModel::onPlaybackExit,
-                pendingGamepadAction = pendingGamepadAction,
-                onGamepadActionConsumed = onGamepadActionConsumed,
-                showTouchControls = showTouchControls,
-                onTouchInput = onTouchInput,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
+      }
     }
 }
 

@@ -14,7 +14,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** The backdrop-blur flag: raised only while a prompt or the options panel is shown, on API 31+. */
+/**
+ * The backdrop flags: the options panel asks for the blur (API 31+, switchable); a prompt asks the
+ * host to hide what is behind it instead, and that wins over the blur while the prompt is up.
+ */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], qualifiers = "w833dp-h468dp")
@@ -66,15 +69,26 @@ class PfpBackdropBlurTest {
     }
 
     @Test
-    fun `a prompt raises the flag while shown and lowers it when dismissed`() {
+    fun `a prompt hides the screen behind it while shown, and does not blur it`() {
         setUp()
         promptShown.value = true
         composeRule.waitForIdle()
-        assertTrue(state.active)
+        assertTrue(state.hidden)
+        assertFalse("a prompt hides; only menus blur", state.active)
 
         promptShown.value = false
         composeRule.waitForIdle()
+        assertFalse(state.hidden)
         assertFalse(state.requested)
+    }
+
+    @Test
+    fun `hiding behind a prompt ignores the blur switch, since it costs nothing`() {
+        setUp()
+        state.enabled = false
+        promptShown.value = true
+        composeRule.waitForIdle()
+        assertTrue(state.hidden)
     }
 
     @Test
@@ -90,14 +104,17 @@ class PfpBackdropBlurTest {
     }
 
     @Test
-    fun `a prompt over a panel is two requests and both must go`() {
+    fun `a prompt over a panel hides, and closing the prompt brings the panel's blur back`() {
         setUp()
         panelShown.value = true
         promptShown.value = true
         composeRule.waitForIdle()
+        assertTrue(state.hidden)
+        assertFalse(state.active)
         promptShown.value = false
         composeRule.waitForIdle()
-        assertTrue("the panel still wants it", state.requested)
+        assertFalse(state.hidden)
+        assertTrue("the panel still wants its blur", state.active)
         panelShown.value = false
         composeRule.waitForIdle()
         assertFalse(state.requested)
@@ -113,9 +130,9 @@ class PfpBackdropBlurTest {
     }
 
     @Test
-    fun `the host can switch the blur off while a prompt is up`() {
+    fun `the host can switch the blur off while the panel is up`() {
         setUp()
-        promptShown.value = true
+        panelShown.value = true
         composeRule.waitForIdle()
         state.enabled = false
         assertTrue(state.requested)

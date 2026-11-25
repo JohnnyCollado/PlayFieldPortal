@@ -173,16 +173,12 @@ fun PfpDetailScaffold(
     overlay: @Composable BoxScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    // The page keeps its own blur state: its prompts and panels sit in [overlay], above the layer
-    // that gets blurred, and must not blur the enclosing host (the shell) they are drawn inside.
-    ProvidePfpBackdropBlur { blur ->
-    // The page is see-through: while it blurs, what shows through it blurs too (see LocalPfpBackdropBehind).
-    com.playfieldportal.core.ui.components.RaiseWhile(
-        com.playfieldportal.core.ui.components.LocalPfpBackdropBehind.current,
-        active = Build.VERSION.SDK_INT >= 31 && blur.active,
-    )
     PfpDetailBackground(modifier = modifier.fillMaxSize(), drawSurface = !pageHidden) {
-        Column(modifier = Modifier.fillMaxSize().pfpBackdropBlurLayer(blur).hiddenPage(pageHidden)) {
+      PfpBlurLayers(
+        overlay = overlay,
+        contentModifier = Modifier.hiddenPage(pageHidden),
+      ) {
+        Column(modifier = Modifier.fillMaxSize()) {
             header()
             // Hard viewport edge: nothing in the body may paint into the header or footer rows.
             BoxWithConstraints(modifier = Modifier.fillMaxWidth().weight(1f).clipToBounds()) {
@@ -207,8 +203,38 @@ fun PfpDetailScaffold(
             }
             footer()
         }
-        overlay()
+      }
     }
+}
+
+/**
+ * One screen's backdrop: [content] is the layer the options panel blurs and a prompt hides (its
+ * background, drawn outside this, stays). [overlay] (menus, panels, the shared modal) is drawn above
+ * it and never blurred or hidden. The screen keeps its own state, so its prompts and menus never act
+ * on the enclosing host (the shell); the host's Performance / Thermal switch still reaches it. The
+ * screen is see-through, so while it blurs, what shows through it (the shell's wallpaper layer,
+ * [LocalPfpBackdropBehind]) blurs too. [contentModifier] goes on the content layer, after the effect.
+ *
+ * Every screen with prompts or menus over its own content needs this; [PfpDetailScaffold] uses it
+ * for the detail pages.
+ */
+@Composable
+fun PfpBlurLayers(
+    overlay: @Composable BoxScope.() -> Unit,
+    modifier: Modifier = Modifier,
+    contentModifier: Modifier = Modifier,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    ProvidePfpBackdropBlur { blur ->
+        // Under the panel (blurred) and under a prompt (hidden) alike, what shows through blurs.
+        com.playfieldportal.core.ui.components.RaiseWhile(
+            com.playfieldportal.core.ui.components.LocalPfpBackdropBehind.current,
+            active = Build.VERSION.SDK_INT >= 31 && blur.backgroundActive,
+        )
+        Box(modifier.fillMaxSize()) {
+            Box(Modifier.fillMaxSize().pfpBackdropBlurLayer(blur).then(contentModifier), content = content)
+            overlay()
+        }
     }
 }
 
@@ -237,11 +263,23 @@ private fun Modifier.hiddenPage(hidden: Boolean): Modifier =
 val PfpBackdropBlurAppliedKey = SemanticsPropertyKey<Boolean>("PfpBackdropBlurApplied")
 var SemanticsPropertyReceiver.pfpBackdropBlurApplied by PfpBackdropBlurAppliedKey
 
-/** [pfpBackdropBlur] for a content layer, marking it for tests. Never put it on a layer that holds a prompt. */
+/** Set on the same layer: true while a prompt has it hidden. Tests read it. */
+val PfpBackdropHiddenKey = SemanticsPropertyKey<Boolean>("PfpBackdropHidden")
+var SemanticsPropertyReceiver.pfpBackdropHidden by PfpBackdropHiddenKey
+
+/**
+ * [pfpBackdropBlur] for a content layer, marking it for tests: blurred under the options panel,
+ * hidden under a prompt. Never put it on a layer that holds a prompt, or on a background that must
+ * stay while a prompt is up.
+ */
 @Composable
 fun Modifier.pfpBackdropBlurLayer(state: PfpBackdropBlurState?): Modifier {
     val applied = state != null && Build.VERSION.SDK_INT >= 31 && state.active
-    return this.pfpBackdropBlur(state).semantics { pfpBackdropBlurApplied = applied }
+    val hidden = state?.hidden == true
+    return this.pfpBackdropBlur(state).semantics {
+        pfpBackdropBlurApplied = applied
+        pfpBackdropHidden = hidden
+    }
 }
 
 /**
